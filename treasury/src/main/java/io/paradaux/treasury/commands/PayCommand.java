@@ -10,6 +10,7 @@ import io.paradaux.treasury.model.economy.TransferRequest;
 import io.paradaux.treasury.services.AccountService;
 import io.paradaux.treasury.services.LedgerService;
 import io.paradaux.treasury.utils.Money;
+import io.paradaux.treasury.utils.TreasuryConstants;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
@@ -123,7 +124,7 @@ public class PayCommand implements CommandHandler {
                     memoLine,
                     sender.getUniqueId(),
                     null,
-                    null,
+                    TreasuryConstants.PAY_PLUGIN_SYSTEM,
                     null
             ));
         } catch (IllegalStateException e) {
@@ -165,7 +166,7 @@ public class PayCommand implements CommandHandler {
                     memoLine,
                     sender.getUniqueId(),
                     null,
-                    null,
+                    TreasuryConstants.PAY_PLUGIN_SYSTEM,
                     null
             ));
         } catch (IllegalStateException e) {

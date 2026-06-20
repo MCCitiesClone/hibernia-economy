@@ -2,6 +2,7 @@ package io.paradaux.treasury.commands;
 
 import io.paradaux.hibernia.framework.i18n.Message;
 import io.paradaux.treasury.commands.resolvers.PayTarget;
+import io.paradaux.treasury.model.economy.TransferRequest;
 import io.paradaux.treasury.services.AccountService;
 import io.paradaux.treasury.services.LedgerService;
 import org.bukkit.Bukkit;
@@ -11,12 +12,15 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
+import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
@@ -84,5 +88,29 @@ class PayCommandTest {
         // payment goes to the gov account — no ambiguity prompt.
         verify(message, never()).send(sender, "treasury.pay.ambiguous", "target", COLLIDING_NAME);
         verify(ledgerService).transfer(any());
+    }
+
+    @Test
+    void pay_tagsPlayerPaymentWithPluginSystem() {
+        UUID senderUuid = UUID.randomUUID();
+        UUID targetUuid = UUID.randomUUID();
+        bukkit.when(() -> Bukkit.getOfflinePlayerIfCached("Bob")).thenReturn(targetPlayer);
+        when(targetPlayer.hasPlayedBefore()).thenReturn(true);
+        when(accountService.governmentAccountExists("Bob")).thenReturn(false);
+        when(sender.getUniqueId()).thenReturn(senderUuid);
+        when(targetPlayer.getUniqueId()).thenReturn(targetUuid);
+        when(accountService.getOrCreatePersonalAccountId(senderUuid)).thenReturn(7);
+        when(accountService.getBalanceReadOnly(7)).thenReturn(new BigDecimal("1000"));
+        when(accountService.getOrCreatePersonalAccountId(targetUuid)).thenReturn(8);
+
+        command.pay(sender, new PayTarget("Bob"), new BigDecimal("100"));
+
+        // The /pay transfer must carry a non-null source tag so peer payments are
+        // attributable instead of dumping into the "(none)" bucket (PAR-145).
+        ArgumentCaptor<TransferRequest> req = ArgumentCaptor.forClass(TransferRequest.class);
+        verify(ledgerService).transfer(req.capture());
+        assertThat(req.getValue().pluginSystem()).isEqualTo("Treasury-Pay");
+        assertThat(req.getValue().fromAccountId()).isEqualTo(7);
+        assertThat(req.getValue().toAccountId()).isEqualTo(8);
     }
 }

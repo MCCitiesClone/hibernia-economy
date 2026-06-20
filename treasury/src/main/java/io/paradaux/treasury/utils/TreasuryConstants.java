@@ -25,6 +25,9 @@ public final class TreasuryConstants {
     /** Plugin attribution recorded on admin {@code /eco} ledger entries. */
     public static final String ECO_PLUGIN_SYSTEM = "Eco";
 
+    /** Plugin attribution recorded on in-game {@code /pay} ledger entries (PAR-145). */
+    public static final String PAY_PLUGIN_SYSTEM = "Treasury-Pay";
+
     /**
      * Display name of the GOVERNMENT account that backs admin {@code /eco}
      * give/take/set/reset operations. Not exposed to end users; not configurable.
