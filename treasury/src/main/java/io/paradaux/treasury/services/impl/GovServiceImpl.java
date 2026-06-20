@@ -98,12 +98,36 @@ public class GovServiceImpl implements GovService {
     @Override
     @Transactional
     public GovernmentFine issueFine(UUID player, int govAccountId, BigDecimal amount, String reason, UUID issuedBy) {
+        // Validate the amount before resolving the player so an invalid amount
+        // surfaces as an amount error, never "no personal account" (regression
+        // tests in GovServiceIT pin this order).
         Money.requirePositive(amount, "fine amount > 0");
 
         Account playerAccount = accountService.getAccountByUUID(player);
         if (playerAccount == null) {
             throw new IllegalArgumentException("No personal account found for player " + player);
         }
+        return doIssueFine(playerAccount.getAccountId(), player, govAccountId, amount, reason, issuedBy);
+    }
+
+    @Override
+    @Transactional
+    public GovernmentFine issueFine(int debtorAccountId, int govAccountId, BigDecimal amount, String reason, UUID issuedBy) {
+        Account debtorAccount = accountService.getAccountById(debtorAccountId);
+        if (debtorAccount == null) {
+            throw new IllegalArgumentException("No account found with id " + debtorAccountId);
+        }
+        return doIssueFine(debtorAccountId, null, govAccountId, amount, reason, issuedBy);
+    }
+
+    /**
+     * Core fine issuance: validates the amount and destination, debits the debtor
+     * account into the government account, and records the fine. {@code playerUuid}
+     * is the fined player for player fines, or {@code null} for firm/account fines.
+     */
+    private GovernmentFine doIssueFine(int debtorAccountId, UUID playerUuid, int govAccountId,
+                                       BigDecimal amount, String reason, UUID issuedBy) {
+        Money.requirePositive(amount, "fine amount > 0");
 
         Account govAccount = accountService.getAccountById(govAccountId);
         if (govAccount == null || govAccount.getAccountType() != AccountType.GOVERNMENT) {
@@ -111,13 +135,13 @@ public class GovServiceImpl implements GovService {
         }
 
         BigDecimal normalized = Money.normalize(amount);
-        byte[] dedupKey = Idempotency.sha256("fine:" + issuedBy + ":" + player + ":"
+        byte[] dedupKey = Idempotency.sha256("fine:" + issuedBy + ":" + debtorAccountId + ":"
                 + Instant.now().truncatedTo(ChronoUnit.SECONDS));
 
         long txnId;
         try {
             txnId = ledgerService.transfer(new TransferRequest(
-                    playerAccount.getAccountId(),
+                    debtorAccountId,
                     govAccount.getAccountId(),
                     normalized,
                     "Fine: " + reason,
@@ -127,15 +151,17 @@ public class GovServiceImpl implements GovService {
                     dedupKey
             ));
         } catch (IllegalStateException e) {
-            // LedgerService.transfer throws IllegalStateException for
-            // insufficient funds (and a few other failure modes). The fine
-            // path only ever debits the target's PERSONAL account, so the
-            // realistic cause here is "player can't afford the fine".
-            throw new InsufficientFineFundsException(player, e);
+            // LedgerService.transfer throws IllegalStateException for insufficient
+            // funds (and a few other failure modes). The fine path only ever debits
+            // the debtor account, so the realistic cause is "can't afford the fine".
+            throw playerUuid != null
+                    ? new InsufficientFineFundsException(playerUuid, e)
+                    : new InsufficientFineFundsException(debtorAccountId, e);
         }
 
         GovernmentFine fine = GovernmentFine.builder()
-                .playerUuid(player)
+                .playerUuid(playerUuid)
+                .debtorAccountId(debtorAccountId)
                 .govAccountId(govAccount.getAccountId())
                 .amount(normalized)
                 .reason(reason)
@@ -143,8 +169,8 @@ public class GovServiceImpl implements GovService {
                 .issuedBy(issuedBy)
                 .build();
         fineMapper.insertFine(fine);
-        log.info("Fine issued: id={} player={} account={} amount={} txn={} issuedBy={}",
-                fine.getFineId(), player, govAccount.getAccountId(), normalized, txnId, issuedBy);
+        log.info("Fine issued: id={} debtorAccount={} player={} govAccount={} amount={} txn={} issuedBy={}",
+                fine.getFineId(), debtorAccountId, playerUuid, govAccount.getAccountId(), normalized, txnId, issuedBy);
         return fine;
     }
 
@@ -159,9 +185,14 @@ public class GovServiceImpl implements GovService {
             throw new FineAlreadyRevokedException(fineId);
         }
 
-        Account playerAccount = accountService.getAccountByUUID(fine.getPlayerUuid());
-        if (playerAccount == null) {
-            throw new IllegalStateException("Player account not found for fine " + fineId);
+        int debtorAccountId = resolveDebtorAccountId(fine);
+        Account debtorAccount = accountService.getAccountById(debtorAccountId);
+        if (debtorAccount == null) {
+            // Keep the player-fine wording (a pinned regression message) when the
+            // debtor was a player; firm fines get the account-oriented wording.
+            throw new IllegalStateException(fine.getPlayerUuid() != null
+                    ? "Player account not found for fine " + fineId
+                    : "Debtor account not found for fine " + fineId);
         }
         Account finesAccount = accountService.getAccountById(fine.getGovAccountId());
         if (finesAccount == null) {
@@ -171,7 +202,7 @@ public class GovServiceImpl implements GovService {
         byte[] dedupKey = Idempotency.sha256("fine-revoke:" + fineId + ":" + revokedBy);
         long revokeTxnId = ledgerService.transfer(new TransferRequest(
                 finesAccount.getAccountId(),
-                playerAccount.getAccountId(),
+                debtorAccount.getAccountId(),
                 fine.getAmount(),
                 "Fine revoked: " + fine.getReason(),
                 revokedBy,
@@ -184,9 +215,24 @@ public class GovServiceImpl implements GovService {
         fine.setRevoked(true);
         fine.setRevokedBy(revokedBy);
         fine.setRevokeTxnId(revokeTxnId);
-        log.info("Fine revoked: id={} player={} amount={} reverseTxn={} revokedBy={}",
-                fineId, fine.getPlayerUuid(), fine.getAmount(), revokeTxnId, revokedBy);
+        log.info("Fine revoked: id={} debtorAccount={} player={} amount={} reverseTxn={} revokedBy={}",
+                fineId, debtorAccountId, fine.getPlayerUuid(), fine.getAmount(), revokeTxnId, revokedBy);
         return fine;
+    }
+
+    /**
+     * The account to refund on revoke: the stored debtor account, or — for legacy
+     * fines predating {@code debtor_account_id} — the fined player's PERSONAL account.
+     */
+    private int resolveDebtorAccountId(GovernmentFine fine) {
+        if (fine.getDebtorAccountId() != null) {
+            return fine.getDebtorAccountId();
+        }
+        Account playerAccount = accountService.getAccountByUUID(fine.getPlayerUuid());
+        if (playerAccount == null) {
+            throw new IllegalStateException("Player account not found for fine " + fine.getFineId());
+        }
+        return playerAccount.getAccountId();
     }
 
     @Override

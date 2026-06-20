@@ -45,6 +45,20 @@ public interface GovService {
     GovernmentFine issueFine(UUID player, int govAccountId, BigDecimal amount, String reason, UUID issuedBy);
 
     /**
+     * Issues a fine against an arbitrary account (e.g. a firm's BUSINESS account):
+     * transfers {@code amount} from {@code debtorAccountId} to {@code govAccountId}
+     * and records the fine with no player (firm fine). The fine remembers its
+     * debtor account, so a later {@link #revokeFine(long, UUID)} refunds it.
+     *
+     * @throws IllegalArgumentException if {@code debtorAccountId} is not an existing account
+     * @throws io.paradaux.treasury.api.exceptions.GovAccountNotFoundException
+     *         if {@code govAccountId} is not an existing GOVERNMENT account
+     * @throws io.paradaux.treasury.api.exceptions.InsufficientFineFundsException
+     *         if the debtor account can't afford the fine
+     */
+    GovernmentFine issueFine(int debtorAccountId, int govAccountId, BigDecimal amount, String reason, UUID issuedBy);
+
+    /**
      * Revokes a previously issued fine by reversing the transfer.
      * Throws if the fine is not found or is already revoked.
      */

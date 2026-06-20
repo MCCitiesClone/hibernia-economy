@@ -153,6 +153,80 @@ class GovServiceIT extends IntegrationTestBase {
         assertThat(accountService.getBalanceReadOnly(police.getAccountId())).isEqualByComparingTo("0.00");
     }
 
+    // ---- Firm (BUSINESS account) fines (PAR-48) ----
+
+    @Test
+    void issueFine_againstFirmAccount_debitsFirmAndRecordsNoPlayer() {
+        UUID issuer = UUID.randomUUID();
+        UUID funder = UUID.randomUUID();
+        ledgerService.resolveOrCreatePersonal(funder);
+
+        Account firm = accountService.createAccount(
+                io.paradaux.treasury.model.economy.AccountType.BUSINESS, UUID.randomUUID(), "Acme Ltd");
+        Account police = govService.createDepartmentAccount("Police", issuer);
+        fund(funder, firm.getAccountId(), new BigDecimal("500.00"));
+
+        GovernmentFine fine = govService.issueFine(
+                firm.getAccountId(), police.getAccountId(), new BigDecimal("200.00"), "illegal dumping", issuer);
+
+        // Firm fines record the debtor account, not a player.
+        assertThat(fine.getPlayerUuid()).isNull();
+        assertThat(fine.getDebtorAccountId()).isEqualTo(firm.getAccountId());
+        assertThat(fine.getGovAccountId()).isEqualTo(police.getAccountId());
+        assertThat(accountService.getBalanceReadOnly(firm.getAccountId())).isEqualByComparingTo("300.00");
+        assertThat(accountService.getBalanceReadOnly(police.getAccountId())).isEqualByComparingTo("200.00");
+    }
+
+    @Test
+    void issueFine_againstFirmAccount_insufficientFunds_throwsTypedException() {
+        UUID issuer = UUID.randomUUID();
+        Account firm = accountService.createAccount(
+                io.paradaux.treasury.model.economy.AccountType.BUSINESS, UUID.randomUUID(), "Broke Inc");
+        Account police = govService.createDepartmentAccount("Police", issuer);
+
+        assertThatThrownBy(() -> govService.issueFine(
+                firm.getAccountId(), police.getAccountId(), new BigDecimal("50.00"), "x", issuer))
+                .isInstanceOf(InsufficientFineFundsException.class);
+    }
+
+    @Test
+    void issueFine_unknownDebtorAccount_throwsIllegalArgument() {
+        UUID issuer = UUID.randomUUID();
+        Account police = govService.createDepartmentAccount("Police", issuer);
+
+        assertThatThrownBy(() -> govService.issueFine(
+                999_999, police.getAccountId(), new BigDecimal("10.00"), "x", issuer))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("No account found");
+    }
+
+    @Test
+    void revokeFine_firmFine_refundsTheFirmAccount() {
+        UUID issuer = UUID.randomUUID();
+        UUID funder = UUID.randomUUID();
+        ledgerService.resolveOrCreatePersonal(funder);
+        Account firm = accountService.createAccount(
+                io.paradaux.treasury.model.economy.AccountType.BUSINESS, UUID.randomUUID(), "Acme Ltd");
+        Account police = govService.createDepartmentAccount("Police", issuer);
+        fund(funder, firm.getAccountId(), new BigDecimal("500.00"));
+
+        GovernmentFine fine = govService.issueFine(
+                firm.getAccountId(), police.getAccountId(), new BigDecimal("200.00"), "dumping", issuer);
+        govService.revokeFine(fine.getFineId(), issuer);
+
+        // Refund returns to the firm account; the gov account is emptied again.
+        assertThat(accountService.getBalanceReadOnly(firm.getAccountId())).isEqualByComparingTo("500.00");
+        assertThat(accountService.getBalanceReadOnly(police.getAccountId())).isEqualByComparingTo("0.00");
+    }
+
+    /** Moves {@code amount} from a player's personal account into another account, for funding test fixtures. */
+    private void fund(UUID fromPlayer, int toAccountId, BigDecimal amount) {
+        int fromId = accountService.getAccountByUUID(fromPlayer).getAccountId();
+        ledgerService.transfer(new io.paradaux.treasury.model.economy.TransferRequest(
+                fromId, toAccountId, amount, "test funding", fromPlayer, null,
+                io.paradaux.treasury.utils.TreasuryConstants.TREASURY_PLUGIN_NAME, null));
+    }
+
     @Test
     void issueFine_unknownPlayer_throws() {
         UUID nobody = UUID.randomUUID();

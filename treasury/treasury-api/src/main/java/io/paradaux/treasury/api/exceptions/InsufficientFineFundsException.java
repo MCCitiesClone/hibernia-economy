@@ -10,11 +10,24 @@ import java.util.UUID;
  */
 public class InsufficientFineFundsException extends TreasuryException {
     private final UUID playerUuid;
+    private final Integer debtorAccountId;
 
     public InsufficientFineFundsException(UUID playerUuid, Throwable cause) {
         super("Player " + playerUuid + " has insufficient funds to cover the fine", cause);
         this.playerUuid = playerUuid;
+        this.debtorAccountId = null;
     }
 
+    /** For fines whose debtor is an account rather than a player (e.g. a firm). */
+    public InsufficientFineFundsException(int debtorAccountId, Throwable cause) {
+        super("Account " + debtorAccountId + " has insufficient funds to cover the fine", cause);
+        this.playerUuid = null;
+        this.debtorAccountId = debtorAccountId;
+    }
+
+    /** The fined player, or {@code null} if the debtor was an account (firm fine). */
     public UUID getPlayerUuid() { return playerUuid; }
+
+    /** The debited account, or {@code null} if the debtor was a player. */
+    public Integer getDebtorAccountId() { return debtorAccountId; }
 }

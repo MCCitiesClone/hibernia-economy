@@ -121,6 +121,52 @@ public class FineCommand implements CommandHandler {
         }
     }
 
+    @Route("firm <account> <firm> <amount> <reason>")
+    @Async
+    @Description("Fine a firm's business account, paid into a government account")
+    public void fineFirm(@Sender Player sender,
+                         @Arg("account") String accountName,
+                         @Arg("firm") String firmAccountName,
+                         @Arg("amount") BigDecimal amount,
+                         @GreedyArg("reason") String reason) {
+        Account govAccount = resolveGovAccount(accountName, sender);
+        if (govAccount == null) return;
+        if (!canFineFrom(sender, govAccount)) {
+            message.send(sender, "treasury.gov.no-access");
+            return;
+        }
+
+        Account business = accountService.getBusinessAccountByName(firmAccountName);
+        if (business == null) {
+            message.send(sender, "treasury.fine.firm.not-found", "firm", firmAccountName);
+            return;
+        }
+
+        try {
+            Money.requirePositive(amount, "fine amount > 0");
+        } catch (IllegalArgumentException e) {
+            message.send(sender, "treasury.general.invalid-amount");
+            return;
+        }
+
+        GovernmentFine fine;
+        try {
+            fine = govService.issueFine(business.getAccountId(), govAccount.getAccountId(), amount, reason, sender.getUniqueId());
+        } catch (InsufficientFineFundsException e) {
+            message.send(sender, "treasury.fine.firm.insufficient", "firm", business.getDisplayName());
+            return;
+        } catch (GovAccountNotFoundException e) {
+            message.send(sender, "treasury.gov.not-found", "account", e.getIdentifier());
+            return;
+        }
+
+        String formattedAmount = accountService.formatAmount(fine.getAmount());
+        message.send(sender, "treasury.fine.firm.issued",
+                "firm", business.getDisplayName(),
+                "amount", formattedAmount,
+                "reason", reason);
+    }
+
     @Route("revoke <id>")
     @Async
     @Description("Revoke a previously issued fine")
@@ -156,7 +202,7 @@ public class FineCommand implements CommandHandler {
             return;
         }
 
-        String playerName = resolvePlayerName(fine.getPlayerUuid());
+        String playerName = resolveDebtorLabel(fine);
         String formattedAmount = accountService.formatAmount(fine.getAmount());
         message.send(sender, "treasury.fine.revoked",
                 "id", String.valueOf(fineId),
@@ -202,7 +248,7 @@ public class FineCommand implements CommandHandler {
             return;
         }
 
-        String playerName = resolvePlayerName(fine.getPlayerUuid());
+        String playerName = resolveDebtorLabel(fine);
         String issuerName = resolvePlayerName(fine.getIssuedBy());
         String formattedAmount = accountService.formatAmount(fine.getAmount());
         String issuedDate = fine.getIssuedAt() != null ? DATE_FMT.format(fine.getIssuedAt()) : "—";
@@ -273,6 +319,23 @@ public class FineCommand implements CommandHandler {
         OfflinePlayer op = Bukkit.getOfflinePlayer(uuid);
         String name = op.getName();
         return name != null ? name : uuid.toString();
+    }
+
+    /**
+     * Display label for whoever a fine was levied against: the player's name for a
+     * player fine, or the debtor account's name for a firm fine.
+     */
+    private String resolveDebtorLabel(GovernmentFine fine) {
+        if (fine.getPlayerUuid() != null) {
+            return resolvePlayerName(fine.getPlayerUuid());
+        }
+        if (fine.getDebtorAccountId() != null) {
+            Account account = accountService.getAccountById(fine.getDebtorAccountId());
+            if (account != null && account.getDisplayName() != null) {
+                return account.getDisplayName();
+            }
+        }
+        return "—";
     }
 
     private static String sanitize(String input) {

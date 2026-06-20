@@ -11,17 +11,18 @@ import java.util.UUID;
 public interface GovernmentFineMapper {
 
     @Insert("INSERT INTO government_fines " +
-            "(player_uuid_bin, gov_account_id, amount, reason, txn_id, issued_by_uuid_bin) " +
-            "VALUES (#{playerUuid}, #{govAccountId}, #{amount}, #{reason}, #{txnId}, #{issuedBy})")
+            "(player_uuid_bin, debtor_account_id, gov_account_id, amount, reason, txn_id, issued_by_uuid_bin) " +
+            "VALUES (#{playerUuid}, #{debtorAccountId}, #{govAccountId}, #{amount}, #{reason}, #{txnId}, #{issuedBy})")
     @Options(useGeneratedKeys = true, keyProperty = "fineId", keyColumn = "fine_id")
     int insertFine(GovernmentFine fine);
 
-    @Select("SELECT fine_id, player_uuid_bin, gov_account_id, amount, reason, txn_id, " +
+    @Select("SELECT fine_id, player_uuid_bin, debtor_account_id, gov_account_id, amount, reason, txn_id, " +
             "issued_by_uuid_bin, issued_at, revoked, revoked_by_uuid_bin, revoke_txn_id, revoked_at " +
             "FROM government_fines WHERE fine_id = #{fineId}")
     @Results(id = "fineResultMap", value = {
             @Result(column = "fine_id",             property = "fineId",        id = true),
             @Result(column = "player_uuid_bin",     property = "playerUuid"),
+            @Result(column = "debtor_account_id",   property = "debtorAccountId"),
             @Result(column = "gov_account_id",      property = "govAccountId"),
             @Result(column = "amount",              property = "amount"),
             @Result(column = "reason",              property = "reason"),
@@ -35,13 +36,13 @@ public interface GovernmentFineMapper {
     })
     GovernmentFine findFineById(@Param("fineId") long fineId);
 
-    @Select("SELECT fine_id, player_uuid_bin, gov_account_id, amount, reason, txn_id, " +
+    @Select("SELECT fine_id, player_uuid_bin, debtor_account_id, gov_account_id, amount, reason, txn_id, " +
             "issued_by_uuid_bin, issued_at, revoked, revoked_by_uuid_bin, revoke_txn_id, revoked_at " +
             "FROM government_fines WHERE player_uuid_bin = #{playerUuid} ORDER BY issued_at DESC")
     @ResultMap("fineResultMap")
     List<GovernmentFine> findFinesByPlayer(@Param("playerUuid") UUID playerUuid);
 
-    @Select("SELECT fine_id, player_uuid_bin, gov_account_id, amount, reason, txn_id, " +
+    @Select("SELECT fine_id, player_uuid_bin, debtor_account_id, gov_account_id, amount, reason, txn_id, " +
             "issued_by_uuid_bin, issued_at, revoked, revoked_by_uuid_bin, revoke_txn_id, revoked_at " +
             "FROM government_fines WHERE player_uuid_bin = #{playerUuid} AND revoked = 0 ORDER BY issued_at DESC")
     @ResultMap("fineResultMap")
