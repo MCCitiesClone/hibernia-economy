@@ -6,7 +6,10 @@ import io.paradaux.hibernia.framework.commander.annotations.*;
 import io.paradaux.hibernia.framework.commander.spi.CommandHandler;
 import io.paradaux.hibernia.framework.exceptions.InternalException;
 import io.paradaux.hibernia.framework.i18n.Message;
+import io.paradaux.business.model.Firm;
+import io.paradaux.business.services.FirmNotificationService;
 import io.paradaux.business.services.FirmRequestService;
+import io.paradaux.business.services.FirmService;
 import io.paradaux.business.services.FirmStaffService;
 import io.paradaux.business.utils.resolvers.FirmName;
 import org.bukkit.OfflinePlayer;
@@ -20,12 +23,17 @@ public class RequestCommands implements CommandHandler {
 
     private final FirmRequestService requests;
     private final FirmStaffService staff;
+    private final FirmService firms;
+    private final FirmNotificationService notifications;
     private final Message message;
 
     @Inject
-    public RequestCommands(FirmRequestService requests, FirmStaffService staff, Message message) {
+    public RequestCommands(FirmRequestService requests, FirmStaffService staff, FirmService firms,
+                           FirmNotificationService notifications, Message message) {
         this.requests = requests;
         this.staff = staff;
+        this.firms = firms;
+        this.notifications = notifications;
         this.message = message;
     }
 
@@ -71,7 +79,13 @@ public class RequestCommands implements CommandHandler {
         String firm = firmRef.value();
         requests.acceptEmploymentOffer(firm, sender.getUniqueId());
         message.send(sender, "business.staff.offer.accept", "firm", firm);
-        message.send(staff.getOnlineEmployees(firm), "business.staff.offer.accept.staff-broadcast", "sender", sender.getName(), "firm", firm);
+        // Notify the firm of the new hire, excluding the joiner (they got the
+        // direct confirmation above) so they aren't told they joined themselves.
+        Firm f = firms.getFirmByNameOrId(firm);
+        if (f != null) {
+            notifications.notifyFirmExcept(f.getFirmId(), sender.getUniqueId(), "business.staff.offer.accept.staff-broadcast",
+                    "sender", sender.getName(), "firm", f.getDisplayName());
+        }
     }
 
     @Route("offer reject <firm>")
