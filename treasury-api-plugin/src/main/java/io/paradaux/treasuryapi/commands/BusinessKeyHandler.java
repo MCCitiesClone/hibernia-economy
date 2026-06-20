@@ -5,7 +5,6 @@ import com.google.inject.Singleton;
 import io.paradaux.hibernia.framework.i18n.Message;
 import io.paradaux.business.api.BusinessApi;
 import io.paradaux.business.model.Firm;
-import io.paradaux.treasuryapi.mappers.ApiKeyMapper;
 import io.paradaux.treasuryapi.model.economy.ApiKey;
 import io.paradaux.treasuryapi.services.ApiKeyService;
 import org.bukkit.entity.Player;
@@ -21,17 +20,14 @@ public class BusinessKeyHandler {
             DateTimeFormatter.ofPattern("MM/dd/yy").withZone(ZoneId.systemDefault());
 
     private final ApiKeyService apiKeyService;
-    private final ApiKeyMapper apiKeyMapper;
     private final BusinessApi businessApi;
     private final Message message;
 
     @Inject
     public BusinessKeyHandler(ApiKeyService apiKeyService,
-                              ApiKeyMapper apiKeyMapper,
                               BusinessApi businessApi,
                               Message message) {
         this.apiKeyService = apiKeyService;
-        this.apiKeyMapper = apiKeyMapper;
         this.businessApi = businessApi;
         this.message = message;
     }
@@ -57,7 +53,7 @@ public class BusinessKeyHandler {
     }
 
     public void doList(Player sender) {
-        List<ApiKey> keys = apiKeyMapper.findByOwnerAndType(sender.getUniqueId(), "BUSINESS");
+        List<ApiKey> keys = apiKeyService.listKeys(sender.getUniqueId(), "BUSINESS");
         if (keys.isEmpty()) {
             message.send(sender, "treasuryapi.business.list.empty");
             return;
@@ -76,7 +72,7 @@ public class BusinessKeyHandler {
     }
 
     public void doListAccess(Player sender) {
-        List<ApiKey> keys = apiKeyMapper.findBusinessAccessibleByEmployee(sender.getUniqueId());
+        List<ApiKey> keys = apiKeyService.listBusinessKeysAccessibleByEmployee(sender.getUniqueId());
         if (keys.isEmpty()) {
             message.send(sender, "treasuryapi.business.list.access.empty");
             return;
@@ -95,7 +91,7 @@ public class BusinessKeyHandler {
     }
 
     public void doExport(Player sender, int keyId) {
-        ApiKey key = apiKeyMapper.findById(keyId);
+        ApiKey key = apiKeyService.getKey(keyId);
         if (key == null || !"BUSINESS".equals(key.getKeyType())) {
             message.send(sender, "treasuryapi.business.export.not-found");
             return;
@@ -111,7 +107,7 @@ public class BusinessKeyHandler {
     }
 
     public void doReissue(Player sender, int keyId) {
-        ApiKey key = apiKeyMapper.findById(keyId);
+        ApiKey key = apiKeyService.getKey(keyId);
         if (key == null || !"BUSINESS".equals(key.getKeyType())) {
             message.send(sender, "treasuryapi.business.reissue.not-found");
             return;
@@ -127,7 +123,7 @@ public class BusinessKeyHandler {
     }
 
     public void doRevoke(Player sender, int keyId) {
-        ApiKey key = apiKeyMapper.findById(keyId);
+        ApiKey key = apiKeyService.getKey(keyId);
         if (key == null || !"BUSINESS".equals(key.getKeyType())) {
             message.send(sender, "treasuryapi.business.revoke.not-found");
             return;

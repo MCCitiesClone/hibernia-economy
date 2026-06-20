@@ -22,6 +22,7 @@ import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
+import java.util.List;
 import java.util.UUID;
 
 @Singleton
@@ -116,6 +117,21 @@ public class ApiKeyServiceImpl implements ApiKeyService {
             throw new IllegalArgumentException("API key not found: " + keyId);
         }
         return uploadToBytebin(key.getToken());
+    }
+
+    @Override
+    public ApiKey getKey(int keyId) {
+        return apiKeyMapper.findById(keyId);
+    }
+
+    @Override
+    public List<ApiKey> listKeys(UUID ownerUuid, String keyType) {
+        return apiKeyMapper.findByOwnerAndType(ownerUuid, keyType);
+    }
+
+    @Override
+    public List<ApiKey> listBusinessKeysAccessibleByEmployee(UUID employeeUuid) {
+        return apiKeyMapper.findBusinessAccessibleByEmployee(employeeUuid);
     }
 
     private String uploadToBytebin(String token) {

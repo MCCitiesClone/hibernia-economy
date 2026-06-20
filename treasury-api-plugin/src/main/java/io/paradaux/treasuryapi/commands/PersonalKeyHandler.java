@@ -5,7 +5,6 @@ import com.google.inject.Singleton;
 import io.paradaux.hibernia.framework.i18n.Message;
 import io.paradaux.treasury.api.TreasuryApi;
 import io.paradaux.treasury.model.economy.Account;
-import io.paradaux.treasuryapi.mappers.ApiKeyMapper;
 import io.paradaux.treasuryapi.model.economy.ApiKey;
 import io.paradaux.treasuryapi.services.ApiKeyService;
 import org.bukkit.entity.Player;
@@ -21,17 +20,14 @@ public class PersonalKeyHandler {
             DateTimeFormatter.ofPattern("MM/dd/yy").withZone(ZoneId.systemDefault());
 
     private final ApiKeyService apiKeyService;
-    private final ApiKeyMapper apiKeyMapper;
     private final TreasuryApi treasuryApi;
     private final Message message;
 
     @Inject
     public PersonalKeyHandler(ApiKeyService apiKeyService,
-                              ApiKeyMapper apiKeyMapper,
                               TreasuryApi treasuryApi,
                               Message message) {
         this.apiKeyService = apiKeyService;
-        this.apiKeyMapper = apiKeyMapper;
         this.treasuryApi = treasuryApi;
         this.message = message;
     }
@@ -46,7 +42,7 @@ public class PersonalKeyHandler {
     }
 
     public void doList(Player sender) {
-        List<ApiKey> keys = apiKeyMapper.findByOwnerAndType(sender.getUniqueId(), "PERSONAL");
+        List<ApiKey> keys = apiKeyService.listKeys(sender.getUniqueId(), "PERSONAL");
         if (keys.isEmpty()) {
             message.send(sender, "treasuryapi.personal.list.empty");
             return;
@@ -65,7 +61,7 @@ public class PersonalKeyHandler {
     }
 
     public void doExport(Player sender, int keyId) {
-        ApiKey key = apiKeyMapper.findById(keyId);
+        ApiKey key = apiKeyService.getKey(keyId);
         if (key == null || !"PERSONAL".equals(key.getKeyType())) {
             message.send(sender, "treasuryapi.personal.export.not-found");
             return;
@@ -81,7 +77,7 @@ public class PersonalKeyHandler {
     }
 
     public void doReissue(Player sender, int keyId) {
-        ApiKey key = apiKeyMapper.findById(keyId);
+        ApiKey key = apiKeyService.getKey(keyId);
         if (key == null || !"PERSONAL".equals(key.getKeyType())) {
             message.send(sender, "treasuryapi.personal.reissue.not-found");
             return;
@@ -97,7 +93,7 @@ public class PersonalKeyHandler {
     }
 
     public void doRevoke(Player sender, int keyId) {
-        ApiKey key = apiKeyMapper.findById(keyId);
+        ApiKey key = apiKeyService.getKey(keyId);
         if (key == null || !"PERSONAL".equals(key.getKeyType())) {
             message.send(sender, "treasuryapi.personal.revoke.not-found");
             return;
