@@ -13,6 +13,7 @@ import io.paradaux.treasury.model.economy.GovernmentFine;
 import io.paradaux.treasury.services.AccountService;
 import io.paradaux.treasury.services.GovService;
 import io.paradaux.treasury.services.MembershipService;
+import io.paradaux.treasury.services.PlayerDirectoryService;
 import io.paradaux.treasury.utils.Money;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
@@ -34,16 +35,19 @@ public class FineCommand implements CommandHandler {
     private final AccountService accountService;
     private final GovService govService;
     private final MembershipService membershipService;
+    private final PlayerDirectoryService playerDirectory;
     private final Message message;
 
     @Inject
     public FineCommand(AccountService accountService,
                        GovService govService,
                        MembershipService membershipService,
+                       PlayerDirectoryService playerDirectory,
                        Message message) {
         this.accountService    = accountService;
         this.govService        = govService;
         this.membershipService = membershipService;
+        this.playerDirectory   = playerDirectory;
         this.message           = message;
     }
 
@@ -76,7 +80,22 @@ public class FineCommand implements CommandHandler {
             return;
         }
 
-        if (target == null || (!target.hasPlayedBefore() && !target.isOnline())) {
+        UUID targetUuid;
+        String targetName;
+        if (target != null && (target.hasPlayedBefore() || target.isOnline())) {
+            targetUuid = target.getUniqueId();
+            targetName = target.getName();
+        } else if (target != null && target.getName() != null) {
+            // Usercache miss — resolve the typed name through the player directory
+            // so an uncached / Bedrock target can still be fined (PAR-150).
+            java.util.Optional<UUID> resolved = playerDirectory.resolveUuidByName(target.getName());
+            if (resolved.isEmpty()) {
+                message.send(sender, "treasury.general.unknown-player");
+                return;
+            }
+            targetUuid = resolved.get();
+            targetName = playerDirectory.resolveNameByUuid(targetUuid).orElse(target.getName());
+        } else {
             message.send(sender, "treasury.general.unknown-player");
             return;
         }
@@ -93,27 +112,27 @@ public class FineCommand implements CommandHandler {
 
         GovernmentFine fine;
         try {
-            fine = govService.issueFine(target.getUniqueId(), account.getAccountId(), amount, reason, sender.getUniqueId());
+            fine = govService.issueFine(targetUuid, account.getAccountId(), amount, reason, sender.getUniqueId());
         } catch (InsufficientFineFundsException e) {
-            message.send(sender, "treasury.fine.insufficient", "player", target.getName());
+            message.send(sender, "treasury.fine.insufficient", "player", targetName);
             return;
         } catch (GovAccountNotFoundException e) {
             message.send(sender, "treasury.gov.not-found", "account", e.getIdentifier());
             return;
         } catch (IllegalArgumentException e) {
             // Player has no PERSONAL account on file (rare; covered by the
-            // `target.hasPlayedBefore()` precondition above for normal flows).
+            // resolution preconditions above for normal flows).
             message.send(sender, "treasury.general.unknown-player");
             return;
         }
 
         String formattedAmount = accountService.formatAmount(fine.getAmount());
         message.send(sender, "treasury.fine.issued",
-                "player", target.getName(),
+                "player", targetName,
                 "amount", formattedAmount,
                 "reason", reason);
 
-        Player online = target.getPlayer();
+        Player online = Bukkit.getPlayer(targetUuid);
         if (online != null) {
             message.send(online, "treasury.fine.issued.notify",
                     "amount", formattedAmount,

@@ -12,6 +12,7 @@ import io.paradaux.treasury.services.AccountService;
 import io.paradaux.treasury.services.GovService;
 import io.paradaux.treasury.services.LedgerService;
 import io.paradaux.treasury.services.MembershipService;
+import io.paradaux.treasury.services.PlayerDirectoryService;
 import io.paradaux.treasury.utils.GovDedupKeys;
 import io.paradaux.treasury.utils.Money;
 import io.paradaux.treasury.utils.TreasuryConstants;
@@ -42,6 +43,7 @@ public class GovCommand implements CommandHandler {
     private final LedgerService ledgerService;
     private final MembershipService membershipService;
     private final GovService govService;
+    private final PlayerDirectoryService playerDirectory;
     private final Message message;
 
     @Inject
@@ -49,11 +51,13 @@ public class GovCommand implements CommandHandler {
                       LedgerService ledgerService,
                       MembershipService membershipService,
                       GovService govService,
+                      PlayerDirectoryService playerDirectory,
                       Message message) {
         this.accountService   = accountService;
         this.ledgerService    = ledgerService;
         this.membershipService = membershipService;
         this.govService       = govService;
+        this.playerDirectory  = playerDirectory;
         this.message          = message;
     }
 
@@ -681,10 +685,21 @@ public class GovCommand implements CommandHandler {
         OfflinePlayer targetPlayer = Bukkit.getOfflinePlayerIfCached(toName);
         boolean knownPlayer = targetPlayer != null && (targetPlayer.hasPlayedBefore() || targetPlayer.isOnline());
 
+        java.util.Optional<java.util.UUID> directoryUuid =
+                knownPlayer ? java.util.Optional.empty() : playerDirectory.resolveUuidByName(toName);
+
         if (knownPlayer) {
             toAccountId = accountService.getOrCreatePersonalAccountId(targetPlayer.getUniqueId());
             toDisplayName = targetPlayer.getName();
             onlineTarget = targetPlayer;
+        } else if (directoryUuid.isPresent()) {
+            // Player not in the usercache but known to the directory — pay them by
+            // name regardless of cache state (PAR-150). The directory only holds
+            // real players who have logged in, so creating their account is safe.
+            java.util.UUID uuid = directoryUuid.get();
+            toAccountId = accountService.getOrCreatePersonalAccountId(uuid);
+            toDisplayName = playerDirectory.resolveNameByUuid(uuid).orElse(toName);
+            onlineTarget = Bukkit.getPlayer(uuid);
         } else {
             // BUSINESS account display names follow the convention
             // "<FirmName> Corporate Account" (FirmServiceImpl line 109). The
