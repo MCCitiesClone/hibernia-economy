@@ -105,14 +105,15 @@ Treasury and Business so a sale can pay a player or a firm.
 
 - **Vendored fork:** DC-specific changes are expected; it's built here, not pulled
   from upstream.
-- **Gradle multi-module:** `plugin/` (core) + seven server-version `adapter/`
-  modules (Spigot 1.14→1.20.5, Paper 1.13.2/1.15.2, each compiled against its own
-  API) + `assemble/` which shades everything into a single **`ChestShop.jar`**.
+- **Single Gradle module** (`plugin/`) compiled against the **Paper 1.21.11** API,
+  shaded straight to **`ChestShop.jar`**. (Originally ported from Maven with the
+  upstream multi-version adapter matrix — a 1.13.2-baseline core + seven
+  `Spigot_*`/`Paper_*` adapter modules + an `assemble` module — but since DC runs
+  one modern version, those were folded into the core and the extra modules removed.)
 - **Vendored deps:** a Maven-layout `repo/` holds plugin jars not available from
   any public repository (committed to the repo).
 - Compiles against `treasury-api` and `business-api` (resolved as local projects in
-  the build). Ported from Maven — see [build-and-test.md](build-and-test.md) for
-  the adapter matrix and shading.
+  the build). See [build-and-test.md](build-and-test.md) for the shading details.
 
 ---
 

@@ -131,7 +131,8 @@ public class Properties {
     @Parser("MaterialSet")
     public static Set<Material> SHOP_CONTAINERS = EnumSet.of(
             Material.CHEST,
-            Material.TRAPPED_CHEST
+            Material.TRAPPED_CHEST,
+            Material.BARREL
     );
 
     @PrecededBySpace

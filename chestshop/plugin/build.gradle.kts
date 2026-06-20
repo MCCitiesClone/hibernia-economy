@@ -1,13 +1,14 @@
 plugins {
     `java-library`
     jacoco
+    id("com.gradleup.shadow")
 }
 
-// archivesName "chestshop" -> jar is chestshop-<version>.jar, matching the old
-// Maven artifactId. :assemble shades this into the final ChestShop.jar.
-base.archivesName.set("chestshop")
-
-val spigotApiVersion = extra["spigotApiVersion"] as String
+// Compiled against the Paper API (a superset of spigot-api) so the folded-in
+// version adapters' Paper-only snapshot API (BlockDestroyEvent, getState(boolean),
+// getHolder(boolean)) resolves. ChestShop runs on one modern server version, so
+// the old 1.13.2 multi-version-adapter baseline is gone.
+val paperApiVersion = "1.21.11-R0.1-SNAPSHOT"
 
 // Maven's `provided` scope is visible to tests; Gradle's `compileOnly` is not.
 // Make the provided APIs visible to test *compilation*, but NOT to the test
@@ -31,7 +32,7 @@ configurations.configureEach {
 dependencies {
     // --- server API: keep transitive (Bukkit compilation needs its deps:
     //     configurate/yaml/guava/etc.).
-    compileOnly("org.spigotmc:spigot-api:$spigotApiVersion")
+    compileOnly("io.papermc.paper:paper-api:$paperApiVersion")
     compileOnly("org.apache.logging.log4j:log4j-core:2.17.2")
     compileOnly("com.google.code.findbugs:jsr305:3.0.2")
 
@@ -53,7 +54,13 @@ dependencies {
     // chain otherwise resolves worldedit 8.0.0-SNAPSHOT, which needs Java 25).
     compileOnly("com.sk89q.worldedit:worldedit-core:7.3.9") { isTransitive = false }
     compileOnly("com.sk89q.worldedit:worldedit-bukkit:7.3.9") { isTransitive = false }
-    compileOnly("com.sk89q.worldguard:worldguard-legacy:7.0.0-SNAPSHOT")
+    // WorldGuard soft-depend: pull only its own API jars, non-transitively, so
+    // none of its server-provided transitives (bukkit/gson/fastutil/guava) fight
+    // paper-api. These coordinates are what worldguard-legacy:7.0.0-SNAPSHOT
+    // resolved to; they carry the classes we touch (WorldGuard, StateFlag, Flags,
+    // RegionPermissionModel, WorldGuardPlugin).
+    compileOnly("com.sk89q.worldguard:worldguard-core:7.1.0-SNAPSHOT") { isTransitive = false }
+    compileOnly("com.sk89q.worldguard:worldguard-bukkit:7.1.0-SNAPSHOT") { isTransitive = false }
     compileOnly("com.github.TechFortress:GriefPrevention:16.12.0") { isTransitive = false }
     compileOnly("com.github.jojodmo:ItemBridge:b0054538c1") { isTransitive = false }
     compileOnly("br.net.fabiozumbi12.RedProtect:RedProtect-Spigot:7.7.3") { isTransitive = false }
@@ -72,11 +79,9 @@ dependencies {
     compileOnly(project(":business:business-api")) { isTransitive = false }
     compileOnly("me.crafter.mc:lockettepro:2.10-SNAPSHOT") { isTransitive = false }
 
-    // --- bundled libraries (relocated + shaded into ChestShop.jar by :assemble)
-    // `api`, not `implementation`: some appear in the core's public method
-    // signatures (e.g. adventure Component), so the adapter modules that compile
-    // against :plugin need them on their compile classpath — matching Maven's
-    // transitive `compile` scope. Shadow bundles them from the runtime classpath.
+    // --- bundled libraries (relocated + shaded into ChestShop.jar below).
+    // `api` (rather than implementation) is harmless now that everything is one
+    // module; kept so they stay on the runtime classpath that shadowJar bundles.
     api("com.j256.ormlite:ormlite-jdbc:6.1")
     api("de.themoep.utils:lang-bukkit:1.3-SNAPSHOT")
     api("de.themoep:minedown-adventure:1.7.2-SNAPSHOT")
@@ -89,7 +94,7 @@ dependencies {
 
     // --- tests
     // Server API on the test runtime (tests mock/instantiate org.bukkit.* types).
-    testRuntimeOnly("org.spigotmc:spigot-api:$spigotApiVersion")
+    testRuntimeOnly("io.papermc.paper:paper-api:$paperApiVersion")
     testImplementation(platform("org.junit:junit-bom:5.13.3"))
     testImplementation("org.junit.jupiter:junit-jupiter-engine")
     testImplementation("org.junit.jupiter:junit-jupiter-params")
@@ -147,3 +152,58 @@ tasks.jacocoTestReport {
 }
 
 tasks.test { finalizedBy(tasks.jacocoTestReport) }
+
+// =====================================================================
+// Shaded ChestShop.jar (formerly produced by the separate :assemble module).
+// =====================================================================
+val buildType = extra["buildType"] as String
+val buildTimestamp = extra["buildTimestamp"] as String
+
+// Shadow 9 + plain :jar both target build/libs/<name>.jar; disable :jar so the
+// shaded ChestShop.jar survives (see workspace CLAUDE.md rule 8).
+tasks.jar { enabled = false }
+
+tasks.shadowJar {
+    // -> build/libs/ChestShop.jar (no version/classifier).
+    archiveBaseName.set("ChestShop")
+    archiveClassifier.set("")
+    archiveVersion.set("")
+
+    // Whitelist exactly the libraries to bundle; everything else (server +
+    // soft-depend APIs) is compileOnly and never shaded. The plugin's own
+    // classes — including the folded-in version adapters — are always included.
+    dependencies {
+        include(dependency("de.themoep:.*:.*"))
+        include(dependency("de.themoep.utils:.*:.*"))
+        include(dependency("net.kyori:.*:.*"))
+        include(dependency("org.bstats:.*:.*"))
+        include(dependency("com.j256.ormlite:.*:.*"))
+        include(dependency("javax.persistence:.*:.*"))
+    }
+
+    // The 7 relocations from the Maven shade, verbatim.
+    relocate("de.themoep.utils.lang", "io.paradaux.chestshop.Libs.Lang")
+    relocate("de.themoep.minedown.adventure", "io.paradaux.chestshop.Libs.MineDown")
+    relocate("net.kyori", "io.paradaux.chestshop.Libs.Kyori")
+    relocate("org.bstats", "io.paradaux.chestshop.Metrics.BStats")
+    relocate("net.gravitydevelopment.updater", "io.paradaux.chestshop.Updater")
+    relocate("com.j256.ormlite", "io.paradaux.chestshop.Libs.ORMlite")
+    relocate("javax.persistence", "io.paradaux.chestshop.Libs.javax.persistence")
+
+    mergeServiceFiles()
+
+    // Top-level docs at the jar root.
+    from(project(":chestshop").projectDir) { include("README.md", "SECURITY.md") }
+
+    manifest {
+        attributes(
+            "Distribution-Type" to buildType,
+            "Built-At" to buildTimestamp,
+            "Build-Jdk" to System.getProperty("java.runtime.version"),
+            "paperweight-mappings-namespace" to "mojang",
+        )
+    }
+}
+
+// Building the module produces the shaded jar.
+tasks.assemble { dependsOn(tasks.shadowJar) }

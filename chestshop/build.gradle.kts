@@ -2,14 +2,12 @@ import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 
 // =============================================================================
-// ChestShop — root build (Gradle port of the former Maven reactor)
+// ChestShop — root build.
 //
-// Module layout mirrors the old Maven modules:
-//   :plugin                       core plugin (thin jar; classes + resources)
-//   :adapter-{spigot,paper}-*     version-specific server adapters
-//   :assemble                     shades plugin + adapters + libs -> ChestShop.jar
-//
-// Only :assemble applies the Shadow plugin; it is the artifact that ships.
+// A single buildable module, :plugin, which compiles against the Paper 1.21.11
+// API and shades straight to ChestShop.jar. The former per-server-version
+// adapter modules + the assemble module were folded into :plugin once the core
+// adopted a single modern baseline.
 // =============================================================================
 
 // --- Build metadata (replaces the static/dynamic_build_number Maven profiles) -
@@ -22,13 +20,6 @@ val buildTimestamp: String = OffsetDateTime.now().format(DateTimeFormatter.ISO_I
 val resolvedBuildDescription: String =
     if (ciBuildNumber != null) "(build $ciBuildNumber)" else "(compiled at $buildTimestamp)"
 
-// --- Spigot API version (replaces the spigot_version_latest Maven profile) -----
-// Default mirrors the upstream Maven default (lowest-common 1.13.2 API). Pass
-// -PspigotVersionLatest to compile the core against the latest server API.
-val spigotApiVersion: String =
-    if (project.hasProperty("spigotVersionLatest")) "1.21.11-R0.1-SNAPSHOT"
-    else "1.13.2-R0.1-SNAPSHOT"
-
 allprojects {
     group = "io.paradaux"
     version = "4.0.2"
@@ -39,7 +30,6 @@ allprojects {
     extra["buildDescription"] = resolvedBuildDescription
     // Full version string substituted into plugin.yml (was ${bukkit.plugin.version}).
     extra["bukkitPluginVersion"] = "$version $resolvedBuildDescription"
-    extra["spigotApiVersion"] = spigotApiVersion
 }
 
 subprojects {
@@ -83,6 +73,6 @@ subprojects {
 }
 
 // (No lifecycle tasks here: in the single root build, `./gradlew build` runs
-// `build` across the chestshop subprojects natively — :chestshop:assemble:build
-// produces ChestShop.jar and :chestshop:plugin:test runs the tests.)
+// `build` on :chestshop:plugin natively — its shadowJar produces ChestShop.jar
+// and its test task runs the tests.)
 

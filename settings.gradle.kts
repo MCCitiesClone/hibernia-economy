@@ -23,20 +23,8 @@ include(":treasury-api-plugin")
 include(":treasury-rest-api")
 include(":economy-flyway")
 
-// ChestShop: a multi-module subtree (core plugin + version adapters + assemble).
+// ChestShop: the core plugin module shades straight to ChestShop.jar. The old
+// per-server-version adapter modules + assemble module were folded into :plugin
+// when the core moved to a single modern (1.21.11) baseline.
 include(":chestshop")
 include(":chestshop:plugin")
-include(":chestshop:assemble")
-
-// Adapter modules live under non-default nested dirs, so map each explicitly.
-fun chestshopAdapter(name: String, dir: String) {
-    include(":chestshop:$name")
-    project(":chestshop:$name").projectDir = file("chestshop/$dir")
-}
-chestshopAdapter("adapter-spigot-1_14",   "adapter/spigot/1.14")
-chestshopAdapter("adapter-spigot-1_15_2", "adapter/spigot/1.15.2")
-chestshopAdapter("adapter-spigot-1_17",   "adapter/spigot/1.17")
-chestshopAdapter("adapter-spigot-1_20",   "adapter/spigot/1.20")
-chestshopAdapter("adapter-spigot-1_20_5", "adapter/spigot/1.20.5")
-chestshopAdapter("adapter-paper-1_13_2",  "adapter/paper/1.13.2")
-chestshopAdapter("adapter-paper-1_15_2",  "adapter/paper/1.15.2")

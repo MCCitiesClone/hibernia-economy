@@ -7,7 +7,7 @@
 //
 //   ./gradlew build            assemble + test every subproject
 //   ./gradlew :treasury:build  build one project
-//   ./gradlew :chestshop:assemble:shadowJar   build ChestShop.jar
+//   ./gradlew :chestshop:plugin:shadowJar     build ChestShop.jar
 // =============================================================================
 
 plugins {

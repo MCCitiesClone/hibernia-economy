@@ -15,7 +15,7 @@ the code.
 - **[Components](components.md)** — what each project is, its stack, and where
   things live inside it.
 - **[Build & test](build-and-test.md)** — the single root Gradle build, every
-  build task, the ChestShop adapter matrix, and how to run the tests.
+  build task, ChestShop's shading, and how to run the tests.
 - **[Database](database.md)** — the shared schema, Flyway migrations, and how
   deploys are gated.
 - **[CI/CD](ci-cd.md)** — the GitHub Actions workflows, container builds, and the

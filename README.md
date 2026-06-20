@@ -74,7 +74,7 @@ internals.
 | **`treasury-api-plugin/`** | Paper plugin | Issues and manages **JWT API keys** that authenticate callers of the REST API. (Not the same as the `treasury-api` jar.) |
 | **`treasury-rest-api/`** | Spring Boot service | A REST/HTTP surface over the ledger for tooling and integrations, with API-key auth and rate limiting. Ships as a Docker image. |
 | **`economy-flyway/`** | Flyway migrations | The **authoritative shared database schema**. All schema changes are versioned migrations here; deploys run through gated workflows. |
-| **`chestshop/`** | Paper plugin (fork) | Sign-based automated shops, integrated with Treasury and Business. A vendored fork of ChestShop-3, built as a Gradle multi-module (core + version adapters + assemble). |
+| **`chestshop/`** | Paper plugin (fork) | Sign-based automated shops, integrated with Treasury and Business. A vendored fork of ChestShop-3, built as a single Gradle module against the Paper 1.21.11 API (the old per-server-version adapter modules were folded into the core). |
 | **`economy-explorer/`** | Next.js app | The public, read-side web explorer (balances, prices, money flow) **and** the player/admin documentation site served at `/docs`. |
 | **`realty/`** | Paper plugin *(submodule)* | Property and land: buying, renting, offers, and auctions. Maintained upstream; consumed here. |
 | **`hibernia-framework/`** | Library *(submodule)* | The shared command (Brigadier-based `@Command`), type-safe configuration, and i18n framework the Paper plugins are built on. Published as `io.paradaux:hibernia-framework`. |
@@ -94,7 +94,7 @@ hibernia-economy/
 ├── treasury-api-plugin/       # JWT API-key issuer
 ├── treasury-rest-api/         # Spring Boot REST service (Dockerized)
 ├── economy-flyway/            # the shared database schema (Flyway migrations)
-├── chestshop/                 #   plugin/ + adapter/*/ + assemble/  (sign shops)
+├── chestshop/                 #   plugin/  (sign shops; shades to ChestShop.jar)
 ├── economy-explorer/          # Next.js explorer + /docs user guide (npm, not Gradle)
 └── .github/workflows/         # CI for every component (build, test, publish, deploy)
 ```
@@ -159,8 +159,8 @@ Everything is one Gradle build, so you can build any artifact from the repo root
 ./gradlew :business:shadowJar
 ./gradlew :treasury-api-plugin:shadowJar
 
-# ChestShop (core + all version adapters)  ->  chestshop/assemble/build/libs/ChestShop.jar
-./gradlew :chestshop:assemble:shadowJar
+# ChestShop  ->  chestshop/plugin/build/libs/ChestShop.jar
+./gradlew :chestshop:plugin:shadowJar
 
 # REST API (Spring Boot)  ->  treasury-rest-api/build/libs/
 ./gradlew :treasury-rest-api:bootJar
@@ -172,8 +172,8 @@ Everything is one Gradle build, so you can build any artifact from the repo root
 A successful `:treasury:shadowJar` / `:business:shadowJar` also stages the jar into
 `server/plugins/` for a local dev server; pass `-Pci=true` to skip that copy.
 
-See **[wiki/build-and-test.md](wiki/build-and-test.md)** for the full task list,
-the ChestShop adapter matrix, and notes on running the test suites.
+See **[wiki/build-and-test.md](wiki/build-and-test.md)** for the full task list
+and notes on running the test suites.
 
 ## Project conventions
 

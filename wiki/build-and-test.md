@@ -30,7 +30,7 @@ On Windows use `.\gradlew.bat`.
 | Treasury plugin | `:treasury:shadowJar` | `treasury/build/libs/` |
 | Business plugin | `:business:shadowJar` | `business/build/libs/` |
 | API-key plugin | `:treasury-api-plugin:shadowJar` | `treasury-api-plugin/build/libs/` |
-| ChestShop | `:chestshop:assemble:shadowJar` | `chestshop/assemble/build/libs/ChestShop.jar` |
+| ChestShop | `:chestshop:plugin:shadowJar` | `chestshop/plugin/build/libs/ChestShop.jar` |
 | REST API | `:treasury-rest-api:bootJar` | `treasury-rest-api/build/libs/` |
 | API jars | `:treasury:treasury-api:jar`, `:business:business-api:jar` | each `build/libs/` |
 
@@ -50,27 +50,23 @@ For consumers **outside** this repo:
 
 ## ChestShop specifics
 
-ChestShop was ported from Maven to Gradle and kept faithful. It's a multi-module
-subtree:
-
-```
-:chestshop:plugin                 core plugin (compiled vs spigot-api)
-:chestshop:adapter-spigot-1_14    ┐
-:chestshop:adapter-spigot-1_15_2  │ each compiled against its own
-:chestshop:adapter-spigot-1_17    │ Spigot/Paper API version
-:chestshop:adapter-spigot-1_20    │
-:chestshop:adapter-spigot-1_20_5  │
-:chestshop:adapter-paper-1_13_2   │
-:chestshop:adapter-paper-1_15_2   ┘
-:chestshop:assemble               shades plugin + all adapters -> ChestShop.jar
-```
+ChestShop is a **single module** (`:chestshop:plugin`) compiled against the **Paper
+1.21.11** API and shaded straight to `ChestShop.jar`. It was ported from Maven with
+upstream's multi-version adapter matrix — a 1.13.2-baseline core plus seven
+`Spigot_*`/`Paper_*` adapter modules and an `assemble` module — but since DC runs a
+single modern server version, the adapters were folded into the core and the extra
+modules removed.
 
 Things worth knowing if you touch it:
 
-- **Shading & relocations.** `:assemble` bundles a whitelisted set of libraries
-  (adventure/kyori, minedown, bStats, ORMLite, javax.persistence) and relocates
-  them under `io.paradaux.chestshop.Libs.*` / `.Metrics.*` / `.Updater`. The
-  server/soft-depend APIs are `compileOnly` and never bundled.
+- **Shading & relocations.** `:chestshop:plugin`'s shadowJar bundles a whitelisted
+  set of libraries (adventure/kyori, minedown, bStats, ORMLite, javax.persistence)
+  and relocates them under `io.paradaux.chestshop.Libs.*` / `.Metrics.*` /
+  `.Updater`. The server/soft-depend APIs are `compileOnly` and never bundled.
+- **Folded-in adapters.** The former version-adapter classes (ItemInfo tooltips,
+  non-snapshot holder/state) now live in the core under
+  `io/paradaux/chestshop/Adapter/` and are still discovered + registered at runtime
+  by the jar-scan in `ChestShop#registerVersionedAdapters`.
 - **Soft-depend APIs are resolved non-transitively.** Gradle's `compileOnly` pulls
   transitives that Maven's `provided` didn't, dragging in dead/incompatible
   artifacts; the build pins them off. WorldEdit is force-pinned to **7.3.9** (the
