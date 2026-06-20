@@ -98,6 +98,13 @@ public class FirmAccountServiceImpl implements FirmAccountService {
                 .toList();
     }
 
+    @Override
+    public List<Integer> listAccountIds(Integer firmId) {
+        return firmAccounts.listAccountsByFirm(firmId).stream()
+                .map(FirmAccount::getAccountId)
+                .toList();
+    }
+
     @Transactional
     @Override
     public void setDefaultAccount(Integer firmId, Integer accountId, UUID actorId) {

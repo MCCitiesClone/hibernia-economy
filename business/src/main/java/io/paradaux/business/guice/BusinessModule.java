@@ -59,6 +59,7 @@ public class BusinessModule extends AbstractModule {
         bind(FirmRequestService.class).to(FirmRequestServiceImpl.class).in(Singleton.class);
         bind(FirmPlayerService.class).to(FirmPlayerServiceImpl.class).in(Singleton.class);
         bind(FirmPropertyService.class).to(FirmPropertyServiceImpl.class).in(Singleton.class);
+        bind(FirmBalanceTaxService.class).to(FirmBalanceTaxServiceImpl.class).in(Singleton.class);
 
         // Configuration (reads from plugin config, not ConfigurationLoader)
         bind(BalanceTaxConfiguration.class).in(Singleton.class);

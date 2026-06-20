@@ -1,0 +1,246 @@
+package io.paradaux.business.services.impl;
+
+import io.paradaux.business.Business;
+import io.paradaux.business.model.Firm;
+import io.paradaux.business.model.config.BalanceTaxConfiguration;
+import io.paradaux.business.services.FirmAccountService;
+import io.paradaux.business.services.FirmBalanceTaxService.BalanceTaxCycleResult;
+import io.paradaux.business.services.FirmPropertyService;
+import io.paradaux.business.services.FirmService;
+import io.paradaux.treasury.api.TaxApi;
+import io.paradaux.treasury.api.TreasuryApi;
+import io.paradaux.treasury.event.TaxCycleEvent;
+import io.paradaux.treasury.model.economy.Account;
+import io.paradaux.treasury.model.tax.TaxCollection;
+import io.paradaux.treasury.model.tax.TaxResult;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.util.List;
+import java.util.Optional;
+import java.util.logging.Logger;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+@ExtendWith(MockitoExtension.class)
+class FirmBalanceTaxServiceImplTest {
+
+    @Mock BalanceTaxConfiguration config;
+    @Mock FirmService firmService;
+    @Mock FirmPropertyService firmPropertyService;
+    @Mock FirmAccountService firmAccountService;
+    @Mock TreasuryApi treasury;
+    @Mock Business plugin;
+    @Mock TaxCycleEvent event;
+    @Mock TaxApi taxApi;
+
+    private FirmBalanceTaxServiceImpl svc;
+
+    @BeforeEach
+    void setUp() {
+        when(plugin.getLogger()).thenReturn(Logger.getLogger("test"));
+        svc = new FirmBalanceTaxServiceImpl(config, firmService, firmPropertyService,
+                firmAccountService, treasury, plugin);
+
+        // By default the configured destination account resolves and the event
+        // exposes the tax API + a stable period start. Individual tests override.
+        lenient().when(config.getGovernmentAccount()).thenReturn("Treasury");
+        lenient().when(treasury.getGovernmentAccountByName("Treasury")).thenReturn(govAccount(500));
+        lenient().when(event.getTaxApi()).thenReturn(taxApi);
+        lenient().when(event.getPeriodStart()).thenReturn(Instant.parse("2025-01-01T00:00:00Z"));
+        lenient().when(firmPropertyService.getBoolean(anyInt(), anyString())).thenReturn(Optional.of(false));
+    }
+
+    private Firm firm(int id) {
+        Firm f = new Firm();
+        f.setFirmId(id);
+        return f;
+    }
+
+    private Account govAccount(int id) {
+        Account a = new Account();
+        a.setAccountId(id);
+        return a;
+    }
+
+    @Test
+    void noFirms_returnsZeroTally_andDoesNotCallTaxApi() {
+        when(firmService.listAllActiveFirms()).thenReturn(List.of());
+
+        BalanceTaxCycleResult result = svc.runWeeklyCycle(event);
+
+        assertThat(result).isEqualTo(new BalanceTaxCycleResult(0, 0, 0));
+        verify(taxApi, never()).collectBatch(anyList());
+    }
+
+    @Test
+    void exemptFirm_isSkipped_producingNoCollections() {
+        when(firmService.listAllActiveFirms()).thenReturn(List.of(firm(1)));
+        when(firmPropertyService.getBoolean(1, "balance-tax.exempt")).thenReturn(Optional.of(true));
+
+        BalanceTaxCycleResult result = svc.runWeeklyCycle(event);
+
+        assertThat(result).isEqualTo(new BalanceTaxCycleResult(0, 0, 0));
+        verify(firmAccountService, never()).listAccountIds(anyInt());
+        verify(taxApi, never()).collectBatch(anyList());
+    }
+
+    @Test
+    void firmWithNoAccounts_producesNoCollections() {
+        when(firmService.listAllActiveFirms()).thenReturn(List.of(firm(1)));
+        when(firmAccountService.listAccountIds(1)).thenReturn(List.of());
+
+        BalanceTaxCycleResult result = svc.runWeeklyCycle(event);
+
+        assertThat(result).isEqualTo(new BalanceTaxCycleResult(0, 0, 0));
+        verify(taxApi, never()).collectBatch(anyList());
+    }
+
+    @Test
+    void firmWithOnlyZeroBalances_producesNoCollections() {
+        when(firmService.listAllActiveFirms()).thenReturn(List.of(firm(1)));
+        when(firmAccountService.listAccountIds(1)).thenReturn(List.of(10, 11));
+        when(treasury.getBalanceByAccountId(10)).thenReturn(BigDecimal.ZERO);
+        when(treasury.getBalanceByAccountId(11)).thenReturn(BigDecimal.ZERO);
+
+        BalanceTaxCycleResult result = svc.runWeeklyCycle(event);
+
+        assertThat(result).isEqualTo(new BalanceTaxCycleResult(0, 0, 0));
+        verify(taxApi, never()).collectBatch(anyList());
+    }
+
+    @Test
+    void zeroRate_producesNoCollections() {
+        when(firmService.listAllActiveFirms()).thenReturn(List.of(firm(1)));
+        when(firmAccountService.listAccountIds(1)).thenReturn(List.of(10));
+        when(treasury.getBalanceByAccountId(10)).thenReturn(new BigDecimal("100"));
+        when(config.getWeeklyRate(new BigDecimal("100"))).thenReturn(BigDecimal.ZERO);
+
+        BalanceTaxCycleResult result = svc.runWeeklyCycle(event);
+
+        assertThat(result).isEqualTo(new BalanceTaxCycleResult(0, 0, 0));
+        verify(taxApi, never()).collectBatch(anyList());
+    }
+
+    @Test
+    void singleAccount_buildsOneCollection_andTalliesCollected() {
+        when(firmService.listAllActiveFirms()).thenReturn(List.of(firm(1)));
+        when(firmAccountService.listAccountIds(1)).thenReturn(List.of(10));
+        when(treasury.getBalanceByAccountId(10)).thenReturn(new BigDecimal("100.00"));
+        when(config.getWeeklyRate(new BigDecimal("100.00"))).thenReturn(new BigDecimal("0.05"));
+        when(taxApi.collectBatch(anyList())).thenReturn(List.of(
+                new TaxResult.Collected(1L, new BigDecimal("5.00"), 500)));
+
+        BalanceTaxCycleResult result = svc.runWeeklyCycle(event);
+
+        assertThat(result).isEqualTo(new BalanceTaxCycleResult(1, 0, 0));
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<List<TaxCollection>> batch = ArgumentCaptor.forClass(List.class);
+        verify(taxApi).collectBatch(batch.capture());
+        assertThat(batch.getValue()).hasSize(1);
+        // Destination is the resolved government account, source is the firm account.
+        assertThat(batch.getValue().get(0).destinationAccountId()).isEqualTo(500);
+        assertThat(batch.getValue().get(0).sourceAccountId()).isEqualTo(10);
+        assertThat(batch.getValue().get(0).amount()).isEqualByComparingTo("5.00");
+    }
+
+    @Test
+    void multipleAccounts_splitProportionally_withDriftFoldedIntoLargest() {
+        when(firmService.listAllActiveFirms()).thenReturn(List.of(firm(1)));
+        when(firmAccountService.listAccountIds(1)).thenReturn(List.of(10, 11, 12));
+        // Balances chosen so the proportional split leaves a rounding remainder.
+        when(treasury.getBalanceByAccountId(10)).thenReturn(new BigDecimal("100.00"));
+        when(treasury.getBalanceByAccountId(11)).thenReturn(new BigDecimal("100.00"));
+        when(treasury.getBalanceByAccountId(12)).thenReturn(new BigDecimal("100.00"));
+        // total 300 * 0.01 = 3.00; per-account 1.00 each, no drift here but exercises the loop.
+        when(config.getWeeklyRate(new BigDecimal("300.00"))).thenReturn(new BigDecimal("0.01"));
+        when(taxApi.collectBatch(anyList())).thenReturn(List.of(
+                new TaxResult.Collected(1L, new BigDecimal("1.00"), 500),
+                new TaxResult.Collected(2L, new BigDecimal("1.00"), 500),
+                new TaxResult.Collected(3L, new BigDecimal("1.00"), 500)));
+
+        BalanceTaxCycleResult result = svc.runWeeklyCycle(event);
+
+        assertThat(result).isEqualTo(new BalanceTaxCycleResult(3, 0, 0));
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<List<TaxCollection>> batch = ArgumentCaptor.forClass(List.class);
+        verify(taxApi).collectBatch(batch.capture());
+        assertThat(batch.getValue()).hasSize(3);
+        // The per-account tax must sum to the firm total exactly.
+        BigDecimal sum = batch.getValue().stream()
+                .map(TaxCollection::amount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        assertThat(sum).isEqualByComparingTo("3.00");
+    }
+
+    @Test
+    void unresolvedDestination_fallsBackToDefaultAccountCollections() {
+        when(config.getGovernmentAccount()).thenReturn("Missing");
+        when(treasury.getGovernmentAccountByName("Missing")).thenReturn(null);
+        when(firmService.listAllActiveFirms()).thenReturn(List.of(firm(1)));
+        when(firmAccountService.listAccountIds(1)).thenReturn(List.of(10));
+        when(treasury.getBalanceByAccountId(10)).thenReturn(new BigDecimal("100.00"));
+        when(config.getWeeklyRate(new BigDecimal("100.00"))).thenReturn(new BigDecimal("0.05"));
+        when(taxApi.collectBatch(anyList())).thenReturn(List.of(
+                new TaxResult.Skipped("below minimum")));
+
+        BalanceTaxCycleResult result = svc.runWeeklyCycle(event);
+
+        assertThat(result).isEqualTo(new BalanceTaxCycleResult(0, 1, 0));
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<List<TaxCollection>> batch = ArgumentCaptor.forClass(List.class);
+        verify(taxApi).collectBatch(batch.capture());
+        // toDefaultAccount leaves the destination unset (null → Treasury's default tax account).
+        assertThat(batch.getValue().get(0).destinationAccountId()).isNull();
+    }
+
+    @Test
+    void perFirmException_isSkipped_withoutKillingTheCycle() {
+        when(firmService.listAllActiveFirms()).thenReturn(List.of(firm(1), firm(2)));
+        // Firm 1 blows up while reading balances; firm 2 succeeds.
+        when(firmAccountService.listAccountIds(1)).thenThrow(new RuntimeException("treasury blip"));
+        when(firmAccountService.listAccountIds(2)).thenReturn(List.of(20));
+        when(treasury.getBalanceByAccountId(20)).thenReturn(new BigDecimal("100.00"));
+        when(config.getWeeklyRate(new BigDecimal("100.00"))).thenReturn(new BigDecimal("0.05"));
+        when(taxApi.collectBatch(anyList())).thenReturn(List.of(
+                new TaxResult.Collected(9L, new BigDecimal("5.00"), 500)));
+
+        BalanceTaxCycleResult result = svc.runWeeklyCycle(event);
+
+        assertThat(result).isEqualTo(new BalanceTaxCycleResult(1, 0, 0));
+    }
+
+    @Test
+    void mixedResults_areTallied_andFailuresCounted() {
+        when(firmService.listAllActiveFirms()).thenReturn(List.of(firm(1)));
+        when(firmAccountService.listAccountIds(1)).thenReturn(List.of(10, 11, 12));
+        when(treasury.getBalanceByAccountId(10)).thenReturn(new BigDecimal("100.00"));
+        when(treasury.getBalanceByAccountId(11)).thenReturn(new BigDecimal("100.00"));
+        when(treasury.getBalanceByAccountId(12)).thenReturn(new BigDecimal("100.00"));
+        when(config.getWeeklyRate(new BigDecimal("300.00"))).thenReturn(new BigDecimal("0.01"));
+        when(taxApi.collectBatch(anyList())).thenReturn(List.of(
+                new TaxResult.Collected(1L, new BigDecimal("1.00"), 500),
+                new TaxResult.Skipped("dup"),
+                new TaxResult.Failed("insufficient funds")));
+
+        BalanceTaxCycleResult result = svc.runWeeklyCycle(event);
+
+        assertThat(result).isEqualTo(new BalanceTaxCycleResult(1, 1, 1));
+    }
+}

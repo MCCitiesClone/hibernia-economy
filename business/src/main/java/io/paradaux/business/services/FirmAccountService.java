@@ -20,6 +20,13 @@ public interface FirmAccountService {
     List<Account> listAccounts(Integer firmId);
 
     /**
+     * Lists the Treasury account IDs currently linked to the firm. A lightweight
+     * read for callers that only need the IDs (e.g. balance-tax allocation) and
+     * shouldn't reach the persistence layer themselves.
+     */
+    List<Integer> listAccountIds(Integer firmId);
+
+    /**
      * Sets the default account for the firm.
      */
     void setDefaultAccount(Integer firmId, Integer accountId, UUID actorId);
