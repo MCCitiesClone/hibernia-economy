@@ -14,7 +14,13 @@ buildscript {
 
 plugins {
     java
-    id("org.flywaydb.flyway")
+    // Declared WITH its version here (not centralized in the root build) on
+    // purpose: the plugin must load on the same buildscript classloader as the
+    // flyway-mysql + JDBC driver added in the buildscript {} block above, or its
+    // DatabaseType service-loader can't see them ("No database found to handle
+    // jdbc:mysql://…"). Centralizing it via the root `apply false` splits the two
+    // onto different classloaders and breaks MySQL/MariaDB handling.
+    id("org.flywaydb.flyway") version "10.22.0"
 }
 
 group = "io.paradaux"

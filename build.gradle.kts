@@ -14,7 +14,9 @@ plugins {
     id("com.gradleup.shadow") version "9.0.2" apply false
     id("org.springframework.boot") version "4.0.3" apply false
     id("io.spring.dependency-management") version "1.1.7" apply false
-    id("org.flywaydb.flyway") version "10.22.0" apply false
+    // NOTE: org.flywaydb.flyway is intentionally NOT centralized here. It must
+    // load on the same buildscript classloader as the JDBC driver, so it's
+    // declared with its version inside economy-flyway/build.gradle.kts.
 }
 
 // The treasury-api / business-api subprojects derive their version from
