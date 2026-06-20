@@ -1,0 +1,225 @@
+logging:
+  # Log level for all Treasury loggers. Anything below this level is dropped
+  # before it reaches the server console. Valid values (most → least verbose):
+  # TRACE, DEBUG, INFO, WARN, ERROR, OFF.
+  # Default WARN keeps the console quiet during normal operation; raise to INFO
+  # to see lifecycle events, or DEBUG when diagnosing a specific issue.
+  level: WARN
+
+database:
+  host: localhost
+  port: 3306
+  database: treasury
+  username: root
+  password: password
+  # Connection pool (HikariCP). Tune for your concurrent player count and DB capacity.
+  # maximum-size is the hard cap on simultaneous DB connections — keep the sum across
+  # all plugins/services (Treasury, rest-api, ingest, business, ...) below the DB's
+  # max_connections (1000 here, so there is plenty of headroom).
+  pool:
+    maximum-size: 30             # max concurrent connections (raise for higher load)
+    minimum-idle: 10             # connections kept warm for bursts
+    connection-timeout-ms: 10000 # fail fast (10s) instead of hanging when the pool is exhausted
+    max-lifetime-ms: 1800000     # recycle connections after 30m (keep < DB wait_timeout)
+    keepalive-ms: 300000         # validate idle connections every 5m
+
+economy:
+  # Uses Java's Decimal Format system. This means $1,000.00
+  format: "$#,##0.00"
+  currency-name:
+    singular: "Redmont Dollar"
+    plural: "Redmont Dollars"
+  starting-balance: 10000
+
+bytebin:
+  post-url: "https://pastes.paradaux.io/post"
+  base-url: "https://pastes.paradaux.io/"
+
+government:
+  starting-balances-account: "starting-balances"
+  tax-income-account: "DCGovernment"
+  fines-account: "GovernmentFines"
+
+# Tax cycle scheduler — controls when Treasury fires TaxCycleEvent for each period type.
+# Consuming plugins (Realty, Business) listen for TaxCycleEvent and collect their taxes
+# inside the handler. Treasury only drives the schedule; it does not implement plugin-specific logic.
+tax:
+  cycles:
+    daily:
+      enabled: true
+      hour: 3           # Server-local hour (0-23) to fire the daily cycle
+    weekly:
+      enabled: true
+      hour: 3           # Server-local hour (0-23) to fire the weekly cycle
+      day-of-week: 1    # ISO day of week: 1=Monday, 7=Sunday
+    monthly:
+      enabled: true
+      hour: 3           # Server-local hour (0-23) to fire the monthly cycle
+      day-of-month: 1   # Day of month (1-28) to fire the monthly cycle
+
+  # Personal balance tax — collected on each login, prorated over the time since the previous login.
+  # Tax formula: tax = balance × weekly_rate × (seconds_since_last_login / 604800)
+  # Brackets are flat (the entire balance is taxed at the rate for its bracket, not marginal).
+  # The key is the bracket floor (inclusive); the value is the weekly rate as a decimal.
+  balance:
+    enabled: true
+    government-account: "DCGovernment"
+    brackets:
+      0.00:       0.0      # $0.00    – $99,999.99  → 0 %
+      100000.00:  0.01     # $100,000 – $199,999.99  → 1 %
+      200000.00:  0.012    # $200,000 – $299,999.99  → 1.2 %
+      300000.00:  0.014    # $300,000 – $499,999.99  → 1.4 %
+      500000.00:  0.018    # $500,000+               → 1.8 %
+
+  # Discord webhook — posts a summary embed after each tax cycle completes (scheduled or manual).
+  # The embed shows total collected, breakdown by destination account, and breakdown by tax source.
+  webhook:
+    enabled: false
+    # Full Discord webhook URL. Leave blank to disable even if enabled is true.
+    url: ""
+
+  # Source income tax — automatically applied whenever a player receives income via Vault deposit
+  # or via TaxApi#applySourceIncomeTax. The rate is looked up per calling plugin name, falling back
+  # to default-rate for any plugin not explicitly listed.
+  source-income-tax:
+    enabled: false
+    # Fallback rate applied when the calling plugin is not listed in plugin-rates.
+    # 0.0 = no tax; 0.08 = 8%. Must be a decimal in the range [0, 1].
+    default-rate: 0.0
+    # Name of the GOVERNMENT Treasury account that receives income tax proceeds.
+    government-account: "DCGovernment"
+    # Per-plugin income tax rates. The key is the Bukkit plugin name (case-sensitive).
+    # Leave empty to apply only the default rate to all plugins.
+    plugin-rates:
+      # Realty: 0.08
+      # Business: 0.10
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Government salaries — a recurring timer pays ONLINE players a salary from a
+# GOVERNMENT account based on their LuckPerms group. A player in several salaried
+# groups is paid the HIGHEST single salary (their top-paying role); salaries are
+# not summed. Players who are offline, or whose groups have no positive salary,
+# are not paid. Requires LuckPerms.
+salaries:
+  enabled: true
+  # GOVERNMENT account the salaries are paid from (unlimited faucet).
+  government-account: "DCGovernment"
+  # Seconds between payout cycles (900 = 15 minutes).
+  interval: 900
+  # LuckPerms group name -> salary amount. Group names are matched case-insensitively.
+  amount:
+    chiefjustice: 75.0
+    president: 75.0
+    vicepresident: 75.0
+    speaker: 75.0
+    presidentofthesenate: 75.0
+    captain: 70.0
+    justice: 65.0
+    judge: 65.0
+    statesec: 65.0
+    homelandsec: 65.0
+    commercesec: 65.0
+    publicaffairssec: 65.0
+    constructionsec: 65.0
+    healthsec: 65.0
+    environmentsec: 65.0
+    educationsec: 65.0
+    attorneygeneral: 65.0
+    deputyspeaker: 65.0
+    representative: 65.0
+    deputypresidentofthesenate: 65.0
+    senator: 65.0
+    reservemember: 65.0
+    lieutenant: 65.0
+    afcrmajor: 65.0
+    solicitorgeneral: 60.0
+    sergeant: 60.0
+    educationmanager: 60.0
+    informationmanager: 60.0
+    rbidirector: 60.0
+    senioreconomist: 60.0
+    afcrcaptain: 60.0
+    detective: 55.0
+    guidancemanager: 55.0
+    afcrlieutenant: 55.0
+    magistrate: 50.0
+    courtclerk: 50.0
+    chiefofstaff: 50.0
+    specialadvisor: 50.0
+    pressassistantexecutive: 50.0
+    ambassador: 50.0
+    clerk: 50.0
+    draftsman: 50.0
+    auditmanager: 50.0
+    eventmanager: 50.0
+    mediamanager: 50.0
+    constructionmanager: 50.0
+    inspectionmanager: 50.0
+    medicalspecialist: 50.0
+    seniorranger: 50.0
+    supplymanager: 50.0
+    policeofficer: 50.0
+    electoralmanager: 50.0
+    electoralofficer: 50.0
+    guide: 50.0
+    electionmanager: 45.0
+    epidemiologist: 45.0
+    afcrwarrantofficer: 45.0
+    doctor: 40.0
+    ranger: 40.0
+    recruit: 40.0
+    auditor: 40.0
+    specialprosecutor: 40.0
+    stateprosecutor: 40.0
+    investigator: 40.0
+    economist: 40.0
+    complianceofficer: 40.0
+    eventcoordinator: 40.0
+    mediaadvisor: 40.0
+    eventdesigner: 40.0
+    constructor: 40.0
+    builder: 40.0
+    buildinginspector: 40.0
+    supplyofficer: 40.0
+    informationofficer: 40.0
+    professor: 40.0
+    afcrsergeant: 40.0
+    apprentice: 35.0
+    traineedoctor: 35.0
+    afcrcorporal: 35.0
+    inspectionofficer: 30.0
+    afcrprivate: 30.0
+    afcrecruit: 25.0
+    jeweller: 20.0
+    pharmacist: 20.0
+    realtor: 20.0
+    mason: 20.0
+    armourer: 20.0
+    mechanic: 20.0
+    farmer: 20.0
+    author: 20.0
+    accountant: 20.0
+    chef: 20.0
+    mercenary: 20.0
+    miner: 20.0
+    brewer: 20.0
+    contractor: 20.0
+    lumberjack: 20.0
+    fisher: 20.0
+    designer: 20.0
+    carpenter: 20.0
+    attorney: 20.0
+    solicitor: 20.0
+    barrister: 20.0
+    immigrant: 15.0
+    aventura-mayor: 0
+    oakridge-mayor: 0
+    willow-mayor: 0
+    paramedic: 0
+    owner: 0
+    manager: 0
+    senioradministrator: 0
+    administrator: 0
+    moderator: 0
+    trialmoderator: 0

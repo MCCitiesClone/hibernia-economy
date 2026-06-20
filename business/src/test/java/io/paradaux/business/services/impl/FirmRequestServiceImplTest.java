@@ -1,0 +1,425 @@
+package io.paradaux.business.services.impl;
+
+import io.paradaux.hibernia.framework.exceptions.BadCommandException;
+import io.paradaux.hibernia.framework.exceptions.InternalException;
+import io.paradaux.hibernia.framework.exceptions.NoPermissionException;
+import io.paradaux.hibernia.framework.exceptions.NotFoundException;
+import io.paradaux.business.mappers.FirmRequestMapper;
+import io.paradaux.business.model.Firm;
+import io.paradaux.business.model.RolePermission;
+import io.paradaux.business.services.FirmAccountService;
+import io.paradaux.business.services.FirmService;
+import io.paradaux.business.services.FirmStaffService;
+import org.apache.ibatis.exceptions.PersistenceException;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.sql.SQLIntegrityConstraintViolationException;
+import java.time.LocalDateTime;
+import java.util.UUID;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+@ExtendWith(MockitoExtension.class)
+class FirmRequestServiceImplTest {
+
+    @Mock FirmRequestMapper requests;
+    @Mock FirmService firms;
+    @Mock FirmStaffService staff;
+    @Mock FirmAccountService accounts;
+
+    private FirmRequestServiceImpl svc;
+
+    private final UUID actor = UUID.randomUUID();
+    private final UUID target = UUID.randomUUID();
+
+    @BeforeEach
+    void setUp() {
+        svc = new FirmRequestServiceImpl(requests, firms, staff, accounts);
+    }
+
+    private Firm firm() {
+        Firm f = new Firm();
+        f.setFirmId(1);
+        f.setProprietorUuid(UUID.randomUUID().toString());
+        return f;
+    }
+
+    private Firm firmOwnedBy(UUID owner) {
+        Firm f = firm();
+        f.setProprietorUuid(owner.toString());
+        return f;
+    }
+
+    // ---------- offerEmployment ----------
+
+    @Test
+    void offerEmployment_unknownFirm_throws() {
+        when(firms.getFirmByNameOrId("Ghost")).thenReturn(null);
+        assertThatThrownBy(() -> svc.offerEmployment("Ghost", target, actor))
+                .isInstanceOf(NotFoundException.class);
+    }
+
+    @Test
+    void offerEmployment_requiresAdminPermission() {
+        when(firms.getFirmByNameOrId("Acme")).thenReturn(firm());
+        when(staff.hasPermission(1, actor, RolePermission.ADMIN)).thenReturn(false);
+        assertThatThrownBy(() -> svc.offerEmployment("Acme", target, actor))
+                .isInstanceOf(NoPermissionException.class);
+    }
+
+    @Test
+    void offerEmployment_alreadyEmployed_throws() {
+        when(firms.getFirmByNameOrId("Acme")).thenReturn(firm());
+        when(staff.hasPermission(1, actor, RolePermission.ADMIN)).thenReturn(true);
+        when(staff.isEmployedBy(1, target)).thenReturn(true);
+        assertThatThrownBy(() -> svc.offerEmployment("Acme", target, actor))
+                .isInstanceOf(BadCommandException.class);
+    }
+
+    @Test
+    void offerEmployment_cannotOfferSelf() {
+        when(firms.getFirmByNameOrId("Acme")).thenReturn(firm());
+        when(staff.hasPermission(1, actor, RolePermission.ADMIN)).thenReturn(true);
+        when(staff.isEmployedBy(1, actor)).thenReturn(false);
+        assertThatThrownBy(() -> svc.offerEmployment("Acme", actor, actor))
+                .isInstanceOf(BadCommandException.class);
+    }
+
+    @Test
+    void offerEmployment_alreadyPending_throws() {
+        when(firms.getFirmByNameOrId("Acme")).thenReturn(firm());
+        when(staff.hasPermission(1, actor, RolePermission.ADMIN)).thenReturn(true);
+        when(staff.isEmployedBy(1, target)).thenReturn(false);
+        when(requests.hasPendingJobOffer(1, target.toString())).thenReturn(true);
+        assertThatThrownBy(() -> svc.offerEmployment("Acme", target, actor))
+                .isInstanceOf(BadCommandException.class);
+    }
+
+    @Test
+    void offerEmployment_succeeds() {
+        when(firms.getFirmByNameOrId("Acme")).thenReturn(firm());
+        when(staff.hasPermission(1, actor, RolePermission.ADMIN)).thenReturn(true);
+        when(staff.isEmployedBy(1, target)).thenReturn(false);
+        when(requests.hasPendingJobOffer(1, target.toString())).thenReturn(false);
+        when(requests.createInvite(eq(1), eq(target.toString()), eq(actor.toString()), any(LocalDateTime.class))).thenReturn(1);
+
+        svc.offerEmployment("Acme", target, actor);
+        verify(requests).createInvite(eq(1), eq(target.toString()), eq(actor.toString()), any(LocalDateTime.class));
+    }
+
+    @Test
+    void offerEmployment_zeroRowsThrowsInternal() {
+        when(firms.getFirmByNameOrId("Acme")).thenReturn(firm());
+        when(staff.hasPermission(1, actor, RolePermission.ADMIN)).thenReturn(true);
+        when(staff.isEmployedBy(1, target)).thenReturn(false);
+        when(requests.hasPendingJobOffer(1, target.toString())).thenReturn(false);
+        when(requests.createInvite(anyInt(), anyString(), anyString(), any())).thenReturn(0);
+
+        assertThatThrownBy(() -> svc.offerEmployment("Acme", target, actor))
+                .isInstanceOf(InternalException.class);
+    }
+
+    // ---------- rescindEmploymentOffer ----------
+
+    @Test
+    void rescindEmploymentOffer_succeeds() {
+        when(firms.getFirmByNameOrId("Acme")).thenReturn(firm());
+        when(staff.hasPermission(1, actor, RolePermission.ADMIN)).thenReturn(true);
+        when(staff.isEmployedBy(1, target)).thenReturn(false);
+        when(requests.hasPendingJobOffer(1, target.toString())).thenReturn(true);
+        when(requests.rescindInvite(1, target.toString())).thenReturn(1);
+
+        svc.rescindEmploymentOffer("Acme", target, actor);
+        verify(requests).rescindInvite(1, target.toString());
+    }
+
+    @Test
+    void rescindEmploymentOffer_zeroRowsThrowsInternal() {
+        when(firms.getFirmByNameOrId("Acme")).thenReturn(firm());
+        when(staff.hasPermission(1, actor, RolePermission.ADMIN)).thenReturn(true);
+        when(staff.isEmployedBy(1, target)).thenReturn(false);
+        when(requests.hasPendingJobOffer(1, target.toString())).thenReturn(true);
+        when(requests.rescindInvite(1, target.toString())).thenReturn(0);
+
+        assertThatThrownBy(() -> svc.rescindEmploymentOffer("Acme", target, actor))
+                .isInstanceOf(InternalException.class);
+    }
+
+    @Test
+    void rescindEmploymentOffer_unknownFirm_throws() {
+        when(firms.getFirmByNameOrId("Ghost")).thenReturn(null);
+        assertThatThrownBy(() -> svc.rescindEmploymentOffer("Ghost", target, actor))
+                .isInstanceOf(NotFoundException.class);
+    }
+
+    @Test
+    void rescindEmploymentOffer_alreadyEmployedThrows() {
+        when(firms.getFirmByNameOrId("Acme")).thenReturn(firm());
+        when(staff.hasPermission(1, actor, RolePermission.ADMIN)).thenReturn(true);
+        when(staff.isEmployedBy(1, target)).thenReturn(true);
+        assertThatThrownBy(() -> svc.rescindEmploymentOffer("Acme", target, actor))
+                .isInstanceOf(BadCommandException.class);
+    }
+
+    @Test
+    void rescindEmploymentOffer_cannotTargetSelf() {
+        when(firms.getFirmByNameOrId("Acme")).thenReturn(firm());
+        when(staff.hasPermission(1, actor, RolePermission.ADMIN)).thenReturn(true);
+        when(staff.isEmployedBy(1, actor)).thenReturn(false);
+        assertThatThrownBy(() -> svc.rescindEmploymentOffer("Acme", actor, actor))
+                .isInstanceOf(BadCommandException.class);
+    }
+
+    @Test
+    void rescindEmploymentOffer_noPendingThrows() {
+        when(firms.getFirmByNameOrId("Acme")).thenReturn(firm());
+        when(staff.hasPermission(1, actor, RolePermission.ADMIN)).thenReturn(true);
+        when(staff.isEmployedBy(1, target)).thenReturn(false);
+        when(requests.hasPendingJobOffer(1, target.toString())).thenReturn(false);
+        assertThatThrownBy(() -> svc.rescindEmploymentOffer("Acme", target, actor))
+                .isInstanceOf(BadCommandException.class);
+    }
+
+    // ---------- accept / reject ----------
+
+    @Test
+    void acceptEmploymentOffer_unknownFirm_throws() {
+        when(firms.getFirmByNameOrId("Ghost")).thenReturn(null);
+        assertThatThrownBy(() -> svc.acceptEmploymentOffer("Ghost", target))
+                .isInstanceOf(NotFoundException.class);
+    }
+
+    @Test
+    void acceptEmploymentOffer_noPendingThrows() {
+        when(firms.getFirmByNameOrId("Acme")).thenReturn(firm());
+        when(requests.hasPendingJobOffer(1, target.toString())).thenReturn(false);
+        assertThatThrownBy(() -> svc.acceptEmploymentOffer("Acme", target))
+                .isInstanceOf(BadCommandException.class);
+    }
+
+    @Test
+    void acceptEmploymentOffer_lockedNullThrows() {
+        when(firms.getFirmByNameOrId("Acme")).thenReturn(firm());
+        when(requests.hasPendingJobOffer(1, target.toString())).thenReturn(true);
+        when(requests.lockPendingInviter(1, target.toString())).thenReturn(null);
+        assertThatThrownBy(() -> svc.acceptEmploymentOffer("Acme", target))
+                .isInstanceOf(BadCommandException.class);
+    }
+
+    @Test
+    void acceptEmploymentOffer_zeroAcceptsThrowsInternal() {
+        when(firms.getFirmByNameOrId("Acme")).thenReturn(firm());
+        when(requests.hasPendingJobOffer(1, target.toString())).thenReturn(true);
+        when(requests.lockPendingInviter(1, target.toString())).thenReturn(actor.toString());
+        when(requests.acceptInvite(1, target.toString())).thenReturn(0);
+        assertThatThrownBy(() -> svc.acceptEmploymentOffer("Acme", target))
+                .isInstanceOf(InternalException.class);
+        verify(staff, never()).hireEmployee(anyInt(), any(), any());
+    }
+
+    @Test
+    void acceptEmploymentOffer_hiresOnSuccess() {
+        when(firms.getFirmByNameOrId("Acme")).thenReturn(firm());
+        when(requests.hasPendingJobOffer(1, target.toString())).thenReturn(true);
+        when(requests.lockPendingInviter(1, target.toString())).thenReturn(actor.toString());
+        when(requests.acceptInvite(1, target.toString())).thenReturn(1);
+
+        svc.acceptEmploymentOffer("Acme", target);
+        // The invite-acceptance path goes through hireEmployeeFromInvite, which
+        // skips the ADMIN check on the inviter — see FirmStaffService Javadoc.
+        verify(staff).hireEmployeeFromInvite(1, target, actor);
+    }
+
+    @Test
+    void rejectEmploymentOffer_unknownFirm_throws() {
+        when(firms.getFirmByNameOrId("Ghost")).thenReturn(null);
+        assertThatThrownBy(() -> svc.rejectEmploymentOffer("Ghost", target))
+                .isInstanceOf(NotFoundException.class);
+    }
+
+    @Test
+    void rejectEmploymentOffer_noPendingThrows() {
+        when(firms.getFirmByNameOrId("Acme")).thenReturn(firm());
+        when(requests.hasPendingJobOffer(1, target.toString())).thenReturn(false);
+        assertThatThrownBy(() -> svc.rejectEmploymentOffer("Acme", target))
+                .isInstanceOf(BadCommandException.class);
+    }
+
+    @Test
+    void rejectEmploymentOffer_zeroRowsThrowsInternal() {
+        when(firms.getFirmByNameOrId("Acme")).thenReturn(firm());
+        when(requests.hasPendingJobOffer(1, target.toString())).thenReturn(true);
+        when(requests.rejectInvite(1, target.toString())).thenReturn(0);
+        assertThatThrownBy(() -> svc.rejectEmploymentOffer("Acme", target))
+                .isInstanceOf(InternalException.class);
+    }
+
+    @Test
+    void rejectEmploymentOffer_succeeds() {
+        when(firms.getFirmByNameOrId("Acme")).thenReturn(firm());
+        when(requests.hasPendingJobOffer(1, target.toString())).thenReturn(true);
+        when(requests.rejectInvite(1, target.toString())).thenReturn(1);
+        svc.rejectEmploymentOffer("Acme", target);
+        verify(requests).rejectInvite(1, target.toString());
+    }
+
+    // ---------- transfer proprietorship ----------
+
+    @Test
+    void beginTransferProprietorship_cannotTargetSelf() {
+        when(firms.getFirmByNameOrId("Acme")).thenReturn(firmOwnedBy(actor));
+        assertThatThrownBy(() -> svc.beginTransferProprietorship("Acme", actor, actor))
+                .isInstanceOf(BadCommandException.class);
+    }
+
+    @Test
+    void beginTransferProprietorship_returnsCode() {
+        when(firms.getFirmByNameOrId("Acme")).thenReturn(firmOwnedBy(actor));
+        String code = svc.beginTransferProprietorship("Acme", target, actor);
+        assertThat(code).isNotBlank();
+        verify(requests).createTransferRequest(eq(1), eq(target.toString()), eq(code), any());
+    }
+
+    @Test
+    void beginTransferProprietorship_duplicateGetsFriendlyError() {
+        when(firms.getFirmByNameOrId("Acme")).thenReturn(firmOwnedBy(actor));
+        PersistenceException pex = new PersistenceException(new SQLIntegrityConstraintViolationException("dup"));
+        when(requests.createTransferRequest(anyInt(), anyString(), anyString(), any())).thenThrow(pex);
+        assertThatThrownBy(() -> svc.beginTransferProprietorship("Acme", target, actor))
+                .isInstanceOf(BadCommandException.class);
+    }
+
+    @Test
+    void beginTransferProprietorship_nonProprietor_throws() {
+        // firm() has a random proprietor, so `actor` is not the owner.
+        when(firms.getFirmByNameOrId("Acme")).thenReturn(firm());
+        assertThatThrownBy(() -> svc.beginTransferProprietorship("Acme", target, actor))
+                .isInstanceOf(io.paradaux.hibernia.framework.exceptions.NoPermissionException.class);
+        verify(requests, never()).createTransferRequest(anyInt(), anyString(), anyString(), any());
+    }
+
+    @Test
+    void confirmTransferProprietorship_unknownFirm_throws() {
+        when(firms.getFirmByNameOrId("Ghost")).thenReturn(null);
+        assertThatThrownBy(() -> svc.confirmTransferProprietorship("Ghost", target, "code", actor))
+                .isInstanceOf(NotFoundException.class);
+    }
+
+    @Test
+    void confirmTransferProprietorship_nonProprietor_throws() {
+        Firm f = firm(); // proprietor is some random UUID
+        when(firms.getFirmByNameOrId("Acme")).thenReturn(f);
+        assertThatThrownBy(() -> svc.confirmTransferProprietorship("Acme", target, "code", actor))
+                .isInstanceOf(io.paradaux.hibernia.framework.exceptions.NoPermissionException.class);
+    }
+
+    @Test
+    void confirmTransferProprietorship_returnsTrueIfRowsAffected() {
+        Firm f = firm();
+        UUID owner = UUID.fromString(f.getProprietorUuid());
+        when(firms.getFirmByNameOrId("Acme")).thenReturn(f);
+        when(requests.confirmTransfer(1, target.toString(), "code")).thenReturn(1);
+        assertThat(svc.confirmTransferProprietorship("Acme", target, "code", owner)).isTrue();
+    }
+
+    @Test
+    void confirmTransferProprietorship_returnsFalseIfNoRows() {
+        Firm f = firm();
+        UUID owner = UUID.fromString(f.getProprietorUuid());
+        when(firms.getFirmByNameOrId("Acme")).thenReturn(f);
+        when(requests.confirmTransfer(1, target.toString(), "code")).thenReturn(0);
+        assertThat(svc.confirmTransferProprietorship("Acme", target, "code", owner)).isFalse();
+    }
+
+    @Test
+    void cancelTransferProprietorship_unknownFirm_throws() {
+        when(firms.getFirmByNameOrId("Ghost")).thenReturn(null);
+        assertThatThrownBy(() -> svc.cancelTransferProprietorship("Ghost", target, actor))
+                .isInstanceOf(NotFoundException.class);
+    }
+
+    @Test
+    void cancelTransferProprietorship_callsReject() {
+        when(firms.getFirmByNameOrId("Acme")).thenReturn(firm());
+        svc.cancelTransferProprietorship("Acme", target, actor);
+        verify(requests).rejectTransfer(1, target.toString());
+    }
+
+    @Test
+    void completeTransferProprietorship_unknownFirm_throws() {
+        when(firms.getFirmByNameOrId("Ghost")).thenReturn(null);
+        assertThatThrownBy(() -> svc.completeTransferProprietorship("Ghost", target))
+                .isInstanceOf(NotFoundException.class);
+    }
+
+    @Test
+    void completeTransferProprietorship_resignsIfNewProprietorEmployed() {
+        Firm f = firm();
+        when(firms.getFirmByNameOrId("Acme")).thenReturn(f);
+        when(requests.acceptTransfer(1, target.toString())).thenReturn(1);
+        when(staff.isEmployedBy(1, target)).thenReturn(true);
+
+        UUID old = svc.completeTransferProprietorship("Acme", target);
+        assertThat(old).isEqualTo(UUID.fromString(f.getProprietorUuid()));
+
+        verify(staff).resignFromFirm("Acme", target);
+        verify(requests).acceptTransfer(1, target.toString());
+        verify(firms).updateProprietor(1, target);
+        // Treasury access must be reconciled to the new proprietor (PAR-141).
+        verify(accounts).reassignAccountsToNewProprietor(1, target);
+    }
+
+    @Test
+    void completeTransferProprietorship_skipsResignWhenNotEmployed() {
+        Firm f = firm();
+        when(firms.getFirmByNameOrId("Acme")).thenReturn(f);
+        when(requests.acceptTransfer(1, target.toString())).thenReturn(1);
+        when(staff.isEmployedBy(1, target)).thenReturn(false);
+
+        svc.completeTransferProprietorship("Acme", target);
+        verify(staff, never()).resignFromFirm(any(), any());
+    }
+
+    @Test
+    void completeTransferProprietorship_noConfirmedRequest_throws() {
+        // acceptTransfer returns 0 (no CONFIRMED, non-expired request) → refuse
+        // and never hand over the firm. This is the firm-theft guard.
+        Firm f = firm();
+        when(firms.getFirmByNameOrId("Acme")).thenReturn(f);
+        when(requests.acceptTransfer(1, target.toString())).thenReturn(0);
+
+        assertThatThrownBy(() -> svc.completeTransferProprietorship("Acme", target))
+                .isInstanceOf(BadCommandException.class);
+        verify(firms, never()).updateProprietor(anyInt(), any());
+        verify(staff, never()).resignFromFirm(any(), any());
+        verify(accounts, never()).reassignAccountsToNewProprietor(anyInt(), any());
+    }
+
+    @Test
+    void rejectTransferProprietorship_unknownFirm_throws() {
+        when(firms.getFirmByNameOrId("Ghost")).thenReturn(null);
+        assertThatThrownBy(() -> svc.rejectTransferProprietorship("Ghost", target))
+                .isInstanceOf(NotFoundException.class);
+    }
+
+    @Test
+    void rejectTransferProprietorship_returnsCurrentProprietor() {
+        Firm f = firm();
+        when(firms.getFirmByNameOrId("Acme")).thenReturn(f);
+        UUID returned = svc.rejectTransferProprietorship("Acme", target);
+        assertThat(returned).isEqualTo(UUID.fromString(f.getProprietorUuid()));
+        verify(requests).rejectTransfer(1, target.toString());
+    }
+}

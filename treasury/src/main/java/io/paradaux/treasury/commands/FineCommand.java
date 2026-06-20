@@ -1,0 +1,281 @@
+package io.paradaux.treasury.commands;
+
+import com.google.inject.Inject;
+import io.paradaux.hibernia.framework.commander.annotations.*;
+import io.paradaux.hibernia.framework.commander.spi.CommandHandler;
+import io.paradaux.hibernia.framework.i18n.Message;
+import io.paradaux.treasury.api.exceptions.FineAlreadyRevokedException;
+import io.paradaux.treasury.api.exceptions.FineNotFoundException;
+import io.paradaux.treasury.api.exceptions.GovAccountNotFoundException;
+import io.paradaux.treasury.api.exceptions.InsufficientFineFundsException;
+import io.paradaux.treasury.model.economy.Account;
+import io.paradaux.treasury.model.economy.GovernmentFine;
+import io.paradaux.treasury.services.AccountService;
+import io.paradaux.treasury.services.GovService;
+import io.paradaux.treasury.services.MembershipService;
+import io.paradaux.treasury.utils.Money;
+import org.bukkit.Bukkit;
+import org.bukkit.OfflinePlayer;
+import org.bukkit.entity.Player;
+
+import java.math.BigDecimal;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
+import java.util.UUID;
+
+@Command({"fine"})
+@Permission("treasury.gov.fine")
+public class FineCommand implements CommandHandler {
+
+    private static final DateTimeFormatter DATE_FMT =
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm").withZone(ZoneId.systemDefault());
+
+    private final AccountService accountService;
+    private final GovService govService;
+    private final MembershipService membershipService;
+    private final Message message;
+
+    @Inject
+    public FineCommand(AccountService accountService,
+                       GovService govService,
+                       MembershipService membershipService,
+                       Message message) {
+        this.accountService    = accountService;
+        this.govService        = govService;
+        this.membershipService = membershipService;
+        this.message           = message;
+    }
+
+    @Route("")
+    @Description("Show /fine help")
+    public void root(@Sender Player sender) {
+        message.send(sender, "treasury.help.fine");
+    }
+
+    @Route("help")
+    @Description("Show /fine help")
+    public void help(@Sender Player sender) {
+        message.send(sender, "treasury.help.fine");
+    }
+
+    @Route("issue <account> <player> <amount> <reason>")
+    @Async
+    @Description("Issue a fine paid into a government account")
+    public void issue(@Sender Player sender,
+                      @Arg("account") String accountName,
+                      @Arg("player") OfflinePlayer target,
+                      @Arg("amount") BigDecimal amount,
+                      @GreedyArg("reason") String reason) {
+        // Access is decided per-account: a member or authorizer of the account
+        // (or an admin) may fine into it — the same gate as /government pay.
+        Account account = resolveGovAccount(accountName, sender);
+        if (account == null) return;
+        if (!canFineFrom(sender, account)) {
+            message.send(sender, "treasury.gov.no-access");
+            return;
+        }
+
+        if (target == null || (!target.hasPlayedBefore() && !target.isOnline())) {
+            message.send(sender, "treasury.general.unknown-player");
+            return;
+        }
+        // Pre-validate against the service's full amount rules (positive, ≤ 2
+        // decimal places, ≥ $0.01) so a malformed amount surfaces as
+        // "invalid-amount" instead of leaking through the service's IAE path
+        // below — which was previously mis-routed to "unknown-player".
+        try {
+            Money.requirePositive(amount, "fine amount > 0");
+        } catch (IllegalArgumentException e) {
+            message.send(sender, "treasury.general.invalid-amount");
+            return;
+        }
+
+        GovernmentFine fine;
+        try {
+            fine = govService.issueFine(target.getUniqueId(), account.getAccountId(), amount, reason, sender.getUniqueId());
+        } catch (InsufficientFineFundsException e) {
+            message.send(sender, "treasury.fine.insufficient", "player", target.getName());
+            return;
+        } catch (GovAccountNotFoundException e) {
+            message.send(sender, "treasury.gov.not-found", "account", e.getIdentifier());
+            return;
+        } catch (IllegalArgumentException e) {
+            // Player has no PERSONAL account on file (rare; covered by the
+            // `target.hasPlayedBefore()` precondition above for normal flows).
+            message.send(sender, "treasury.general.unknown-player");
+            return;
+        }
+
+        String formattedAmount = accountService.formatAmount(fine.getAmount());
+        message.send(sender, "treasury.fine.issued",
+                "player", target.getName(),
+                "amount", formattedAmount,
+                "reason", reason);
+
+        Player online = target.getPlayer();
+        if (online != null) {
+            message.send(online, "treasury.fine.issued.notify",
+                    "amount", formattedAmount,
+                    "reason", reason);
+        }
+    }
+
+    @Route("revoke <id>")
+    @Async
+    @Description("Revoke a previously issued fine")
+    public void revoke(@Sender Player sender, @Arg("id") long fineId) {
+        // Only someone with access to the account the fine was paid into may
+        // revoke it (refunds come out of that account).
+        GovernmentFine existing = govService.getFine(fineId);
+        if (existing == null) {
+            message.send(sender, "treasury.fine.not-found", "id", String.valueOf(fineId));
+            return;
+        }
+        Account account = accountService.getAccountById(existing.getGovAccountId());
+        if (account == null) {
+            message.send(sender, "treasury.gov.not-found", "account", String.valueOf(existing.getGovAccountId()));
+            return;
+        }
+        if (!canFineFrom(sender, account)) {
+            message.send(sender, "treasury.gov.no-access");
+            return;
+        }
+
+        GovernmentFine fine;
+        try {
+            fine = govService.revokeFine(fineId, sender.getUniqueId());
+        } catch (FineNotFoundException e) {
+            message.send(sender, "treasury.fine.not-found", "id", String.valueOf(fineId));
+            return;
+        } catch (FineAlreadyRevokedException e) {
+            message.send(sender, "treasury.fine.already-revoked", "id", String.valueOf(fineId));
+            return;
+        } catch (GovAccountNotFoundException e) {
+            message.send(sender, "treasury.gov.not-found", "account", e.getIdentifier());
+            return;
+        }
+
+        String playerName = resolvePlayerName(fine.getPlayerUuid());
+        String formattedAmount = accountService.formatAmount(fine.getAmount());
+        message.send(sender, "treasury.fine.revoked",
+                "id", String.valueOf(fineId),
+                "player", playerName,
+                "amount", formattedAmount);
+
+        Player online = Bukkit.getPlayer(fine.getPlayerUuid());
+        if (online != null) {
+            message.send(online, "treasury.fine.revoked.notify",
+                    "amount", formattedAmount,
+                    "reason", fine.getReason());
+        }
+    }
+
+    @Route("list")
+    @Permission("treasury.gov.fine.view")
+    @Async
+    @Description("List your own fines")
+    public void listSelf(@Sender Player sender) {
+        listFines(sender, sender);
+    }
+
+    @Route("list <player>")
+    @Permission("treasury.gov.fine.view")
+    @Async
+    @Description("List fines for a player")
+    public void listPlayer(@Sender Player sender, @Arg("player") OfflinePlayer target) {
+        if (target == null || (!target.hasPlayedBefore() && !target.isOnline())) {
+            message.send(sender, "treasury.general.unknown-player");
+            return;
+        }
+        listFines(sender, target);
+    }
+
+    @Route("info <id>")
+    @Permission("treasury.gov.fine.view")
+    @Async
+    @Description("View details of a fine")
+    public void info(@Sender Player sender, @Arg("id") long fineId) {
+        GovernmentFine fine = govService.getFine(fineId);
+        if (fine == null) {
+            message.send(sender, "treasury.fine.not-found", "id", String.valueOf(fineId));
+            return;
+        }
+
+        String playerName = resolvePlayerName(fine.getPlayerUuid());
+        String issuerName = resolvePlayerName(fine.getIssuedBy());
+        String formattedAmount = accountService.formatAmount(fine.getAmount());
+        String issuedDate = fine.getIssuedAt() != null ? DATE_FMT.format(fine.getIssuedAt()) : "—";
+
+        message.send(sender, "treasury.fine.info",
+                "id", String.valueOf(fineId),
+                "player", playerName,
+                "amount", formattedAmount);
+        message.send(sender, "treasury.fine.info.detail",
+                "reason", sanitize(fine.getReason()),
+                "issuer", issuerName,
+                "date", issuedDate);
+
+        if (fine.isRevoked()) {
+            String revokerName = fine.getRevokedBy() != null ? resolvePlayerName(fine.getRevokedBy()) : "—";
+            String revokeDate = fine.getRevokedAt() != null ? DATE_FMT.format(fine.getRevokedAt()) : "—";
+            message.send(sender, "treasury.fine.info.revoked",
+                    "revoker", revokerName,
+                    "revoke_date", revokeDate);
+        }
+    }
+
+    // ---- Private helpers ----
+
+    /** Resolve a non-archived GOVERNMENT account by name, messaging the sender on miss. */
+    private Account resolveGovAccount(String name, Player sender) {
+        Account account = accountService.getGovernmentAccountByName(name);
+        if (account == null || account.isArchived()) {
+            message.send(sender, "treasury.gov.not-found", "account", name);
+            return null;
+        }
+        return account;
+    }
+
+    /**
+     * Who may fine into / revoke from a government account: members and authorizers
+     * of the account, or an admin. Mirrors {@code GovCommand.canTransferFrom} so the
+     * same people who can move a department's money can also manage its fines.
+     */
+    private boolean canFineFrom(Player player, Account account) {
+        return player.hasPermission("treasury.gov.admin")
+                || membershipService.isMember(account.getAccountId(), player.getUniqueId())
+                || membershipService.isAuthorizer(account.getAccountId(), player.getUniqueId());
+    }
+
+    private void listFines(Player sender, OfflinePlayer target) {
+        List<GovernmentFine> fines = govService.getPlayerFines(target.getUniqueId());
+        if (fines.isEmpty()) {
+            message.send(sender, "treasury.fine.list.empty");
+            return;
+        }
+        message.send(sender, "treasury.fine.list.header", "player", target.getName());
+        for (GovernmentFine fine : fines) {
+            String formattedAmount = accountService.formatAmount(fine.getAmount());
+            String date = fine.getIssuedAt() != null ? DATE_FMT.format(fine.getIssuedAt()) : "—";
+            String revokedTag = fine.isRevoked() ? " <gray>[REVOKED]</gray>" : "";
+            message.send(sender, "treasury.fine.list.entry",
+                    "id", String.valueOf(fine.getFineId()),
+                    "amount", formattedAmount,
+                    "reason", sanitize(fine.getReason()),
+                    "date", date,
+                    "revoked_tag", revokedTag);
+        }
+    }
+
+    private String resolvePlayerName(UUID uuid) {
+        if (uuid == null) return "—";
+        OfflinePlayer op = Bukkit.getOfflinePlayer(uuid);
+        String name = op.getName();
+        return name != null ? name : uuid.toString();
+    }
+
+    private static String sanitize(String input) {
+        return input.replace("<", "\\<");
+    }
+}

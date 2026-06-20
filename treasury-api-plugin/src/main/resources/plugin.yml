@@ -1,0 +1,63 @@
+name: TreasuryAPI
+version: '2.1.0'
+main: io.paradaux.treasuryapi.TreasuryAPI
+api-version: '1.21'
+depend: [ Treasury, Business ]
+softdepend: [ LuckPerms ]
+
+commands:
+    treasuryapi:
+        description: TreasuryAPI key management commands
+        usage: /treasuryapi
+        permission: treasuryapi.command
+        permission-message: You don't have permission.
+
+permissions:
+    treasuryapi.command:
+        description: Access to /treasuryapi
+        default: op
+
+    # Personal key permissions
+    treasuryapi.personal.issue:
+        description: Issue a personal API key
+        default: true
+    treasuryapi.personal.list:
+        description: List personal API keys
+        default: true
+    treasuryapi.personal.export:
+        description: Export a personal API key token to a URL
+        default: true
+    treasuryapi.personal.reissue:
+        description: Reissue (rotate) a personal API key
+        default: true
+    treasuryapi.personal.revoke:
+        description: Revoke a personal API key
+        default: true
+
+    # Business key permissions
+    treasuryapi.business.issue:
+        description: Issue a business (firm-scoped) API key
+        default: true
+    treasuryapi.business.list:
+        description: List business API keys
+        default: true
+    treasuryapi.business.export:
+        description: Export a business API key token to a URL
+        default: true
+    treasuryapi.business.reissue:
+        description: Reissue (rotate) a business API key
+        default: true
+    treasuryapi.business.revoke:
+        description: Revoke a business API key
+        default: true
+
+    # Explorer UI access
+    treasuryapi.ui.user:
+        description: Grant/revoke explorer roles (admin/government)
+        default: op
+    treasuryapi.ui.link:
+        description: Link your own Minecraft account to your explorer login
+        default: true
+    treasuryapi.ui.sync:
+        description: Sync your own explorer roles from your in-game ranks
+        default: true

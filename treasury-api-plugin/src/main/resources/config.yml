@@ -1,0 +1,30 @@
+database:
+  host: localhost
+  port: 3306
+  database: treasury
+  username: root
+  password: password
+  table-prefix: treasury_
+
+api:
+  jwt-secret: change-me-please-use-a-long-random-secret-key
+
+# Keycloak Admin API for the in-game account-linking flow (/treasuryapi ui link).
+# Disabled by default; enable per server and set the service-account client
+# secret out-of-band (never commit a real secret).
+keycloak:
+  enabled: false
+  base-url: https://auth.paradaux.io
+  realm: minecraft
+  client-id: treasury-api-plugin
+  client-secret: ""
+
+# Reconciliation cron: syncs LuckPerms membership into explorer access groups.
+# Each explorer_group with a luckperms_node set has its 'luckperms'-sourced
+# members reconciled to match that node. The node is interpreted as a LuckPerms
+# group name by default ("doc" or "group.doc"); a node containing a dot that is
+# not "group.*" is treated as a permission node (e.g. "explorer.audit").
+# Requires LuckPerms; the task is not scheduled if it is absent.
+reconciliation:
+  enabled: false
+  interval-seconds: 1800

@@ -1,0 +1,27 @@
+database:
+  host: localhost
+  port: 3306
+  database: treasury
+  username: root
+  password: password
+  table-prefix: treasury_
+
+firm:
+  # Maximum number of firms a single player may own (be proprietor of).
+  # Set to 0 (or below) for no limit.
+  owned-limit: 3
+  # Minimum seconds a player must wait between creating firms. Keyed on creation
+  # time (counting disbanded firms too) so create/disband spam is throttled.
+  # Set to 0 (or below) to disable.
+  create-cooldown-seconds: 300
+
+tax:
+  balance:
+    enabled: true
+    government-account: "DCGovernment"
+    brackets:
+      0.00:       0.0      # $0.00    – $99,999.99  → 0 %
+      100000.00:  0.01     # $100,000 – $199,999.99  → 1 %
+      200000.00:  0.012    # $200,000 – $299,999.99  → 1.2 %
+      300000.00:  0.014    # $300,000 – $499,999.99  → 1.4 %
+      500000.00:  0.018    # $500,000+               → 1.8 %

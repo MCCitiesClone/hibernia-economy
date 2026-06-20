@@ -1,0 +1,16 @@
+name: Business
+version: '2.2.1'
+main: io.paradaux.business.Business
+api-version: '1.21'
+depend: [ Treasury ]
+commands:
+    business:
+        description: Business commands
+        usage: /business
+        aliases: [ "db", "democracybusiness", "firm", "company" ]
+        permission: business.use
+        permission-message: You don’t have permission.
+permissions:
+    business.pay:
+        description: Allows paying money into a business (player -> business).
+        default: true

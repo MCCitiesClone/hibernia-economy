@@ -1,0 +1,53 @@
+# Deterministic line endings regardless of each contributor's core.autocrlf.
+# Git decides text vs binary by default; the rules below pin the cases that matter.
+* text=auto
+
+# Shell scripts MUST stay LF — Linux CI runs ./gradlew.
+*.sh    text eol=lf
+gradlew text eol=lf
+
+# Windows batch files stay CRLF.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Source / config kept as normalized text.
+*.java       text
+*.kt         text
+*.kts        text
+*.gradle     text
+*.ts         text
+*.tsx        text
+*.js         text
+*.jsx        text
+*.mjs        text
+*.cjs        text
+*.json       text
+*.yml        text
+*.yaml       text
+*.xml        text
+*.properties text
+*.sql        text
+*.md         text
+*.css        text
+*.scss       text
+*.html       text
+*.txt        text
+
+# Binaries: never EOL-convert (vendored plugin jars, the Gradle wrapper jar, assets).
+*.jar   binary
+*.war   binary
+*.ear   binary
+*.zip   binary
+*.gz    binary
+*.tar   binary
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.ico   binary
+*.webp  binary
+*.ttf   binary
+*.otf   binary
+*.woff  binary
+*.woff2 binary
+*.pdf   binary

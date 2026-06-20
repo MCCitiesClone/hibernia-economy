@@ -1,0 +1,74 @@
+name: Treasury REST API · Build and Push Docker Image to Harbor
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'treasury-rest-api/**'
+      - '.github/workflows/treasury-rest-api-docker.yml'
+
+defaults:
+  run:
+    working-directory: treasury-rest-api
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Compute tags
+        id: tags
+        run: |
+          # Treasury is one shared image used by all in-cluster instances
+          # (UAT in development namespace; DemocracyCraft + StateCraft in
+          # production namespace). Single Harbor repo —
+          # paradaux-public/treasury-rest-api — backs everything; runtime
+          # differences (DB url, JWT secret, rate-limit Redis) are env-var-only.
+          #
+          # Env-prefixed immutable tag — Argo CD Image Updater watches
+          # `<env>-sha-<short>` per kustomize overlay. The prefix MUST match
+          # the overlay directory name (development / production) because the
+          # registration's allow-tags regex is `^{{path.basename}}-sha-[0-9a-f]{7}$`
+          # (bootstrap/registrations/apps.yaml). Mutable tag (latest / prod)
+          # kept for manual rollbacks.
+          #   main    -> production-sha-<short>  (+ :prod)   -> production overlay
+          #   develop -> development-sha-<short> (+ :latest) -> development overlay
+          SHORT_SHA=${GITHUB_SHA::7}
+          if [ "${{ github.ref_name }}" == "main" ]; then
+            ENV_NAME=production
+            MUTABLE=prod
+          elif [ "${{ github.ref_name }}" == "develop" ]; then
+            ENV_NAME=development
+            MUTABLE=latest
+          else
+            echo "::error::Unsupported branch: ${{ github.ref_name }}"
+            exit 1
+          fi
+          echo "SHA_TAG=${ENV_NAME}-sha-${SHORT_SHA}" >> "$GITHUB_OUTPUT"
+          echo "MUTABLE_TAG=${MUTABLE}" >> "$GITHUB_OUTPUT"
+
+      - name: Log in to Harbor registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ secrets.HARBOR_REGISTRY }}
+          username: ${{ secrets.HARBOR_USERNAME }}
+          password: ${{ secrets.HARBOR_PASSWORD }}
+
+      - name: Build Docker image
+        run: |
+          IMAGE=${{ secrets.HARBOR_REGISTRY }}/paradaux-public/treasury-rest-api
+          docker build \
+            -t "${IMAGE}:${{ steps.tags.outputs.SHA_TAG }}" \
+            -t "${IMAGE}:${{ steps.tags.outputs.MUTABLE_TAG }}" \
+            .
+
+      - name: Push Docker image
+        run: |
+          IMAGE=${{ secrets.HARBOR_REGISTRY }}/paradaux-public/treasury-rest-api
+          docker push "${IMAGE}:${{ steps.tags.outputs.SHA_TAG }}"
+          docker push "${IMAGE}:${{ steps.tags.outputs.MUTABLE_TAG }}"

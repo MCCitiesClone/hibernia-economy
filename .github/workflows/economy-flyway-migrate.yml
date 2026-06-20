@@ -1,0 +1,111 @@
+name: Economy Flyway · Migrate
+
+# Production source of truth for schema deploys. Manual-only, single job.
+#
+# NOTE — Free plan + private repo: GitHub Environment *required-reviewer*
+# protection rules are NOT available on this plan, so there is no in-run
+# approval pause (the old two-job "<target>-apply" gate did nothing here).
+# The review gate is therefore PROCEDURAL:
+#   1. Run the "Info (read-only)" workflow against the target and read the plan.
+#   2. Then run this workflow to apply.
+# `confirm_target` guards against picking the wrong target, and
+# workflow_dispatch is already restricted to users with write access.
+#
+# To restore a real in-run gate later: make the repo public OR move to a paid
+# plan, then re-introduce an `environment: <target>-apply` job with Required
+# reviewers configured in repo settings.
+#
+# Environments hold the per-target secrets (FLYWAY_URL/USER/PASSWORD/SCHEMA):
+#   dc-test-server, democracycraft, statecraft.
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 'Target environment'
+        type: choice
+        options:
+          - dc-test-server
+          - democracycraft
+          - statecraft
+        required: true
+      confirm_target:
+        description: 'Type the target name verbatim to confirm (extra safety)'
+        type: string
+        required: true
+      baseline:
+        description: 'Pass -Pbaseline=true on first run against a pre-existing DB'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    working-directory: economy-flyway
+
+jobs:
+  migrate:
+    name: Migrate ${{ inputs.target }}
+    runs-on: ubuntu-latest
+    # Scopes this target's environment secrets into the job.
+    environment: ${{ inputs.target }}
+
+    steps:
+      - name: Confirm target matches typed input
+        run: |
+          if [ "${{ inputs.confirm_target }}" != "${{ inputs.target }}" ]; then
+            echo "::error::confirm_target='${{ inputs.confirm_target }}' does not match target='${{ inputs.target }}'"
+            exit 1
+          fi
+          echo "Target confirmed: ${{ inputs.target }}"
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate Gradle wrapper
+        uses: gradle/actions/wrapper-validation@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      # The plan. flywayInfo never fails on pending migrations — unlike
+      # flywayValidate, which exits non-zero on a green-field DB where every
+      # migration is unapplied. Validation still runs *during* migrate via
+      # validateOnMigrate=true (set in build.gradle.kts), so applied
+      # migrations are still checked for drift.
+      - name: flywayInfo (plan)
+        env:
+          FLYWAY_URL: ${{ secrets.FLYWAY_URL }}
+          FLYWAY_USER: ${{ secrets.FLYWAY_USER }}
+          FLYWAY_PASSWORD: ${{ secrets.FLYWAY_PASSWORD }}
+          FLYWAY_SCHEMA: ${{ secrets.FLYWAY_SCHEMA }}
+        run: ./gradlew --no-daemon flywayInfo
+
+      - name: flywayMigrate
+        env:
+          FLYWAY_URL: ${{ secrets.FLYWAY_URL }}
+          FLYWAY_USER: ${{ secrets.FLYWAY_USER }}
+          FLYWAY_PASSWORD: ${{ secrets.FLYWAY_PASSWORD }}
+          FLYWAY_SCHEMA: ${{ secrets.FLYWAY_SCHEMA }}
+        run: |
+          if [ "${{ inputs.baseline }}" = "true" ]; then
+            ./gradlew --no-daemon flywayMigrate -Pbaseline=true
+          else
+            ./gradlew --no-daemon flywayMigrate
+          fi
+
+      - name: Post-migrate flywayInfo (audit trail)
+        env:
+          FLYWAY_URL: ${{ secrets.FLYWAY_URL }}
+          FLYWAY_USER: ${{ secrets.FLYWAY_USER }}
+          FLYWAY_PASSWORD: ${{ secrets.FLYWAY_PASSWORD }}
+          FLYWAY_SCHEMA: ${{ secrets.FLYWAY_SCHEMA }}
+        run: ./gradlew --no-daemon flywayInfo

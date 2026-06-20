@@ -1,0 +1,142 @@
+package io.paradaux.treasury.api;
+
+import io.paradaux.treasury.model.Page;
+import io.paradaux.treasury.model.economy.*;
+
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.UUID;
+
+public interface TreasuryApi {
+
+    // ---- Balance ----
+
+    BigDecimal getBalanceByAccountId(int accountId);
+    BigDecimal getBalanceByOwnerUuid(UUID ownerUuid);
+
+    /** Returns true if the account's balance >= amount. */
+    boolean hasFunds(int accountId, BigDecimal amount);
+
+    // ---- Account lookups ----
+
+    Account getAccountByUUID(UUID ownerUuid);
+    Account getAccountById(int accountId);
+    List<Account> getAccountsByOwner(UUID ownerUuid);
+    List<Account> getAccountsByTypeAndOwner(AccountType accountType, UUID ownerUuid);
+
+    /** @deprecated Use {@link #getAccountsByTypeAndOwner(AccountType, UUID)} instead. */
+    @Deprecated
+    default List<Account> getAccountsByTypeAndOwner(String accountType, UUID ownerUuid) {
+        return getAccountsByTypeAndOwner(AccountType.valueOf(accountType.toUpperCase()), ownerUuid);
+    }
+    List<Account> getAccountsByMember(UUID memberUuid);
+
+    boolean hasAccountByAccountId(int accountId);
+    boolean hasAccountByOwnerUuid(UUID ownerUuid);
+
+    // ---- Access control checks ----
+
+    boolean isAccountMember(UUID uuid, int accountId);
+    boolean isOwnerForAccountId(UUID uuid, int accountId);
+    boolean canAccessAccount(UUID uuid, int accountId);
+    boolean accountHasBalance(UUID uuid, int accountId);
+
+    // ---- Account lifecycle ----
+
+    /**
+     * Returns the PERSONAL account for the given player, creating and funding it
+     * with the configured starting balance if it does not yet exist.
+     */
+    Account resolveOrCreatePersonal(UUID playerUuid);
+
+    /**
+     * Creates a new account with a zero balance.
+     * Use this for BUSINESS, GOVERNMENT, or other non-PERSONAL account types.
+     */
+    Account createAccount(AccountType accountType, UUID ownerUuid, String displayName);
+
+    /** Updates mutable account fields (displayName, requiresAuthorization, archived, overdraft, creditLimit). */
+    void updateAccount(Account account);
+
+    /**
+     * Reassigns the owner of an existing (non-PERSONAL) account. The owner is
+     * granted access unconditionally by {@link #canAccessAccount}, so this is
+     * how a BUSINESS firm account is handed to a new proprietor on transfer.
+     */
+    void reassignOwner(int accountId, UUID newOwnerUuid);
+
+    void archiveAccount(int accountId);
+    void unarchiveAccount(int accountId);
+
+    // ---- Member / authorizer management ----
+
+    void addMember(int accountId, UUID memberUuid, UUID addedByUuid);
+    void removeMember(int accountId, UUID memberUuid);
+    List<AccountMember> getMembers(int accountId);
+
+    void addAuthorizer(int accountId, UUID authorizerUuid, UUID addedByUuid);
+    void removeAuthorizer(int accountId, UUID authorizerUuid);
+    List<AccountMember> getAuthorizers(int accountId);
+
+    // ---- Transaction history ----
+
+    /** Paginated transaction history for an account (most recent first). */
+    Page<TransactionEntry> getTransactionHistory(int accountId, int offset, int limit);
+
+    /** Exports all transactions for an account as CSV, uploads to bytebin, returns the URL. */
+    String exportTransactionsFor(int accountId);
+
+    /** Single transaction lookup by ID. */
+    LedgerTxn getTransaction(long txnId);
+
+    /** All postings belonging to a transaction. */
+    List<LedgerPosting> getPostingsForTransaction(long txnId);
+
+    // ---- Government account lookup ----
+
+    /**
+     * Returns the GOVERNMENT account with the given display name, or {@code null} if not found.
+     *
+     * <p>Use this when a consuming plugin needs to route a payment to a specific named
+     * government account (e.g. a configurable tax-destination account).
+     */
+    Account getGovernmentAccountByName(String name);
+
+    // ---- Transfers ----
+
+    /** Direct account-to-account transfer. */
+    long transfer(TransferRequest transferRequest);
+
+    // ---- Balance top ----
+
+    /** Paginated top personal account balances. */
+    Page<BalanceEntry> getTopBalances(int offset, int limit);
+
+    // ---- Formatting ----
+
+    String formatAmount(BigDecimal amount);
+    String getCurrencyNameSingular();
+    String getCurrencyNamePlural();
+
+    // ---- Tax ----
+
+    /**
+     * Returns the tax collection API.
+     *
+     * <p>Use this to collect taxes from accounts and to introspect the
+     * scheduled cycle configuration. See {@link TaxApi} for full documentation.
+     *
+     * <p>Example — charge a 3 % sale tax when a Realty plot is purchased:
+     * <pre>{@code
+     * treasuryApi.getTaxApi().collectRateTax(
+     *     buyerAccountId,
+     *     salePrice,
+     *     new BigDecimal("0.03"),
+     *     "realty-sale-tax",
+     *     "Plot Purchase Tax: " + regionId,
+     *     buyerUuid,
+     *     "realty");
+     * }</pre>
+     */
+    TaxApi getTaxApi();
+}

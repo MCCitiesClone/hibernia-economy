@@ -1,0 +1,35 @@
+# Test-only overrides. Test classpath shadows the main application.yaml,
+# so this file must repeat the full config. Differences vs production:
+#   - api.jwt-secret is a 32+ char fixture (real-looking but deterministic),
+#     because JwtConfig refuses to start against the bundled placeholder.
+#   - Datasource defaults match the main file so DB-backed tests still hit
+#     localhost MariaDB when env vars are set.
+spring:
+  application:
+    name: treasury-rest-api
+
+  datasource:
+    url: ${DB_URL:jdbc:mariadb://localhost:3306/treasury}
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:password}
+    driver-class-name: org.mariadb.jdbc.Driver
+
+  jackson:
+    date-format: com.fasterxml.jackson.databind.util.StdDateFormat
+    time-zone: UTC
+
+mybatis:
+  configuration:
+    map-underscore-to-camel-case: true
+    default-fetch-size: 100
+    default-statement-timeout: 30
+  type-handlers-package: io.paradaux.treasuryrestapi.mybatis
+
+api:
+  jwt-secret: test-jwt-secret-32-or-more-characters-of-deterministic-fixture-data
+
+# The embedded test DB only creates the subset of tables the API write-path
+# touches (no webhook_* tables), so keep the background dispatcher off in tests.
+treasury:
+  webhook:
+    enabled: false

@@ -1,0 +1,65 @@
+spring:
+  application:
+    name: treasury-rest-api
+
+  datasource:
+    url: ${UAT_DB_URL}
+    username: ${UAT_DB_USERNAME}
+    password: ${UAT_DB_PASSWORD}
+    driver-class-name: org.mariadb.jdbc.Driver
+    hikari:
+      maximum-pool-size: ${UAT_DB_POOL_SIZE:10}
+      minimum-idle: ${UAT_DB_POOL_MIN_IDLE:2}
+      idle-timeout: 300000
+      max-lifetime: 600000
+      connection-timeout: 30000
+
+  jackson:
+    date-format: com.fasterxml.jackson.databind.util.StdDateFormat
+    time-zone: UTC
+
+  devtools:
+    restart:
+      enabled: false
+
+server:
+  port: ${UAT_SERVER_PORT:8080}
+  shutdown: graceful
+  tomcat:
+    max-threads: ${UAT_TOMCAT_MAX_THREADS:100}
+    accept-count: 100
+    connection-timeout: 20000
+
+mybatis:
+  configuration:
+    map-underscore-to-camel-case: true
+    default-fetch-size: 100
+    default-statement-timeout: 30
+  type-handlers-package: io.paradaux.treasuryrestapi.mybatis
+
+api:
+  jwt-secret: ${UAT_JWT_SECRET}
+
+rate-limit:
+  redis-host: ${UAT_RATE_LIMIT_REDIS_HOST:}
+  redis-port: ${UAT_RATE_LIMIT_REDIS_PORT:6379}
+  redis-password: ${UAT_RATE_LIMIT_REDIS_PASSWORD:}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: when_authorized
+      probes:
+        enabled: true
+  health:
+    livenessstate:
+      enabled: true
+    readinessstate:
+      enabled: true
+  server:
+    port: ${UAT_MANAGEMENT_PORT:8081}

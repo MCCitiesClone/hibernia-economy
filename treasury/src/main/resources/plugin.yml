@@ -1,0 +1,143 @@
+name: Treasury
+version: '2.2.1'
+main: io.paradaux.treasury.Treasury
+api-version: '1.21'
+softdepend:
+  - Vault
+  - LuckPerms
+commands:
+  treasury:
+    description: Treasury economy plugin
+    aliases: [tr]
+  pay:
+    description: Pay another player
+    usage: /pay <player> <amount> [memo]
+    permission: treasury.pay
+  pay-account:
+    description: Pay an explicitly-typed account (player/business/government/account id)
+    aliases: [paya]
+    usage: /pay-account <player|business|government|account> <name|id> <amount> [memo]
+    permission: treasury.pay
+  bal:
+    description: Check your balance
+    aliases: [balance, money]
+    usage: /bal [player]
+    permission: treasury.balance
+  baltop:
+    description: View top balances
+    usage: /baltop [page]
+    permission: treasury.baltop
+  transactions:
+    description: View transaction history
+    aliases: [txns]
+    usage: /transactions [page]
+    permission: treasury.transactions
+  eco:
+    description: Economy admin commands
+    aliases: [economy]
+    usage: /eco <give|take|set|reset> <player> [amount]
+    permission: treasury.eco
+  government:
+    description: Government account management
+    aliases: [gov]
+    usage: /government <account|pay> [...]
+    permission: treasury.gov
+  fine:
+    description: Government fines management
+    usage: /fine <issue|revoke|list|info> [...]
+    permission: treasury.gov.fine
+  tax:
+    description: Tax cycle administration — status and testing
+    usage: /tax <status|trigger> [cycle]
+    permission: treasury.admin.tax
+permissions:
+  treasury.command:
+    description: Access /treasury command
+    default: true
+  treasury.pay:
+    description: Pay another player
+    default: true
+  treasury.balance:
+    description: Check your own balance
+    default: true
+  treasury.balance.others:
+    description: Check another player's balance
+    default: op
+  treasury.baltop:
+    description: View top balances
+    default: true
+  treasury.transactions:
+    description: View your transaction history
+    default: true
+  treasury.transactions.export:
+    description: Export transaction history as CSV
+    default: true
+  treasury.transactions.audit:
+    description: View any player's or account's transaction history (staff/DOC auditing)
+    default: op
+  treasury.eco:
+    description: Base economy admin permission
+    default: op
+  treasury.eco.give:
+    description: Give money to a player
+    default: op
+  treasury.eco.take:
+    description: Take money from a player
+    default: op
+  treasury.eco.set:
+    description: Set a player's balance
+    default: op
+  treasury.eco.reset:
+    description: Reset a player's balance
+    default: op
+  treasury.gov.*:
+    description: All government operations
+    default: false
+    children:
+      treasury.gov.admin: true
+      treasury.gov.account.create: true
+      treasury.gov.account.list: true
+      treasury.gov.account.view: true
+      treasury.gov.account.transfer: true
+      treasury.gov.account.manage: true
+      treasury.gov.fine: true
+      treasury.gov.fine.view: true
+  treasury.gov.admin:
+    description: Full control over all government accounts; bypasses membership checks
+    default: op
+  treasury.gov.account.create:
+    description: Create new department accounts
+    default: false
+  treasury.gov.account.list:
+    description: List all government accounts
+    default: false
+  treasury.gov.account.view:
+    description: View balance and history for accounts you are a member of
+    default: false
+  treasury.gov.account.transfer:
+    description: Transfer funds from accounts you are an authorizer of
+    default: false
+  treasury.gov.account.manage:
+    description: Add/remove members and groups on accounts you are an authorizer of
+    default: false
+  treasury.gov.fine:
+    description: Use /fine; issuing/revoking additionally requires account access (member/authorizer/admin)
+    default: op
+  treasury.gov.fine.view:
+    description: View fines issued to players (/fine list, /fine info)
+    default: false
+  treasury.admin.tax:
+    description: View tax cycle status and trigger cycles for testing
+    default: op
+  treasury.admin.ingest:
+    description: Ingest player + balance data from a legacy economy backend
+    default: op
+  treasury.admin.transfer:
+    description: Force a transfer between any two accounts (player/government/business/account)
+    default: op
+  treasury.admin.inspect:
+    description: Inspect any account's balance and details (debug)
+    default: op
+  treasury.admin.reload:
+    description: Reload config.yml and messages.properties at runtime
+    default: op

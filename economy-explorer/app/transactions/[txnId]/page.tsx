@@ -1,0 +1,124 @@
+import { buildMetadata } from '@/lib/metadata';
+import Link from 'next/link';
+import type { Route } from 'next';
+import { notFound } from 'next/navigation';
+import { findTransaction, findPostingsByTxnId } from '@/lib/sql/ledger';
+import { accountLabel, fmtAmtFull, fmtTs } from '@/lib/format';
+import { getViewer } from '@/lib/auth/viewer';
+import { auditView } from '@/lib/audit';
+import { BackLink } from '@/components/BackLink';
+import { Player } from '@/components/Player';
+import { PrivacyGate } from '@/components/PrivacyGate';
+
+export const dynamic = 'force-dynamic';
+
+export async function generateMetadata({ params }: { params: Promise<{ txnId: string }> }) {
+  const { txnId } = await params;
+  return buildMetadata({ title: `Transaction #${txnId}`, description: 'Details of a single {server} ledger transaction.', path: `/transactions/${txnId}` });
+}
+
+export default async function TransactionDetailPage({
+  params,
+}: {
+  params: Promise<{ txnId: string }>;
+}) {
+  const viewer = await getViewer();
+  if (viewer.anon) {
+    return (
+      <PrivacyGate
+        kind="login"
+        title="Transaction detail is private"
+        hint="Sign in with admin access to view transaction detail."
+      />
+    );
+  }
+  if (viewer.role !== 'admin') {
+    return <PrivacyGate kind="private" title="Admin only" hint="Only admins can view individual transactions." />;
+  }
+
+  const { txnId: idStr } = await params;
+  const id = Number(idStr);
+  if (!Number.isInteger(id) || id <= 0) notFound();
+
+  const [txn, postings] = await Promise.all([findTransaction(id), findPostingsByTxnId(id)]);
+  if (!txn) notFound();
+
+  // Privileged read: admin inspecting an individual transaction's postings.
+  await auditView(viewer, { path: `/transactions/${id}`, targetType: 'transaction', targetId: String(id) });
+
+  return (
+    <>
+      <BackLink href="/transactions" label="Transactions" />
+
+      <div className="page-heading">
+        <h1>
+          Txn <span className="mono">#{txn.txn_id}</span>
+        </h1>
+      </div>
+
+      <div className="kpi-grid">
+        <div className="kpi">
+          <div className="kpi-label">Settled</div>
+          <div className="kpi-value" style={{ fontSize: 16, paddingTop: 6 }}>{fmtTs(txn.settlement_time)}</div>
+          {txn.trade_time && <div className="kpi-meta">trade: {fmtTs(txn.trade_time)}</div>}
+        </div>
+        <div className="kpi">
+          <div className="kpi-label">Initiator</div>
+          <div className="kpi-value" style={{ fontSize: 18, paddingTop: 6 }}>
+            <Player name={txn.initiator_name} uuid={txn.initiator_uuid} />
+          </div>
+        </div>
+        <div className="kpi">
+          <div className="kpi-label">Source</div>
+          <div className="kpi-value mono" style={{ fontSize: 16, paddingTop: 6 }}>{txn.plugin_system ?? '—'}</div>
+        </div>
+        <div className="kpi">
+          <div className="kpi-label">Postings</div>
+          <div className="kpi-value">{postings.length}</div>
+        </div>
+      </div>
+
+      {txn.message && (
+        <div className="card">
+          <div className="card-title">Message</div>
+          <div style={{ padding: '4px 4px 8px', color: 'var(--fg)' }}>{txn.message}</div>
+        </div>
+      )}
+
+      <div className="card">
+        <div className="card-title">Postings</div>
+        <div className="table-wrap"><table className="data-table">
+          <thead>
+            <tr>
+              <th>Posting</th>
+              <th>Account</th>
+              <th className="amount">Amount</th>
+              <th>Memo</th>
+            </tr>
+          </thead>
+          <tbody>
+            {postings.map((p) => {
+              const v = parseFloat(p.amount);
+              const cls = v > 0 ? 'amount pos' : v < 0 ? 'amount neg' : 'amount neutral';
+              return (
+                <tr key={p.posting_id}>
+                  <td><span className="mono">#{p.posting_id}</span></td>
+                  <td>
+                    <Link href={`/accounts/${p.account_id}` as Route} className="rowlink" prefetch={false}>
+                      <span style={{ fontWeight: 500 }}>{accountLabel(p)}</span>
+                      <span className="mono muted small">{` #${p.account_id}`}</span>
+                    </Link>
+                  </td>
+                  <td className={cls}>{v > 0 ? '+' : ''}{fmtAmtFull(p.amount)}</td>
+                  <td>
+                    <span className="mono" style={{ color: 'var(--fg-muted)' }}>{p.memo ?? '—'}</span>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table></div>
+      </div>
+    </>
+  );
+}

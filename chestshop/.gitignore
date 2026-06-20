@@ -1,0 +1,23 @@
+# ChestShop — Gradle build (converted from Maven).
+
+# Gradle
+.gradle/
+**/build/
+!gradle/wrapper/gradle-wrapper.jar
+
+# IntelliJ / Eclipse / NetBeans
+.idea/
+*.iml
+*.ipr
+*.iws
+/.classpath
+/.project
+/.settings
+/nbproject
+/bin
+
+# Vim
+.*.sw[a-p]
+
+# macOS
+.DS_Store

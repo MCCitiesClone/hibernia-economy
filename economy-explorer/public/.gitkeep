@@ -1,0 +1,3 @@
+# Keeps the public/ directory present in git. The Dockerfile COPYs public/ into
+# the runtime image; robots.txt now lives at app/robots.ts (dynamic), leaving
+# this folder otherwise empty. Add static assets here as needed.

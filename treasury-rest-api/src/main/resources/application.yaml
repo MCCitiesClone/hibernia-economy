@@ -1,0 +1,59 @@
+spring:
+  application:
+    name: treasury-rest-api
+
+  datasource:
+    url: ${DB_URL:jdbc:mariadb://localhost:3306/treasury}
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:password}
+    driver-class-name: org.mariadb.jdbc.Driver
+
+  jackson:
+    date-format: com.fasterxml.jackson.databind.util.StdDateFormat
+    time-zone: UTC
+
+server:
+  port: 8080
+
+mybatis:
+  configuration:
+    map-underscore-to-camel-case: true
+    default-fetch-size: 100
+    default-statement-timeout: 30
+  type-handlers-package: io.paradaux.treasuryrestapi.mybatis
+
+api:
+  jwt-secret: change-me-please-use-a-long-random-secret-key
+
+# Per-issuer API rate limiting. With redis-host unset (local/dev) the limiter
+# uses an in-memory Caffeine backend; set it to share counters across pods via
+# the namespace Redis (password from app-secrets/REDIS_PASSWORD).
+rate-limit:
+  redis-host: ${RATE_LIMIT_REDIS_HOST:}
+  redis-port: ${RATE_LIMIT_REDIS_PORT:6379}
+  redis-password: ${RATE_LIMIT_REDIS_PASSWORD:}
+
+# Transaction event feed: the cursor "pull" endpoint and the webhook dispatcher.
+# Both only surface transactions settled at least `settlement-lag-seconds` ago so
+# a txn_id cursor never skips a row that committed out of order. The dispatcher
+# is single-holder via the rate-limit Redis lease; with no Redis it runs in
+# single-process mode. Disable it entirely with WEBHOOK_ENABLED=false.
+treasury:
+  feed:
+    settlement-lag-seconds: ${FEED_SETTLEMENT_LAG_SECONDS:3}
+  webhook:
+    enabled: ${WEBHOOK_ENABLED:true}
+    poll-ms: ${WEBHOOK_POLL_MS:2000}
+    settlement-lag-seconds: ${WEBHOOK_SETTLEMENT_LAG_SECONDS:3}
+    ingest-batch: ${WEBHOOK_INGEST_BATCH:500}
+    delivery-batch: ${WEBHOOK_DELIVERY_BATCH:100}
+    http-timeout-ms: ${WEBHOOK_HTTP_TIMEOUT_MS:10000}
+    max-attempts: ${WEBHOOK_MAX_ATTEMPTS:5}
+    failure-threshold: ${WEBHOOK_FAILURE_THRESHOLD:15}
+    max-per-key: ${WEBHOOK_MAX_PER_KEY:20}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
