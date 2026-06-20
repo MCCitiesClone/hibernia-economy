@@ -4,16 +4,12 @@ import io.paradaux.treasuryrestapi.dto.AccountBalanceResponse;
 import io.paradaux.treasuryrestapi.dto.AccountByPlayerResponse;
 import io.paradaux.treasuryrestapi.dto.TransactionFeedResponse;
 import io.paradaux.treasuryrestapi.dto.TransactionsResponse;
-import io.paradaux.treasuryrestapi.exception.ApiException;
-import io.paradaux.treasuryrestapi.mapper.AccountMapper;
-import io.paradaux.treasuryrestapi.mapper.FirmMapper;
-import io.paradaux.treasuryrestapi.model.AccountBalance;
 import io.paradaux.treasuryrestapi.ratelimit.RateLimit;
 import io.paradaux.treasuryrestapi.security.VerifiedToken;
+import io.paradaux.treasuryrestapi.service.AccountService;
 import io.paradaux.treasuryrestapi.service.TransactionService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -22,8 +18,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.UUID;
-
 @RestController
 @RequestMapping("/api/v1/accounts")
 public class AccountController {
@@ -31,15 +25,12 @@ public class AccountController {
     private static final Logger log = LoggerFactory.getLogger(AccountController.class);
 
     private final TransactionService transactionService;
-    private final AccountMapper accountMapper;
-    private final FirmMapper firmMapper;
+    private final AccountService accountService;
 
     public AccountController(TransactionService transactionService,
-                             AccountMapper accountMapper,
-                             FirmMapper firmMapper) {
+                             AccountService accountService) {
         this.transactionService = transactionService;
-        this.accountMapper = accountMapper;
-        this.firmMapper = firmMapper;
+        this.accountService = accountService;
     }
 
     /**
@@ -55,12 +46,7 @@ public class AccountController {
 
         log.info("GET /accounts/{}/balance requested by keyId={}", accountId, verified.keyId());
 
-        AccountBalance balance = accountMapper.findBalance(accountId);
-        if (balance == null) {
-            throw new ApiException(HttpStatus.NOT_FOUND, "ACCOUNT_NOT_FOUND", "Account not found.");
-        }
-
-        return ResponseEntity.ok(new AccountBalanceResponse(accountId, balance.getBalance().toPlainString()));
+        return ResponseEntity.ok(accountService.getBalance(accountId));
     }
 
     /**
@@ -78,41 +64,12 @@ public class AccountController {
             @RequestParam(required = false) String uuid,
             @RequestParam(required = false) String name) {
 
-        boolean hasUuid = uuid != null && !uuid.isBlank();
-        boolean hasName = name != null && !name.isBlank();
-        if (hasUuid == hasName) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "INVALID_QUERY",
-                    "Provide exactly one of 'uuid' or 'name'.");
-        }
+        AccountByPlayerResponse response = accountService.resolvePlayerAccount(uuid, name);
 
-        UUID playerUuid;
-        if (hasUuid) {
-            try {
-                playerUuid = UUID.fromString(uuid.trim());
-            } catch (IllegalArgumentException e) {
-                throw new ApiException(HttpStatus.BAD_REQUEST, "INVALID_QUERY",
-                        "Query parameter 'uuid' is not a valid UUID.");
-            }
-        } else {
-            playerUuid = firmMapper.findPlayerUuidByName(name.trim());
-            if (playerUuid == null) {
-                throw new ApiException(HttpStatus.NOT_FOUND, "PLAYER_NOT_FOUND",
-                        "No player known by the name '" + name + "'.");
-            }
-        }
+        log.info("GET /accounts/by-player resolved accountId={} (player={}) for keyId={}",
+                response.accountId(), response.playerUuid(), verified.keyId());
 
-        Long accountId = accountMapper.findPersonalAccountIdByOwner(playerUuid);
-        if (accountId == null) {
-            throw new ApiException(HttpStatus.NOT_FOUND, "ACCOUNT_NOT_FOUND",
-                    "The target player has no personal account.");
-        }
-
-        String playerName = hasName ? name.trim() : firmMapper.findPlayerNameByUuid(playerUuid);
-
-        log.info("GET /accounts/by-player resolved {} → accountId={} for keyId={}",
-                hasUuid ? playerUuid : name, accountId, verified.keyId());
-
-        return ResponseEntity.ok(new AccountByPlayerResponse(accountId, playerUuid.toString(), playerName));
+        return ResponseEntity.ok(response);
     }
 
     /**
