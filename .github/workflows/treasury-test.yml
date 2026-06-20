@@ -59,24 +59,10 @@ jobs:
       - name: Make Gradle wrapper executable
         run: chmod +x ./gradlew
 
-      - name: Install MariaDB client
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y mariadb-client
-
-      # Strip the api_keys block (sibling DC Business plugin owns the firm table
-      # this references) but KEEP the trigger block that follows it — those triggers
-      # maintain account_balances_mat. Then load via the mariadb CLI so DELIMITER
-      # blocks parse correctly.
-      - name: Apply schema to MariaDB service
-        run: |
-          awk '
-            /^-- API KEYS$/      { skip=1 }
-            /^DELIMITER \/\//    { skip=0 }
-            !skip
-          ' treasury/src/main/resources/schema.sql > /tmp/schema-test.sql
-          mariadb -h 127.0.0.1 -P 3306 -u root -ptreasury treasury_test < /tmp/schema-test.sql
-
+      # The schema is applied by the test harness itself: MariadbContainerExtension
+      # runs the authoritative economy-flyway migrations with Flyway against this
+      # service DB (no bundled schema.sql). The service only needs to provide an
+      # empty treasury_test database.
       - name: Run tests + verify coverage
         env:
           TREASURY_TEST_JDBC_URL: jdbc:mariadb://127.0.0.1:3306/treasury_test
