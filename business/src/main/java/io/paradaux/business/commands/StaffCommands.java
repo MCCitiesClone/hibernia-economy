@@ -7,9 +7,12 @@ import io.paradaux.hibernia.framework.commander.spi.CommandHandler;
 import io.paradaux.hibernia.framework.i18n.Message;
 import lombok.extern.slf4j.Slf4j;
 // Every staff command hits the DB and is annotated @Async to avoid main-thread blocking.
+import io.paradaux.business.model.Firm;
 import io.paradaux.business.model.FirmEmployee;
 import io.paradaux.business.model.FirmPlayer;
+import io.paradaux.business.services.FirmNotificationService;
 import io.paradaux.business.services.FirmPlayerService;
+import io.paradaux.business.services.FirmService;
 import io.paradaux.business.services.FirmStaffService;
 import io.paradaux.business.utils.DateUtils;
 import io.paradaux.business.utils.resolvers.FirmName;
@@ -24,12 +27,17 @@ public class StaffCommands implements CommandHandler {
 
     private final FirmPlayerService players;
     private final FirmStaffService staff;
+    private final FirmService firms;
+    private final FirmNotificationService notifications;
     private final Message message;
 
     @Inject
-    public StaffCommands(FirmPlayerService players, FirmStaffService staff, Message message) {
+    public StaffCommands(FirmPlayerService players, FirmStaffService staff, FirmService firms,
+                         FirmNotificationService notifications, Message message) {
         this.players = players;
         this.staff = staff;
+        this.firms = firms;
+        this.notifications = notifications;
         this.message = message;
     }
 
@@ -45,7 +53,12 @@ public class StaffCommands implements CommandHandler {
         if (players.isOnline(target)) {
             message.send(target, "business.staff.fire.target", "firm", firm, "sender", sender.getName());
         }
-        // TODO broadcast to online employees
+        // Tell the rest of the firm; the fired player already got the direct message above.
+        Firm f = firms.getFirmByNameOrId(firm);
+        if (f != null) {
+            notifications.notifyFirmExcept(f.getFirmId(), target.getUniqueId(), "business.staff.fire.staff-broadcast",
+                    "target", target.getCurrentName(), "firm", f.getDisplayName());
+        }
     }
 
     @Route("resign <firm>")
@@ -56,7 +69,12 @@ public class StaffCommands implements CommandHandler {
         String firm = firmRef.value();
         staff.resignFromFirm(firm, sender.getUniqueId());
         message.send(sender, "business.staff.resign.sender", "firm", firm);
-        // TODO broadcast to online employees
+        // The resigner has already left the firm, so they're no longer a recipient.
+        Firm f = firms.getFirmByNameOrId(firm);
+        if (f != null) {
+            notifications.notifyFirm(f.getFirmId(), "business.staff.resign.staff-broadcast",
+                    "target", sender.getName(), "firm", f.getDisplayName());
+        }
     }
 
     @Route("staff promote <firm> <user>")
@@ -73,7 +91,12 @@ public class StaffCommands implements CommandHandler {
             message.send(target, "business.staff.promote.target", "role", nextRole, "sender", sender.getName(), "firm", firm);
         }
 
-        // TODO broadcast to online employees
+        // Firm-wide visibility; the promoted player already got the direct message above.
+        Firm f = firms.getFirmByNameOrId(firm);
+        if (f != null) {
+            notifications.notifyFirmExcept(f.getFirmId(), target.getUniqueId(), "business.staff.promote.staff-broadcast",
+                    "target", target.getCurrentName(), "role", nextRole, "firm", f.getDisplayName());
+        }
     }
 
     @Route("staff demote <firm> <user>")
@@ -89,7 +112,12 @@ public class StaffCommands implements CommandHandler {
         if (players.isOnline(target)) {
             message.send(target, "business.staff.demote.target", "role", nextRole, "sender", sender.getName(), "firm", firm);
         }
-        // TODO broadcast to online employees
+        // Firm-wide visibility; the demoted player already got the direct message above.
+        Firm f = firms.getFirmByNameOrId(firm);
+        if (f != null) {
+            notifications.notifyFirmExcept(f.getFirmId(), target.getUniqueId(), "business.staff.demote.staff-broadcast",
+                    "target", target.getCurrentName(), "role", nextRole, "firm", f.getDisplayName());
+        }
     }
 
     @Route("staff list <firm>")
