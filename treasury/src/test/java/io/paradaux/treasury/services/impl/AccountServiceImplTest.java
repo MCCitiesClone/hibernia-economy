@@ -315,6 +315,12 @@ class AccountServiceImplTest {
     }
 
     @Test
+    void governmentAccountExists_delegates() {
+        when(accountMapper.existsGovernmentAccountByName("X")).thenReturn(true);
+        assertThat(svc.governmentAccountExists("X")).isTrue();
+    }
+
+    @Test
     void getBusinessAccountByName_delegates() {
         Account a = new Account();
         when(accountMapper.findBusinessAccountByName("X")).thenReturn(a);

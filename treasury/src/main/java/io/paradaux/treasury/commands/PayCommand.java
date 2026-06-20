@@ -73,6 +73,16 @@ public class PayCommand implements CommandHandler {
         OfflinePlayer target = Bukkit.getOfflinePlayerIfCached(targetName);
         boolean knownPlayer = target != null && (target.hasPlayedBefore() || target.isOnline());
 
+        // A name that is BOTH a known player and a non-archived GOVERNMENT account
+        // (DemocracyCraft runs governments as player alts of the same name) is
+        // ambiguous. Routing must not depend on usercache state, so refuse and
+        // require explicit typing via /pay-account rather than silently paying the
+        // personal account (PAR-142).
+        if (knownPlayer && accountService.governmentAccountExists(targetName)) {
+            message.send(sender, "treasury.pay.ambiguous", "target", targetName);
+            return;
+        }
+
         if (knownPlayer) {
             payPlayer(sender, target, targetName, normalized, memo);
         } else {

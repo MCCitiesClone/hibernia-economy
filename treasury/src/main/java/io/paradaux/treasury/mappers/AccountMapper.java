@@ -71,6 +71,15 @@ public interface AccountMapper {
     Account findGovernmentAccountByName(@Param("name") String name);
 
     @Select("""
+        SELECT COUNT(*) > 0
+          FROM accounts
+         WHERE account_type = 'GOVERNMENT'
+           AND display_name = #{name}
+           AND is_archived = 0
+        """)
+    boolean existsGovernmentAccountByName(@Param("name") String name);
+
+    @Select("""
         SELECT account_id, account_type, owner_uuid_bin, display_name,
                requires_authorization, is_archived, allow_overdraft, credit_limit
           FROM accounts

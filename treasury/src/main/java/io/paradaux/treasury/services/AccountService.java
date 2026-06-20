@@ -92,6 +92,13 @@ public interface AccountService {
     /** Returns the GOVERNMENT account with the given display name, or null if not found. */
     Account getGovernmentAccountByName(String name);
 
+    /**
+     * Returns true if a non-archived GOVERNMENT account with the given display
+     * name exists. A cheap existence check for disambiguating bare-name targets
+     * that also match a player (see PAR-142) without fetching the whole account.
+     */
+    boolean governmentAccountExists(String name);
+
     /** Returns the non-archived BUSINESS account with the given display name, or null if not found. */
     Account getBusinessAccountByName(String name);
 

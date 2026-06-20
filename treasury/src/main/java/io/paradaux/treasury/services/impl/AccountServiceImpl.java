@@ -294,6 +294,12 @@ public class AccountServiceImpl implements AccountService {
 
     @Override
     @Transactional
+    public boolean governmentAccountExists(String name) {
+        return accountMapper.existsGovernmentAccountByName(name);
+    }
+
+    @Override
+    @Transactional
     public List<Account> listGovernmentAccounts() {
         return accountMapper.findAllGovernmentAccounts();
     }
