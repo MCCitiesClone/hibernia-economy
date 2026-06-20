@@ -1,14 +1,45 @@
 import 'server-only';
-import { sql } from 'kysely';
-import { db, uuidToBin, binToUuid } from '@/lib/db';
+import { Kysely, sql } from 'kysely';
+import { db, type DB, uuidToBin, binToUuid } from '@/lib/db';
 
 /**
- * Explorer group RBAC queries. A player's effective capabilities are the union
- * of every group they belong to (see findCapabilities); the rest is admin-tool
- * CRUD for managing groups, their capabilities, their LuckPerms source node, and
- * manual membership. LuckPerms-sourced membership is owned by the reconciliation
- * cron (treasury-api-plugin) and is read-only here.
+ * Explorer group RBAC queries — a pure DAL: each export is a single Kysely query
+ * (plus row→type mapping), no orchestration or validation. A player's effective
+ * capabilities are the union of every group they belong to (see findCapabilities);
+ * the rest is admin-tool CRUD for groups, their capabilities, their LuckPerms
+ * source node, and manual membership. Orchestration (multi-statement writes,
+ * identifier resolution) lives in {@code lib/services/group.ts}. LuckPerms-sourced
+ * membership is owned by the reconciliation cron (treasury-api-plugin) and is
+ * read-only here.
  */
+
+/**
+ * An executor for a query — the shared pool ({@link db}) by default, or a
+ * {@code Transaction<DB>} when the service runs several statements atomically.
+ */
+type Executor = Kysely<DB>;
+
+interface GroupRow {
+  group_id: number;
+  name: string;
+  description: string | null;
+  luckperms_node: string | null;
+  capabilities: string | null;
+  member_count: number | string;
+  luckperms_count: number | string;
+}
+
+function mapGroupRow(row: GroupRow): GroupSummary {
+  return {
+    groupId: row.group_id,
+    name: row.name,
+    description: row.description,
+    luckpermsNode: row.luckperms_node,
+    capabilities: row.capabilities ? row.capabilities.split(',') : [],
+    memberCount: Number(row.member_count),
+    luckpermsMemberCount: Number(row.luckperms_count),
+  };
+}
 
 export interface GroupSummary {
   groupId: number;
@@ -39,15 +70,7 @@ export async function findCapabilities(playerUuid: string): Promise<string[]> {
 }
 
 export async function listGroups(): Promise<GroupSummary[]> {
-  const r = await sql<{
-    group_id: number;
-    name: string;
-    description: string | null;
-    luckperms_node: string | null;
-    capabilities: string | null;
-    member_count: number | string;
-    luckperms_count: number | string;
-  }>`
+  const r = await sql<GroupRow>`
     SELECT g.group_id, g.name, g.description, g.luckperms_node,
            (SELECT GROUP_CONCAT(gc.capability ORDER BY gc.capability)
               FROM explorer_group_capability gc WHERE gc.group_id = g.group_id) AS capabilities,
@@ -57,35 +80,32 @@ export async function listGroups(): Promise<GroupSummary[]> {
     FROM explorer_group g
     ORDER BY g.name
   `.execute(db);
-  return r.rows.map((row) => ({
-    groupId: row.group_id,
-    name: row.name,
-    description: row.description,
-    luckpermsNode: row.luckperms_node,
-    capabilities: row.capabilities ? row.capabilities.split(',') : [],
-    memberCount: Number(row.member_count),
-    luckpermsMemberCount: Number(row.luckperms_count),
-  }));
+  return r.rows.map(mapGroupRow);
 }
 
-export async function getGroup(groupId: number): Promise<GroupSummary | null> {
-  const groups = await listGroups();
-  return groups.find((g) => g.groupId === groupId) ?? null;
+/** Single group by id, or null. Queries by id rather than scanning listGroups(). */
+export async function selectGroupById(groupId: number): Promise<GroupSummary | null> {
+  const r = await sql<GroupRow>`
+    SELECT g.group_id, g.name, g.description, g.luckperms_node,
+           (SELECT GROUP_CONCAT(gc.capability ORDER BY gc.capability)
+              FROM explorer_group_capability gc WHERE gc.group_id = g.group_id) AS capabilities,
+           (SELECT COUNT(*) FROM explorer_group_member gm WHERE gm.group_id = g.group_id) AS member_count,
+           (SELECT COUNT(*) FROM explorer_group_member gm
+              WHERE gm.group_id = g.group_id AND gm.source = 'luckperms') AS luckperms_count
+    FROM explorer_group g
+    WHERE g.group_id = ${groupId}
+  `.execute(db);
+  return r.rows[0] ? mapGroupRow(r.rows[0]) : null;
 }
 
 /**
- * Resolve an admin-typed member identifier to a UUID: accepts a canonical UUID
- * verbatim, otherwise looks up the most-recent player by current name (case-
- * insensitive). Returns null if unresolved.
+ * Most-recent player UUID for a current name (case-insensitive), or null. The
+ * UUID-vs-name branching and validation live in the service.
  */
-export async function resolvePlayerUuid(input: string): Promise<string | null> {
-  const trimmed = input.trim();
-  if (/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(trimmed)) {
-    return trimmed.toLowerCase();
-  }
+export async function findPlayerUuidByName(name: string): Promise<string | null> {
   const r = await sql<{ player_uuid_bin: Buffer }>`
     SELECT player_uuid_bin FROM firm_players
-    WHERE LOWER(current_name) = LOWER(${trimmed})
+    WHERE LOWER(current_name) = LOWER(${name})
     ORDER BY player_uuid_bin LIMIT 1
   `.execute(db);
   return r.rows[0] ? binToUuid(r.rows[0].player_uuid_bin) : null;
@@ -107,16 +127,20 @@ export async function deleteGroup(groupId: number): Promise<void> {
   await sql`DELETE FROM explorer_group WHERE group_id = ${groupId}`.execute(db);
 }
 
-/** Replace a group's capability set wholesale. */
-export async function setGroupCapabilities(groupId: number, capabilities: string[]): Promise<void> {
-  await db.transaction().execute(async (trx) => {
-    await sql`DELETE FROM explorer_group_capability WHERE group_id = ${groupId}`.execute(trx);
-    for (const cap of capabilities) {
-      await sql`
-        INSERT INTO explorer_group_capability (group_id, capability) VALUES (${groupId}, ${cap})
-      `.execute(trx);
-    }
-  });
+/** Deletes every capability row for a group. */
+export async function deleteGroupCapabilities(groupId: number, executor: Executor = db): Promise<void> {
+  await sql`DELETE FROM explorer_group_capability WHERE group_id = ${groupId}`.execute(executor);
+}
+
+/** Inserts a single capability row for a group. */
+export async function insertGroupCapability(
+  groupId: number,
+  capability: string,
+  executor: Executor = db,
+): Promise<void> {
+  await sql`
+    INSERT INTO explorer_group_capability (group_id, capability) VALUES (${groupId}, ${capability})
+  `.execute(executor);
 }
 
 export async function setLuckpermsNode(groupId: number, node: string | null): Promise<void> {

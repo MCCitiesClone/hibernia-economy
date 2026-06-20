@@ -22,7 +22,7 @@ import {
   addManualMember,
   removeManualMember,
   resolvePlayerUuid,
-} from '@/lib/sql/group';
+} from '@/lib/services/group';
 import { isCapability } from '@/lib/auth/capabilities';
 
 const TOKEN_LIFETIME_DAYS = 180;

@@ -4,7 +4,7 @@ import { getViewer } from '@/lib/auth/viewer';
 import { auditView } from '@/lib/audit';
 import { PrivacyGate } from '@/components/PrivacyGate';
 import { BackLink } from '@/components/BackLink';
-import { getGroup, listGroupMembers } from '@/lib/sql/group';
+import { getGroup, listGroupMembers } from '@/lib/services/group';
 import { CAPABILITIES, CAPABILITY_LABELS, CAPABILITY_DESCRIPTIONS } from '@/lib/auth/capabilities';
 import { CapabilitiesForm } from './capabilities-form';
 import { LuckpermsNodeForm } from './luckperms-node-form';

@@ -4,7 +4,7 @@ import type { Route } from 'next';
 import { getViewer } from '@/lib/auth/viewer';
 import { auditView } from '@/lib/audit';
 import { PrivacyGate } from '@/components/PrivacyGate';
-import { listGroups } from '@/lib/sql/group';
+import { listGroups } from '@/lib/services/group';
 import { fmtN } from '@/lib/format';
 import { CreateGroupForm } from './create-group-form';
 import { DeleteGroupButton } from './delete-group-button';
