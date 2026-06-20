@@ -62,7 +62,9 @@ public class FirmRequestServiceImpl implements FirmRequestService {
         }
 
         if (requests.hasPendingJobOffer(firm.getFirmId(), targetId.toString())) {
-            throw new BadCommandException("This user already has a pending invite to join this firm.");
+            throw new BadCommandException("This player already has a pending invite to " + firm.getDisplayName()
+                    + ". Wait for them to accept it, or rescind it first with /firm offer rescind "
+                    + firm.getDisplayName() + " <player>.");
         }
 
         int rowsAffected = requests.createInvite(firm.getFirmId(), targetId.toString(), actorId.toString(), expiresAt);
