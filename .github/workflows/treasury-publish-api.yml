@@ -15,10 +15,6 @@ concurrency:
   group: treasury-publish-api-${{ github.ref }}
   cancel-in-progress: true
 
-defaults:
-  run:
-    working-directory: treasury
-
 jobs:
   publish:
     runs-on: ubuntu-latest
@@ -45,7 +41,7 @@ jobs:
       - name: Determine base version
         id: ver
         run: |
-          BASE_VERSION="$(./gradlew -q properties | awk -F': ' '/^version:/ {print $2}' | head -n1)"
+          BASE_VERSION="$(./gradlew -q :treasury:treasury-api:properties | awk -F': ' '/^version:/ {print $2}' | head -n1)"
           echo "base=$BASE_VERSION" >> $GITHUB_OUTPUT
           echo "Base version: $BASE_VERSION"
 
@@ -65,7 +61,7 @@ jobs:
           echo "Publishing: $PUBLISH_VERSION"
 
       - name: Build & publish treasury-api
-        run: ./gradlew --no-daemon :treasury-api:clean :treasury-api:publish -Pversion=${{ steps.pick.outputs.version }}
+        run: ./gradlew --no-daemon :treasury:treasury-api:clean :treasury:treasury-api:publish -Pversion=${{ steps.pick.outputs.version }}
         env:
           REPO_USER: ${{ secrets.REPO_USER }}
           REPO_PASS: ${{ secrets.REPO_PASS }}
@@ -84,7 +80,7 @@ jobs:
             echo "Release $TAG already exists — skipping."
             exit 0
           fi
-          ASSETS="$(ls treasury-api/build/libs/*.jar 2>/dev/null || true)"
+          ASSETS="$(ls treasury/treasury-api/build/libs/*.jar 2>/dev/null || true)"
           gh release create "$TAG" \
             --target "$GITHUB_SHA" \
             --title "treasury-api $VERSION" \

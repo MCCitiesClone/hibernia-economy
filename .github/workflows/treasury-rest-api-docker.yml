@@ -9,10 +9,6 @@ on:
       - 'treasury-rest-api/**'
       - '.github/workflows/treasury-rest-api-docker.yml'
 
-defaults:
-  run:
-    working-directory: treasury-rest-api
-
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
@@ -20,6 +16,28 @@ jobs:
     steps:
       - name: Checkout source code
         uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Make Gradle wrapper executable
+        run: chmod +x ./gradlew
+
+      # Build the Spring Boot fat jar via the root build (the service is no longer
+      # a standalone Gradle build) and stage it next to the Dockerfile so the
+      # runtime-only image can just COPY it.
+      - name: Build bootJar
+        run: ./gradlew --no-daemon :treasury-rest-api:clean :treasury-rest-api:bootJar -x test
+
+      - name: Stage jar for Docker context
+        run: cp treasury-rest-api/build/libs/*.jar treasury-rest-api/app.jar
 
       - name: Compute tags
         id: tags
@@ -65,7 +83,7 @@ jobs:
           docker build \
             -t "${IMAGE}:${{ steps.tags.outputs.SHA_TAG }}" \
             -t "${IMAGE}:${{ steps.tags.outputs.MUTABLE_TAG }}" \
-            .
+            treasury-rest-api
 
       - name: Push Docker image
         run: |

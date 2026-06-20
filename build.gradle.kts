@@ -18,9 +18,11 @@ plugins {
 }
 
 // The treasury-api / business-api subprojects derive their version from
-// rootProject.version (they publish under it), so set it here. Plugins/apps set
-// their own version in their build.gradle.kts and are unaffected.
+// rootProject.version (they publish under it), so set it here. The publish
+// workflows pass -Pversion=… to cut a release, so honour that property; default
+// to the dev snapshot otherwise. Plugins/apps that pin their own version in their
+// build.gradle.kts override this for themselves.
 allprojects {
     group = "io.paradaux"
-    version = "2.2.1-SNAPSHOT"
+    version = providers.gradleProperty("version").orElse("2.2.1-SNAPSHOT").get()
 }

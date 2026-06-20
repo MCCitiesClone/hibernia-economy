@@ -41,10 +41,6 @@ on:
 permissions:
   contents: read
 
-defaults:
-  run:
-    working-directory: economy-flyway
-
 jobs:
   migrate:
     name: Migrate ${{ inputs.target }}
@@ -87,7 +83,7 @@ jobs:
           FLYWAY_USER: ${{ secrets.FLYWAY_USER }}
           FLYWAY_PASSWORD: ${{ secrets.FLYWAY_PASSWORD }}
           FLYWAY_SCHEMA: ${{ secrets.FLYWAY_SCHEMA }}
-        run: ./gradlew --no-daemon flywayInfo
+        run: ./gradlew --no-daemon :economy-flyway:flywayInfo
 
       - name: flywayMigrate
         env:
@@ -97,9 +93,9 @@ jobs:
           FLYWAY_SCHEMA: ${{ secrets.FLYWAY_SCHEMA }}
         run: |
           if [ "${{ inputs.baseline }}" = "true" ]; then
-            ./gradlew --no-daemon flywayMigrate -Pbaseline=true
+            ./gradlew --no-daemon :economy-flyway:flywayMigrate -Pbaseline=true
           else
-            ./gradlew --no-daemon flywayMigrate
+            ./gradlew --no-daemon :economy-flyway:flywayMigrate
           fi
 
       - name: Post-migrate flywayInfo (audit trail)
@@ -108,4 +104,4 @@ jobs:
           FLYWAY_USER: ${{ secrets.FLYWAY_USER }}
           FLYWAY_PASSWORD: ${{ secrets.FLYWAY_PASSWORD }}
           FLYWAY_SCHEMA: ${{ secrets.FLYWAY_SCHEMA }}
-        run: ./gradlew --no-daemon flywayInfo
+        run: ./gradlew --no-daemon :economy-flyway:flywayInfo

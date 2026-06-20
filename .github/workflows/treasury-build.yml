@@ -13,10 +13,6 @@ on:
       - '.github/workflows/treasury-build.yml'
   workflow_dispatch:
 
-defaults:
-  run:
-    working-directory: treasury
-
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -39,4 +35,4 @@ jobs:
         run: chmod +x ./gradlew
 
       - name: Build Shadow JAR
-        run: ./gradlew --no-daemon clean shadowJar -Pci=true
+        run: ./gradlew --no-daemon :treasury:clean :treasury:shadowJar -Pci=true

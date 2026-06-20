@@ -15,10 +15,6 @@ concurrency:
   group: business-publish-api-${{ github.ref }}
   cancel-in-progress: true
 
-defaults:
-  run:
-    working-directory: business
-
 jobs:
   publish:
     runs-on: ubuntu-latest
@@ -45,7 +41,7 @@ jobs:
       - name: Determine base version
         id: ver
         run: |
-          BASE_VERSION="$(./gradlew -q properties | awk -F': ' '/^version:/ {print $2}' | head -n1)"
+          BASE_VERSION="$(./gradlew -q :business:business-api:properties | awk -F': ' '/^version:/ {print $2}' | head -n1)"
           echo "base=$BASE_VERSION" >> $GITHUB_OUTPUT
 
       - name: Compute publish version
@@ -67,7 +63,7 @@ jobs:
           REPO_USER: ${{ secrets.REPO_USER }}
           REPO_PASS: ${{ secrets.REPO_PASS }}
         run: |
-          ./gradlew --no-daemon :business-api:clean :business-api:publish \
+          ./gradlew --no-daemon :business:business-api:clean :business:business-api:publish \
             -Pversion=${{ steps.pick.outputs.version }}
 
       # Cut a git tag + GitHub release for non-SNAPSHOT publishes (main only).
@@ -84,7 +80,7 @@ jobs:
             echo "Release $TAG already exists — skipping."
             exit 0
           fi
-          ASSETS="$(ls business-api/build/libs/*.jar 2>/dev/null || true)"
+          ASSETS="$(ls business/business-api/build/libs/*.jar 2>/dev/null || true)"
           gh release create "$TAG" \
             --target "$GITHUB_SHA" \
             --title "business-api $VERSION" \

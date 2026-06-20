@@ -20,10 +20,6 @@ on:
 permissions:
   contents: read
 
-defaults:
-  run:
-    working-directory: economy-flyway
-
 jobs:
   info:
     name: flywayInfo + flywayValidate against ${{ inputs.target }}
@@ -54,7 +50,7 @@ jobs:
           FLYWAY_USER: ${{ secrets.FLYWAY_USER }}
           FLYWAY_PASSWORD: ${{ secrets.FLYWAY_PASSWORD }}
           FLYWAY_SCHEMA: ${{ secrets.FLYWAY_SCHEMA }}
-        run: ./gradlew --no-daemon flywayInfo
+        run: ./gradlew --no-daemon :economy-flyway:flywayInfo
 
       # On a green-field DB every migration is "pending" and flywayValidate
       # exits non-zero. Keep it non-fatal so Info still succeeds as the
@@ -66,4 +62,4 @@ jobs:
           FLYWAY_USER: ${{ secrets.FLYWAY_USER }}
           FLYWAY_PASSWORD: ${{ secrets.FLYWAY_PASSWORD }}
           FLYWAY_SCHEMA: ${{ secrets.FLYWAY_SCHEMA }}
-        run: ./gradlew --no-daemon flywayValidate
+        run: ./gradlew --no-daemon :economy-flyway:flywayValidate

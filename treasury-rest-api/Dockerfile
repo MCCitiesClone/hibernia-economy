@@ -1,18 +1,13 @@
-# ── Stage 1: Build Java ────────────────────────────────────────
-FROM eclipse-temurin:21-jdk AS builder
-
-WORKDIR /workspace
-
-# Cache Gradle wrapper & dependencies
-COPY gradlew gradlew.bat settings.gradle.kts build.gradle.kts ./
-COPY gradle/ gradle/
-RUN chmod +x gradlew && ./gradlew dependencies --no-daemon || true
-
-# Copy source and build the fat jar
-COPY src/ src/
-RUN ./gradlew bootJar --no-daemon -x test
-
-# ── Stage 2: Runtime ───────────────────────────────────────────
+# Runtime-only image.
+#
+# In the single root Gradle build, treasury-rest-api can't build standalone, so the
+# Spring Boot fat jar is produced by CI (or locally) via the root build:
+#
+#   ./gradlew :treasury-rest-api:bootJar
+#   cp treasury-rest-api/build/libs/*.jar treasury-rest-api/app.jar
+#   docker build treasury-rest-api
+#
+# This image just packages that prebuilt app.jar.
 FROM eclipse-temurin:21-jre
 
 # Security: run as non-root
@@ -20,8 +15,8 @@ RUN groupadd --system appgroup && useradd --system --gid appgroup appuser
 
 WORKDIR /app
 
-# Copy the built jar from the builder stage
-COPY --from=builder /workspace/build/libs/*.jar app.jar
+# The fat jar, staged next to this Dockerfile by the build before `docker build`.
+COPY app.jar app.jar
 
 RUN chown -R appuser:appgroup /app
 

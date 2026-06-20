@@ -18,10 +18,6 @@ permissions:
   checks: write          # surface JUnit results as a check
   pull-requests: write   # post coverage comment on PRs
 
-defaults:
-  run:
-    working-directory: business
-
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -69,15 +65,15 @@ jobs:
       # blocks defining the UUID functions parse correctly.
       - name: Apply schema to MariaDB service
         run: |
-          mariadb -h 127.0.0.1 -P 3306 -u root -pbusiness business_test < src/test/resources/test-prelude.sql
-          mariadb -h 127.0.0.1 -P 3306 -u root -pbusiness business_test < src/main/resources/sql/schema.sql
+          mariadb -h 127.0.0.1 -P 3306 -u root -pbusiness business_test < business/src/test/resources/test-prelude.sql
+          mariadb -h 127.0.0.1 -P 3306 -u root -pbusiness business_test < business/src/main/resources/sql/schema.sql
 
       - name: Run tests + coverage gate (≥95 % line)
         env:
           BUSINESS_TEST_JDBC_URL: jdbc:mariadb://127.0.0.1:3306/business_test
           BUSINESS_TEST_DB_USER: root
           BUSINESS_TEST_DB_PASS: business
-        run: ./gradlew --no-daemon test jacocoTestReport jacocoTestCoverageVerification -Pci=true
+        run: ./gradlew --no-daemon :business:test :business:jacocoTestReport :business:jacocoTestCoverageVerification -Pci=true
 
       - name: Publish test results
         if: always()

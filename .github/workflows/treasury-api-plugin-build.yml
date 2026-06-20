@@ -13,10 +13,6 @@ on:
       - '.github/workflows/treasury-api-plugin-build.yml'
   workflow_dispatch:
 
-defaults:
-  run:
-    working-directory: treasury-api-plugin
-
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -39,7 +35,7 @@ jobs:
         run: chmod +x ./gradlew
 
       - name: Build Shadow JAR
-        run: ./gradlew --no-daemon clean shadowJar -Pci=true
+        run: ./gradlew --no-daemon :treasury-api-plugin:clean :treasury-api-plugin:shadowJar -Pci=true
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4

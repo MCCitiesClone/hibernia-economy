@@ -21,10 +21,6 @@ on:
 permissions:
   contents: read
 
-defaults:
-  run:
-    working-directory: economy-flyway
-
 jobs:
   clean:
     name: flywayClean against staging
@@ -60,4 +56,4 @@ jobs:
           FLYWAY_USER: ${{ secrets.FLYWAY_USER }}
           FLYWAY_PASSWORD: ${{ secrets.FLYWAY_PASSWORD }}
           FLYWAY_SCHEMA: ${{ secrets.FLYWAY_SCHEMA }}
-        run: ./gradlew --no-daemon flywayClean -PflywayCleanEnabled=true
+        run: ./gradlew --no-daemon :economy-flyway:flywayClean -PflywayCleanEnabled=true
