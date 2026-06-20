@@ -3,6 +3,7 @@ package io.paradaux.treasury.guice;
 import com.google.inject.AbstractModule;
 import com.google.inject.Singleton;
 import com.google.inject.multibindings.Multibinder;
+import io.paradaux.treasury.events.EconomyPlayerLoginListener;
 import io.paradaux.treasury.events.FirstPlayerJoinEvent;
 import io.paradaux.treasury.events.PersonalBalanceTaxListener;
 import org.bukkit.event.Listener;
@@ -21,9 +22,11 @@ public class EventsModule extends AbstractModule {
     protected void configure() {
         bind(FirstPlayerJoinEvent.class).in(Singleton.class);
         bind(PersonalBalanceTaxListener.class).in(Singleton.class);
+        bind(EconomyPlayerLoginListener.class).in(Singleton.class);
 
         Multibinder<Listener> handlerBinder = Multibinder.newSetBinder(binder(), Listener.class);
         handlerBinder.addBinding().to(FirstPlayerJoinEvent.class);
         handlerBinder.addBinding().to(PersonalBalanceTaxListener.class);
+        handlerBinder.addBinding().to(EconomyPlayerLoginListener.class);
     }
 }

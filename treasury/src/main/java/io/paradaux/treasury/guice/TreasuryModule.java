@@ -59,6 +59,7 @@ public class TreasuryModule extends AbstractModule {
         bind(BytebinService.class).to(BytebinServiceImpl.class).in(Singleton.class);
         bind(DataExportService.class).to(DataExportServiceImpl.class).in(Singleton.class);
         bind(GovService.class).to(GovServiceImpl.class).in(Singleton.class);
+        bind(PlayerDirectoryService.class).to(PlayerDirectoryServiceImpl.class).in(Singleton.class);
 
         // Player-facing notifications for automated money movement (tax, salaries).
         bind(EconomyNotifier.class).to(EconomyNotifierImpl.class).in(Singleton.class);

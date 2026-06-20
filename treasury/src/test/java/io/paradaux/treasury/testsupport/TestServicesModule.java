@@ -22,10 +22,12 @@ import io.paradaux.treasury.services.DataExportService;
 import io.paradaux.treasury.services.GovService;
 import io.paradaux.treasury.services.LedgerService;
 import io.paradaux.treasury.services.MembershipService;
+import io.paradaux.treasury.services.PlayerDirectoryService;
 import io.paradaux.treasury.services.TaxCycleRegistry;
 import io.paradaux.treasury.services.impl.AccountServiceImpl;
 import io.paradaux.treasury.services.impl.DataExportServiceImpl;
 import io.paradaux.treasury.services.impl.GovServiceImpl;
+import io.paradaux.treasury.services.impl.PlayerDirectoryServiceImpl;
 import io.paradaux.treasury.services.impl.LedgerServiceImpl;
 import io.paradaux.treasury.services.impl.MembershipServiceImpl;
 import io.paradaux.treasury.utils.AccountRedirectCache;
@@ -54,6 +56,7 @@ public class TestServicesModule extends AbstractModule {
         bind(MembershipService.class).to(MembershipServiceImpl.class).in(Singleton.class);
         bind(LedgerService.class).to(LedgerServiceImpl.class).in(Singleton.class);
         bind(GovService.class).to(GovServiceImpl.class).in(Singleton.class);
+        bind(PlayerDirectoryService.class).to(PlayerDirectoryServiceImpl.class).in(Singleton.class);
         bind(DataExportService.class).to(DataExportServiceImpl.class).in(Singleton.class);
 
         // No-op notifier: the service layer under test has no Bukkit server to

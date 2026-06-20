@@ -133,6 +133,7 @@ public final class MariadbContainerExtension {
         try (Connection conn = dataSource.getConnection();
              Statement st = conn.createStatement()) {
             st.execute("SET FOREIGN_KEY_CHECKS = 0");
+            st.execute("TRUNCATE TABLE economy_players");
             st.execute("TRUNCATE TABLE government_fines");
             st.execute("TRUNCATE TABLE account_redirects");
             st.execute("TRUNCATE TABLE player_login_times");

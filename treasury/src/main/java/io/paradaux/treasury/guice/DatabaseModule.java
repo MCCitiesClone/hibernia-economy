@@ -40,6 +40,7 @@ public class DatabaseModule extends AbstractModule {
                 addMapperClass(GovernmentFineMapper.class);
                 addMapperClass(GroupMembershipMapper.class);
                 addMapperClass(PlayerLoginMapper.class);
+                addMapperClass(EconomyPlayerMapper.class);
                 addMapperClass(AccountRedirectMapper.class);
                 addMapperClass(ChestShopMarketMapper.class);
 
