@@ -7,8 +7,8 @@ plugins {
 // Compiled against the Paper API (a superset of spigot-api) so the folded-in
 // version adapters' Paper-only snapshot API (BlockDestroyEvent, getState(boolean),
 // getHolder(boolean)) resolves. ChestShop runs on one modern server version, so
-// the old 1.13.2 multi-version-adapter baseline is gone.
-val paperApiVersion = "1.21.11-R0.1-SNAPSHOT"
+// the old 1.13.2 multi-version-adapter baseline is gone. The Paper version is
+// pinned centrally in gradle/libs.versions.toml (libs.paper.api).
 
 // Maven's `provided` scope is visible to tests; Gradle's `compileOnly` is not.
 // Make the provided APIs visible to test *compilation*, but NOT to the test
@@ -32,7 +32,7 @@ configurations.configureEach {
 dependencies {
     // --- server API: keep transitive (Bukkit compilation needs its deps:
     //     configurate/yaml/guava/etc.).
-    compileOnly("io.papermc.paper:paper-api:$paperApiVersion")
+    compileOnly(libs.paper.api)
     compileOnly("org.apache.logging.log4j:log4j-core:2.17.2")
     compileOnly("com.google.code.findbugs:jsr305:3.0.2")
 
@@ -94,14 +94,13 @@ dependencies {
 
     // --- tests
     // Server API on the test runtime (tests mock/instantiate org.bukkit.* types).
-    testRuntimeOnly("io.papermc.paper:paper-api:$paperApiVersion")
-    testImplementation(platform("org.junit:junit-bom:5.13.3"))
-    testImplementation("org.junit.jupiter:junit-jupiter-engine")
-    testImplementation("org.junit.jupiter:junit-jupiter-params")
-    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
-    testImplementation("org.mockito:mockito-core:5.14.2")
-    testImplementation("org.mockito:mockito-junit-jupiter:5.14.2")
-    testImplementation("org.assertj:assertj-core:3.26.3")
+    testRuntimeOnly(libs.paper.api)
+    testImplementation(platform(libs.junit.bom))
+    testImplementation(libs.junit.jupiter)
+    testRuntimeOnly(libs.junit.platform.launcher)
+    testImplementation(libs.mockito.core)
+    testImplementation(libs.mockito.junit.jupiter)
+    testImplementation(libs.assertj.core)
 }
 
 // plugin.yml carries ${bukkit.plugin.version}; the old Maven build expanded it

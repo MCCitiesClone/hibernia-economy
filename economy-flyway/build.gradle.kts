@@ -23,8 +23,8 @@ plugins {
     id("org.flywaydb.flyway") version "10.22.0"
 }
 
-group = "io.paradaux"
-version = providers.gradleProperty("version").orElse("1.0.0-SNAPSHOT").get()
+// group + version are set centrally by the root allprojects block (single
+// mono-repo version, 2.2.1-SNAPSHOT, overridable with -Pversion).
 description = "Flyway-managed schema for the shared DemocracyCraft economy database"
 
 java {

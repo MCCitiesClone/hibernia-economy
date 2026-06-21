@@ -21,8 +21,9 @@ val resolvedBuildDescription: String =
     if (ciBuildNumber != null) "(build $ciBuildNumber)" else "(compiled at $buildTimestamp)"
 
 allprojects {
+    // group + version inherited from the root allprojects block (single mono-repo
+    // version, 2.2.1-SNAPSHOT). ChestShop joins the unified version per PAR-243.
     group = "io.paradaux"
-    version = "4.0.2"
 
     extra["buildType"] = resolvedBuildType
     extra["buildNumber"] = resolvedBuildNumber

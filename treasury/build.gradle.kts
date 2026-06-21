@@ -7,10 +7,8 @@ plugins {
     id("maven-publish")
 }
 
-group = "io.paradaux"
-version = providers.gradleProperty("version")
-    .orElse("2.2.1-SNAPSHOT")
-    .get()
+// group + version are set centrally by the root allprojects block (single
+// mono-repo version, 2.2.1-SNAPSHOT, overridable with -Pversion).
 description = "Treasury"
 
 java {
@@ -45,7 +43,7 @@ repositories {
 
 dependencies {
     // Paper API (provided by server)
-    compileOnly("io.papermc.paper:paper-api:1.21.11-R0.1-SNAPSHOT")
+    compileOnly(libs.paper.api)
 
     // Vault API, exclude Bukkit to avoid capability conflict with Paper
     compileOnly("com.github.MilkBowl:VaultAPI:1.7") {
@@ -53,76 +51,75 @@ dependencies {
     }
 
     // LuckPerms API (optional softdepend)
-    compileOnly("net.luckperms:api:5.4")
+    compileOnly(libs.luckperms.api)
 
     // log4j-core: provided by Paper at runtime; needed at compile time
     // to programmatically adjust log levels for our package hierarchy.
-    compileOnly("org.apache.logging.log4j:log4j-core:2.20.0")
+    compileOnly(libs.log4j.core)
 
     // Treasury API submodule
     implementation(project(":treasury:treasury-api"))
 
     // Hibernia Framework
-    implementation("io.paradaux:hibernia-framework:1.0.2")
+    implementation(libs.hibernia.framework)
 
     // Runtime impls
-    implementation("com.zaxxer:HikariCP:6.2.1")
-    implementation("org.mariadb.jdbc:mariadb-java-client:3.5.2")
-    implementation("org.reflections:reflections:0.10.2")
-    implementation("org.mybatis:mybatis:3.5.16")
-    implementation("org.mybatis:mybatis-guice:4.0.0")
+    implementation(libs.hikaricp)
+    implementation(libs.mariadb.java.client)
+    implementation(libs.reflections)
+    implementation(libs.mybatis.core)
+    implementation(libs.mybatis.guice)
 
     // Guice + AOP. mybatis-guice's @Transactional uses AOP interception,
     // so we ship the standard guice jar (which bundles cglib for proxies).
-    implementation("com.google.inject:guice:7.0.0")
+    implementation(libs.guice)
 
     // Lombok
-    compileOnly("org.projectlombok:lombok:1.18.34")
-    annotationProcessor("org.projectlombok:lombok:1.18.34")
-    testCompileOnly("org.projectlombok:lombok:1.18.34")
-    testAnnotationProcessor("org.projectlombok:lombok:1.18.34")
+    compileOnly(libs.lombok)
+    annotationProcessor(libs.lombok)
+    testCompileOnly(libs.lombok)
+    testAnnotationProcessor(libs.lombok)
 
     // ---- Test dependencies ----
-    testImplementation(platform("org.junit:junit-bom:5.11.3"))
-    testImplementation("org.junit.jupiter:junit-jupiter")
-    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+    testImplementation(platform(libs.junit.bom))
+    testImplementation(libs.junit.jupiter)
+    testRuntimeOnly(libs.junit.platform.launcher)
 
-    testImplementation("org.assertj:assertj-core:3.26.3")
-    testImplementation("org.mockito:mockito-core:5.14.2")
-    testImplementation("org.mockito:mockito-junit-jupiter:5.14.2")
+    testImplementation(libs.assertj.core)
+    testImplementation(libs.mockito.core)
+    testImplementation(libs.mockito.junit.jupiter)
 
     // Embedded MariaDB for integration tests — no Docker required.
     // MariaDB4j unpacks a real MariaDB binary into a temp dir and runs it on a
-    // dynamic port. Schema loading goes through the mariadb CLI client, so
-    // DELIMITER blocks in schema.sql parse correctly.
-    testImplementation("ch.vorburger.mariaDB4j:mariaDB4j:3.2.0")
+    // dynamic port.
+    testImplementation(libs.mariadb4j)
 
     // Wiring used by services in tests (impls; production scope is `implementation`)
-    testImplementation("com.zaxxer:HikariCP:6.2.1")
-    testImplementation("org.mariadb.jdbc:mariadb-java-client:3.5.2")
-    testImplementation("org.mybatis:mybatis:3.5.16")
-    testImplementation("org.mybatis:mybatis-guice:4.0.0")
-    testImplementation("com.google.inject:guice:7.0.0")
+    testImplementation(libs.hikaricp)
+    testImplementation(libs.mariadb.java.client)
+    testImplementation(libs.mybatis.core)
+    testImplementation(libs.mybatis.guice)
+    testImplementation(libs.guice)
 
     // LuckPerms is a compileOnly soft-dependency in production. MembershipServiceImpl
     // declares an `@Inject(optional = true)` setter that takes a LuckPerms parameter, so
     // Guice needs the class on the classpath at injection time even when no binding exists.
     // Tests also mock LuckPerms to cover the group-aware membership paths.
-    testImplementation("net.luckperms:api:5.4")
+    testImplementation(libs.luckperms.api)
 
     // Paper API at test scope so Mockito can mock FileConfiguration / OfflinePlayer /
     // Player when testing classes that read config from a Bukkit plugin.
-    testImplementation("io.papermc.paper:paper-api:1.21.11-R0.1-SNAPSHOT")
+    testImplementation(libs.paper.api)
 
     // SLF4J impl for tests so Lombok @Slf4j calls have a backing logger
-    testRuntimeOnly("org.slf4j:slf4j-simple:2.0.16")
+    testRuntimeOnly(libs.slf4j.simple)
 
     // Integration tests build their schema by running the authoritative
     // economy-flyway migrations (staged onto the test classpath below), so the
     // tests and production share one source of schema truth — no bundled
     // schema.sql snapshot to drift. flyway-mysql handles the MySQL/MariaDB URL.
-    testImplementation("org.flywaydb:flyway-core:10.22.0")
-    testImplementation("org.flywaydb:flyway-mysql:10.22.0")
+    testImplementation(libs.flyway.core)
+    testImplementation(libs.flyway.mysql)
 }
 
 // Stage the economy-flyway migrations onto the test classpath (under db/migration)
@@ -259,7 +256,7 @@ tasks {
 }
 
 jacoco {
-    toolVersion = "0.8.12"
+    toolVersion = libs.versions.jacoco.get()
 }
 
 val isCi = project.hasProperty("ci")

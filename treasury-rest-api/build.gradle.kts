@@ -4,8 +4,8 @@ plugins {
     id("io.spring.dependency-management")
 }
 
-group = "io.paradaux"
-version = "2.1.0-SNAPSHOT"
+// group + version are set centrally by the root allprojects block (single
+// mono-repo version, 2.2.1-SNAPSHOT, overridable with -Pversion).
 description = "treasury-rest-api"
 
 java {
@@ -50,9 +50,9 @@ dependencies {
     implementation("com.github.ben-manes.caffeine:caffeine:3.1.8")
 
     // JWT
-    implementation("io.jsonwebtoken:jjwt-api:0.12.6")
-    runtimeOnly("io.jsonwebtoken:jjwt-impl:0.12.6")
-    runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.12.6")
+    implementation(libs.jjwt.api)
+    runtimeOnly(libs.jjwt.impl)
+    runtimeOnly(libs.jjwt.jackson)
 
     compileOnly("org.projectlombok:lombok")
     developmentOnly("org.springframework.boot:spring-boot-devtools")
@@ -65,8 +65,8 @@ dependencies {
     testImplementation("org.mybatis.spring.boot:mybatis-spring-boot-starter-test:4.0.1")
     // Embedded MariaDB for market read-side integration tests (real MariaDB SQL:
     // ON DUPLICATE KEY, DATE_FORMAT, INTERVAL — H2 can't stand in).
-    testImplementation("ch.vorburger.mariaDB4j:mariaDB4j:3.2.0")
-    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+    testImplementation(libs.mariadb4j)
+    testRuntimeOnly(libs.junit.platform.launcher)
 }
 
 tasks.withType<Test> {

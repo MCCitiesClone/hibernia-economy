@@ -1,5 +1,5 @@
 name: TreasuryAPI
-version: '2.1.0'
+version: '2.2.1'
 main: io.paradaux.treasuryapi.TreasuryAPI
 api-version: '1.21'
 depend: [ Treasury, Business ]

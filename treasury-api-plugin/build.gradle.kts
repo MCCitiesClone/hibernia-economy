@@ -5,10 +5,8 @@ plugins {
     id("com.gradleup.shadow")
 }
 
-group = "io.paradaux"
-version = providers.gradleProperty("version")
-    .orElse("2.1.0-SNAPSHOT")
-    .get()
+// group + version are set centrally by the root allprojects block (single
+// mono-repo version, 2.2.1-SNAPSHOT, overridable with -Pversion).
 description = "TreasuryAPI"
 
 java {
@@ -39,7 +37,7 @@ repositories {
 
 dependencies {
     // Paper API (provided by server)
-    compileOnly("io.papermc.paper:paper-api:1.21.10-R0.1-SNAPSHOT")
+    compileOnly(libs.paper.api)
 
     // Treasury API (provided at runtime by Treasury plugin)
     compileOnly(project(":treasury:treasury-api"))
@@ -48,36 +46,36 @@ dependencies {
     compileOnly(project(":business:business-api"))
 
     // LuckPerms API (optional softdepend — used by the group reconciliation cron)
-    compileOnly("net.luckperms:api:5.4")
+    compileOnly(libs.luckperms.api)
 
     // Hibernia Framework
-    implementation("io.paradaux:hibernia-framework:1.0.2")
+    implementation(libs.hibernia.framework)
 
     // Runtime impls
-    implementation("com.zaxxer:HikariCP:6.2.1")
-    implementation("org.mariadb.jdbc:mariadb-java-client:3.5.2")
-    implementation("org.reflections:reflections:0.10.2")
-    implementation("org.mybatis:mybatis:3.5.16")
-    implementation("org.mybatis:mybatis-guice:4.0.0")
+    implementation(libs.hikaricp)
+    implementation(libs.mariadb.java.client)
+    implementation(libs.reflections)
+    implementation(libs.mybatis.core)
+    implementation(libs.mybatis.guice)
 
     // Guice
-    implementation("com.google.inject:guice:7.0.0")
+    implementation(libs.guice)
 
     // JJWT (for JWT API key signing)
-    implementation("io.jsonwebtoken:jjwt-api:0.12.6")
-    runtimeOnly("io.jsonwebtoken:jjwt-impl:0.12.6")
-    runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.12.6")
+    implementation(libs.jjwt.api)
+    runtimeOnly(libs.jjwt.impl)
+    runtimeOnly(libs.jjwt.jackson)
 
     // Lombok
-    compileOnly("org.projectlombok:lombok:1.18.34")
-    annotationProcessor("org.projectlombok:lombok:1.18.34")
-    testCompileOnly("org.projectlombok:lombok:1.18.34")
-    testAnnotationProcessor("org.projectlombok:lombok:1.18.34")
+    compileOnly(libs.lombok)
+    annotationProcessor(libs.lombok)
+    testCompileOnly(libs.lombok)
+    testAnnotationProcessor(libs.lombok)
 
     // Tests
-    testImplementation(platform("org.junit:junit-bom:5.11.3"))
-    testImplementation("org.junit.jupiter:junit-jupiter")
-    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+    testImplementation(platform(libs.junit.bom))
+    testImplementation(libs.junit.jupiter)
+    testRuntimeOnly(libs.junit.platform.launcher)
 }
 
 tasks {
