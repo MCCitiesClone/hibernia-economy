@@ -189,7 +189,10 @@ The full set lives in [wiki/conventions.md](wiki/conventions.md).
 
 ## Contributing & issue tracking
 
-Contributions are welcome — start with **[CONTRIBUTING.md](CONTRIBUTING.md)**.
+Contributions are welcome — start with **[CONTRIBUTING.md](CONTRIBUTING.md)** and
+the **[Code of Conduct](CODE_OF_CONDUCT.md)**. Note the project runs a
+single-maintainer governance model: the lead maintainer has final say on scope and
+what lands in the plugins (see the Code of Conduct).
 
 > **This project does not use GitHub Issues.** Work is tracked in **Tesks** (refs
 > look like `PAR-123`). To report a bug, request a feature, or pick something up,
