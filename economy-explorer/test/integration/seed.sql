@@ -94,8 +94,9 @@ INSERT INTO account_balances_mat (account_id, balance) VALUES (8, 0.00);
 INSERT INTO explorer_identity (keycloak_sub, player_uuid_bin, minecraft_name, linked_by) VALUES
   ('e2e-bedrock', UNHEX('0000000000000000000000000000BED0'), '.BedrockBob', 'in-game:.BedrockBob');
 
--- Government department viewer (PAR-237): a "secretary" granted read-only view of
--- government account #5 (City Hall) — not its owner, not a member. Drives the
--- canReadAccount web gate that lets them see the department's ledger history.
-INSERT INTO account_viewers (account_id, viewer_uuid_bin, added_by_uuid_bin) VALUES
-  (5, UNHEX('00000000000000000000000000005EC0'), UNHEX('0000000000000000000000000000A1CE'));
+-- Government department viewer (PAR-237/PAR-249): a "secretary" granted VIEWER-level
+-- access to government account #5 (City Hall) in the consolidated account_access
+-- table — not its owner, not a member. Drives the canReadAccount web gate that lets
+-- them see the department's ledger history.
+INSERT INTO account_access (account_id, subject_uuid_bin, level, added_by_uuid_bin) VALUES
+  (5, UNHEX('00000000000000000000000000005EC0'), 'VIEWER', UNHEX('0000000000000000000000000000A1CE'));

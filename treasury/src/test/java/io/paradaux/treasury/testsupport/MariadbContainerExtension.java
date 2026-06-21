@@ -137,12 +137,8 @@ public final class MariadbContainerExtension {
             st.execute("TRUNCATE TABLE government_fines");
             st.execute("TRUNCATE TABLE account_redirects");
             st.execute("TRUNCATE TABLE player_login_times");
-            st.execute("TRUNCATE TABLE account_group_authorizers");
-            st.execute("TRUNCATE TABLE account_group_viewers");
-            st.execute("TRUNCATE TABLE account_group_members");
-            st.execute("TRUNCATE TABLE account_authorizers");
-            st.execute("TRUNCATE TABLE account_viewers");
-            st.execute("TRUNCATE TABLE account_members");
+            st.execute("TRUNCATE TABLE account_group_access");
+            st.execute("TRUNCATE TABLE account_access");
             st.execute("TRUNCATE TABLE account_balances_mat");
             st.execute("TRUNCATE TABLE ledger_postings");
             st.execute("TRUNCATE TABLE ledger_txns");

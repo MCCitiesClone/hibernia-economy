@@ -79,12 +79,12 @@ class MembershipServiceImplTest {
     }
 
     @Test
-    void removeMember_alsoRemovesAuthorizerRow() {
+    void removeMember_delegates_noCascade() {
         UUID m = UUID.randomUUID();
         svc.removeMember(1, m);
-        // FK constraint: removing a member cascades from authorizer first.
-        verify(membershipMapper).removeAuthorizer(1, m);
+        // One consolidated row — removeMember (level >= MEMBER) covers an authorizer.
         verify(membershipMapper).removeMember(1, m);
+        verify(membershipMapper, never()).removeAuthorizer(anyInt(), any());
     }
 
     @Test
@@ -100,16 +100,16 @@ class MembershipServiceImplTest {
         assertThatThrownBy(() -> svc.addAuthorizer(1, a, UUID.randomUUID()))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("must be a member");
-        verify(membershipMapper, never()).addAuthorizer(anyInt(), any(), any());
+        verify(membershipMapper, never()).promoteToAuthorizer(anyInt(), any());
     }
 
     @Test
-    void addAuthorizer_memberPresent_delegates() {
+    void addAuthorizer_memberPresent_promotes() {
         UUID a = UUID.randomUUID();
         UUID by = UUID.randomUUID();
         when(membershipMapper.isMember(1, a)).thenReturn(1);
         svc.addAuthorizer(1, a, by);
-        verify(membershipMapper).addAuthorizer(1, a, by);
+        verify(membershipMapper).promoteToAuthorizer(1, a);
     }
 
     @Test
@@ -135,10 +135,10 @@ class MembershipServiceImplTest {
     }
 
     @Test
-    void removeGroupMember_alsoRemovesGroupAuthorizer() {
+    void removeGroupMember_delegates_noCascade() {
         svc.removeGroupMember(1, "vip");
-        verify(groupMappers).removeGroupAuthorizer(1, "vip");
         verify(groupMappers).removeGroupMember(1, "vip");
+        verify(groupMappers, never()).removeGroupAuthorizer(anyInt(), any());
     }
 
     @Test
@@ -156,11 +156,11 @@ class MembershipServiceImplTest {
     }
 
     @Test
-    void addGroupAuthorizer_groupPresent_delegates() {
+    void addGroupAuthorizer_groupPresent_promotes() {
         when(groupMappers.getGroupMembers(1)).thenReturn(List.of("vip"));
         UUID by = UUID.randomUUID();
         svc.addGroupAuthorizer(1, "vip", by);
-        verify(groupMappers).addGroupAuthorizer(1, "vip", by);
+        verify(groupMappers).promoteGroupToAuthorizer(1, "vip");
     }
 
     @Test

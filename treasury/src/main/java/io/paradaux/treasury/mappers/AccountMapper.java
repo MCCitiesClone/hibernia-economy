@@ -94,8 +94,9 @@ public interface AccountMapper {
         SELECT DISTINCT a.account_id, a.account_type, a.owner_uuid_bin, a.display_name,
                a.requires_authorization, a.is_archived, a.allow_overdraft, a.credit_limit
           FROM accounts a
-          JOIN account_members am ON a.account_id = am.account_id
-         WHERE am.member_uuid_bin = #{memberUuid}
+          JOIN account_access am ON a.account_id = am.account_id
+         WHERE am.subject_uuid_bin = #{memberUuid}
+           AND am.level IN ('MEMBER','AUTHORIZER') AND am.removed_at IS NULL
         """)
     @ResultMap("accountMap")
     List<Account> findAccountsByMember(@Param("memberUuid") UUID memberUuid);

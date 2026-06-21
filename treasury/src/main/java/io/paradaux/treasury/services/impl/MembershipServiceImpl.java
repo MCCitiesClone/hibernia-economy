@@ -87,8 +87,8 @@ public class MembershipServiceImpl implements MembershipService {
     @Override
     @Transactional
     public void removeMember(int accountId, UUID memberUuid) {
-        // Removing a member cascades to remove their authorizer row (FK constraint)
-        membershipMapper.removeAuthorizer(accountId, memberUuid);
+        // One row per subject (PAR-249): removing member access (level >= MEMBER)
+        // covers an authorizer too — there's no separate authorizer row to cascade.
         membershipMapper.removeMember(accountId, memberUuid);
     }
 
@@ -101,11 +101,12 @@ public class MembershipServiceImpl implements MembershipService {
     @Override
     @Transactional
     public void addAuthorizer(int accountId, UUID authorizerUuid, UUID addedByUuid) {
-        // Schema FK requires authorizer to also be a member
+        // An authorizer is a member who can also manage access, so they must
+        // already be a member; promotion just raises the level on their row.
         if (membershipMapper.isMember(accountId, authorizerUuid) == 0) {
             throw new IllegalStateException("UUID must be a member before being made an authorizer");
         }
-        membershipMapper.addAuthorizer(accountId, authorizerUuid, addedByUuid);
+        membershipMapper.promoteToAuthorizer(accountId, authorizerUuid);
     }
 
     @Override
@@ -131,8 +132,7 @@ public class MembershipServiceImpl implements MembershipService {
     @Override
     @Transactional
     public void removeGroupMember(int accountId, String lpGroup) {
-        // Remove group authorizer status first (FK dependency)
-        groupMembershipMapper.removeGroupAuthorizer(accountId, lpGroup);
+        // One row per group (PAR-249): removing member access covers an authorizer.
         groupMembershipMapper.removeGroupMember(accountId, lpGroup);
     }
 
@@ -150,7 +150,7 @@ public class MembershipServiceImpl implements MembershipService {
         if (!members.contains(lpGroup)) {
             throw new IllegalStateException("Group '" + lpGroup + "' must be a group member before being made a group authorizer");
         }
-        groupMembershipMapper.addGroupAuthorizer(accountId, lpGroup, addedByUuid);
+        groupMembershipMapper.promoteGroupToAuthorizer(accountId, lpGroup);
     }
 
     @Override

@@ -25,35 +25,29 @@ CREATE TABLE `account_balances_mat` (
   PRIMARY KEY (`account_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE `account_members` (
+-- Consolidated per-account access (PAR-249): one row per (account, subject) on
+-- the ordered scale VIEWER < MEMBER < AUTHORIZER.
+CREATE TABLE `account_access` (
   `account_id` int(10) unsigned NOT NULL,
-  `member_uuid_bin` binary(16) NOT NULL,
+  `subject_uuid_bin` binary(16) NOT NULL,
+  `level` enum('VIEWER','MEMBER','AUTHORIZER') NOT NULL,
   `added_by_uuid_bin` binary(16) NOT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `left_at` timestamp NULL DEFAULT NULL,
-  PRIMARY KEY (`account_id`,`member_uuid_bin`),
-  KEY `idx_member_uuid` (`member_uuid_bin`),
-  KEY `idx_member_active` (`account_id`,`left_at`)
+  `removed_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`account_id`,`subject_uuid_bin`),
+  KEY `idx_access_subject` (`subject_uuid_bin`),
+  KEY `idx_access_active` (`account_id`,`removed_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE `account_authorizers` (
+CREATE TABLE `account_group_access` (
   `account_id` int(10) unsigned NOT NULL,
-  `authorizer_uuid_bin` binary(16) NOT NULL,
+  `lp_group` varchar(64) NOT NULL,
+  `level` enum('VIEWER','MEMBER','AUTHORIZER') NOT NULL,
   `added_by_uuid_bin` binary(16) NOT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `revoked_at` timestamp NULL DEFAULT NULL,
-  PRIMARY KEY (`account_id`,`authorizer_uuid_bin`),
-  KEY `idx_auth_active` (`account_id`,`revoked_at`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-CREATE TABLE `account_viewers` (
-  `account_id` int(10) unsigned NOT NULL,
-  `viewer_uuid_bin` binary(16) NOT NULL,
-  `added_by_uuid_bin` binary(16) NOT NULL,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
-  `left_at` timestamp NULL DEFAULT NULL,
-  PRIMARY KEY (`account_id`,`viewer_uuid_bin`),
-  KEY `idx_viewer_active` (`account_id`,`left_at`)
+  `created_at` timestamp(3) NOT NULL DEFAULT current_timestamp(3),
+  `removed_at` timestamp(3) NULL DEFAULT NULL,
+  PRIMARY KEY (`account_id`,`lp_group`),
+  KEY `idx_gaccess_active` (`account_id`,`removed_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `ledger_txns` (

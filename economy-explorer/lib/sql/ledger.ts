@@ -192,14 +192,13 @@ export async function findAccount(accountId: number): Promise<ExplorerAccountRow
  */
 export async function canReadAccount(accountId: number, viewerUuid: string): Promise<boolean> {
   const bin = uuidToBin(viewerUuid);
+  // Access is the consolidated account_access table (PAR-249): any active row —
+  // VIEWER, MEMBER, or AUTHORIZER — can read. LuckPerms-group grants
+  // (account_group_access) resolve in-game only, so web access is by UUID.
   const result = await sql<{ allowed: number }>`
-    SELECT (
-         EXISTS(SELECT 1 FROM account_members
-                 WHERE account_id = ${accountId} AND member_uuid_bin = ${bin} AND left_at IS NULL)
-      OR EXISTS(SELECT 1 FROM account_authorizers
-                 WHERE account_id = ${accountId} AND authorizer_uuid_bin = ${bin} AND revoked_at IS NULL)
-      OR EXISTS(SELECT 1 FROM account_viewers
-                 WHERE account_id = ${accountId} AND viewer_uuid_bin = ${bin} AND left_at IS NULL)
+    SELECT EXISTS(
+      SELECT 1 FROM account_access
+       WHERE account_id = ${accountId} AND subject_uuid_bin = ${bin} AND removed_at IS NULL
     ) AS allowed
   `.execute(db);
   return Number(result.rows[0]?.allowed ?? 0) === 1;

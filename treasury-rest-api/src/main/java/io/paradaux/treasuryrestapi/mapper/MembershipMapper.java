@@ -14,14 +14,16 @@ public interface MembershipMapper {
      * given account. Used by the transaction history endpoint to allow
      * business-account members to view history beyond their own account.
      *
-     * <p>The {@code account_members} table is soft-deleted: removed members
-     * keep the row with {@code left_at} set. Filter on {@code left_at IS
-     * NULL} so a removed member can no longer access account history via
-     * this REST API.
+     * <p>Access lives in the consolidated {@code account_access} table (PAR-249),
+     * one row per (account, subject) on the ordered scale VIEWER &lt; MEMBER &lt;
+     * AUTHORIZER. "Member" means level MEMBER or AUTHORIZER (an authorizer is a
+     * member); a read-only VIEWER does not count. Soft-deleted via
+     * {@code removed_at}, so a revoked member can no longer access history here.
      */
-    @Select("SELECT COUNT(*) FROM account_members " +
+    @Select("SELECT COUNT(*) FROM account_access " +
             "WHERE account_id = #{accountId} " +
-            "  AND member_uuid_bin = #{memberUuid} " +
-            "  AND left_at IS NULL")
+            "  AND subject_uuid_bin = #{memberUuid} " +
+            "  AND level IN ('MEMBER','AUTHORIZER') " +
+            "  AND removed_at IS NULL")
     int isMember(@Param("accountId") long accountId, @Param("memberUuid") UUID memberUuid);
 }

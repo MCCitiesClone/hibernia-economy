@@ -26,8 +26,9 @@ export async function findAccountsForPlayer(playerUuid: string): Promise<Explore
     LEFT JOIN account_balances_mat abm ON abm.account_id = a.account_id
     LEFT JOIN firm_players fp ON fp.player_uuid_bin = a.owner_uuid_bin
     WHERE a.owner_uuid_bin = ${bin}
-       OR a.account_id IN (SELECT account_id FROM account_members
-                           WHERE member_uuid_bin = ${bin} AND left_at IS NULL)
+       OR a.account_id IN (SELECT account_id FROM account_access
+                           WHERE subject_uuid_bin = ${bin}
+                             AND level IN ('MEMBER','AUTHORIZER') AND removed_at IS NULL)
     ORDER BY balance DESC
   `.execute(db);
   return r.rows.map((row) => ({
