@@ -100,11 +100,18 @@ public class FirmTransactionServiceImpl implements FirmTransactionService {
 
     /**
      * Builds the transfer reason for a deposit, optionally appending a player-supplied
-     * memo. The reason column is VARCHAR(255), so the memo is sanitized (control chars
-     * stripped, whitespace collapsed) and the whole string is capped to fit (PAR-10).
+     * memo (PAR-10).
      */
     private static String depositReason(String memo) {
-        String base = "Business deposit";
+        return reasonWithMemo("Business deposit", memo);
+    }
+
+    /**
+     * Appends an optional player-supplied memo to a transfer reason. The reason column
+     * is VARCHAR(255), so the memo is sanitized (whitespace collapsed, trimmed) and the
+     * whole string is capped to fit. A blank/null memo yields {@code base} unchanged.
+     */
+    private static String reasonWithMemo(String base, String memo) {
         if (memo == null) {
             return base;
         }
@@ -380,13 +387,18 @@ public class FirmTransactionServiceImpl implements FirmTransactionService {
 
     @Override
     public long payFirm(Integer sourceFirmId, Integer targetFirmId, UUID actorUuid, BigDecimal amount) {
+        return payFirm(sourceFirmId, targetFirmId, actorUuid, amount, null);
+    }
+
+    @Override
+    public long payFirm(Integer sourceFirmId, Integer targetFirmId, UUID actorUuid, BigDecimal amount, String memo) {
         int sourceAccountId = resolveAccountId(sourceFirmId);
         int destAccountId = resolveAccountId(targetFirmId);
         if (sourceAccountId == destAccountId) {
             throw new IllegalArgumentException("Source and destination accounts are the same.");
         }
-        return payOut(sourceAccountId, destAccountId, actorUuid, amount,
-                "Business payment: " + firmName(sourceFirmId) + " -> " + firmName(targetFirmId));
+        String base = "Business payment: " + firmName(sourceFirmId) + " -> " + firmName(targetFirmId);
+        return payOut(sourceAccountId, destAccountId, actorUuid, amount, reasonWithMemo(base, memo));
     }
 
     @Override

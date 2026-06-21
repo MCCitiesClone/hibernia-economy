@@ -91,6 +91,13 @@ public interface FirmTransactionService {
     long payFirm(Integer sourceFirmId, Integer targetFirmId, UUID actorUuid, BigDecimal amount);
 
     /**
+     * As {@link #payFirm(Integer, Integer, UUID, BigDecimal)} but records an
+     * optional free-text memo as part of the transfer reason (PAR-138). A
+     * blank/null memo is equivalent to the no-memo overload.
+     */
+    long payFirm(Integer sourceFirmId, Integer targetFirmId, UUID actorUuid, BigDecimal amount, String memo);
+
+    /**
      * Firm pays another firm out of a specific source account into the target
      * firm's default account. As {@link #payFirm} but the source account is
      * explicit and must belong to the source firm.

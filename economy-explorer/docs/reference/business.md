@@ -188,6 +188,7 @@ Shorthand that acts on the firm's **default** account, so you don't pass an ID:
 | `/business pay into <firm> <amount>` | Pay your money into the default account. |
 | `/business pay player <firm> <player> <amount>` | Pay a player from the default account. |
 | `/business pay business <firm> <target> <amount>` | Pay another firm from the default account. |
+| `/business send <source> <target> <amount> [memo]` | Send money from one of your firms to another, with an optional memo. Run `/business send` with no arguments to list your firms and their balances first. |
 | `/business transactions <firm> [page]` | History across all the firm's accounts. |
 
 ## Ownership transfer
@@ -230,7 +231,7 @@ in-firm role.
 | `/business disband` | `business.disband` | owner only |
 | `/business info` | `business.info` | — |
 | `/business list` · `list <player>` · `list all` | `business.list` · `business.list.other` · `business.list.all` | — |
-| `/business deposit` · `balance` · `withdraw` · `pay player` · `pay business` · `transactions` | `business.finance` | `ADMIN` or `FINANCIAL` |
+| `/business deposit` · `balance` · `withdraw` · `pay player` · `pay business` · `send` · `transactions` | `business.finance` | `ADMIN` or `FINANCIAL` |
 | `/business pay` (into a firm) | `business.pay` *(default: everyone)* | — |
 | `/business offer` / `hire` · `offer rescind` | `business.staff.offer` · `business.staff.offer.rescind` | `ADMIN` |
 | `/business offer accept` · `reject` | `business.staff.offer.accept` · `business.staff.offer.reject` | — (the invitee) |

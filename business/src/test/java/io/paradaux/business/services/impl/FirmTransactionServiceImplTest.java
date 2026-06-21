@@ -60,6 +60,12 @@ class FirmTransactionServiceImplTest {
         return f;
     }
 
+    private Firm namedFirm(int id, Integer defaultAccountId, String displayName) {
+        Firm f = firm(id, defaultAccountId);
+        f.setDisplayName(displayName);
+        return f;
+    }
+
     // ---------- resolveAccountId ----------
 
     @Test
@@ -679,6 +685,55 @@ class FirmTransactionServiceImplTest {
         when(firms.getFirmByNameOrId("2")).thenReturn(firm(2, 100));
         assertThatThrownBy(() -> svc.payFirm(1, 2, player, BigDecimal.ONE))
                 .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void payFirm_usesDefaultReasonFromFirmNames() {
+        when(firms.getFirmByNameOrId("1")).thenReturn(namedFirm(1, 100, "Acme"));
+        when(firms.getFirmByNameOrId("2")).thenReturn(namedFirm(2, 200, "Globex"));
+        when(treasury.getAccountById(100)).thenReturn(account(100, false, false));
+        when(treasury.canAccessAccount(player, 100)).thenReturn(true);
+        when(treasury.hasFunds(100, BigDecimal.TEN)).thenReturn(true);
+        when(treasury.transfer(any())).thenReturn(80L);
+
+        svc.payFirm(1, 2, player, BigDecimal.TEN);
+
+        ArgumentCaptor<TransferRequest> req = ArgumentCaptor.forClass(TransferRequest.class);
+        verify(treasury).transfer(req.capture());
+        assertThat(req.getValue().message()).isEqualTo("Business payment: Acme -> Globex");
+    }
+
+    @Test
+    void payFirm_withMemo_appendsSanitizedMemoToReason() {
+        when(firms.getFirmByNameOrId("1")).thenReturn(namedFirm(1, 100, "Acme"));
+        when(firms.getFirmByNameOrId("2")).thenReturn(namedFirm(2, 200, "Globex"));
+        when(treasury.getAccountById(100)).thenReturn(account(100, false, false));
+        when(treasury.canAccessAccount(player, 100)).thenReturn(true);
+        when(treasury.hasFunds(100, BigDecimal.TEN)).thenReturn(true);
+        when(treasury.transfer(any())).thenReturn(80L);
+
+        assertThat(svc.payFirm(1, 2, player, BigDecimal.TEN, "  invoice   42 ")).isEqualTo(80L);
+
+        ArgumentCaptor<TransferRequest> req = ArgumentCaptor.forClass(TransferRequest.class);
+        verify(treasury).transfer(req.capture());
+        // Memo is whitespace-collapsed and trimmed, then appended after the firm names.
+        assertThat(req.getValue().message()).isEqualTo("Business payment: Acme -> Globex: invoice 42");
+    }
+
+    @Test
+    void payFirm_withBlankMemo_fallsBackToDefaultReason() {
+        when(firms.getFirmByNameOrId("1")).thenReturn(namedFirm(1, 100, "Acme"));
+        when(firms.getFirmByNameOrId("2")).thenReturn(namedFirm(2, 200, "Globex"));
+        when(treasury.getAccountById(100)).thenReturn(account(100, false, false));
+        when(treasury.canAccessAccount(player, 100)).thenReturn(true);
+        when(treasury.hasFunds(100, BigDecimal.TEN)).thenReturn(true);
+        when(treasury.transfer(any())).thenReturn(80L);
+
+        svc.payFirm(1, 2, player, BigDecimal.TEN, "   ");
+
+        ArgumentCaptor<TransferRequest> req = ArgumentCaptor.forClass(TransferRequest.class);
+        verify(treasury).transfer(req.capture());
+        assertThat(req.getValue().message()).isEqualTo("Business payment: Acme -> Globex");
     }
 
     @Test

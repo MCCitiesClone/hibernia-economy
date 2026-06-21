@@ -261,6 +261,86 @@ public class MiscCommands implements CommandHandler {
         }
     }
 
+    // ---- SEND: BUSINESS -> BUSINESS (multi-firm operator) -----------------------
+
+    @Route("send")
+    @Permission("business.finance")
+    @Async
+    @Description("List your firms and their balances to drive a /firm send")
+    public void sendList(@Sender Player sender) {
+        var myFirms = firms.listOwnedOrMemberFirms(sender.getUniqueId());
+        if (myFirms.isEmpty()) {
+            message.send(sender, "business.finance.send.no-firms");
+            return;
+        }
+        message.send(sender, "business.finance.send.list-header");
+        for (Firm f : myFirms) {
+            String balance = audit.getFormattedAggregateBalance(f.getFirmId());
+            message.send(sender, "business.finance.send.list-line", "firm", f.getDisplayName(), "balance", balance);
+        }
+        message.send(sender, "business.finance.send.list-usage");
+    }
+
+    @Route("send <source> <target> <amount>")
+    @Permission("business.finance")
+    @Async
+    @Description("Send money from one of your firms to another firm")
+    public void send(@Sender Player sender, @Arg("source") FirmName sourceRef,
+                     @Arg("target") OnlineFirmName targetRef, @Arg("amount") BigDecimal amount) {
+        doSend(sender, sourceRef.value(), targetRef.value(), amount, null);
+    }
+
+    @Route("send <source> <target> <amount> <memo>")
+    @Permission("business.finance")
+    @Async
+    @Description("Send money between firms with a memo recorded on the transaction")
+    public void send(@Sender Player sender, @Arg("source") FirmName sourceRef,
+                     @Arg("target") OnlineFirmName targetRef, @Arg("amount") BigDecimal amount,
+                     @GreedyArg("memo") String memo) {
+        doSend(sender, sourceRef.value(), targetRef.value(), amount, memo);
+    }
+
+    private void doSend(Player sender, String sourceName, String targetName, BigDecimal amount, String memo) {
+        Firm source = firms.getFirmByNameOrId(sourceName);
+        if (source == null) {
+            message.send(sender, "business.firm.not-found", "firm", sourceName);
+            return;
+        }
+
+        Firm target = firms.getFirmByNameOrId(targetName);
+        if (target == null) {
+            message.send(sender, "business.firm.not-found", "firm", targetName);
+            return;
+        }
+
+        if (target.getFirmId().equals(source.getFirmId())) {
+            message.send(sender, "business.finance.pay.same-firm");
+            return;
+        }
+
+        if (!canAccessFirmFinances(source, sender)) {
+            message.send(sender, "business.general.no-permission");
+            return;
+        }
+
+        try {
+            audit.payFirm(source.getFirmId(), target.getFirmId(), sender.getUniqueId(), amount, memo);
+            String formatted = treasury.formatAmount(amount);
+            message.send(sender, "business.finance.send.success",
+                    "source", source.getDisplayName(), "target", target.getDisplayName(), "amount", formatted);
+            notifications.notifyFirmExcept(target.getFirmId(), sender.getUniqueId(), "business.notify.transfer.incoming",
+                    "firm", target.getDisplayName(), "amount", formatted, "sender", source.getDisplayName());
+        } catch (IllegalArgumentException e) {
+            message.send(sender, "business.finance.invalid-amount");
+        } catch (NoFirmAccountException e) {
+            message.send(sender, "business.finance.no-account");
+        } catch (IllegalStateException e) {
+            message.send(sender, "business.finance.insufficient-business");
+        } catch (SecurityException e) {
+            message.send(sender, "business.finance.not-authorizer");
+        }
+    }
+
     // ---- TRANSACTIONS -----------------------------------------------------------
 
     @Route("transactions <firm>")
