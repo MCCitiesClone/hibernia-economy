@@ -91,8 +91,12 @@ tasks {
     // Keep resource filtering tight to avoid $ expansion issues in YAML like config.yml
     processResources {
         filteringCharset = "UTF-8"
+        // Capture at configuration time so the filesMatching action never touches
+        // `project` at execution time (config-cache safe; Gradle 10 forward-compat).
+        val expansions = mapOf("version" to project.version, "name" to project.name,
+                "description" to (project.description ?: ""))
         filesMatching(listOf("**/*.properties", "plugin.yml", "paper-plugin.yml", "application*.yml")) {
-            expand(project.properties)
+            expand(expansions)
         }
     }
 
@@ -121,7 +125,7 @@ tasks {
 
 val isCi = project.hasProperty("ci")
 
-val copyPlugin by tasks.registering(Copy::class) {
+val copyPlugin = tasks.register<Copy>("copyPlugin") {
     // Both :jar and :shadowJar write to build/libs/<name>.jar by default;
     // Gradle 8.11 strict-mode requires declaring deps on every task whose
     // output we read.

@@ -3,7 +3,7 @@
 ## One build to rule them all
 
 Every JVM project is part of a **single root Gradle build**. There is one Gradle
-wrapper (Gradle **8.14.3**) and one settings file at the repo root; the individual
+wrapper (Gradle **9.6.0**) and one settings file at the repo root; the individual
 projects have no wrapper or settings of their own.
 
 - **Group/version:** `io.paradaux` · Java toolchain **21**.
