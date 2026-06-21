@@ -12,7 +12,6 @@ on:
         description: 'Target environment'
         type: choice
         options:
-          - dc-test-server
           - democracycraft
           - statecraft
         required: true

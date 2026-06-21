@@ -16,7 +16,7 @@ name: Economy Flyway · Migrate
 # reviewers configured in repo settings.
 #
 # Environments hold the per-target secrets (FLYWAY_URL/USER/PASSWORD/SCHEMA):
-#   dc-test-server, democracycraft, statecraft.
+#   democracycraft, statecraft.
 
 on:
   workflow_dispatch:
@@ -25,7 +25,6 @@ on:
         description: 'Target environment'
         type: choice
         options:
-          - dc-test-server
           - democracycraft
           - statecraft
         required: true
