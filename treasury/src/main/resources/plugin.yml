@@ -112,13 +112,13 @@ permissions:
     description: List all government accounts
     default: false
   treasury.gov.account.view:
-    description: View balance and history for accounts you are a member of
+    description: View balance and history for accounts you are a member or read-only viewer of
     default: false
   treasury.gov.account.transfer:
     description: Transfer funds from accounts you are an authorizer of
     default: false
   treasury.gov.account.manage:
-    description: Add/remove members and groups on accounts you are an authorizer of
+    description: Add/remove members, viewers and groups on accounts you are an authorizer of
     default: false
   treasury.gov.fine:
     description: Use /fine; issuing/revoking additionally requires account access (member/authorizer/admin)

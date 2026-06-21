@@ -175,6 +175,89 @@ class MembershipServiceImplTest {
         assertThat(svc.getGroupAuthorizers(1)).containsExactly("staff");
     }
 
+    // ---- Viewer tier (read-only, PAR-237) ----
+
+    @Test
+    void isViewer_directHit() {
+        UUID u = UUID.randomUUID();
+        when(membershipMapper.isViewer(1, u)).thenReturn(1);
+        assertThat(svc.isViewer(1, u)).isTrue();
+        verifyNoInteractions(groupMappers);
+    }
+
+    @Test
+    void isViewer_noDirect_andNoLuckPerms_returnsFalse() {
+        UUID u = UUID.randomUUID();
+        when(membershipMapper.isViewer(1, u)).thenReturn(0);
+        assertThat(svc.isViewer(1, u)).isFalse();
+    }
+
+    @Test
+    void canView_trueWhenMember_doesNotCheckViewer() {
+        UUID u = UUID.randomUUID();
+        when(membershipMapper.isMember(1, u)).thenReturn(1);
+        assertThat(svc.canView(1, u)).isTrue();
+        verify(membershipMapper, never()).isViewer(anyInt(), any());
+    }
+
+    @Test
+    void canView_trueWhenViewerOnly() {
+        UUID u = UUID.randomUUID();
+        when(membershipMapper.isMember(1, u)).thenReturn(0);
+        when(membershipMapper.isViewer(1, u)).thenReturn(1);
+        assertThat(svc.canView(1, u)).isTrue();
+    }
+
+    @Test
+    void canView_falseWhenNeither() {
+        UUID u = UUID.randomUUID();
+        when(membershipMapper.isMember(1, u)).thenReturn(0);
+        when(membershipMapper.isViewer(1, u)).thenReturn(0);
+        assertThat(svc.canView(1, u)).isFalse();
+    }
+
+    @Test
+    void addViewer_delegates() {
+        UUID v = UUID.randomUUID();
+        UUID by = UUID.randomUUID();
+        svc.addViewer(1, v, by);
+        verify(membershipMapper).addViewer(1, v, by);
+    }
+
+    @Test
+    void removeViewer_delegates_withNoCascade() {
+        UUID v = UUID.randomUUID();
+        svc.removeViewer(1, v);
+        verify(membershipMapper).removeViewer(1, v);
+        // A viewer is standalone — no authorizer/member cascade like removeMember.
+        verify(membershipMapper, never()).removeAuthorizer(anyInt(), any());
+    }
+
+    @Test
+    void getViewers_delegates() {
+        when(membershipMapper.getViewers(1)).thenReturn(List.of(new AccountMember()));
+        assertThat(svc.getViewers(1)).hasSize(1);
+    }
+
+    @Test
+    void addGroupViewer_delegates() {
+        UUID by = UUID.randomUUID();
+        svc.addGroupViewer(1, "health-sec", by);
+        verify(groupMappers).addGroupViewer(1, "health-sec", by);
+    }
+
+    @Test
+    void removeGroupViewer_delegates() {
+        svc.removeGroupViewer(1, "health-sec");
+        verify(groupMappers).removeGroupViewer(1, "health-sec");
+    }
+
+    @Test
+    void getGroupViewers_delegates() {
+        when(groupMappers.getGroupViewers(1)).thenReturn(List.of("health-sec"));
+        assertThat(svc.getGroupViewers(1)).containsExactly("health-sec");
+    }
+
     // ---- LuckPerms-aware paths (uses mocked LuckPerms) ----
 
     @org.junit.jupiter.api.Nested
@@ -228,6 +311,19 @@ class MembershipServiceImplTest {
                     org.mockito.ArgumentMatchers.anySet())).thenReturn(1);
 
             assertThat(svc.isAuthorizer(1, u)).isTrue();
+        }
+
+        @Test
+        void isViewer_directMiss_butGroupMatches_returnsTrue() {
+            UUID u = UUID.randomUUID();
+            org.mockito.Mockito.when(membershipMapper.isViewer(1, u)).thenReturn(0);
+            org.mockito.Mockito.when(userManager.getUser(u)).thenReturn(user);
+            org.mockito.Mockito.when(user.getInheritedGroups(queryOptions)).thenReturn(Set.of(groupVip));
+            org.mockito.Mockito.when(groupMappers.isAnyGroupViewer(
+                    org.mockito.ArgumentMatchers.eq(1),
+                    org.mockito.ArgumentMatchers.anySet())).thenReturn(1);
+
+            assertThat(svc.isViewer(1, u)).isTrue();
         }
 
         @Test

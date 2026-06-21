@@ -59,6 +59,23 @@ public class MembershipServiceImpl implements MembershipService {
         return groupMembershipMapper.isAnyGroupAuthorizer(accountId, groups) > 0;
     }
 
+    @Override
+    @Transactional
+    public boolean isViewer(int accountId, UUID uuid) {
+        if (membershipMapper.isViewer(accountId, uuid) > 0) return true;
+        Set<String> groups = getGroupsForUuid(uuid);
+        if (groups.isEmpty()) return false;
+        return groupMembershipMapper.isAnyGroupViewer(accountId, groups) > 0;
+    }
+
+    @Override
+    @Transactional
+    public boolean canView(int accountId, UUID uuid) {
+        // Members (and authorizers, who are members) can already read; viewers add
+        // a read-only tier on top. No spend/management rights are implied.
+        return isMember(accountId, uuid) || isViewer(accountId, uuid);
+    }
+
     // ── Individual UUID CRUD ──
 
     @Override
@@ -146,6 +163,47 @@ public class MembershipServiceImpl implements MembershipService {
     @Transactional
     public List<String> getGroupAuthorizers(int accountId) {
         return groupMembershipMapper.getGroupAuthorizers(accountId);
+    }
+
+    // ── Read-only viewer tier (PAR-237) ──
+    //
+    // A viewer is standalone (unlike an authorizer, which must be a member first),
+    // so add/remove are direct with no cascade.
+
+    @Override
+    @Transactional
+    public void addViewer(int accountId, UUID viewerUuid, UUID addedByUuid) {
+        membershipMapper.addViewer(accountId, viewerUuid, addedByUuid);
+    }
+
+    @Override
+    @Transactional
+    public void removeViewer(int accountId, UUID viewerUuid) {
+        membershipMapper.removeViewer(accountId, viewerUuid);
+    }
+
+    @Override
+    @Transactional
+    public List<AccountMember> getViewers(int accountId) {
+        return membershipMapper.getViewers(accountId);
+    }
+
+    @Override
+    @Transactional
+    public void addGroupViewer(int accountId, String lpGroup, UUID addedByUuid) {
+        groupMembershipMapper.addGroupViewer(accountId, lpGroup, addedByUuid);
+    }
+
+    @Override
+    @Transactional
+    public void removeGroupViewer(int accountId, String lpGroup) {
+        groupMembershipMapper.removeGroupViewer(accountId, lpGroup);
+    }
+
+    @Override
+    @Transactional
+    public List<String> getGroupViewers(int accountId) {
+        return groupMembershipMapper.getGroupViewers(accountId);
     }
 
     // ── Private helpers ──

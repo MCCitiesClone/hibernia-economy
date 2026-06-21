@@ -124,4 +124,51 @@ public interface MembershipMapper {
             @Result(column = "created_at", property = "createdAt", javaType = Instant.class)
     })
     List<AccountMember> getAuthorizers(@Param("accountId") int accountId);
+
+    // ---- Viewer CRUD (read-only access tier, PAR-237) ----
+
+    @Select("""
+      SELECT COUNT(*) FROM account_viewers
+       WHERE account_id = #{accountId}
+         AND viewer_uuid_bin = #{viewer}
+         AND left_at IS NULL
+      """)
+    int isViewer(@Param("accountId") int accountId,
+                 @Param("viewer") UUID viewer);
+
+    @Insert("""
+      INSERT INTO account_viewers(account_id, viewer_uuid_bin, added_by_uuid_bin)
+      VALUES(#{accountId}, #{viewerUuid}, #{addedByUuid})
+      ON DUPLICATE KEY UPDATE
+          left_at = NULL,
+          added_by_uuid_bin = VALUES(added_by_uuid_bin)
+      """)
+    int addViewer(@Param("accountId") int accountId,
+                  @Param("viewerUuid") UUID viewerUuid,
+                  @Param("addedByUuid") UUID addedByUuid);
+
+    @Update("""
+      UPDATE account_viewers
+         SET left_at = CURRENT_TIMESTAMP
+       WHERE account_id = #{accountId}
+         AND viewer_uuid_bin = #{viewerUuid}
+         AND left_at IS NULL
+      """)
+    int removeViewer(@Param("accountId") int accountId,
+                     @Param("viewerUuid") UUID viewerUuid);
+
+    @Select("""
+      SELECT account_id, viewer_uuid_bin, added_by_uuid_bin, created_at
+        FROM account_viewers
+       WHERE account_id = #{accountId}
+         AND left_at IS NULL
+       ORDER BY created_at
+      """)
+    @Results(id = "viewerMap", value = {
+            @Result(column = "account_id", property = "accountId"),
+            @Result(column = "viewer_uuid_bin", property = "memberUuid"),
+            @Result(column = "added_by_uuid_bin", property = "addedByUuid"),
+            @Result(column = "created_at", property = "createdAt", javaType = Instant.class)
+    })
+    List<AccountMember> getViewers(@Param("accountId") int accountId);
 }

@@ -172,7 +172,7 @@ public class GovCommand implements CommandHandler {
         }
         Account account = resolveGovAccount(name, sender);
         if (account == null) return;
-        if (!hasMemberAccess(sender, account)) {
+        if (!hasViewAccess(sender, account)) {
             message.send(sender, "treasury.gov.no-access");
             return;
         }
@@ -391,6 +391,135 @@ public class GovCommand implements CommandHandler {
     }
 
     // =====================================================================
+    // VIEWER MANAGEMENT  (read-only access tier — PAR-237)
+    // =====================================================================
+
+    @Route("account viewer add <account> <player>")
+    @Async
+    @Description("Grant a player read-only view (balance + history) of a government account")
+    public void viewerAdd(@Sender CommandSender sender,
+                          @Arg("account") String accountName,
+                          @Arg("player") OfflinePlayer target) {
+        if (!isAllowed(sender,"treasury.gov.account.manage")) {
+            message.send(sender, "treasury.gov.no-access");
+            return;
+        }
+        Account account = resolveGovAccount(accountName, sender);
+        if (account == null) return;
+        if (!hasAuthorizerAccess(sender, account)) {
+            message.send(sender, "treasury.gov.no-access");
+            return;
+        }
+        if (target == null || (!target.hasPlayedBefore() && !target.isOnline())) {
+            message.send(sender, "treasury.general.unknown-player");
+            return;
+        }
+        membershipService.addViewer(account.getAccountId(), target.getUniqueId(), actorOf(sender));
+        message.send(sender, "treasury.gov.viewer.added",
+                "player", target.getName(), "account", account.getDisplayName());
+    }
+
+    @Route("account viewer remove <account> <player>")
+    @Async
+    @Description("Revoke a player's read-only view of a government account")
+    public void viewerRemove(@Sender CommandSender sender,
+                             @Arg("account") String accountName,
+                             @Arg("player") OfflinePlayer target) {
+        if (!isAllowed(sender,"treasury.gov.account.manage")) {
+            message.send(sender, "treasury.gov.no-access");
+            return;
+        }
+        Account account = resolveGovAccount(accountName, sender);
+        if (account == null) return;
+        if (!hasAuthorizerAccess(sender, account)) {
+            message.send(sender, "treasury.gov.no-access");
+            return;
+        }
+        if (target == null || (!target.hasPlayedBefore() && !target.isOnline())) {
+            message.send(sender, "treasury.general.unknown-player");
+            return;
+        }
+        membershipService.removeViewer(account.getAccountId(), target.getUniqueId());
+        message.send(sender, "treasury.gov.viewer.removed",
+                "player", target.getName(), "account", account.getDisplayName());
+    }
+
+    @Route("account viewer addgroup <account> <group>")
+    @Async
+    @Description("Grant an LP group read-only view of a government account")
+    public void viewerAddGroup(@Sender CommandSender sender,
+                               @Arg("account") String accountName,
+                               @Arg("group") String group) {
+        if (!isAllowed(sender,"treasury.gov.account.manage")) {
+            message.send(sender, "treasury.gov.no-access");
+            return;
+        }
+        Account account = resolveGovAccount(accountName, sender);
+        if (account == null) return;
+        if (!hasAuthorizerAccess(sender, account)) {
+            message.send(sender, "treasury.gov.no-access");
+            return;
+        }
+        membershipService.addGroupViewer(account.getAccountId(), group, actorOf(sender));
+        message.send(sender, "treasury.gov.viewer.group-added",
+                "group", group, "account", account.getDisplayName());
+    }
+
+    @Route("account viewer removegroup <account> <group>")
+    @Async
+    @Description("Revoke an LP group's read-only view of a government account")
+    public void viewerRemoveGroup(@Sender CommandSender sender,
+                                  @Arg("account") String accountName,
+                                  @Arg("group") String group) {
+        if (!isAllowed(sender,"treasury.gov.account.manage")) {
+            message.send(sender, "treasury.gov.no-access");
+            return;
+        }
+        Account account = resolveGovAccount(accountName, sender);
+        if (account == null) return;
+        if (!hasAuthorizerAccess(sender, account)) {
+            message.send(sender, "treasury.gov.no-access");
+            return;
+        }
+        membershipService.removeGroupViewer(account.getAccountId(), group);
+        message.send(sender, "treasury.gov.viewer.group-removed",
+                "group", group, "account", account.getDisplayName());
+    }
+
+    @Route("account viewer list <account>")
+    @Async
+    @Description("List read-only viewers of a government account")
+    public void viewerList(@Sender CommandSender sender, @Arg("account") String accountName) {
+        if (!isAllowed(sender,"treasury.gov.account.view")) {
+            message.send(sender, "treasury.gov.no-access");
+            return;
+        }
+        Account account = resolveGovAccount(accountName, sender);
+        if (account == null) return;
+        if (!hasMemberAccess(sender, account)) {
+            message.send(sender, "treasury.gov.no-access");
+            return;
+        }
+
+        List<AccountMember> uuidViewers = membershipService.getViewers(account.getAccountId());
+        List<String> groupViewers = membershipService.getGroupViewers(account.getAccountId());
+
+        if (uuidViewers.isEmpty() && groupViewers.isEmpty()) {
+            message.send(sender, "treasury.gov.viewer.list.empty");
+            return;
+        }
+
+        message.send(sender, "treasury.gov.viewer.list.header", "account", account.getDisplayName());
+        for (AccountMember v : uuidViewers) {
+            String name = resolvePlayerName(v.getMemberUuid());
+            message.send(sender, "treasury.gov.viewer.list.uuid", "player", name);
+        }
+        for (String g : groupViewers) {
+            message.send(sender, "treasury.gov.viewer.list.group", "group", g);
+        }
+    }
+
+    // =====================================================================
     // AUTHORIZER MANAGEMENT
     // =====================================================================
 
@@ -545,7 +674,7 @@ public class GovCommand implements CommandHandler {
         }
         Account account = resolveGovAccount(name, sender);
         if (account == null) return;
-        if (!hasMemberAccess(sender, account)) {
+        if (!hasViewAccess(sender, account)) {
             message.send(sender, "treasury.gov.no-access");
             return;
         }
@@ -781,6 +910,21 @@ public class GovCommand implements CommandHandler {
         }
         return p.hasPermission("treasury.gov.admin")
                 || membershipService.isMember(account.getAccountId(), p.getUniqueId());
+    }
+
+    /**
+     * Read-only view gate for balance + transaction history: admin, or anyone who
+     * may read the account — a member, an authorizer (who is a member), or a
+     * read-only <em>viewer</em> (PAR-237, e.g. a department secretary). Viewers get
+     * no spend or management rights; those still require {@link #canTransferFrom}
+     * and {@link #hasAuthorizerAccess}.
+     */
+    private boolean hasViewAccess(CommandSender sender, Account account) {
+        if (!(sender instanceof Player p)) {
+            return true; // console / RCON
+        }
+        return p.hasPermission("treasury.gov.admin")
+                || membershipService.canView(account.getAccountId(), p.getUniqueId());
     }
 
     /**

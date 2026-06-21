@@ -70,4 +70,32 @@ public interface GroupMembershipMapper {
             "</script>")
     int isAnyGroupAuthorizer(@Param("accountId") int accountId,
                              @Param("groups") Collection<String> groups);
+
+    // ---- Group Viewers (read-only access tier, PAR-237) ----
+
+    @Insert("INSERT INTO account_group_viewers(account_id, lp_group, added_by_uuid_bin) " +
+            "VALUES(#{accountId}, #{lpGroup}, #{addedByUuid}) " +
+            "ON DUPLICATE KEY UPDATE left_at = NULL, added_by_uuid_bin = VALUES(added_by_uuid_bin)")
+    int addGroupViewer(@Param("accountId") int accountId,
+                       @Param("lpGroup") String lpGroup,
+                       @Param("addedByUuid") UUID addedByUuid);
+
+    @Update("UPDATE account_group_viewers SET left_at = CURRENT_TIMESTAMP(3) " +
+            "WHERE account_id = #{accountId} AND lp_group = #{lpGroup} AND left_at IS NULL")
+    int removeGroupViewer(@Param("accountId") int accountId,
+                          @Param("lpGroup") String lpGroup);
+
+    @Select("SELECT lp_group FROM account_group_viewers " +
+            "WHERE account_id = #{accountId} AND left_at IS NULL ORDER BY created_at")
+    List<String> getGroupViewers(@Param("accountId") int accountId);
+
+    @Select("<script>" +
+            "SELECT COUNT(*) FROM account_group_viewers " +
+            "WHERE account_id = #{accountId} AND left_at IS NULL AND lp_group IN " +
+            "<foreach item='item' collection='groups' open='(' separator=',' close=')'>" +
+            "#{item}" +
+            "</foreach>" +
+            "</script>")
+    int isAnyGroupViewer(@Param("accountId") int accountId,
+                         @Param("groups") Collection<String> groups);
 }

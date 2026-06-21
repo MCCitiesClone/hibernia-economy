@@ -137,6 +137,63 @@ class MembershipServiceIT extends IntegrationTestBase {
         assertThat(membership.getGroupMembers(accountId)).contains("vip");
     }
 
+    // ---- Viewer flow (read-only tier, PAR-237) ----
+
+    @Test
+    void addViewer_grantsReadOnly_thenRemove_isStandalone() {
+        int accountId = createGovAccount("Dept-Health").getAccountId();
+        UUID secretary = UUID.randomUUID();
+        UUID by = UUID.randomUUID();
+
+        assertThat(membership.isViewer(accountId, secretary)).isFalse();
+        assertThat(membership.canView(accountId, secretary)).isFalse();
+
+        membership.addViewer(accountId, secretary, by);
+
+        assertThat(membership.isViewer(accountId, secretary)).isTrue();
+        assertThat(membership.canView(accountId, secretary)).isTrue();
+        // Read-only: a viewer is NOT a member or authorizer, so has no spend rights.
+        assertThat(membership.isMember(accountId, secretary)).isFalse();
+        assertThat(membership.isAuthorizer(accountId, secretary)).isFalse();
+
+        membership.removeViewer(accountId, secretary);
+        assertThat(membership.isViewer(accountId, secretary)).isFalse();
+        assertThat(membership.canView(accountId, secretary)).isFalse();
+    }
+
+    @Test
+    void member_canView_withoutBeingAViewer() {
+        int accountId = createGovAccount("Dept-Interior").getAccountId();
+        UUID member = UUID.randomUUID();
+        membership.addMember(accountId, member, UUID.randomUUID());
+
+        assertThat(membership.canView(accountId, member)).isTrue();
+        assertThat(membership.isViewer(accountId, member)).isFalse();
+    }
+
+    @Test
+    void groupViewer_isIndependentOfGroupMembership() {
+        int accountId = createGovAccount("Dept-Justice").getAccountId();
+        UUID by = UUID.randomUUID();
+
+        membership.addGroupViewer(accountId, "justice-secretary", by);
+
+        assertThat(membership.getGroupViewers(accountId)).contains("justice-secretary");
+        assertThat(membership.getGroupMembers(accountId)).doesNotContain("justice-secretary");
+
+        membership.removeGroupViewer(accountId, "justice-secretary");
+        assertThat(membership.getGroupViewers(accountId)).doesNotContain("justice-secretary");
+    }
+
+    @Test
+    void getViewers_returnsActiveRows() {
+        int accountId = createGovAccount("Dept-Education").getAccountId();
+        UUID by = UUID.randomUUID();
+        membership.addViewer(accountId, UUID.randomUUID(), by);
+        membership.addViewer(accountId, UUID.randomUUID(), by);
+        assertThat(membership.getViewers(accountId)).hasSize(2);
+    }
+
     // ---- Helper ----
 
     private Account createGovAccount(String name) {

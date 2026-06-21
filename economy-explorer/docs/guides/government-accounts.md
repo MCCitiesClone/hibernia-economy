@@ -26,18 +26,24 @@ one in detail, or read its history:
 /government account history Treasury
 ```
 
-## Two levels of access
+## Levels of access
 
-Every government account has two kinds of access:
+Every government account has three kinds of access, from lowest to highest:
 
-- **Members** can *view* the account and its history **and spend from it** (transfer
-  and payout).
+- **Viewers** can *only see* the account's balance and transaction history — no
+  spending and no managing access. This is for oversight (for example a department
+  secretary) without handing over the chequebook.
+- **Members** can do everything a viewer can **and spend from it** (transfer and
+  payout).
 - **Authorizers** can do everything a member can, **plus manage who has access** —
-  adding and removing other members and authorizers.
+  adding and removing viewers, members and other authorizers.
 
-So if a command says you don't have permission to spend, you're not a member of that
-account at all. If you can spend but can't add other people, you're a member but not
-an authorizer.
+So if a command says you don't have permission to spend, you're at most a viewer of
+that account. If you can spend but can't add other people, you're a member but not an
+authorizer.
+
+A viewer sees only the **ledger transactions** (e.g. "received $500 from ChestShops"),
+never the individual trade-by-trade breakdown.
 
 ## Move money between departments
 
@@ -63,16 +69,22 @@ member or authorizer of the `from` account.
 
 ## Manage who has access
 
-If you're an **authorizer** on an account, you can add and remove people. Members can
-view and spend; authorizers can also manage access (and must be a member first):
+If you're an **authorizer** on an account, you can add and remove people. Viewers can
+only look; members can view and spend; authorizers can also manage access (and must be
+a member first):
 
 ```text
+/government account viewer add Treasury Steve
+/government account viewer list Treasury
 /government account member add Treasury Steve
 /government account member list Treasury
 /government account auth add Treasury Steve
 ```
 
-Swap `add` for `remove` to revoke access.
+Swap `add` for `remove` to revoke access. Each tier also has `addgroup`/`removegroup`
+variants that grant access to everyone in a LuckPerms group — e.g.
+`/government account viewer addgroup Health health-secretary` lets the whole
+`health-secretary` group view that department.
 
 ## Issue and manage fines
 
