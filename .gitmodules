@@ -1,0 +1,3 @@
+[submodule "hibernia-framework"]
+	path = hibernia-framework
+	url = https://github.com/ParadauxIO/hibernia-framework.git
