@@ -5,39 +5,37 @@ import ch.vorburger.mariadb4j.DBConfiguration;
 import ch.vorburger.mariadb4j.DBConfigurationBuilder;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
+import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ExtensionContext.Namespace;
 import org.junit.jupiter.api.extension.ExtensionContext.Store;
 
 import javax.sql.DataSource;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.Statement;
-import java.util.Locale;
 
 /**
  * Two-mode MariaDB harness, mirroring the sibling Treasury project.
  *
  * <ol>
- *   <li><b>Embedded (default — local dev)</b>: boots MariaDB4j once per JVM
- *       and exposes a Hikari {@link DataSource}. No Docker, no system MariaDB
- *       needed. Schema loading goes through the bundled {@code mysql} CLI so
- *       {@code DELIMITER} blocks (used by {@code uuid_to_bin}/{@code
- *       bin_to_uuid}) parse correctly. We apply {@code test-prelude.sql}
- *       (UUID helpers + stub {@code accounts} table) and then the production
- *       {@code sql/schema.sql}.</li>
- *   <li><b>External (CI)</b>: when {@code BUSINESS_TEST_JDBC_URL} is set,
- *       point Hikari at that URL instead. The workflow is responsible for
- *       booting the service container and applying {@code test-prelude.sql}
- *       + {@code schema.sql} via the {@code mariadb} CLI before tests run.
- *       MariaDB4j is skipped entirely — its bundled binary needs system libs
- *       that newer Ubuntu runners don't ship.</li>
+ *   <li><b>Embedded (default — local dev)</b>: boots MariaDB4j once per JVM and
+ *       exposes a Hikari {@link DataSource}. No Docker, no system MariaDB
+ *       needed.</li>
+ *   <li><b>External (CI)</b>: when {@code BUSINESS_TEST_JDBC_URL} is set, point
+ *       Hikari at that URL instead (the workflow boots a MariaDB service
+ *       container). MariaDB4j is skipped — its bundled binary needs system libs
+ *       newer Ubuntu runners don't ship.</li>
  * </ol>
+ *
+ * <p>In both modes the schema is built by running the authoritative
+ * <b>economy-flyway</b> migrations with Flyway (staged onto the test classpath at
+ * {@code db/migration} by the build). Tests and production therefore share one
+ * source of schema truth — UUID helpers ({@code uuid_to_bin}/{@code bin_to_uuid}),
+ * the {@code accounts} table, and the {@code firm_*} tables all come from there —
+ * and there is no bundled {@code schema.sql} snapshot to drift (PAR-242).
+ *
+ * <p>Each test method gets a freshly truncated set of tables via
+ * {@link #truncateAll(DataSource)} called from the integration test base.
  */
 public final class MariadbContainerExtension {
 
@@ -61,14 +59,29 @@ public final class MariadbContainerExtension {
         if (externalUrl != null && !externalUrl.isBlank()) {
             return store.getOrComputeIfAbsent(
                     DATASOURCE_KEY,
-                    k -> buildExternalDataSource(externalUrl),
+                    k -> migrated(buildExternalDataSource(externalUrl)),
                     HikariDataSource.class);
         }
 
         DbHolder holder = store.getOrComputeIfAbsent(
                 DB_KEY, k -> startEmbeddedDb(), DbHolder.class);
         return store.getOrComputeIfAbsent(
-                DATASOURCE_KEY, k -> buildDataSource(holder.url), HikariDataSource.class);
+                DATASOURCE_KEY, k -> migrated(buildDataSource(holder.url)), HikariDataSource.class);
+    }
+
+    /**
+     * Applies the economy-flyway migrations to the database. Runs once per JVM
+     * (inside the cached-DataSource computation) and yields the full schema the
+     * production database has — including the {@code account_balances_mat}
+     * triggers and the UUID helper functions the business mappers rely on.
+     */
+    private static HikariDataSource migrated(HikariDataSource dataSource) {
+        Flyway.configure()
+                .dataSource(dataSource)
+                .locations("classpath:db/migration")
+                .load()
+                .migrate();
+        return dataSource;
     }
 
     private static HikariDataSource buildExternalDataSource(String jdbcUrl) {
@@ -92,68 +105,11 @@ public final class MariadbContainerExtension {
             db.start();
             db.createDB(DATABASE_NAME);
 
-            applySql(dbConfig, "test-prelude.sql");
-            applySql(dbConfig, "sql/schema.sql");
-
             String url = cfg.getURL(DATABASE_NAME);
             return new DbHolder(db, url);
         } catch (Exception e) {
             throw new IllegalStateException("Failed to start embedded MariaDB", e);
         }
-    }
-
-    private static void applySql(DBConfiguration dbConfig, String classpathResource) throws Exception {
-        String sql;
-        try (InputStream in = MariadbContainerExtension.class.getClassLoader()
-                .getResourceAsStream(classpathResource)) {
-            if (in == null) throw new IOException(classpathResource + " not on test classpath");
-            sql = new String(in.readAllBytes(), StandardCharsets.UTF_8);
-        }
-
-        Path tempScript = Files.createTempFile("business-test-", ".sql");
-        tempScript.toFile().deleteOnExit();
-        Files.writeString(tempScript, sql, StandardCharsets.UTF_8);
-
-        runMysqlClient(dbConfig, tempScript.toFile());
-    }
-
-    /** Invokes the bundled {@code mysql} CLI binary with {@code --execute "SOURCE …"}. */
-    private static void runMysqlClient(DBConfiguration dbConfig, File scriptFile) throws Exception {
-        File binDir = new File(dbConfig.getBaseDir(), "bin");
-        File mysql = new File(binDir, isWindows() ? "mysql.exe" : "mysql");
-        if (!mysql.isFile()) {
-            // MariaDB4j ships a server binary but not always a client; fall
-            // back to a system-installed mariadb-client (apt: mariadb-client)
-            // which is wire-compatible.
-            File systemMysql = isWindows() ? null : new File("/usr/bin/mysql");
-            if (systemMysql != null && systemMysql.isFile()) {
-                mysql = systemMysql;
-            } else {
-                throw new IOException("mysql client not found at " + mysql
-                        + " and no system mariadb-client available — install mariadb-client");
-            }
-        }
-
-        ProcessBuilder pb = new ProcessBuilder(
-                mysql.getAbsolutePath(),
-                "--protocol=TCP",
-                "--port=" + dbConfig.getPort(),
-                "--user=root",
-                "--default-character-set=utf8",
-                "--database=" + DATABASE_NAME,
-                "--execute=SOURCE " + scriptFile.getAbsolutePath().replace("\\", "/")
-        );
-        pb.redirectErrorStream(true);
-        Process p = pb.start();
-        String output = new String(p.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
-        int exit = p.waitFor();
-        if (exit != 0) {
-            throw new IOException("mysql script load exit=" + exit + ":\n" + output);
-        }
-    }
-
-    private static boolean isWindows() {
-        return System.getProperty("os.name", "").toLowerCase(Locale.ROOT).contains("win");
     }
 
     private static HikariDataSource buildDataSource(String jdbcUrl) {

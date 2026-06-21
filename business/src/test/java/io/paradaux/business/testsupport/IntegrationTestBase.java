@@ -80,14 +80,18 @@ public abstract class IntegrationTestBase {
     /**
      * Inserts a stub row in the Treasury {@code accounts} table that the FKs
      * on {@code firm.default_account_id} / {@code firm_accounts.account_id}
-     * require to be present. Returns the generated account id.
+     * require to be present. A firm owns BUSINESS accounts, so stub one with the
+     * NOT-NULL columns the real economy-flyway schema requires
+     * ({@code account_type} + {@code owner_uuid_bin}). Returns the generated id.
      */
     protected int insertStubAccount(String displayName) throws Exception {
         try (Connection conn = dataSource.getConnection();
              PreparedStatement ps = conn.prepareStatement(
-                     "INSERT INTO accounts (display_name) VALUES (?)",
+                     "INSERT INTO accounts (account_type, owner_uuid_bin, display_name) "
+                             + "VALUES ('BUSINESS', uuid_to_bin(?), ?)",
                      java.sql.Statement.RETURN_GENERATED_KEYS)) {
-            ps.setString(1, displayName);
+            ps.setString(1, UUID.randomUUID().toString());
+            ps.setString(2, displayName);
             ps.executeUpdate();
             try (var rs = ps.getGeneratedKeys()) {
                 rs.next();
