@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll } from 'vitest';
-import { HAS_DB, resetDb, ALICE, BOB, CAROL, DAVE, BEDROCK } from './db';
+import { HAS_DB, resetDb, ALICE, BOB, CAROL, DAVE, BEDROCK, SECRETARY } from './db';
 import { accountLabel, looksLikeUuid } from '@/lib/format';
-import { findAccount, findPostingsByTxnId, getTotalSupply, getPersonalSupply } from '@/lib/sql/ledger';
+import { findAccount, findPostingsByTxnId, getTotalSupply, getPersonalSupply, canReadAccount } from '@/lib/sql/ledger';
 import { getPersonalBalances, getBalanceDistribution } from '@/lib/sql/stats';
 import { isFirmMember, hasFirmFinancialAccess, getAccountFirmId, getFirmStats, findFirmByDisplayName } from '@/lib/sql/firm';
 import { findCapabilities, findPlayerUuidByName } from '@/lib/sql/group';
@@ -182,5 +182,23 @@ d('Bedrock / Floodgate linked wallet (PAR-240)', () => {
   it('finds a Floodgate player by their dotted name (case-insensitive)', async () => {
     expect(await findPlayerUuidByName('.BedrockBob')).toBe(BEDROCK);
     expect(await findPlayerUuidByName('.BEDROCKBOB')).toBe(BEDROCK);
+  });
+});
+
+// PAR-237: a government department "secretary" is a read-only viewer of their
+// department account. The explorer must let them see that account's ledger
+// history (scoped to the account, never blanket), so canReadAccount drives the
+// account-detail history gate.
+d('government account viewer access (PAR-237)', () => {
+  it('grants a read-only viewer access to their department account', async () => {
+    expect(await canReadAccount(5, SECRETARY)).toBe(true); // City Hall (GOVERNMENT)
+  });
+
+  it('does not grant access to an unrelated account', async () => {
+    expect(await canReadAccount(1, SECRETARY)).toBe(false); // Alice's personal account
+  });
+
+  it('denies a player with no member/authorizer/viewer row', async () => {
+    expect(await canReadAccount(5, DAVE)).toBe(false);
   });
 });

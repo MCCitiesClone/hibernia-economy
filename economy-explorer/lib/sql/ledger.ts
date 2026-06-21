@@ -1,6 +1,6 @@
 import 'server-only';
 import { sql } from 'kysely';
-import { db, binToUuid } from '@/lib/db';
+import { db, binToUuid, uuidToBin } from '@/lib/db';
 
 // Row interfaces mirror the Java records in
 // io.paradaux.treasuryrestapi.model.*. Money columns stay as string
@@ -180,6 +180,29 @@ export async function findAccount(accountId: number): Promise<ExplorerAccountRow
   `.execute(db);
   const row = result.rows[0];
   return row ? toExplorerAccountRow(row) : null;
+}
+
+/**
+ * True when {@code viewerUuid} has explicit read access to an account — an active
+ * member, authorizer, or read-only viewer (PAR-237) of it. Mirrors the in-game
+ * `canView` gate's direct-UUID path; LuckPerms-group grants (account_group_*) are
+ * resolved in-game only, so web access is granted by UUID. Lets e.g. a government
+ * department secretary (a viewer) see their department's ledger history here —
+ * scoped to the specific accounts they're attached to, never blanket.
+ */
+export async function canReadAccount(accountId: number, viewerUuid: string): Promise<boolean> {
+  const bin = uuidToBin(viewerUuid);
+  const result = await sql<{ allowed: number }>`
+    SELECT (
+         EXISTS(SELECT 1 FROM account_members
+                 WHERE account_id = ${accountId} AND member_uuid_bin = ${bin} AND left_at IS NULL)
+      OR EXISTS(SELECT 1 FROM account_authorizers
+                 WHERE account_id = ${accountId} AND authorizer_uuid_bin = ${bin} AND revoked_at IS NULL)
+      OR EXISTS(SELECT 1 FROM account_viewers
+                 WHERE account_id = ${accountId} AND viewer_uuid_bin = ${bin} AND left_at IS NULL)
+    ) AS allowed
+  `.execute(db);
+  return Number(result.rows[0]?.allowed ?? 0) === 1;
 }
 
 // ── Account-scoped postings ───────────────────────────────────────────────

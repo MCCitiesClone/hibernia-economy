@@ -9,6 +9,7 @@ import {
   countAccountTransactions,
   getCounterparties,
   getAccountActivityCalendar,
+  canReadAccount,
 } from '@/lib/sql/ledger';
 import { accountLabel, fmtAmt, fmtAmtFull, fmtN, fmtTs, shortenUuid } from '@/lib/format';
 import { getViewer } from '@/lib/auth/viewer';
@@ -63,6 +64,13 @@ export default async function AccountDetailPage({
   if (!canSeeHistory && !viewer.anon && viewer.minecraftUuid) {
     const firmId = await getAccountFirmId(id);
     if (firmId) canSeeHistory = await hasFirmFinancialAccess(firmId, viewer.minecraftUuid);
+  }
+  // Explicit account access (Treasury): a member, authorizer, or read-only viewer
+  // of this account — e.g. a government department secretary (PAR-237). Scoped to
+  // the specific account, and the page only ever shows ledger postings, never the
+  // per-trade chestshop_sale breakdown.
+  if (!canSeeHistory && !viewer.anon && viewer.minecraftUuid) {
+    canSeeHistory = await canReadAccount(id, viewer.minecraftUuid);
   }
 
   // Audit privileged inspection: a staff member using elevated access to view

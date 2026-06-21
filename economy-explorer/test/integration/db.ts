@@ -48,3 +48,6 @@ export const DAVE = uuid('0000000000000000000000000000DA7E');
 // shape (the others above are coincidentally shaped the same); what's distinct is
 // the '.'-prefixed name and a completed explorer_identity link (see seed.sql).
 export const BEDROCK = uuid('0000000000000000000000000000BED0');
+// A government department "secretary": a read-only viewer of gov account #5
+// (City Hall) — not its owner and not a member (PAR-237).
+export const SECRETARY = uuid('00000000000000000000000000005EC0');

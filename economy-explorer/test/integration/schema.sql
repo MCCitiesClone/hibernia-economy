@@ -36,6 +36,26 @@ CREATE TABLE `account_members` (
   KEY `idx_member_active` (`account_id`,`left_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE `account_authorizers` (
+  `account_id` int(10) unsigned NOT NULL,
+  `authorizer_uuid_bin` binary(16) NOT NULL,
+  `added_by_uuid_bin` binary(16) NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `revoked_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`account_id`,`authorizer_uuid_bin`),
+  KEY `idx_auth_active` (`account_id`,`revoked_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE `account_viewers` (
+  `account_id` int(10) unsigned NOT NULL,
+  `viewer_uuid_bin` binary(16) NOT NULL,
+  `added_by_uuid_bin` binary(16) NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `left_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`account_id`,`viewer_uuid_bin`),
+  KEY `idx_viewer_active` (`account_id`,`left_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE `ledger_txns` (
   `txn_id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `trade_time` timestamp NOT NULL DEFAULT current_timestamp(),
