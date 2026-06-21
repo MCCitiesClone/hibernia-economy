@@ -44,3 +44,7 @@ export const ALICE = uuid('0000000000000000000000000000A1CE');
 export const BOB = uuid('00000000000000000000000000000B0B');
 export const CAROL = uuid('0000000000000000000000000000CA01');
 export const DAVE = uuid('0000000000000000000000000000DA7E');
+// A Bedrock/Floodgate player: Floodgate UUIDs share this all-zero high-8-bytes
+// shape (the others above are coincidentally shaped the same); what's distinct is
+// the '.'-prefixed name and a completed explorer_identity link (see seed.sql).
+export const BEDROCK = uuid('0000000000000000000000000000BED0');

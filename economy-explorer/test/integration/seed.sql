@@ -79,3 +79,17 @@ INSERT INTO explorer_group_capability (group_id, capability) VALUES
   (1, 'staff.audit');
 INSERT INTO explorer_group_member (group_id, player_uuid_bin, source) VALUES
   (1, UNHEX('00000000000000000000000000000B0B'), 'manual');
+
+-- Bedrock/Floodgate fixture (PAR-240): a Floodgate-shaped UUID with a
+-- '.'-prefixed name and a completed in-game explorer_identity link. Account #8
+-- carries a $0 balance on purpose so it can't perturb the supply / balance /
+-- distribution / gini assertions above (those count only positive, active
+-- personal balances). Proves a linked Bedrock player's wallet resolves the
+-- dotted name (never a bare UUID) and is searchable by it.
+INSERT INTO firm_players (player_uuid_bin, current_name) VALUES
+  (UNHEX('0000000000000000000000000000BED0'), '.BedrockBob');
+INSERT INTO accounts (account_id, account_type, owner_uuid_bin, display_name, is_archived) VALUES
+  (8, 'PERSONAL', UNHEX('0000000000000000000000000000BED0'), '00000000-0000-0000-0000-00000000bed0', 0);
+INSERT INTO account_balances_mat (account_id, balance) VALUES (8, 0.00);
+INSERT INTO explorer_identity (keycloak_sub, player_uuid_bin, minecraft_name, linked_by) VALUES
+  ('e2e-bedrock', UNHEX('0000000000000000000000000000BED0'), '.BedrockBob', 'in-game:.BedrockBob');

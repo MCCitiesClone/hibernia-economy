@@ -1,10 +1,12 @@
 import { describe, it, expect, beforeAll } from 'vitest';
-import { HAS_DB, resetDb, ALICE, BOB, CAROL, DAVE } from './db';
+import { HAS_DB, resetDb, ALICE, BOB, CAROL, DAVE, BEDROCK } from './db';
 import { accountLabel, looksLikeUuid } from '@/lib/format';
 import { findAccount, findPostingsByTxnId, getTotalSupply, getPersonalSupply } from '@/lib/sql/ledger';
 import { getPersonalBalances, getBalanceDistribution } from '@/lib/sql/stats';
 import { isFirmMember, hasFirmFinancialAccess, getAccountFirmId, getFirmStats, findFirmByDisplayName } from '@/lib/sql/firm';
-import { findCapabilities } from '@/lib/sql/group';
+import { findCapabilities, findPlayerUuidByName } from '@/lib/sql/group';
+import { findAccountsForPlayer } from '@/lib/sql/me';
+import { findIdentityBySub } from '@/lib/sql/identity';
 import { getMoneyFlow } from '@/lib/sql/moneyFlow';
 import { listItemSales } from '@/lib/sql/market';
 import { gini } from '@/lib/derived';
@@ -155,5 +157,30 @@ d('market seller names resolve (no UUIDs)', () => {
     expect(names).toContain('Alice'); // personal shop, display_name was a UUID
     expect(names).toContain('Acme Corp'); // firm shop
     for (const n of names) expect(looksLikeUuid(n)).toBe(false);
+  });
+});
+
+// PAR-240: a Bedrock/Floodgate player who completes the link must reach a working,
+// correctly-named wallet. The flow already binds the in-game (Floodgate) UUID; this
+// locks in that the explorer's DAL resolves it end to end.
+d('Bedrock / Floodgate linked wallet (PAR-240)', () => {
+  it('resolves the durable identity to the Floodgate UUID + dotted name', async () => {
+    const id = await findIdentityBySub('e2e-bedrock');
+    expect(id).not.toBeNull();
+    expect(id!.playerUuid).toBe(BEDROCK);
+    expect(id!.minecraftName).toBe('.BedrockBob');
+  });
+
+  it('resolves the wallet with the dotted name, never a bare UUID', async () => {
+    const a = (await findAccountsForPlayer(BEDROCK)).find((x) => x.account_id === 8);
+    expect(a).toBeTruthy();
+    expect(a!.owner_name).toBe('.BedrockBob');
+    expect(accountLabel(a!)).toBe('.BedrockBob');
+    expect(looksLikeUuid(accountLabel(a!))).toBe(false);
+  });
+
+  it('finds a Floodgate player by their dotted name (case-insensitive)', async () => {
+    expect(await findPlayerUuidByName('.BedrockBob')).toBe(BEDROCK);
+    expect(await findPlayerUuidByName('.BEDROCKBOB')).toBe(BEDROCK);
   });
 });
