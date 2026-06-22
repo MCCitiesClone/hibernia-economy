@@ -58,13 +58,13 @@ jobs:
 
           echo "version=$PUBLISH_VERSION" >> $GITHUB_OUTPUT
 
-      - name: Build & publish business-api
-        env:
-          REPO_USER: ${{ secrets.REPO_USER }}
-          REPO_PASS: ${{ secrets.REPO_PASS }}
-        run: |
-          ./gradlew --no-daemon :business:business-api:clean :business:business-api:publish \
-            -Pversion=${{ steps.pick.outputs.version }}
+      # - name: Build & publish business-api
+      #   env:
+      #     REPO_USER: ${{ secrets.REPO_USER }}
+      #     REPO_PASS: ${{ secrets.REPO_PASS }}
+      #   run: |
+      #     ./gradlew --no-daemon :business:business-api:clean :business:business-api:publish \
+      #       -Pversion=${{ steps.pick.outputs.version }}
 
       # Cut a git tag + GitHub release for non-SNAPSHOT publishes (main only).
       # Tagged per-artifact (business-api-v…) since this repo's release automation
