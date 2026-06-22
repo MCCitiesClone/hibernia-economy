@@ -22,7 +22,7 @@ val resolvedBuildDescription: String =
 
 allprojects {
     // group + version inherited from the root allprojects block (single mono-repo
-    // version, 2.2.1-SNAPSHOT). ChestShop joins the unified version per PAR-243.
+    // version, 2.3.0-SNAPSHOT). ChestShop joins the unified version per PAR-243.
     group = "io.paradaux"
 
     extra["buildType"] = resolvedBuildType

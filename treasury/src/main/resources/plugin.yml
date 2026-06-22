@@ -1,5 +1,5 @@
 name: Treasury
-version: '2.2.1'
+version: '${version}'
 main: io.paradaux.treasury.Treasury
 api-version: '1.21'
 softdepend:
