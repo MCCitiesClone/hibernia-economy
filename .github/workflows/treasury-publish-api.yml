@@ -60,11 +60,11 @@ jobs:
           echo "version=$PUBLISH_VERSION" >> $GITHUB_OUTPUT
           echo "Publishing: $PUBLISH_VERSION"
 
-      - name: Build & publish treasury-api
-        run: ./gradlew --no-daemon :treasury:treasury-api:clean :treasury:treasury-api:publish -Pversion=${{ steps.pick.outputs.version }}
-        env:
-          REPO_USER: ${{ secrets.REPO_USER }}
-          REPO_PASS: ${{ secrets.REPO_PASS }}
+      # - name: Build & publish treasury-api
+      #   run: ./gradlew --no-daemon :treasury:treasury-api:clean :treasury:treasury-api:publish -Pversion=${{ steps.pick.outputs.version }}
+      #   env:
+      #     REPO_USER: ${{ secrets.REPO_USER }}
+      #     REPO_PASS: ${{ secrets.REPO_PASS }}
 
       # Cut a git tag + GitHub release for non-SNAPSHOT publishes (main only).
       # Tagged per-artifact (treasury-api-v…) since this repo's release automation
