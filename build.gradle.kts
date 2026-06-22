@@ -26,5 +26,5 @@ plugins {
 // build.gradle.kts override this for themselves.
 allprojects {
     group = "io.paradaux"
-    version = providers.gradleProperty("version").orElse("2.2.1-SNAPSHOT").get()
+    version = providers.gradleProperty("version").orElse("2.3.0-SNAPSHOT").get()
 }

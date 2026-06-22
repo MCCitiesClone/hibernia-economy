@@ -24,7 +24,7 @@ plugins {
 }
 
 // group + version are set centrally by the root allprojects block (single
-// mono-repo version, 2.2.1-SNAPSHOT, overridable with -Pversion).
+// mono-repo version, 2.3.0-SNAPSHOT, overridable with -Pversion).
 description = "Flyway-managed schema for the shared DemocracyCraft economy database"
 
 java {

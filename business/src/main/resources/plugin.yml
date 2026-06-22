@@ -1,5 +1,5 @@
 name: Business
-version: '2.2.1'
+version: '${version}'
 main: io.paradaux.business.Business
 api-version: '1.21'
 depend: [ Treasury ]
@@ -11,6 +11,165 @@ commands:
         permission: business.use
         permission-message: You don’t have permission.
 permissions:
+    # --- Administrative / staff-override nodes (op-only) ----------------------
+    business.admin.disband:
+        description: Force-disband any firm (staff/DOC override).
+        default: op
+    business.admin.rename:
+        description: Rename any firm (staff/DOC override).
+        default: op
+    business.admin.attribute:
+        description: Set any firm's HQ or Discord (staff/DOC override).
+        default: op
+    business.admin.proprietor:
+        description: Reassign any firm's proprietor (staff/DOC override).
+        default: op
+    business.admin.reload:
+        description: Reload the Business plugin configuration.
+        default: op
+    business.tax.exempt:
+        description: Set or clear a firm's balance-tax exemption (government override).
+        default: op
+
+    # --- Normal player nodes -------------------------------------------------
+    # Authorisation for these is enforced at the service layer via firm role
+    # checks; the permission only governs whether a player may attempt the
+    # command at all, so each defaults to true.
+    business.use:
+        description: Access the /business command.
+        default: true
+    business.help:
+        description: View Business help.
+        default: true
     business.pay:
         description: Allows paying money into a business (player -> business).
+        default: true
+    business.create:
+        description: Create a firm.
+        default: true
+    business.disband:
+        description: Disband a firm you own.
+        default: true
+    business.info:
+        description: View a firm's information.
+        default: true
+    business.list:
+        description: List your firms.
+        default: true
+    business.list.other:
+        description: List another player's firms.
+        default: true
+    business.list.all:
+        description: List all firms.
+        default: true
+    business.finance:
+        description: Manage a firm's finances (balance, deposit, withdraw, pay, transactions).
+        default: true
+    business.tax.info:
+        description: View a firm's tax status.
+        default: true
+    business.attribute.hq:
+        description: Set your firm's HQ.
+        default: true
+    business.attribute.discord:
+        description: Set your firm's Discord URL.
+        default: true
+    business.staff.fire:
+        description: Fire a user from a firm you control.
+        default: true
+    business.staff.resign:
+        description: Resign from a firm.
+        default: true
+    business.staff.promote:
+        description: Promote a user within a firm you control.
+        default: true
+    business.staff.demote:
+        description: Demote a user within a firm you control.
+        default: true
+    business.staff.list:
+        description: List staff within a firm you own or manage.
+        default: true
+    business.staff.offer:
+        description: Offer (hire) a user to a firm.
+        default: true
+    business.staff.offer.rescind:
+        description: Rescind a pending hire offer.
+        default: true
+    business.staff.offer.accept:
+        description: Accept a hire offer.
+        default: true
+    business.staff.offer.reject:
+        description: Reject a hire offer.
+        default: true
+    business.staff.role.create:
+        description: Create a role within a firm.
+        default: true
+    business.staff.role.delete:
+        description: Delete a role within a firm.
+        default: true
+    business.staff.role.rename:
+        description: Rename a role within a firm.
+        default: true
+    business.staff.role.list:
+        description: List roles within a firm.
+        default: true
+    business.staff.role.permission.add:
+        description: Add a permission to a firm role.
+        default: true
+    business.staff.role.permission.remove:
+        description: Remove a permission from a firm role.
+        default: true
+    business.staff.role.permission.list:
+        description: List the permissions of a firm role.
+        default: true
+    business.transfer.begin:
+        description: Begin transferring ownership of a firm.
+        default: true
+    business.transfer.confirm:
+        description: Confirm a firm ownership transfer.
+        default: true
+    business.transfer.cancel:
+        description: Cancel a firm ownership transfer.
+        default: true
+    business.transfer.complete:
+        description: Complete a firm ownership transfer.
+        default: true
+    business.transfer.reject:
+        description: Reject a firm ownership transfer.
+        default: true
+    business.account.create:
+        description: Create a Treasury account for your firm.
+        default: true
+    business.account.list:
+        description: List a firm's Treasury accounts.
+        default: true
+    business.account.setdefault:
+        description: Set a firm's default Treasury account.
+        default: true
+    business.account.archive:
+        description: Archive a firm's Treasury account.
+        default: true
+    business.account.sync:
+        description: Sync firm staff to a Treasury account based on their roles.
+        default: true
+    business.account.addmember:
+        description: Add a member to a firm's Treasury account.
+        default: true
+    business.account.removemember:
+        description: Remove a member from a firm's Treasury account.
+        default: true
+    business.account.addauthorizer:
+        description: Add an authorizer to a firm's Treasury account.
+        default: true
+    business.account.removeauthorizer:
+        description: Remove an authorizer from a firm's Treasury account.
+        default: true
+    business.account.members:
+        description: List members of a firm's Treasury account.
+        default: true
+    business.account.authorizers:
+        description: List authorizers of a firm's Treasury account.
+        default: true
+    business.account.finance:
+        description: Manage a specific firm account's finances.
         default: true
