@@ -12,6 +12,10 @@ on:
     paths:
       - 'economy-explorer/**'
       - '.github/workflows/economy-explorer-ci.yml'
+  # Manual trigger so a release on `main` (production) can be (re)built and
+  # deployed on demand — e.g. when `main` is created/advanced to an existing
+  # commit and the path-filtered push event doesn't fire.
+  workflow_dispatch:
 
 defaults:
   run:
@@ -65,7 +69,7 @@ jobs:
   # ── Build + push the image (only after tests pass, on push only) ──────────
   build-and-push:
     needs: [test]
-    if: github.event_name == 'push'
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout source code
