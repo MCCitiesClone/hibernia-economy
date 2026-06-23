@@ -17,7 +17,7 @@ import java.math.BigDecimal;
 import java.util.UUID;
 
 
-@Command({"eco", "economy"})
+@Command({"eco"})
 @Permission("treasury.eco")
 public class EcoCommand implements CommandHandler {
 

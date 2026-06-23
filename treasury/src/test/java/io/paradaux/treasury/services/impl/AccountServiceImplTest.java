@@ -8,6 +8,8 @@ import io.paradaux.treasury.model.config.EconomyConfiguration;
 import io.paradaux.treasury.model.economy.Account;
 import io.paradaux.treasury.model.economy.AccountBalance;
 import io.paradaux.treasury.model.economy.AccountType;
+import io.paradaux.treasury.model.economy.AccountTypeTotal;
+import io.paradaux.treasury.model.economy.EconomySummary;
 import io.paradaux.treasury.testsupport.TestConfigs;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -459,6 +461,37 @@ class AccountServiceImplTest {
     void listGovernmentAccounts_delegates() {
         when(accountMapper.findAllGovernmentAccounts()).thenReturn(List.of(new Account(), new Account()));
         assertThat(svc.listGovernmentAccounts()).hasSize(2);
+    }
+
+    // ---- Economy summary ----
+
+    @Test
+    void getEconomySummary_foldsTypeTotalsAndSumsGrandTotal() {
+        when(accountMapper.getEconomyTotalsByType()).thenReturn(List.of(
+                new AccountTypeTotal(AccountType.PERSONAL, new BigDecimal("106500.00")),
+                new AccountTypeTotal(AccountType.BUSINESS, new BigDecimal("25000.00")),
+                new AccountTypeTotal(AccountType.GOVERNMENT, new BigDecimal("8000.00"))));
+
+        EconomySummary s = svc.getEconomySummary();
+
+        assertThat(s.getPersonal()).isEqualByComparingTo("106500.00");
+        assertThat(s.getBusiness()).isEqualByComparingTo("25000.00");
+        assertThat(s.getGovernment()).isEqualByComparingTo("8000.00");
+        assertThat(s.getTotal()).isEqualByComparingTo("139500.00");
+    }
+
+    @Test
+    void getEconomySummary_missingTypesDefaultToZero() {
+        // Only PERSONAL has any balance; BUSINESS/GOVERNMENT rows absent.
+        when(accountMapper.getEconomyTotalsByType()).thenReturn(List.of(
+                new AccountTypeTotal(AccountType.PERSONAL, new BigDecimal("500.00"))));
+
+        EconomySummary s = svc.getEconomySummary();
+
+        assertThat(s.getPersonal()).isEqualByComparingTo("500.00");
+        assertThat(s.getBusiness()).isEqualByComparingTo("0");
+        assertThat(s.getGovernment()).isEqualByComparingTo("0");
+        assertThat(s.getTotal()).isEqualByComparingTo("500.00");
     }
 
     // ---- Formatting ----

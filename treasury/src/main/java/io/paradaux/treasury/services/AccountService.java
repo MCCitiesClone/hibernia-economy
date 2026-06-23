@@ -4,6 +4,7 @@ import io.paradaux.treasury.model.Page;
 import io.paradaux.treasury.model.economy.Account;
 import io.paradaux.treasury.model.economy.AccountType;
 import io.paradaux.treasury.model.economy.BalanceEntry;
+import io.paradaux.treasury.model.economy.EconomySummary;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -119,6 +120,11 @@ public interface AccountService {
     // ---- Balance top ----
 
     Page<BalanceEntry> getTopBalances(int offset, int limit);
+
+    // ---- Economy summary ----
+
+    /** Top-level money supply by account type (active PERSONAL/BUSINESS/GOVERNMENT, SYSTEM excluded). */
+    EconomySummary getEconomySummary();
 
     // ---- Formatting ----
 

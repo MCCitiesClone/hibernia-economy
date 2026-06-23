@@ -3,6 +3,7 @@ package io.paradaux.treasury.mappers;
 import io.paradaux.treasury.model.economy.Account;
 import io.paradaux.treasury.model.economy.AccountBalance;
 import io.paradaux.treasury.model.economy.AccountType;
+import io.paradaux.treasury.model.economy.AccountTypeTotal;
 import io.paradaux.treasury.model.economy.BalanceEntry;
 import org.apache.ibatis.annotations.*;
 
@@ -228,6 +229,27 @@ public interface AccountMapper {
             @Result(column = "balance", property = "balance")
     })
     List<BalanceEntry> getTopBalances(@Param("limit") int limit, @Param("offset") int offset);
+
+    // ---- economy summary ----
+
+    /**
+     * Total balance per account type for the active (non-archived) economy,
+     * excluding SYSTEM. Mirrors the explorer's total-supply scope so the
+     * in-game {@code /economy} figures match the UI.
+     */
+    @Select("""
+            SELECT a.account_type AS account_type, COALESCE(SUM(b.balance), 0) AS total
+              FROM accounts a
+              JOIN account_balances_mat b ON a.account_id = b.account_id
+             WHERE a.is_archived = 0
+               AND a.account_type IN ('PERSONAL', 'BUSINESS', 'GOVERNMENT')
+             GROUP BY a.account_type
+            """)
+    @Results({
+            @Result(column = "account_type", property = "accountType"),
+            @Result(column = "total", property = "total")
+    })
+    List<AccountTypeTotal> getEconomyTotalsByType();
 
     @Select("SELECT COUNT(*) FROM accounts WHERE account_type = 'PERSONAL' AND is_archived = 0")
     int countPersonalAccounts();

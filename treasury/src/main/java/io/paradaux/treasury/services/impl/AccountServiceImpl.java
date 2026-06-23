@@ -9,7 +9,9 @@ import io.paradaux.treasury.model.config.EconomyConfiguration;
 import io.paradaux.treasury.model.economy.Account;
 import io.paradaux.treasury.model.economy.AccountBalance;
 import io.paradaux.treasury.model.economy.AccountType;
+import io.paradaux.treasury.model.economy.AccountTypeTotal;
 import io.paradaux.treasury.model.economy.BalanceEntry;
+import io.paradaux.treasury.model.economy.EconomySummary;
 import io.paradaux.treasury.services.AccountService;
 import io.paradaux.treasury.utils.AccountRedirectCache;
 import io.paradaux.treasury.utils.PersonalAccountCache;
@@ -328,6 +330,25 @@ public class AccountServiceImpl implements AccountService {
         List<BalanceEntry> items = accountMapper.getTopBalances(limit, offset);
         int total = accountMapper.countPersonalAccounts();
         return new Page<>(items, total, offset, limit);
+    }
+
+    @Override
+    @Transactional
+    public EconomySummary getEconomySummary() {
+        BigDecimal personal = BigDecimal.ZERO;
+        BigDecimal business = BigDecimal.ZERO;
+        BigDecimal government = BigDecimal.ZERO;
+
+        for (AccountTypeTotal row : accountMapper.getEconomyTotalsByType()) {
+            BigDecimal total = row.getTotal() != null ? row.getTotal() : BigDecimal.ZERO;
+            switch (row.getAccountType()) {
+                case PERSONAL -> personal = total;
+                case BUSINESS -> business = total;
+                case GOVERNMENT -> government = total;
+                default -> { /* SYSTEM is excluded by the query */ }
+            }
+        }
+        return new EconomySummary(personal, business, government);
     }
 
     // ---- Formatting ----
