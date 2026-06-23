@@ -259,21 +259,34 @@ export async function isFirmMember(firmId: number, playerUuid: string): Promise<
 
 /**
  * Does the player have financial visibility into this firm? True when they are
- * a current employee (left_at IS NULL) whose role carries the FINANCIAL or
- * ADMIN permission. Gates per-firm sales / volume / quantity drilldown —
- * balances stay public, profitability does not. Narrower than
- * {@link isFirmMember}: a plain employee sees the org (roster, roles) but not
- * the books.
+ * the firm's **proprietor** (the owner is implicitly all-powerful — they are
+ * tracked only by firm.proprietor_uuid_bin and are NOT inserted as a
+ * firm_employee row, so an employee-only check silently locks owners out), OR a
+ * current employee (left_at IS NULL) whose role carries the FINANCIAL or ADMIN
+ * permission. Mirrors the plugin's FirmStaffServiceImpl.hasPermission, which
+ * short-circuits `if (isProprietor) return true;` before the role lookup.
+ * Gates per-firm sales / volume / quantity drilldown — balances stay public,
+ * profitability does not. Narrower than {@link isFirmMember}: a plain employee
+ * sees the org (roster, roles) but not the books.
  */
 export async function hasFirmFinancialAccess(firmId: number, playerUuid: string): Promise<boolean> {
   const r = await sql<{ c: string | number }>`
-    SELECT COUNT(*) AS c
-    FROM firm_employee fe
-    JOIN firm_role_permission rp ON rp.role_id = fe.role_id AND rp.deleted_at IS NULL
-    WHERE fe.firm_id = ${firmId}
-      AND fe.player_uuid_bin = ${uuidToBin(playerUuid)}
-      AND fe.left_at IS NULL
-      AND rp.permission IN ('FINANCIAL', 'ADMIN')
+    SELECT (
+      EXISTS (
+        SELECT 1 FROM firm
+        WHERE firm_id = ${firmId}
+          AND proprietor_uuid_bin = ${uuidToBin(playerUuid)}
+      )
+      OR EXISTS (
+        SELECT 1
+        FROM firm_employee fe
+        JOIN firm_role_permission rp ON rp.role_id = fe.role_id AND rp.deleted_at IS NULL
+        WHERE fe.firm_id = ${firmId}
+          AND fe.player_uuid_bin = ${uuidToBin(playerUuid)}
+          AND fe.left_at IS NULL
+          AND rp.permission IN ('FINANCIAL', 'ADMIN')
+      )
+    ) AS c
   `.execute(db);
   return Number(r.rows[0]?.c ?? 0) > 0;
 }

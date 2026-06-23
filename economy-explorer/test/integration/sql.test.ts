@@ -4,6 +4,7 @@ import { accountLabel, looksLikeUuid } from '@/lib/format';
 import { findAccount, findPostingsByTxnId, getTotalSupply, getPersonalSupply, canReadAccount } from '@/lib/sql/ledger';
 import { getPersonalBalances, getBalanceDistribution } from '@/lib/sql/stats';
 import { isFirmMember, hasFirmFinancialAccess, getAccountFirmId, getFirmStats, findFirmByDisplayName } from '@/lib/sql/firm';
+import { listFinanceFirms } from '@/lib/sql/webhook';
 import { findCapabilities, findPlayerUuidByName } from '@/lib/sql/group';
 import { findAccountsForPlayer } from '@/lib/sql/me';
 import { findIdentityBySub } from '@/lib/sql/identity';
@@ -87,7 +88,28 @@ d('firm financial-access tiers', () => {
     expect(await hasFirmFinancialAccess(1, ALICE)).toBe(true); // Owner: ADMIN
     expect(await hasFirmFinancialAccess(1, BOB)).toBe(true); // Finance: FINANCIAL
     expect(await hasFirmFinancialAccess(1, CAROL)).toBe(false); // Worker: DEFAULT only
-    expect(await hasFirmFinancialAccess(1, DAVE)).toBe(false); // not an employee
+    expect(await hasFirmFinancialAccess(1, DAVE)).toBe(false); // not an employee, not the owner
+  });
+
+  // The proprietor is implicitly all-powerful but is NOT stored as a
+  // firm_employee row (the plugin tracks them only via firm.proprietor_uuid_bin
+  // and short-circuits isProprietor in hasPermission). ~39% of prod firms have
+  // such an employee-row-less owner; an employee-only gate wrongly locked them
+  // out of their own firm's books and webhook dropdown. TaxFree Co (firm 2) is
+  // proprietored by DAVE with zero employees — the canonical case.
+  it('hasFirmFinancialAccess grants the proprietor even with no firm_employee row', async () => {
+    expect(await hasFirmFinancialAccess(2, DAVE)).toBe(true); // owner of TaxFree Co, no employee row
+    expect(await hasFirmFinancialAccess(2, ALICE)).toBe(false); // neither owner nor employee of firm 2
+  });
+
+  // The webhook scope dropdown (lib/sql/webhook.listFinanceFirms) must match the
+  // financial-access gate exactly, including owners with no employee row.
+  it('listFinanceFirms returns owned + FINANCIAL/ADMIN-employed firms (deduped)', async () => {
+    const names = async (uuid: string) => (await listFinanceFirms(uuid)).map((f) => f.displayName);
+    expect(await names(ALICE)).toEqual(['Acme Corp']); // owner + ADMIN employee → one row
+    expect(await names(BOB)).toEqual(['Acme Corp']); // FINANCIAL employee
+    expect(await names(CAROL)).toEqual([]); // Worker: DEFAULT only
+    expect(await names(DAVE)).toEqual(['TaxFree Co']); // proprietor, no employee row
   });
 
   it('maps firm accounts and reports firm stats', async () => {
