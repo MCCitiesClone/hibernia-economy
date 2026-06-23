@@ -65,18 +65,29 @@ export interface FinanceFirm {
 }
 
 /**
- * Firms the player may scope a webhook to: current employment whose role carries
- * FINANCIAL or ADMIN — the same predicate as the financial-privacy gate
- * (lib/sql/firm.ts hasFirmFinancialAccess), so webhook scope == view scope.
+ * Firms the player may scope a webhook to: any firm they **proprietor** (owners
+ * have implicit financial access and are not stored as firm_employee rows), or
+ * one where their current employment carries FINANCIAL or ADMIN. The same
+ * predicate as the financial-privacy gate (lib/sql/firm.ts
+ * hasFirmFinancialAccess), so webhook scope == view scope.
  */
 export async function listFinanceFirms(ownerUuid: string): Promise<FinanceFirm[]> {
   const r = await sql<{ firm_id: number; display_name: string }>`
-    SELECT DISTINCT f.firm_id, f.display_name
-    FROM firm_employee fe
-    JOIN firm f ON f.firm_id = fe.firm_id AND f.is_archived = 0
-    JOIN firm_role_permission rp ON rp.role_id = fe.role_id AND rp.deleted_at IS NULL
-    WHERE fe.player_uuid_bin = ${uuidToBin(ownerUuid)} AND fe.left_at IS NULL
-      AND rp.permission IN ('FINANCIAL', 'ADMIN')
+    SELECT f.firm_id, f.display_name
+    FROM firm f
+    WHERE f.is_archived = 0
+      AND (
+        f.proprietor_uuid_bin = ${uuidToBin(ownerUuid)}
+        OR EXISTS (
+          SELECT 1
+          FROM firm_employee fe
+          JOIN firm_role_permission rp ON rp.role_id = fe.role_id AND rp.deleted_at IS NULL
+          WHERE fe.firm_id = f.firm_id
+            AND fe.player_uuid_bin = ${uuidToBin(ownerUuid)}
+            AND fe.left_at IS NULL
+            AND rp.permission IN ('FINANCIAL', 'ADMIN')
+        )
+      )
     ORDER BY f.display_name
   `.execute(db);
   return r.rows.map((row) => ({ firmId: row.firm_id, displayName: row.display_name }));
