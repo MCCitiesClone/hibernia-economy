@@ -9,9 +9,11 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import io.paradaux.treasury.adapters.VaultEconomyRegistrar;
 import io.paradaux.treasury.api.MarketApi;
+import io.paradaux.treasury.api.SalesQueryApi;
 import io.paradaux.treasury.api.TaxApi;
 import io.paradaux.treasury.api.TreasuryApi;
 import io.paradaux.treasury.api.impl.MarketApiImpl;
+import io.paradaux.treasury.api.impl.SalesQueryApiImpl;
 import io.paradaux.treasury.api.impl.TaxApiImpl;
 import io.paradaux.treasury.api.impl.TreasuryApiImpl;
 import io.paradaux.treasury.guice.*;
@@ -114,6 +116,7 @@ public final class Treasury extends JavaPlugin {
         registerTreasuryApi();
         registerTaxApi();
         registerMarketApi();
+        registerSalesQueryApi();
         scheduleSalaries();
 
         log.info("Treasury enabled.");
@@ -190,6 +193,11 @@ public final class Treasury extends JavaPlugin {
     private void registerMarketApi() {
         MarketApi marketApi = injector.getInstance(MarketApiImpl.class);
         Bukkit.getServicesManager().register(MarketApi.class, marketApi, this, ServicePriority.Highest);
+    }
+
+    private void registerSalesQueryApi() {
+        SalesQueryApi salesQueryApi = injector.getInstance(SalesQueryApiImpl.class);
+        Bukkit.getServicesManager().register(SalesQueryApi.class, salesQueryApi, this, ServicePriority.Highest);
     }
 
     private boolean isVaultAvailable() {

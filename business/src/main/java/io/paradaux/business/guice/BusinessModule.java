@@ -14,6 +14,7 @@ import io.paradaux.business.model.config.BalanceTaxConfiguration;
 import io.paradaux.business.model.config.FirmConfiguration;
 import io.paradaux.business.services.*;
 import io.paradaux.business.services.impl.*;
+import io.paradaux.treasury.api.SalesQueryApi;
 import io.paradaux.treasury.api.TreasuryApi;
 
 import java.util.Map;
@@ -23,11 +24,14 @@ public class BusinessModule extends AbstractModule {
     private final Business business;
     private final ConfigurationLoader configurationLoader;
     private final TreasuryApi treasuryApi;
+    private final SalesQueryApi salesQueryApi;
 
-    public BusinessModule(Business business, ConfigurationLoader configurationLoader, TreasuryApi treasuryApi) {
+    public BusinessModule(Business business, ConfigurationLoader configurationLoader,
+                          TreasuryApi treasuryApi, SalesQueryApi salesQueryApi) {
         this.business = business;
         this.configurationLoader = configurationLoader;
         this.treasuryApi = treasuryApi;
+        this.salesQueryApi = salesQueryApi;
     }
 
     @Override
@@ -35,6 +39,7 @@ public class BusinessModule extends AbstractModule {
         bind(Business.class).toInstance(business);
         bind(ConfigurationLoader.class).toInstance(configurationLoader);
         bind(TreasuryApi.class).toInstance(treasuryApi);
+        bind(SalesQueryApi.class).toInstance(salesQueryApi);
 
         // Automatically bind all configuration components
         for (Map.Entry<Class<?>, Object> entry : configurationLoader.getComponents().entrySet()) {

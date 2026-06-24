@@ -65,6 +65,9 @@ permissions:
     business.finance:
         description: Manage a firm's finances (balance, deposit, withdraw, pay, transactions).
         default: true
+    business.sales:
+        description: View a firm's ChestShop sales (gated to proprietor/FINANCIAL/ADMIN at the service layer).
+        default: true
     business.tax.info:
         description: View a firm's tax status.
         default: true

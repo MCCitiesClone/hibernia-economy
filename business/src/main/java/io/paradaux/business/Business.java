@@ -13,6 +13,7 @@ import io.paradaux.business.jobs.ExpireRequestsJob;
 import io.paradaux.business.listeners.FirmBalanceTaxListener;
 import io.paradaux.business.listeners.FirmPlayerCreationEventListener;
 import io.paradaux.business.model.config.DatabaseConfiguration;
+import io.paradaux.treasury.api.SalesQueryApi;
 import io.paradaux.treasury.api.TreasuryApi;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.RegisteredServiceProvider;
@@ -47,13 +48,24 @@ public final class Business extends JavaPlugin {
         }
         TreasuryApi treasuryApi = rsp.getProvider();
 
+        // 1c) SalesQueryApi — the read path into Treasury's chestshop_sale tracker,
+        // registered by the same Treasury plugin (PAR-176). Required for /firm sales.
+        RegisteredServiceProvider<SalesQueryApi> salesRsp =
+                Bukkit.getServicesManager().getRegistration(SalesQueryApi.class);
+        if (salesRsp == null) {
+            getLogger().severe("Treasury SalesQueryApi not found! Update Treasury to a version that provides it.");
+            getServer().getPluginManager().disablePlugin(this);
+            return;
+        }
+        SalesQueryApi salesQueryApi = salesRsp.getProvider();
+
         // 2) Create the injector, wiring:
-        //    - BusinessModule (binds plugin + all config components + TreasuryApi)
+        //    - BusinessModule (binds plugin + all config components + Treasury APIs)
         //    - DatabaseModule (needs the typed DatabaseConfiguration)
         //    - CommanderModule (commands)
         getLogger().info("Setting up dependency injection...");
         this.injector = Guice.createInjector(
-                new BusinessModule(this, configLoader, treasuryApi),
+                new BusinessModule(this, configLoader, treasuryApi, salesQueryApi),
                 new DatabaseModule(dbCfg),
                 new CommanderModule(this)
         );
