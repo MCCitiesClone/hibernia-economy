@@ -250,6 +250,9 @@ public class FirmAccountServiceImpl implements FirmAccountService {
     public void addMemberToAccount(Integer firmId, Integer accountId, UUID memberUuid, UUID actorId) {
         validateAccountAccess(firmId, accountId, actorId);
         treasury.addMember(accountId, memberUuid, actorId);
+        // Access is role-derived (PAR-77): reconcile immediately so the account
+        // always reflects firm roles and never drifts until a manual resync.
+        syncAccountMembers(firmId, accountId);
     }
 
     @Override
@@ -262,12 +265,16 @@ public class FirmAccountServiceImpl implements FirmAccountService {
         }
 
         treasury.removeMember(accountId, memberUuid);
+        syncAccountMembers(firmId, accountId);
     }
 
     @Override
     public void addAuthorizerToAccount(Integer firmId, Integer accountId, UUID authorizerUuid, UUID actorId) {
         validateAccountAccess(firmId, accountId, actorId);
         treasury.addAuthorizer(accountId, authorizerUuid, actorId);
+        // Access is role-derived (PAR-77): reconcile immediately so the account
+        // always reflects firm roles and never drifts until a manual resync.
+        syncAccountMembers(firmId, accountId);
     }
 
     @Override
@@ -280,6 +287,7 @@ public class FirmAccountServiceImpl implements FirmAccountService {
         }
 
         treasury.removeAuthorizer(accountId, authorizerUuid);
+        syncAccountMembers(firmId, accountId);
     }
 
     @Override

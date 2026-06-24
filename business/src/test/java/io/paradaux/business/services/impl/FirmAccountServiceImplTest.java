@@ -371,6 +371,9 @@ class FirmAccountServiceImplTest {
 
         svc.addMemberToAccount(1, 10, member, actor);
         verify(treasury).addMember(10, member, actor);
+        // PAR-77: the manual write is followed by a role-derived reconcile.
+        verify(treasury).getMembers(10);
+        verify(treasury).getAuthorizers(10);
     }
 
     @Test
@@ -391,6 +394,9 @@ class FirmAccountServiceImplTest {
 
         svc.removeMemberFromAccount(1, 10, toRemove, actor);
         verify(treasury).removeMember(10, toRemove);
+        // PAR-77: the manual write is followed by a role-derived reconcile.
+        verify(treasury).getMembers(10);
+        verify(treasury).getAuthorizers(10);
     }
 
     @Test
@@ -402,6 +408,9 @@ class FirmAccountServiceImplTest {
 
         svc.addAuthorizerToAccount(1, 10, auth, actor);
         verify(treasury).addAuthorizer(10, auth, actor);
+        // PAR-77: the manual write is followed by a role-derived reconcile.
+        verify(treasury).getMembers(10);
+        verify(treasury).getAuthorizers(10);
     }
 
     @Test
@@ -422,6 +431,9 @@ class FirmAccountServiceImplTest {
 
         svc.removeAuthorizerFromAccount(1, 10, toRemove, actor);
         verify(treasury).removeAuthorizer(10, toRemove);
+        // PAR-77: the manual write is followed by a role-derived reconcile.
+        verify(treasury).getMembers(10);
+        verify(treasury).getAuthorizers(10);
     }
 
     // ---------- getters ----------
