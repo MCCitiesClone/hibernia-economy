@@ -4,7 +4,9 @@ import com.google.inject.Inject;
 import io.paradaux.treasury.api.MarketApi;
 import io.paradaux.treasury.api.market.ChestShopSaleRecord;
 import io.paradaux.treasury.api.market.ChestShopShopRecord;
+import io.paradaux.treasury.event.ChestShopSaleEvent;
 import io.paradaux.treasury.mappers.ChestShopMarketMapper;
+import org.bukkit.Bukkit;
 import org.mybatis.guice.transactional.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,6 +59,16 @@ public class MarketApiImpl implements MarketApi {
             p.put("signZ", s.signZ());
             p.put("shopStock", s.shopStock());
             mapper.insertSale(p);
+            // Signal listeners (Business drives firm sale notifications, PAR-179)
+            // after the sale is persisted. Synchronous — recordSale runs on the
+            // main thread from the trade handler. Guarded separately so a listener
+            // error or thread violation logs distinctly and never looks like the
+            // sale itself failed.
+            try {
+                Bukkit.getPluginManager().callEvent(new ChestShopSaleEvent(s));
+            } catch (RuntimeException ev) {
+                log.debug("ChestShopSaleEvent dispatch failed (ignored): {}", ev.toString());
+            }
         } catch (RuntimeException e) {
             log.warn("recordSale failed (ignored): {}", e.toString());
         }

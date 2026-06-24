@@ -15,6 +15,7 @@ public class FirmConfiguration {
     private static final int DEFAULT_OWNED_FIRM_LIMIT = 3;
     private static final int DEFAULT_CREATE_COOLDOWN_SECONDS = 300;
     private static final int DEFAULT_MAX_SALES_EXPORT_DAYS = 30;
+    private static final int DEFAULT_SALES_NOTIFY_FLUSH_SECONDS = 15;
 
     private final Business plugin;
 
@@ -24,6 +25,8 @@ public class FirmConfiguration {
     private int createCooldownSeconds;
     private String salesExplorerUrl;
     private int maxSalesExportDays;
+    private boolean salesNotifyDefault;
+    private int salesNotifyFlushSeconds;
 
     @Inject
     public FirmConfiguration(Business plugin) {
@@ -59,6 +62,12 @@ public class FirmConfiguration {
         // legacy max-sales-export-days.
         this.salesExplorerUrl = plugin.getConfig().getString("sales.explorer-url", "");
         this.maxSalesExportDays = plugin.getConfig().getInt("sales.max-export-days", DEFAULT_MAX_SALES_EXPORT_DAYS);
+
+        // Real-time firm sale notifications: per-firm default state (opt-in) and the
+        // digest flush cadence — bursts within a window are condensed into one message.
+        this.salesNotifyDefault = plugin.getConfig().getBoolean("sales.notify-default", false);
+        this.salesNotifyFlushSeconds = Math.max(1,
+                plugin.getConfig().getInt("sales.notify-flush-seconds", DEFAULT_SALES_NOTIFY_FLUSH_SECONDS));
     }
 
     /** Maximum number of firms a player may own; {@code <= 0} means unlimited. */
@@ -94,5 +103,15 @@ public class FirmConfiguration {
     /** Maximum window (days) a sales export may cover; {@code <= 0} means unlimited. */
     public int getMaxSalesExportDays() {
         return maxSalesExportDays;
+    }
+
+    /** Default per-firm state for real-time sale notifications (opt-in by default). */
+    public boolean isSalesNotifyDefault() {
+        return salesNotifyDefault;
+    }
+
+    /** Seconds between sale-notification digest flushes (>= 1). */
+    public int getSalesNotifyFlushSeconds() {
+        return salesNotifyFlushSeconds;
     }
 }

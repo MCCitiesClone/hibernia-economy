@@ -10,6 +10,7 @@ import io.paradaux.hibernia.framework.i18n.Message;
 import io.paradaux.business.model.Firm;
 import io.paradaux.business.model.RolePermission;
 import io.paradaux.business.model.config.FirmConfiguration;
+import io.paradaux.business.services.FirmSalesNotificationService;
 import io.paradaux.business.services.FirmService;
 import io.paradaux.business.services.FirmStaffService;
 import io.paradaux.business.utils.resolvers.FirmName;
@@ -43,6 +44,7 @@ public class SalesCommands implements CommandHandler {
     private static final DateTimeFormatter TIME_FMT = DateTimeFormatter.ofPattern("MMM d HH:mm");
 
     private final SalesQueryApi sales;
+    private final FirmSalesNotificationService salesNotifications;
     private final FirmService firms;
     private final FirmStaffService staff;
     private final TreasuryApi treasury;
@@ -50,9 +52,11 @@ public class SalesCommands implements CommandHandler {
     private final Message message;
 
     @Inject
-    public SalesCommands(SalesQueryApi sales, FirmService firms, FirmStaffService staff,
+    public SalesCommands(SalesQueryApi sales, FirmSalesNotificationService salesNotifications,
+                         FirmService firms, FirmStaffService staff,
                          TreasuryApi treasury, FirmConfiguration config, Message message) {
         this.sales = sales;
+        this.salesNotifications = salesNotifications;
         this.firms = firms;
         this.staff = staff;
         this.treasury = treasury;
@@ -123,6 +127,28 @@ public class SalesCommands implements CommandHandler {
         String url = base + "/chestshop/firms/" + firm.getFirmId() + "?days=" + days;
         message.send(sender, "business.sales.export.link",
                 "firm", firm.getDisplayName(), "days", days, "url", url);
+    }
+
+    // ---- /firm sales toggle <firm> (PAR-179) ----
+
+    @Route("sales toggle <firm>")
+    @Permission("business.sales.toggle")
+    @Async
+    @Description("Toggle real-time sale notifications for a firm")
+    public void salesToggle(@Sender Player sender, @Arg("firm") FirmName firmRef) {
+        Firm firm = firms.getFirmByNameOrId(firmRef.value());
+        if (firm == null) {
+            message.send(sender, "business.general.firm-not-found");
+            return;
+        }
+        // Toggling notifications is an owner/admin setting, not just a read.
+        if (!canManageSales(firm, sender)) {
+            message.send(sender, "business.general.no-permission");
+            return;
+        }
+        boolean enabled = salesNotifications.toggle(firm.getFirmId());
+        message.send(sender, enabled ? "business.sales.toggle.on" : "business.sales.toggle.off",
+                "firm", firm.getDisplayName());
     }
 
     // ---- internals ----
@@ -230,5 +256,12 @@ public class SalesCommands implements CommandHandler {
         return firms.isProprietor(firm.getFirmId(), uuid)
                 || staff.hasPermission(firm.getFirmId(), uuid, RolePermission.ADMIN)
                 || staff.hasPermission(firm.getFirmId(), uuid, RolePermission.FINANCIAL);
+    }
+
+    /** Managing the notification toggle is an owner/admin action, not just viewing. */
+    private boolean canManageSales(Firm firm, Player player) {
+        UUID uuid = player.getUniqueId();
+        return firms.isProprietor(firm.getFirmId(), uuid)
+                || staff.hasPermission(firm.getFirmId(), uuid, RolePermission.ADMIN);
     }
 }

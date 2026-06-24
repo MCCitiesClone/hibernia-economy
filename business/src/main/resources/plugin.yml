@@ -71,6 +71,9 @@ permissions:
     business.sales.export:
         description: Get an economy-explorer link to a firm's sales report.
         default: true
+    business.sales.toggle:
+        description: Toggle real-time sale notifications for a firm (owner/admin).
+        default: true
     business.tax.info:
         description: View a firm's tax status.
         default: true

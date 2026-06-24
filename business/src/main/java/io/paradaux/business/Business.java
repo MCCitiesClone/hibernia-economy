@@ -10,9 +10,12 @@ import io.paradaux.business.guice.BusinessModule;
 import io.paradaux.business.guice.CommanderModule;
 import io.paradaux.business.guice.DatabaseModule;
 import io.paradaux.business.jobs.ExpireRequestsJob;
+import io.paradaux.business.listeners.ChestShopSaleListener;
 import io.paradaux.business.listeners.FirmBalanceTaxListener;
 import io.paradaux.business.listeners.FirmPlayerCreationEventListener;
 import io.paradaux.business.model.config.DatabaseConfiguration;
+import io.paradaux.business.model.config.FirmConfiguration;
+import io.paradaux.business.services.FirmSalesNotificationService;
 import io.paradaux.treasury.api.SalesQueryApi;
 import io.paradaux.treasury.api.TreasuryApi;
 import org.bukkit.Bukkit;
@@ -85,6 +88,14 @@ public final class Business extends JavaPlugin {
         var pm = this.getServer().getPluginManager();
         pm.registerEvents(injector.getInstance(FirmPlayerCreationEventListener.class), this);
         pm.registerEvents(injector.getInstance(FirmBalanceTaxListener.class), this);
+        pm.registerEvents(injector.getInstance(ChestShopSaleListener.class), this);
+
+        // 6) Drive the firm sale-notification digest: flush buffered sales on a
+        // timer so bursts are condensed into one message per firm per window.
+        FirmSalesNotificationService salesNotifications =
+                injector.getInstance(FirmSalesNotificationService.class);
+        long flushTicks = injector.getInstance(FirmConfiguration.class).getSalesNotifyFlushSeconds() * 20L;
+        getServer().getScheduler().runTaskTimer(this, salesNotifications::flush, flushTicks, flushTicks);
     }
 
     @Override

@@ -60,6 +60,7 @@ public class BusinessModule extends AbstractModule {
         bind(FirmStaffService.class).to(FirmStaffServiceImpl.class).in(Singleton.class);
         bind(FirmTransactionService.class).to(FirmTransactionServiceImpl.class).in(Singleton.class);
         bind(FirmNotificationService.class).to(FirmNotificationServiceImpl.class).in(Singleton.class);
+        bind(FirmSalesNotificationService.class).to(FirmSalesNotificationServiceImpl.class).in(Singleton.class);
         bind(FirmDisbandConfirmationService.class).to(FirmDisbandConfirmationServiceImpl.class).in(Singleton.class);
         bind(FirmRequestService.class).to(FirmRequestServiceImpl.class).in(Singleton.class);
         bind(FirmPlayerService.class).to(FirmPlayerServiceImpl.class).in(Singleton.class);
