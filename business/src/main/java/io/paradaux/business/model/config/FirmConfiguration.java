@@ -14,6 +14,7 @@ public class FirmConfiguration {
 
     private static final int DEFAULT_OWNED_FIRM_LIMIT = 3;
     private static final int DEFAULT_CREATE_COOLDOWN_SECONDS = 300;
+    private static final int DEFAULT_MAX_SALES_EXPORT_DAYS = 30;
 
     private final Business plugin;
 
@@ -21,6 +22,8 @@ public class FirmConfiguration {
     // a Guice singleton, so services holding a reference see the new values.
     private int ownedFirmLimit;
     private int createCooldownSeconds;
+    private String salesExplorerUrl;
+    private int maxSalesExportDays;
 
     @Inject
     public FirmConfiguration(Business plugin) {
@@ -50,6 +53,12 @@ public class FirmConfiguration {
         plugin.getLogger().info(createCooldownSeconds > 0
                 ? "Firm creation cooldown: " + createCooldownSeconds + "s per player"
                 : "Firm creation cooldown: disabled");
+
+        // economy-explorer base URL that /firm sales export deep-links into (per
+        // tenant). Empty disables the export command. The day cap mirrors the
+        // legacy max-sales-export-days.
+        this.salesExplorerUrl = plugin.getConfig().getString("sales.explorer-url", "");
+        this.maxSalesExportDays = plugin.getConfig().getInt("sales.max-export-days", DEFAULT_MAX_SALES_EXPORT_DAYS);
     }
 
     /** Maximum number of firms a player may own; {@code <= 0} means unlimited. */
@@ -70,5 +79,20 @@ public class FirmConfiguration {
     /** Whether a creation cooldown is enforced. */
     public boolean hasCreateCooldown() {
         return createCooldownSeconds > 0;
+    }
+
+    /** economy-explorer base URL for sales-export deep links; blank if unset. */
+    public String getSalesExplorerUrl() {
+        return salesExplorerUrl;
+    }
+
+    /** Whether a sales-export explorer URL is configured. */
+    public boolean hasSalesExplorerUrl() {
+        return salesExplorerUrl != null && !salesExplorerUrl.isBlank();
+    }
+
+    /** Maximum window (days) a sales export may cover; {@code <= 0} means unlimited. */
+    public int getMaxSalesExportDays() {
+        return maxSalesExportDays;
     }
 }

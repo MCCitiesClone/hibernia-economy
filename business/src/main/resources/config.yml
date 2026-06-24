@@ -15,6 +15,13 @@ firm:
   # Set to 0 (or below) to disable.
   create-cooldown-seconds: 300
 
+sales:
+  # economy-explorer base URL that `/firm sales export` deep-links into (the
+  # explorer's own auth gates the page). Per tenant; leave blank to disable export.
+  explorer-url: ""
+  # Maximum window (days) a sales export may cover. 0 (or below) = unlimited.
+  max-export-days: 30
+
 tax:
   balance:
     enabled: true

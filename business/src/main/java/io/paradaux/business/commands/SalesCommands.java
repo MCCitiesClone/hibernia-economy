@@ -9,6 +9,7 @@ import io.paradaux.hibernia.framework.i18n.Message;
 
 import io.paradaux.business.model.Firm;
 import io.paradaux.business.model.RolePermission;
+import io.paradaux.business.model.config.FirmConfiguration;
 import io.paradaux.business.services.FirmService;
 import io.paradaux.business.services.FirmStaffService;
 import io.paradaux.business.utils.resolvers.FirmName;
@@ -45,15 +46,17 @@ public class SalesCommands implements CommandHandler {
     private final FirmService firms;
     private final FirmStaffService staff;
     private final TreasuryApi treasury;
+    private final FirmConfiguration config;
     private final Message message;
 
     @Inject
     public SalesCommands(SalesQueryApi sales, FirmService firms, FirmStaffService staff,
-                         TreasuryApi treasury, Message message) {
+                         TreasuryApi treasury, FirmConfiguration config, Message message) {
         this.sales = sales;
         this.firms = firms;
         this.staff = staff;
         this.treasury = treasury;
+        this.config = config;
         this.message = message;
     }
 
@@ -91,6 +94,35 @@ public class SalesCommands implements CommandHandler {
     @Description("Aggregate sales report for a firm over N days")
     public void salesSummaryDays(@Sender Player sender, @Arg("firm") FirmName firmRef, @Arg("days") Integer days) {
         summary(sender, firmRef, days);
+    }
+
+    // ---- /firm sales export <firm> <days> (PAR-180) ----
+
+    @Route("sales export <firm> <days>")
+    @Permission("business.sales.export")
+    @Async
+    @Description("Get an economy-explorer link to a firm's sales report")
+    public void salesExport(@Sender Player sender, @Arg("firm") FirmName firmRef, @Arg("days") Integer days) {
+        Firm firm = resolveAndGate(sender, firmRef);
+        if (firm == null) return;
+
+        int cap = config.getMaxSalesExportDays();
+        if (days == null || days < 1) days = cap > 0 ? cap : DEFAULT_SUMMARY_DAYS;
+        if (cap > 0 && days > cap) {
+            message.send(sender, "business.sales.export.limit", "max", cap);
+            return;
+        }
+        if (!config.hasSalesExplorerUrl()) {
+            message.send(sender, "business.sales.export.unavailable");
+            return;
+        }
+
+        // Deep-link to the explorer's per-firm market drilldown; its own
+        // canSeeFinancials gate handles auth there, so no token/CSV to mint here.
+        String base = config.getSalesExplorerUrl().replaceAll("/+$", "");
+        String url = base + "/chestshop/firms/" + firm.getFirmId() + "?days=" + days;
+        message.send(sender, "business.sales.export.link",
+                "firm", firm.getDisplayName(), "days", days, "url", url);
     }
 
     // ---- internals ----

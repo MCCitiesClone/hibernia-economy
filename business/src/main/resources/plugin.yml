@@ -68,6 +68,9 @@ permissions:
     business.sales:
         description: View a firm's ChestShop sales (gated to proprietor/FINANCIAL/ADMIN at the service layer).
         default: true
+    business.sales.export:
+        description: Get an economy-explorer link to a firm's sales report.
+        default: true
     business.tax.info:
         description: View a firm's tax status.
         default: true
