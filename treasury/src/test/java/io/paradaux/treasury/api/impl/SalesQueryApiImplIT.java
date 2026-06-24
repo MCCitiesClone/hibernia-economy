@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Integration test for the ChestShop sales read API ({@link SalesQueryApiImpl} →
@@ -114,6 +115,15 @@ class SalesQueryApiImplIT extends IntegrationTestBase {
         // Top customers by sale count: Alice (2) before Bob (1).
         assertThat(s.getTopCustomers()).extracting(TopCustomer::getCustomerName).containsExactly("Alice", "Bob");
         assertThat(s.getTopCustomers().get(0).getVolume()).isEqualByComparingTo("25.00");
+    }
+
+    @Test
+    void unscopedQuery_isRejected() {
+        // A query with no owner scope must never read server-wide sales.
+        SalesQuery noScope = SalesQuery.builder().windowDays(30).build();
+        assertThatThrownBy(() -> sales.listSales(noScope)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> sales.countSales(noScope)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> sales.summarize(noScope, 5)).isInstanceOf(IllegalArgumentException.class);
     }
 
     // ── helpers ───────────────────────────────────────────────────────────────

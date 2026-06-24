@@ -102,24 +102,39 @@ public class FirmSalesNotificationServiceImpl implements FirmSalesNotificationSe
         Firm firm = firms.getAnyFirmByNameOrId(String.valueOf(firmId));
         String firmName = firm != null ? firm.getDisplayName() : ("Firm #" + firmId);
 
-        if (buf.count == 1 && buf.firstSale != null) {
-            ChestShopSaleRecord s = buf.firstSale;
+        // Snapshot the buffer atomically (same monitor as add()) so building the
+        // message can't race a concurrent record() if recordSale is ever invoked
+        // off the main thread.
+        long count;
+        ChestShopSaleRecord first;
+        LocalDateTime since;
+        BigDecimal totalVolume;
+        String items;
+        synchronized (buf) {
+            count = buf.count;
+            first = buf.firstSale;
+            since = buf.since;
+            totalVolume = buf.totalVolume;
+            items = buf.renderItems();
+        }
+
+        if (count == 1 && first != null) {
             notifications.notifyFirm(firmId, "business.sales.notify.single",
                     "firm", firmName,
-                    "action", action(s.direction()),
-                    "qty", s.quantity(),
-                    "item", s.itemName(),
-                    "customer", customerName(s.customerUuid()),
-                    "total", treasury.formatAmount(s.totalPrice()));
+                    "action", action(first.direction()),
+                    "qty", first.quantity(),
+                    "item", first.itemName(),
+                    "customer", customerName(first.customerUuid()),
+                    "total", treasury.formatAmount(first.totalPrice()));
             return;
         }
 
         notifications.notifyFirm(firmId, "business.sales.notify.digest",
                 "firm", firmName,
-                "count", buf.count,
-                "since", TIME_FMT.format(buf.since),
-                "items", buf.renderItems(),
-                "total", treasury.formatAmount(buf.totalVolume));
+                "count", count,
+                "since", TIME_FMT.format(since),
+                "items", items,
+                "total", treasury.formatAmount(totalVolume));
     }
 
     /** Firm-centric label: a customer BUY means the firm sold, and vice versa. */
@@ -142,7 +157,7 @@ public class FirmSalesNotificationServiceImpl implements FirmSalesNotificationSe
         private BigDecimal totalVolume = BigDecimal.ZERO;
         private ChestShopSaleRecord firstSale;
 
-        void add(ChestShopSaleRecord s) {
+        synchronized void add(ChestShopSaleRecord s) {
             if (count == 0) {
                 firstSale = s;
             }

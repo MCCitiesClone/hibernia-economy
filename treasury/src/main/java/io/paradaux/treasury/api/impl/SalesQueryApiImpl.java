@@ -30,18 +30,21 @@ public class SalesQueryApiImpl implements SalesQueryApi {
     @Override
     @Transactional
     public List<SaleRow> listSales(SalesQuery query) {
+        requireOwnerScope(query);
         return mapper.listSales(query, since(query));
     }
 
     @Override
     @Transactional
     public long countSales(SalesQuery query) {
+        requireOwnerScope(query);
         return mapper.countSales(query, since(query));
     }
 
     @Override
     @Transactional
     public SalesSummary summarize(SalesQuery query, int topN) {
+        requireOwnerScope(query);
         LocalDateTime since = since(query);
         SalesSummary summary = mapper.summarizeTotals(query, since);
         if (summary == null) {
@@ -52,6 +55,18 @@ public class SalesQueryApiImpl implements SalesQueryApi {
         summary.setTopItems(mapper.topItems(query, since, topN));
         summary.setTopCustomers(mapper.topCustomers(query, since, topN));
         return summary;
+    }
+
+    /**
+     * Sales are a private, owner-scoped read (per-customer drilldown is sensitive).
+     * Refuse a query with no owner scope so an unscoped call can never return
+     * server-wide sales — the contract is enforced here, not left to callers.
+     */
+    private static void requireOwnerScope(SalesQuery query) {
+        if (query.getFirmId() == null && query.getOwnerUuid() == null && query.getAccountId() == null) {
+            throw new IllegalArgumentException(
+                    "SalesQuery requires an owner scope (firmId, ownerUuid or accountId)");
+        }
     }
 
     /** Absolute lower bound for the query window, or null for all-time. */

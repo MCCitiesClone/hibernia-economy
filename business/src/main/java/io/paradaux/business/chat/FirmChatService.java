@@ -74,13 +74,24 @@ public class FirmChatService {
         return Optional.ofNullable(activeFirm.get(uuid));
     }
 
-    /** Online recipients for a sender's active firm (its online staff incl. proprietor). */
+    /**
+     * Online recipients for a sender's active firm: its online staff who are also
+     * currently tuned into THIS firm's chat. A multi-firm member who has another
+     * firm (or no firm) selected is excluded, so messages don't bleed across the
+     * firms a player belongs to.
+     */
     public List<Audience> recipients(UUID senderUuid) {
         Integer firmId = activeFirm.get(senderUuid);
         if (firmId == null) {
             return List.of();
         }
-        return new ArrayList<>(staff.getOnlineEmployees(String.valueOf(firmId)));
+        List<Audience> out = new ArrayList<>();
+        for (Player employee : staff.getOnlineEmployees(String.valueOf(firmId))) {
+            if (firmId.equals(activeFirm.get(employee.getUniqueId()))) {
+                out.add(employee);
+            }
+        }
+        return out;
     }
 
     /**
