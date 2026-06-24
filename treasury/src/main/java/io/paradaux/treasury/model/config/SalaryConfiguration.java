@@ -52,6 +52,12 @@ public class SalaryConfiguration {
     private long intervalSeconds;
     /** LuckPerms group name (lower-cased) → salary amount. */
     private Map<String, BigDecimal> amounts;
+    /** Don't pay players who are AFK (per the LuckPerms AFK context). Default true. */
+    private boolean skipAfk = true;
+    /** LuckPerms context key that marks a player AFK (e.g. {@code afk}). */
+    private String afkContextKey = "afk";
+    /** LuckPerms context value (paired with {@link #afkContextKey}) that marks a player AFK. */
+    private String afkContextValue = "true";
     /** Set only via the {@code @Inject} ctor; null for test-factory instances. */
     private Treasury plugin;
 
@@ -106,9 +112,15 @@ public class SalaryConfiguration {
         }
         this.amounts = normalise(parsed);
 
+        this.skipAfk = cfg.getBoolean("salaries.skip-afk", true);
+        String afkKey = cfg.getString("salaries.afk-context-key", "afk");
+        this.afkContextKey = (afkKey == null || afkKey.isBlank()) ? "afk" : afkKey;
+        String afkVal = cfg.getString("salaries.afk-context-value", "true");
+        this.afkContextValue = (afkVal == null || afkVal.isBlank()) ? "true" : afkVal;
+
         if (enabled) {
-            log.info("Government salaries enabled: {} group(s), every {}s, from {}",
-                    amounts.size(), intervalSeconds, governmentAccount);
+            log.info("Government salaries enabled: {} group(s), every {}s, from {} (skip-afk={})",
+                    amounts.size(), intervalSeconds, governmentAccount, skipAfk);
         }
     }
 

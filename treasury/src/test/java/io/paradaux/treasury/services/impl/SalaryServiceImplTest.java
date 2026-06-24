@@ -9,6 +9,8 @@ import io.paradaux.treasury.services.EconomyNotifier;
 import io.paradaux.treasury.services.LedgerService;
 import io.paradaux.treasury.utils.TreasuryConstants;
 import net.luckperms.api.LuckPerms;
+import net.luckperms.api.context.ContextManager;
+import net.luckperms.api.context.ImmutableContextSet;
 import net.luckperms.api.model.group.Group;
 import net.luckperms.api.model.user.User;
 import net.luckperms.api.model.user.UserManager;
@@ -118,6 +120,20 @@ class SalaryServiceImplTest {
     @Test
     void plan_skipsPlayersWithNoSalariedGroup() {
         online(onlinePlayer(UUID.randomUUID(), "guest", "owner")); // owner=0, guest unlisted
+        assertThat(service(cfg(true, AMOUNTS), true).planPayroll()).isEmpty();
+    }
+
+    @Test
+    void plan_skipsAfkPlayer() {
+        // A salaried player flagged AFK via the LuckPerms context is not paid.
+        Player p = org.mockito.Mockito.mock(Player.class);
+        online(p);
+        ContextManager cm = org.mockito.Mockito.mock(ContextManager.class);
+        ImmutableContextSet ctx = org.mockito.Mockito.mock(ImmutableContextSet.class);
+        when(luckPerms.getContextManager()).thenReturn(cm);
+        when(cm.getContext(p)).thenReturn(ctx);
+        when(ctx.contains("afk", "true")).thenReturn(true); // default afk context
+
         assertThat(service(cfg(true, AMOUNTS), true).planPayroll()).isEmpty();
     }
 

@@ -107,6 +107,13 @@ salaries:
   government-account: "DCGovernment"
   # Seconds between payout cycles (900 = 15 minutes).
   interval: 900
+  # Don't pay players who are AFK. AFK is read from a LuckPerms context (exposed
+  # by Essentials or an AFK context calculator), so no Essentials dependency is
+  # needed. Set false to keep paying AFK players.
+  skip-afk: true
+  # The LuckPerms context key/value that marks a player AFK.
+  afk-context-key: "afk"
+  afk-context-value: "true"
   # LuckPerms group name -> salary amount. Group names are matched case-insensitively.
   amount:
     chiefjustice: 75.0

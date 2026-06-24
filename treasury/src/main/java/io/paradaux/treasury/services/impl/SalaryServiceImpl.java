@@ -12,6 +12,8 @@ import io.paradaux.treasury.services.LedgerService;
 import io.paradaux.treasury.services.SalaryService;
 import io.paradaux.treasury.utils.TreasuryConstants;
 import net.luckperms.api.LuckPerms;
+import net.luckperms.api.context.ContextManager;
+import net.luckperms.api.context.ImmutableContextSet;
 import net.luckperms.api.model.group.Group;
 import net.luckperms.api.model.user.User;
 import org.bukkit.Server;
@@ -67,11 +69,30 @@ public class SalaryServiceImpl implements SalaryService {
 
         List<SalaryPayment> plan = new ArrayList<>();
         for (Player player : server.getOnlinePlayers()) {
+            if (config.isSkipAfk() && isAfk(player)) {
+                continue; // don't pay UBI/salary to AFK-idling players (PAR-139)
+            }
             UUID uuid = player.getUniqueId();
             config.highestSalary(groupsOf(uuid)).ifPresent(best ->
                     plan.add(new SalaryPayment(uuid, best.getKey(), best.getValue())));
         }
         return plan;
+    }
+
+    /**
+     * Whether a player is AFK, per the configured LuckPerms context (default
+     * {@code afk=true}). Servers expose AFK as a LuckPerms context via Essentials
+     * or a calculator; this reads it generically so no Essentials build
+     * dependency is needed. Returns false if LuckPerms can't supply a context.
+     */
+    private boolean isAfk(Player player) {
+        ContextManager contextManager = luckPerms.getContextManager();
+        if (contextManager == null) {
+            return false;
+        }
+        ImmutableContextSet contexts = contextManager.getContext(player);
+        return contexts != null
+                && contexts.contains(config.getAfkContextKey(), config.getAfkContextValue());
     }
 
     @Override
