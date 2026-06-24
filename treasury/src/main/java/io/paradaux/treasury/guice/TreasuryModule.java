@@ -6,8 +6,10 @@ import io.paradaux.hibernia.framework.configurator.ConfigurationLoader;
 import io.paradaux.hibernia.framework.i18n.Message;
 import io.paradaux.treasury.Treasury;
 import io.paradaux.treasury.api.MarketApi;
+import io.paradaux.treasury.api.SalesQueryApi;
 import io.paradaux.treasury.api.TaxApi;
 import io.paradaux.treasury.api.impl.MarketApiImpl;
+import io.paradaux.treasury.api.impl.SalesQueryApiImpl;
 import io.paradaux.treasury.api.impl.TaxApiImpl;
 import io.paradaux.treasury.model.config.BalanceTaxConfiguration;
 import io.paradaux.treasury.model.config.SalaryConfiguration;
@@ -76,6 +78,8 @@ public class TreasuryModule extends AbstractModule {
         // ChestShop market data (sales tracker + live shop registry)
         bind(MarketApiImpl.class).in(Singleton.class);
         bind(MarketApi.class).to(MarketApiImpl.class).in(Singleton.class);
+        bind(SalesQueryApiImpl.class).in(Singleton.class);
+        bind(SalesQueryApi.class).to(SalesQueryApiImpl.class).in(Singleton.class);
 
         // Government salaries — LuckPerms-group-based payouts on a timer.
         bind(Server.class).toInstance(treasury.getServer());
