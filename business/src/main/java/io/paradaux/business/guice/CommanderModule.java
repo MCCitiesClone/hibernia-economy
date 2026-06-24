@@ -46,5 +46,6 @@ public final class CommanderModule extends AbstractModule {
         handlerBinder.addBinding().to(ReloadCommand.class);
         handlerBinder.addBinding().to(TaxCommands.class);
         handlerBinder.addBinding().to(SalesCommands.class);
+        handlerBinder.addBinding().to(ChatCommands.class);
     }
 }

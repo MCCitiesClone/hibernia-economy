@@ -96,6 +96,17 @@ public final class Business extends JavaPlugin {
                 injector.getInstance(FirmSalesNotificationService.class);
         long flushTicks = injector.getInstance(FirmConfiguration.class).getSalesNotifyFlushSeconds() * 20L;
         getServer().getScheduler().runTaskTimer(this, salesNotifications::flush, flushTicks, flushTicks);
+
+        // 7) Register the employee-only firm chat channel with CarbonChat (PAR-20).
+        // CarbonChat is a soft dependency: if it's absent, linking the Carbon-
+        // referencing method throws NoClassDefFoundError at the call site (before
+        // the method's own guard runs), so catch Throwable here to keep firm chat
+        // optional without breaking enable.
+        try {
+            injector.getInstance(io.paradaux.business.chat.FirmChatService.class).initialise();
+        } catch (Throwable t) {
+            getLogger().info("CarbonChat unavailable — firm chat disabled (" + t.getClass().getSimpleName() + ").");
+        }
     }
 
     @Override

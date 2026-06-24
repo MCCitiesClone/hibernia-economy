@@ -44,6 +44,11 @@ dependencies {
     // Paper API (provided by server)
     compileOnly(libs.paper.api)
 
+    // CarbonChat API — the server's chat plugin (provided at runtime). Pinned to a
+    // specific 3.0.0-beta because the API churns across betas (PAR-20). compileOnly:
+    // Carbon ships the impl; we only register a channel against its API.
+    compileOnly("de.hexaoxi:carbonchat-api:3.0.0-beta.32")
+
     // Vault API, exclude Bukkit to avoid capability conflict with Paper
     compileOnly("com.github.MilkBowl:VaultAPI:1.7") {
         exclude(group = "org.bukkit", module = "bukkit")

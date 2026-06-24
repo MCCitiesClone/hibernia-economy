@@ -3,6 +3,7 @@ version: '${version}'
 main: io.paradaux.business.Business
 api-version: '1.21'
 depend: [ Treasury ]
+softdepend: [ CarbonChat ]
 commands:
     business:
         description: Business commands
@@ -73,6 +74,9 @@ permissions:
         default: true
     business.sales.toggle:
         description: Toggle real-time sale notifications for a firm (owner/admin).
+        default: true
+    business.chat:
+        description: Use the employee-only firm chat channel.
         default: true
     business.tax.info:
         description: View a firm's tax status.
