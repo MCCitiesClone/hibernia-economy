@@ -817,6 +817,15 @@ public class GovCommand implements CommandHandler {
         java.util.Optional<java.util.UUID> directoryUuid =
                 knownPlayer ? java.util.Optional.empty() : playerDirectory.resolveUuidByName(toName);
 
+        // PAR-144: a name that is both a known player and a non-archived GOVERNMENT
+        // account is ambiguous. Don't silently pay the personal account (which is
+        // what the player branches below would do) — refuse so the operator types
+        // the recipient explicitly rather than relying on cache/lookup order.
+        if ((knownPlayer || directoryUuid.isPresent()) && accountService.governmentAccountExists(toName)) {
+            message.send(sender, "treasury.gov.payout.ambiguous", "name", toName);
+            return;
+        }
+
         if (knownPlayer) {
             toAccountId = accountService.getOrCreatePersonalAccountId(targetPlayer.getUniqueId());
             toDisplayName = targetPlayer.getName();
