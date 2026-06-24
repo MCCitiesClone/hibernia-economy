@@ -31,6 +31,10 @@ commands:
     description: View top-level economy statistics (totals by account type)
     usage: /economy
     permission: treasury.economy
+  sales:
+    description: View your own ChestShop sales
+    usage: /sales [page] | /sales summary [days]
+    permission: treasury.sales
   transactions:
     description: View transaction history
     aliases: [txns]
@@ -71,6 +75,9 @@ permissions:
     default: true
   treasury.economy:
     description: View top-level economy statistics
+    default: true
+  treasury.sales:
+    description: View your own ChestShop sales
     default: true
   treasury.transactions:
     description: View your transaction history
