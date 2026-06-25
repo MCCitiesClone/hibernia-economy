@@ -9,12 +9,9 @@ import io.paradaux.treasury.event.TaxCycleEvent;
 import io.paradaux.treasury.model.config.TaxCycleConfiguration;
 import io.paradaux.treasury.model.tax.TaxCycleReport;
 import io.paradaux.treasury.model.tax.TaxCycleType;
-import io.paradaux.treasury.services.BalanceTaxService;
-import io.paradaux.treasury.services.PlayerDirectoryService;
 import io.paradaux.treasury.services.TaxCycleRegistry;
 import io.paradaux.treasury.services.TaxWebhookService;
 import org.bukkit.Bukkit;
-import org.bukkit.OfflinePlayer;
 import org.bukkit.command.CommandSender;
 import org.bukkit.plugin.RegisteredListener;
 
@@ -25,7 +22,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.LinkedHashSet;
 import java.util.Optional;
 import java.util.Set;
-import java.util.UUID;
 
 /**
  * Admin command for inspecting tax cycle status and triggering cycles for testing.
@@ -48,21 +44,16 @@ public class TaxCommand implements CommandHandler {
     private final TaxCycleRegistry cycleRegistry;
     private final TaxCycleConfiguration cycleConfig;
     private final TaxWebhookService webhookService;
-    private final BalanceTaxService balanceTaxService;
-    private final PlayerDirectoryService playerDirectory;
     private final Message message;
 
     @Inject
     public TaxCommand(TaxApi taxApi, TaxCycleRegistry cycleRegistry,
                       TaxCycleConfiguration cycleConfig, TaxWebhookService webhookService,
-                      BalanceTaxService balanceTaxService, PlayerDirectoryService playerDirectory,
                       Message message) {
         this.taxApi            = taxApi;
         this.cycleRegistry     = cycleRegistry;
         this.cycleConfig       = cycleConfig;
         this.webhookService    = webhookService;
-        this.balanceTaxService = balanceTaxService;
-        this.playerDirectory   = playerDirectory;
         this.message           = message;
     }
 
@@ -166,41 +157,6 @@ public class TaxCommand implements CommandHandler {
                 + (report != null ? " <gray>Collected: <white>" + report.collectedCount()
                         + "</white>  Skipped: <white>" + report.skippedCount()
                         + "</white>  Failed: <white>" + report.failedCount() + "</white></gray>" : ""));
-    }
-
-    // ---- /tax trigger balance <player> ----
-
-    @Route("trigger balance <player>")
-    @Async
-    @Description("Force personal balance tax collection for a player as if they just logged in now")
-    public void triggerBalance(@Sender CommandSender sender, @Arg("player") String playerName) {
-        @SuppressWarnings("deprecation")
-        OfflinePlayer target = Bukkit.getOfflinePlayer(playerName);
-        UUID uuid = target.getUniqueId();
-
-        if (!target.hasPlayedBefore() && !target.isOnline()) {
-            message.send(sender, "treasury.tax.unknown-player", "player", playerName);
-            return;
-        }
-
-        sender.sendRichMessage("<bold><blue>TREASURY</blue></bold> <gray>»</gray> "
-                + "<yellow>[MANUAL]</yellow> Running balance tax for <#6f6fff>" + playerName + "</#6f6fff>…");
-
-        long loginEpochSecs = Instant.now().getEpochSecond();
-        // Resolve a name for the directory upsert; the typed arg is the fallback when
-        // the usercache has no entry. economy_players.current_name is NOT NULL.
-        String directoryName = target.getName() != null ? target.getName() : playerName;
-        try {
-            // Advance the login clock exactly as a real join would, then collect for
-            // the period the directory just closed off (force-collect even if the
-            // balance-tax feature is disabled — this is a manual admin override).
-            Long previousLoginEpoch = playerDirectory.recordLogin(uuid, directoryName, loginEpochSecs);
-            balanceTaxService.collect(uuid, previousLoginEpoch, loginEpochSecs);
-            sender.sendRichMessage("<bold><blue>TREASURY</blue></bold> <gray>»</gray> "
-                    + "<green>Done.</green> Check server logs for the result.");
-        } catch (Exception e) {
-            message.send(sender, "treasury.tax.balance.failed", "reason", String.valueOf(e.getMessage()));
-        }
     }
 
     // ---- Helpers ----

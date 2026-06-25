@@ -334,18 +334,16 @@ Inspect and test the automatic tax cycles.
 ```text
 /tax status
 /tax trigger weekly
-/tax trigger balance Steve
 ```
 
 | Argument | Required | What it is |
 |---|---|---|
 | action | yes | `status`, or `trigger` |
-| `cycle` | for trigger | `daily`, `weekly`, `monthly`, or `balance <player>` |
+| `cycle` | for trigger | `daily`, `weekly`, or `monthly` |
 
 > [!NOTE]
 > `/tax status` shows when each cycle next runs. `/tax trigger <cycle>` fires one early
-> for testing; `/tax trigger balance <player>` runs just that player's balance tax.
-> Operators only.
+> for testing. Operators only.
 
 ### `/treasury` (alias `/tr`)
 
