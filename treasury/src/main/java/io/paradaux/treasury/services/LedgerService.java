@@ -5,6 +5,7 @@ import io.paradaux.treasury.model.economy.*;
 import org.jetbrains.annotations.Nullable;
 
 import java.math.BigDecimal;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -72,6 +73,9 @@ public interface LedgerService {
 
     /** Paginated transaction history for an account (most recent first). */
     Page<TransactionEntry> getTransactionHistory(int accountId, int offset, int limit);
+
+    /** Merged paginated transaction history across several accounts (most recent first). */
+    Page<TransactionEntry> getTransactionHistory(Collection<Integer> accountIds, int offset, int limit);
 
     /** Single transaction lookup by ID. */
     LedgerTxn getTransaction(long txnId);

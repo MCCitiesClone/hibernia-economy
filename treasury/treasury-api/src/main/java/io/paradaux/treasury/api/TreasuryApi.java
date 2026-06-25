@@ -4,7 +4,9 @@ import io.paradaux.treasury.model.Page;
 import io.paradaux.treasury.model.economy.*;
 
 import java.math.BigDecimal;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 public interface TreasuryApi {
@@ -14,6 +16,14 @@ public interface TreasuryApi {
     BigDecimal getBalanceByAccountId(int accountId);
     BigDecimal getBalanceByOwnerUuid(UUID ownerUuid);
 
+    /**
+     * Batch variant of {@link #getBalanceByAccountId(int)}: reads many balances in
+     * one round-trip. Accounts with no balance row are absent from the returned
+     * map — callers should treat a missing key as {@link BigDecimal#ZERO}. An
+     * empty input yields an empty map.
+     */
+    Map<Integer, BigDecimal> getBalancesByIds(Collection<Integer> accountIds);
+
     /** Returns true if the account's balance >= amount. */
     boolean hasFunds(int accountId, BigDecimal amount);
 
@@ -21,6 +31,14 @@ public interface TreasuryApi {
 
     Account getAccountByUUID(UUID ownerUuid);
     Account getAccountById(int accountId);
+
+    /**
+     * Batch variant of {@link #getAccountById(int)}: fetches many accounts in one
+     * round-trip, keyed by account id. Ids with no matching account are absent
+     * from the map. An empty input yields an empty map.
+     */
+    Map<Integer, Account> getAccountsByIds(Collection<Integer> accountIds);
+
     List<Account> getAccountsByOwner(UUID ownerUuid);
     List<Account> getAccountsByTypeAndOwner(AccountType accountType, UUID ownerUuid);
 
@@ -82,6 +100,14 @@ public interface TreasuryApi {
 
     /** Paginated transaction history for an account (most recent first). */
     Page<TransactionEntry> getTransactionHistory(int accountId, int offset, int limit);
+
+    /**
+     * Merged, paginated transaction history across several accounts (most recent
+     * first), with a {@code totalCount} spanning all of them. Lets a caller page a
+     * firm's whole transaction history in one query instead of over-fetching from
+     * each account and sorting in memory. An empty input yields an empty page.
+     */
+    Page<TransactionEntry> getTransactionHistory(Collection<Integer> accountIds, int offset, int limit);
 
     /** Exports all transactions for an account as CSV, uploads to bytebin, returns the URL. */
     String exportTransactionsFor(int accountId);

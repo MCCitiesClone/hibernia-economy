@@ -19,6 +19,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.UUID;
 
@@ -61,6 +62,43 @@ class AccountServiceImplTest {
         b.setBalance(new BigDecimal("123.45"));
         when(accountMapper.readBalance(7)).thenReturn(b);
         assertThat(svc.getBalanceReadOnly(7)).isEqualByComparingTo("123.45");
+    }
+
+    @Test
+    void getBalancesByIds_mapsBalancesByAccountId() {
+        AccountBalance b1 = new AccountBalance(10, new BigDecimal("5.00"), 0);
+        AccountBalance b2 = new AccountBalance(11, new BigDecimal("7.50"), 0);
+        when(accountMapper.readBalances(List.of(10, 11))).thenReturn(List.of(b1, b2));
+
+        Map<Integer, BigDecimal> result = svc.getBalancesByIds(List.of(10, 11));
+        assertThat(result.get(10)).isEqualByComparingTo("5.00");
+        assertThat(result.get(11)).isEqualByComparingTo("7.50");
+    }
+
+    @Test
+    void getBalancesByIds_emptyInputShortCircuits() {
+        assertThat(svc.getBalancesByIds(List.of())).isEmpty();
+        verify(accountMapper, never()).readBalances(any());
+    }
+
+    @Test
+    void getAccountsByIds_mapsAccountsByAccountId() {
+        Account a1 = new Account();
+        a1.setAccountId(10);
+        Account a2 = new Account();
+        a2.setAccountId(11);
+        when(accountMapper.findByIds(List.of(10, 11))).thenReturn(List.of(a1, a2));
+
+        Map<Integer, Account> result = svc.getAccountsByIds(List.of(10, 11));
+        assertThat(result).containsOnlyKeys(10, 11);
+        assertThat(result.get(10)).isSameAs(a1);
+        assertThat(result.get(11)).isSameAs(a2);
+    }
+
+    @Test
+    void getAccountsByIds_emptyInputShortCircuits() {
+        assertThat(svc.getAccountsByIds(List.of())).isEmpty();
+        verify(accountMapper, never()).findByIds(any());
     }
 
     @Test

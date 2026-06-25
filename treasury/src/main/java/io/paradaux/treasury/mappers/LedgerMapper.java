@@ -117,6 +117,38 @@ public interface LedgerMapper {
       """)
     int countTransactionsByAccount(@Param("accountId") int accountId);
 
+    // ---- Merged paginated history across several accounts ----
+
+    @Select("""
+      <script>
+      SELECT p.posting_id, p.txn_id, p.account_id, p.amount, p.memo,
+             t.settlement_time, t.message, t.initiator_uuid_bin,
+             t.authorizer_uuid_bin, t.plugin_system
+        FROM ledger_postings p
+        JOIN ledger_txns t ON p.txn_id = t.txn_id
+       WHERE p.account_id IN
+       <foreach item='id' collection='ids' open='(' separator=',' close=')'>#{id}</foreach>
+       -- posting_id (PK, auto-increment) is globally monotonic, so DESC merges the
+       -- accounts in reverse-chronological order served by idx_postings_account.
+       ORDER BY p.posting_id DESC
+       LIMIT #{limit} OFFSET #{offset}
+      </script>
+      """)
+    @ResultMap("txnEntryMap")
+    List<TransactionEntry> findTransactionsByAccounts(@Param("ids") List<Integer> ids,
+                                                      @Param("limit") int limit,
+                                                      @Param("offset") int offset);
+
+    @Select("""
+      <script>
+      SELECT COUNT(*)
+        FROM ledger_postings
+       WHERE account_id IN
+       <foreach item='id' collection='ids' open='(' separator=',' close=')'>#{id}</foreach>
+      </script>
+      """)
+    int countTransactionsByAccounts(@Param("ids") List<Integer> ids);
+
     @Select("""
       SELECT p.posting_id, p.txn_id, p.account_id, p.amount, p.memo,
              t.settlement_time, t.message, t.initiator_uuid_bin,

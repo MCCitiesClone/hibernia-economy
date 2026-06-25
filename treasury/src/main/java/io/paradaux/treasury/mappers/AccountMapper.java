@@ -158,6 +158,18 @@ public interface AccountMapper {
     @ResultMap("balanceMap")
     AccountBalance readBalance(@Param("accountId") int accountId);
 
+    /** Non-locking batch balance read; one round-trip for many accounts (no FOR UPDATE). */
+    @Select("""
+            <script>
+            SELECT account_id, balance, version
+              FROM account_balances_mat
+             WHERE account_id IN
+             <foreach item='id' collection='ids' open='(' separator=',' close=')'>#{id}</foreach>
+            </script>
+            """)
+    @ResultMap("balanceMap")
+    List<AccountBalance> readBalances(@Param("ids") List<Integer> ids);
+
     /** Loads several accounts in one round-trip (used by transfer for from+to). */
     @Select("""
             <script>

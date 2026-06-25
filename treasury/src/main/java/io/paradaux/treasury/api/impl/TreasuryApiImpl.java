@@ -12,7 +12,9 @@ import io.paradaux.treasury.services.LedgerService;
 import io.paradaux.treasury.services.MembershipService;
 
 import java.math.BigDecimal;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Slf4j
@@ -45,6 +47,11 @@ public class TreasuryApiImpl implements TreasuryApi {
     }
 
     @Override
+    public Map<Integer, BigDecimal> getBalancesByIds(Collection<Integer> accountIds) {
+        return accountService.getBalancesByIds(accountIds);
+    }
+
+    @Override
     public BigDecimal getBalanceByOwnerUuid(UUID ownerUuid) {
         return accountService.getBalanceByOwnerUuid(ownerUuid);
     }
@@ -64,6 +71,11 @@ public class TreasuryApiImpl implements TreasuryApi {
     @Override
     public Account getAccountById(int accountId) {
         return accountService.getAccountById(accountId);
+    }
+
+    @Override
+    public Map<Integer, Account> getAccountsByIds(Collection<Integer> accountIds) {
+        return accountService.getAccountsByIds(accountIds);
     }
 
     @Override
@@ -182,6 +194,11 @@ public class TreasuryApiImpl implements TreasuryApi {
     @Override
     public Page<TransactionEntry> getTransactionHistory(int accountId, int offset, int limit) {
         return ledgerService.getTransactionHistory(accountId, offset, limit);
+    }
+
+    @Override
+    public Page<TransactionEntry> getTransactionHistory(Collection<Integer> accountIds, int offset, int limit) {
+        return ledgerService.getTransactionHistory(accountIds, offset, limit);
     }
 
     @Override

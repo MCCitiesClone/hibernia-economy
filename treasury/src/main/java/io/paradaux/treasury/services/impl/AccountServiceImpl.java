@@ -20,7 +20,11 @@ import org.mybatis.guice.transactional.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.text.DecimalFormat;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.UUID;
@@ -66,6 +70,19 @@ public class AccountServiceImpl implements AccountService {
 
     @Override
     @Transactional
+    public Map<Integer, BigDecimal> getBalancesByIds(Collection<Integer> accountIds) {
+        if (accountIds == null || accountIds.isEmpty()) {
+            return Map.of();
+        }
+        Map<Integer, BigDecimal> byId = new LinkedHashMap<>();
+        for (AccountBalance b : accountMapper.readBalances(new ArrayList<>(accountIds))) {
+            byId.put(b.getAccountId(), b.getBalance());
+        }
+        return byId;
+    }
+
+    @Override
+    @Transactional
     public BigDecimal getBalanceByOwnerUuid(UUID ownerUuid) {
         Integer accountId = findPersonalAccountId(ownerUuid);
         if (accountId == null) return BigDecimal.ZERO;
@@ -95,6 +112,19 @@ public class AccountServiceImpl implements AccountService {
     @Transactional
     public Account getAccountById(int accountId) {
         return accountMapper.findById(accountId);
+    }
+
+    @Override
+    @Transactional
+    public Map<Integer, Account> getAccountsByIds(Collection<Integer> accountIds) {
+        if (accountIds == null || accountIds.isEmpty()) {
+            return Map.of();
+        }
+        Map<Integer, Account> byId = new LinkedHashMap<>();
+        for (Account a : accountMapper.findByIds(new ArrayList<>(accountIds))) {
+            byId.put(a.getAccountId(), a);
+        }
+        return byId;
     }
 
     @Override

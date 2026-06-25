@@ -7,7 +7,9 @@ import io.paradaux.treasury.model.economy.BalanceEntry;
 import io.paradaux.treasury.model.economy.EconomySummary;
 
 import java.math.BigDecimal;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 public interface AccountService {
@@ -17,6 +19,9 @@ public interface AccountService {
     /** Non-locking balance read for read-only calls. Locking is done internally by transfer(). */
     BigDecimal getBalanceReadOnly(int accountId);
 
+    /** Non-locking batch balance read; balances keyed by account id (missing rows absent). */
+    Map<Integer, BigDecimal> getBalancesByIds(Collection<Integer> accountIds);
+
     BigDecimal getBalanceByOwnerUuid(UUID ownerUuid);
 
     boolean hasFunds(int accountId, BigDecimal amount);
@@ -25,6 +30,10 @@ public interface AccountService {
 
     Account getAccountByUUID(UUID ownerUuid);
     Account getAccountById(int accountId);
+
+    /** Batch account lookup; accounts keyed by id (missing ids absent). */
+    Map<Integer, Account> getAccountsByIds(Collection<Integer> accountIds);
+
     List<Account> getAccountsByOwner(UUID ownerUuid);
     List<Account> getAccountsByTypeAndOwner(AccountType accountType, UUID ownerUuid);
     List<Account> getAccountsByMember(UUID memberUuid);

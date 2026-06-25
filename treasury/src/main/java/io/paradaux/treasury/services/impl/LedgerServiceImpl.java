@@ -20,6 +20,8 @@ import org.jetbrains.annotations.Nullable;
 import org.mybatis.guice.transactional.Transactional;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -334,6 +336,18 @@ public class LedgerServiceImpl implements LedgerService {
     public Page<TransactionEntry> getTransactionHistory(int accountId, int offset, int limit) {
         List<TransactionEntry> items = ledgerMapper.findTransactionsByAccount(accountId, limit, offset);
         int total = ledgerMapper.countTransactionsByAccount(accountId);
+        return new Page<>(items, total, offset, limit);
+    }
+
+    @Override
+    @Transactional
+    public Page<TransactionEntry> getTransactionHistory(Collection<Integer> accountIds, int offset, int limit) {
+        if (accountIds == null || accountIds.isEmpty()) {
+            return new Page<>(List.of(), 0, offset, limit);
+        }
+        List<Integer> ids = new ArrayList<>(accountIds);
+        List<TransactionEntry> items = ledgerMapper.findTransactionsByAccounts(ids, limit, offset);
+        int total = ledgerMapper.countTransactionsByAccounts(ids);
         return new Page<>(items, total, offset, limit);
     }
 
