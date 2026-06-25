@@ -20,6 +20,9 @@ import org.mybatis.guice.transactional.Transactional;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.locks.ReentrantLock;
 
 @Singleton
 public class FirmAccountServiceImpl implements FirmAccountService {
@@ -30,6 +33,17 @@ public class FirmAccountServiceImpl implements FirmAccountService {
     private final FirmStaffMapper staff;
     private final FirmRoleMapper roles;
     private final FirmService firmService;
+
+    /**
+     * Per-firm locks serialising member/authorizer reconciliation. The sync is a
+     * read-current → diff → mutate against Treasury with no DB transaction
+     * spanning it, so two overlapping staff/role mutations on the same firm could
+     * interleave and leave a qualifying employee removed (or a removed one
+     * retained) — i.e. wrong access to firm money (ADT-12). Holding one lock per
+     * firmId for the duration of a reconciliation makes the read-diff-mutate
+     * atomic with respect to other reconciliations of the same firm.
+     */
+    private final ConcurrentMap<Integer, ReentrantLock> firmSyncLocks = new ConcurrentHashMap<>();
 
     @Inject
     public FirmAccountServiceImpl(
@@ -156,6 +170,18 @@ public class FirmAccountServiceImpl implements FirmAccountService {
 
     @Override
     public void syncAccountMembers(Integer firmId, Integer accountId) {
+        // Serialise reconciliation per firm so concurrent staff/role mutations
+        // can't interleave their read-diff-mutate against Treasury (ADT-12).
+        ReentrantLock lock = firmSyncLocks.computeIfAbsent(firmId, k -> new ReentrantLock());
+        lock.lock();
+        try {
+            reconcileAccountMembers(firmId, accountId);
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    private void reconcileAccountMembers(Integer firmId, Integer accountId) {
         Firm firm = firms.getFirmById(firmId);
         if (firm == null) {
             throw new BadCommandException("Firm not found");
