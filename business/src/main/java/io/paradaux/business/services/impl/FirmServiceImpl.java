@@ -415,9 +415,14 @@ public class FirmServiceImpl implements FirmService {
     @Override
     @Nullable
     public Firm getAnyFirmByNameOrId(String input) {
-        if (input != null && input.chars().allMatch(Character::isDigit)) {
-            int id = Integer.parseInt(input);
-            return firms.getFirmById(id);
+        if (input != null && !input.isEmpty() && input.chars().allMatch(Character::isDigit)) {
+            try {
+                return firms.getFirmById(Integer.parseInt(input));
+            } catch (NumberFormatException outOfRange) {
+                // An all-digits string too large for an int can't be a valid
+                // firm id — don't let it bubble up as an uncaught exception (ADT-56).
+                return null;
+            }
         }
         return firms.getFirmByName(input);
     }

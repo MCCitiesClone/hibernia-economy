@@ -38,6 +38,7 @@ public class ReloadCommand implements CommandHandler {
      */
     @Route("reload")
     @Permission("business.admin.reload")
+    @Async // config reload does disk I/O — keep it off the server thread (ADT-56).
     @Description("Admin: Reload messages.properties and config.yml (firm limits, balance-tax brackets).")
     public void reload(@Sender CommandSender sender) {
         try {

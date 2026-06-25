@@ -17,6 +17,7 @@ import io.paradaux.business.services.FirmRoleService;
 import io.paradaux.business.services.FirmService;
 import io.paradaux.business.services.FirmStaffService;
 import org.apache.ibatis.exceptions.PersistenceException;
+import org.mybatis.guice.transactional.Transactional;
 
 import java.util.List;
 import java.util.Objects;
@@ -39,6 +40,10 @@ public class FirmRoleServiceImpl implements FirmRoleService {
         this.accounts = accounts;
     }
 
+    // @Transactional so the role insert and its baseline DEFAULT-permission
+    // grant are atomic: previously these were two separate, non-atomic command
+    // calls and a failure between them left a role with no permissions (ADT-56).
+    @Transactional
     public void createRole(String firmName, String roleName, int rankOrder, UUID actorId) {
         Firm firm = firms.getFirmByNameOrId(firmName);
         if (firm == null) {
@@ -55,11 +60,15 @@ public class FirmRoleServiceImpl implements FirmRoleService {
             throw new BadCommandException("Cannot create a role at or above the proprietor role's rank.");
         }
 
-        FirmRole role = new FirmRole(firm.getFirmId(), normalizeRoleName(roleName), rankOrder);
+        String normalizedName = normalizeRoleName(roleName);
+        FirmRole role = new FirmRole(firm.getFirmId(), normalizedName, rankOrder);
 
         try {
             int inserted = roles.insertRole(role);
             if (inserted != 1) throw new IllegalStateException("Insert failed for role: " + roleName);
+            // Grant the baseline DEFAULT permission in the same transaction so a
+            // role is never persisted without it.
+            roles.addRolePermission(new FirmRolePermission(firm.getFirmId(), normalizedName, RolePermission.DEFAULT));
         } catch (PersistenceException e) {
             // e.g., duplicate name or uq_role_rank clash
             throw new ConflictException("Could not create role (name or rank already used in this firm).", e);

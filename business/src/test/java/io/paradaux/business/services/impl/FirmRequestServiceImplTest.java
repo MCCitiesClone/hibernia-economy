@@ -318,6 +318,17 @@ class FirmRequestServiceImplTest {
     }
 
     @Test
+    void beginTransferProprietorship_nonConstraintFailure_throwsInternal() {
+        when(firms.getFirmByNameOrId("Acme")).thenReturn(firmOwnedBy(actor));
+        // A persistence failure that isn't a constraint violation means the row
+        // was NOT stored — must not hand back a code (ADT-56).
+        PersistenceException pex = new PersistenceException(new RuntimeException("db gone"));
+        when(requests.createTransferRequest(anyInt(), anyString(), anyString(), any())).thenThrow(pex);
+        assertThatThrownBy(() -> svc.beginTransferProprietorship("Acme", target, actor))
+                .isInstanceOf(InternalException.class);
+    }
+
+    @Test
     void beginTransferProprietorship_nonProprietor_throws() {
         // firm() has a random proprietor, so `actor` is not the owner.
         when(firms.getFirmByNameOrId("Acme")).thenReturn(firm());

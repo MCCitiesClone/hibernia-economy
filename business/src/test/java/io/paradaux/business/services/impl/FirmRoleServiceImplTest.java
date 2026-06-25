@@ -98,6 +98,12 @@ class FirmRoleServiceImplTest {
         assertThat(cap.getValue().getRoleName()).isEqualTo("Lead");
         assertThat(cap.getValue().getRoleRankOrder()).isEqualTo(3);
         assertThat(cap.getValue().getFirmId()).isEqualTo(1);
+
+        // The baseline DEFAULT permission is granted atomically (ADT-56).
+        ArgumentCaptor<FirmRolePermission> permCap = ArgumentCaptor.forClass(FirmRolePermission.class);
+        verify(roles).addRolePermission(permCap.capture());
+        assertThat(permCap.getValue().getRoleName()).isEqualTo("Lead");
+        assertThat(permCap.getValue().getPermission()).isEqualTo(RolePermission.DEFAULT);
     }
 
     @Test

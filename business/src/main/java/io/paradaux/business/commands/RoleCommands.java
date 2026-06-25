@@ -35,8 +35,8 @@ public class RoleCommands implements CommandHandler {
     public void createRole(@Sender Player sender, @Arg("firm") FirmName firmRef, @Arg("role") String role, @Arg("order") Integer order) {
         String firm = firmRef.value();
         UUID actor = sender.getUniqueId();
+        // createRole now grants the DEFAULT permission atomically (ADT-56).
         roles.createRole(firm, role, order, actor);
-        roles.addRolePermission(firm, role, "DEFAULT", actor);
         message.send(sender, "business.staff.role.create.sender", "role", role, "firm", firm);
     }
 

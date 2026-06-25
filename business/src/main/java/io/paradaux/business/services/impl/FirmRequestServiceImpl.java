@@ -190,6 +190,9 @@ public class FirmRequestServiceImpl implements FirmRequestService {
             if (ex.getCause() instanceof SQLIntegrityConstraintViolationException) {
                 throw new BadCommandException("You already have a pending transfer request. Cancel the previous or wait for it to be approved.");
             }
+            // Any other persistence failure means the request was NOT stored —
+            // don't return a code for a transfer that doesn't exist (ADT-56).
+            throw new InternalException("Failed to create the transfer request. Please try again.");
         }
         return code;
     }
@@ -232,12 +235,20 @@ public class FirmRequestServiceImpl implements FirmRequestService {
         requests.rejectTransfer(firm.getFirmId(), newProprietorId.toString());
     }
 
+    /**
+     * @return the <em>previous</em> proprietor (captured before the handover) so
+     *         callers can notify the outgoing owner. Read up front rather than
+     *         from the now-stale local firm after the update (ADT-56).
+     */
     @Override
     public UUID completeTransferProprietorship(String firmName, UUID newProprietorId) {
         Firm firm = firms.getFirmByNameOrId(firmName);
         if (firm == null) {
             throw new NotFoundException("Firm not found.");
         }
+
+        // Captured before updateProprietor so the returned value is unambiguous.
+        UUID previousProprietor = UUID.fromString(firm.getProprietorUuid());
 
         // Gate on a CONFIRMED transfer: acceptTransfer only flips a CONFIRMED,
         // non-expired request to ACCEPTED and returns 1. If there is none for
@@ -261,9 +272,13 @@ public class FirmRequestServiceImpl implements FirmRequestService {
         // keeps owner-level access (PAR-141).
         accounts.reassignAccountsToNewProprietor(firm.getFirmId(), newProprietorId);
 
-        return UUID.fromString(firm.getProprietorUuid());
+        return previousProprietor;
     }
 
+    /**
+     * @return the current proprietor (unchanged — a rejection performs no
+     *         handover) so callers can notify them their transfer was declined.
+     */
     @Override
     public UUID rejectTransferProprietorship(String firmName, UUID newProprietorId, UUID actorId) {
         Firm firm = firms.getFirmByNameOrId(firmName);

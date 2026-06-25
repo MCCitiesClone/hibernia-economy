@@ -567,6 +567,13 @@ class FirmServiceImplTest {
     }
 
     @Test
+    void getAnyFirmByNameOrId_numericOverflow_returnsNullInsteadOfThrowing() {
+        // An all-digits string too large for an int must not throw (ADT-56).
+        assertThat(svc.getAnyFirmByNameOrId("99999999999999999999")).isNull();
+        verify(firms, never()).getFirmById(org.mockito.ArgumentMatchers.anyInt());
+    }
+
+    @Test
     void updateFirmDiscord_updatesUrl() {
         UUID actor = UUID.randomUUID();
         Firm firm = new Firm();
