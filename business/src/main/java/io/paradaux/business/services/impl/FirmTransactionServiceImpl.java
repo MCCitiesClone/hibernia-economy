@@ -18,8 +18,6 @@ import io.paradaux.treasury.model.economy.TransferRequest;
 import io.paradaux.business.model.FirmAccount;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 
@@ -169,15 +167,18 @@ public class FirmTransactionServiceImpl implements FirmTransactionService {
 
     @Override
     public BigDecimal getAggregateBalance(Integer firmId) {
-        List<FirmAccount> accounts = firmAccounts.listAccountsByFirm(firmId);
+        List<Integer> accountIds = firmAccounts.listAccountsByFirm(firmId).stream()
+                .map(FirmAccount::getAccountId)
+                .toList();
         // A firm with no live accounts (disbanded, or a corrupt/partial-heal state) has a
         // total balance of zero. Returning zero rather than throwing keeps read paths
         // (/firm info on a defunct firm, the disband prompt, the public BusinessApi) from
         // crashing; deposit/withdraw still surface the no-account condition via
         // resolveAccountId's NoFirmAccountException.
+        // One batch balance read instead of one getBalanceByAccountId per account (ADT-36).
         BigDecimal total = BigDecimal.ZERO;
-        for (FirmAccount account : accounts) {
-            total = total.add(treasury.getBalanceByAccountId(account.getAccountId()));
+        for (BigDecimal balance : treasury.getBalancesByIds(accountIds).values()) {
+            total = total.add(balance);
         }
         return total;
     }
@@ -192,30 +193,16 @@ public class FirmTransactionServiceImpl implements FirmTransactionService {
         if (page < 1) page = 1;
         if (pageSize < 1) pageSize = 10;
 
-        List<FirmAccount> accounts = firmAccounts.listAccountsByFirm(firmId);
-        if (accounts.isEmpty()) {
-            return new Page<>(List.of(), 0, 0, pageSize);
-        }
+        List<Integer> accountIds = firmAccounts.listAccountsByFirm(firmId).stream()
+                .map(FirmAccount::getAccountId)
+                .toList();
 
-        // Fetch enough transactions from each account to cover the requested page
-        int fetchSize = page * pageSize;
-        List<TransactionEntry> all = new ArrayList<>();
-        for (FirmAccount account : accounts) {
-            Page<TransactionEntry> accountTx = treasury.getTransactionHistory(account.getAccountId(), 0, fetchSize);
-            all.addAll(accountTx.items());
-        }
-
-        // Sort by settlement time descending (most recent first)
-        all.sort(Comparator.comparing(TransactionEntry::getSettlementTime).reversed());
-
-        int totalCount = all.size();
+        // Treasury-side merged paged query (ADT-36): one round-trip with a correct
+        // spanning totalCount, replacing the old fetch-page*pageSize-from-every-
+        // account, concat, in-memory-sort, sublist (which also reported only the
+        // fetched window as the total). Empty account list yields an empty page.
         int offset = (page - 1) * pageSize;
-        if (offset >= totalCount) {
-            return new Page<>(List.of(), totalCount, offset, pageSize);
-        }
-
-        int end = Math.min(offset + pageSize, totalCount);
-        return new Page<>(all.subList(offset, end), totalCount, offset, pageSize);
+        return treasury.getTransactionHistory(accountIds, offset, pageSize);
     }
 
     private int resolveAccountId(Integer firmId) {

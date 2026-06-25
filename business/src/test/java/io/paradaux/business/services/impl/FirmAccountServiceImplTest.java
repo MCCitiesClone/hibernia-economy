@@ -25,6 +25,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -121,8 +122,8 @@ class FirmAccountServiceImplTest {
                 new FirmAccount(1, 11, null)));
         Account a1 = new Account(); a1.setAccountId(10);
         Account a2 = new Account(); a2.setAccountId(11);
-        when(treasury.getAccountById(10)).thenReturn(a1);
-        when(treasury.getAccountById(11)).thenReturn(a2);
+        // One batch read instead of one getAccountById per account (ADT-36).
+        when(treasury.getAccountsByIds(List.of(10, 11))).thenReturn(Map.of(10, a1, 11, a2));
 
         assertThat(svc.listAccounts(1)).containsExactly(a1, a2);
     }

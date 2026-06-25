@@ -21,6 +21,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -342,6 +343,7 @@ class FirmTransactionServiceImplTest {
         // A firm with no live accounts (e.g. disbanded) reads as zero rather than throwing,
         // so /firm info, the disband prompt, and the public API don't crash.
         when(firmAccounts.listAccountsByFirm(1)).thenReturn(List.of());
+        when(treasury.getBalancesByIds(List.of())).thenReturn(Map.of());
         assertThat(svc.getAggregateBalance(1)).isEqualByComparingTo("0");
     }
 
@@ -349,15 +351,16 @@ class FirmTransactionServiceImplTest {
     void getAggregateBalance_sumsAccounts() {
         when(firmAccounts.listAccountsByFirm(1)).thenReturn(List.of(
                 new FirmAccount(1, 10, null), new FirmAccount(1, 11, null)));
-        when(treasury.getBalanceByAccountId(10)).thenReturn(new BigDecimal("5"));
-        when(treasury.getBalanceByAccountId(11)).thenReturn(new BigDecimal("3"));
+        // One batch read instead of one IPC per account (ADT-36).
+        when(treasury.getBalancesByIds(List.of(10, 11)))
+                .thenReturn(Map.of(10, new BigDecimal("5"), 11, new BigDecimal("3")));
         assertThat(svc.getAggregateBalance(1)).isEqualByComparingTo("8");
     }
 
     @Test
     void getFormattedAggregateBalance_delegates() {
         when(firmAccounts.listAccountsByFirm(1)).thenReturn(List.of(new FirmAccount(1, 10, null)));
-        when(treasury.getBalanceByAccountId(10)).thenReturn(new BigDecimal("5"));
+        when(treasury.getBalancesByIds(List.of(10))).thenReturn(Map.of(10, new BigDecimal("5")));
         when(treasury.formatAmount(new BigDecimal("5"))).thenReturn("$5");
         assertThat(svc.getFormattedAggregateBalance(1)).isEqualTo("$5");
     }
@@ -365,30 +368,35 @@ class FirmTransactionServiceImplTest {
     @Test
     void getAggregateTransactions_emptyAccountsReturnsEmptyPage() {
         when(firmAccounts.listAccountsByFirm(1)).thenReturn(List.of());
+        when(treasury.getTransactionHistory(List.of(), 0, 10)).thenReturn(new Page<>(List.of(), 0, 0, 10));
         Page<TransactionEntry> p = svc.getAggregateTransactions(1, 1, 10);
         assertThat(p.items()).isEmpty();
         assertThat(p.totalCount()).isZero();
     }
 
     @Test
-    void getAggregateTransactions_clampsPagingAndSorts() {
+    void getAggregateTransactions_delegatesToTreasuryMergedQuery() {
+        // Merging/sorting/total now happen Treasury-side (ADT-36); the service just
+        // collects the account ids and forwards the computed offset. page/pageSize
+        // below 1 are clamped to 1 and 10.
         when(firmAccounts.listAccountsByFirm(1)).thenReturn(List.of(
                 new FirmAccount(1, 10, null), new FirmAccount(1, 11, null)));
-        TransactionEntry early = txn(1L, Instant.parse("2025-01-01T00:00:00Z"));
         TransactionEntry late = txn(2L, Instant.parse("2025-12-01T00:00:00Z"));
-        when(treasury.getTransactionHistory(eq(10), eq(0), anyInt())).thenReturn(new Page<>(List.of(early), 1, 0, 10));
-        when(treasury.getTransactionHistory(eq(11), eq(0), anyInt())).thenReturn(new Page<>(List.of(late), 1, 0, 10));
+        TransactionEntry early = txn(1L, Instant.parse("2025-01-01T00:00:00Z"));
+        Page<TransactionEntry> merged = new Page<>(List.of(late, early), 2, 0, 10);
+        when(treasury.getTransactionHistory(List.of(10, 11), 0, 10)).thenReturn(merged);
 
         Page<TransactionEntry> p = svc.getAggregateTransactions(1, 0, 0);
+        assertThat(p).isSameAs(merged);
         assertThat(p.items()).extracting(TransactionEntry::getPostingId).containsExactly(2L, 1L);
-        assertThat(p.totalCount()).isEqualTo(2);
     }
 
     @Test
-    void getAggregateTransactions_offsetPastTotal_returnsEmpty() {
+    void getAggregateTransactions_forwardsComputedOffset() {
         when(firmAccounts.listAccountsByFirm(1)).thenReturn(List.of(new FirmAccount(1, 10, null)));
-        when(treasury.getTransactionHistory(eq(10), eq(0), anyInt())).thenReturn(
-                new Page<>(List.of(txn(1L, Instant.now())), 1, 0, 10));
+        Page<TransactionEntry> empty = new Page<>(List.of(), 1, 40, 10);
+        // page 5, pageSize 10 → offset (5-1)*10 = 40.
+        when(treasury.getTransactionHistory(List.of(10), 40, 10)).thenReturn(empty);
         Page<TransactionEntry> p = svc.getAggregateTransactions(1, 5, 10);
         assertThat(p.items()).isEmpty();
     }

@@ -108,10 +108,12 @@ public class FirmBalanceTaxServiceImpl implements FirmBalanceTaxService {
         List<Integer> accountIds = firmAccountService.listAccountIds(firm.getFirmId());
         if (accountIds.isEmpty()) return List.of();
 
+        // One batch balance read per firm instead of one IPC per account (ADT-36).
+        Map<Integer, BigDecimal> balancesById = treasuryApi.getBalancesByIds(accountIds);
         Map<Integer, BigDecimal> accountBalances = new LinkedHashMap<>();
         BigDecimal totalBalance = BigDecimal.ZERO;
         for (Integer accountId : accountIds) {
-            BigDecimal balance = treasuryApi.getBalanceByAccountId(accountId);
+            BigDecimal balance = balancesById.getOrDefault(accountId, BigDecimal.ZERO);
             if (balance.compareTo(BigDecimal.ZERO) > 0) {
                 accountBalances.put(accountId, balance);
                 totalBalance = totalBalance.add(balance);

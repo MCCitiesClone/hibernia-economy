@@ -135,6 +135,30 @@ class FirmServiceImplTest {
     }
 
     @Test
+    void createFirm_compensationFailure_stillPropagatesOriginalError() {
+        UUID actor = UUID.randomUUID();
+        when(firms.getFirmsByNameCount("Acme")).thenReturn(0);
+        when(firms.getFirmsOwnedByCount(actor.toString())).thenReturn(0);
+        doAnswer(inv -> {
+            ((Firm) inv.getArgument(0)).setFirmId(42);
+            return null;
+        }).when(firms).createFirm(any());
+
+        Account treasuryAccount = new Account();
+        treasuryAccount.setAccountId(7);
+        when(treasury.createAccount(eq(AccountType.BUSINESS), eq(actor), any())).thenReturn(treasuryAccount);
+
+        RuntimeException dbError = new RuntimeException("db down");
+        org.mockito.Mockito.doThrow(dbError).when(firms).updateFirm(any());
+        // The compensating archive ALSO fails — the original DB error must still
+        // surface (the cleanup failure is suppressed/logged) (ADT-11).
+        org.mockito.Mockito.doThrow(new RuntimeException("treasury down")).when(treasury).archiveAccount(7);
+
+        assertThatThrownBy(() -> svc.createFirm("Acme", actor)).isSameAs(dbError);
+        verify(treasury).archiveAccount(7);
+    }
+
+    @Test
     void createFirm_withinCooldown_throws() {
         UUID actor = UUID.randomUUID();
         when(firms.getFirmsByNameCount("Acme")).thenReturn(0);

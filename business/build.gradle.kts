@@ -169,6 +169,9 @@ tasks {
         "io/paradaux/business/jobs/**",
         "io/paradaux/business/guice/**",
         "io/paradaux/business/integration/**",
+        // CarbonChat-backed employee chat: Bukkit/Carbon glue that can't be
+        // exercised without a running server (same rationale as commands/listeners).
+        "io/paradaux/business/chat/**",
         "io/paradaux/business/utils/resolvers/**"
     )
 

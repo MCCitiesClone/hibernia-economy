@@ -19,6 +19,8 @@ import io.paradaux.treasury.model.economy.AccountType;
 import org.mybatis.guice.transactional.Transactional;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -82,10 +84,12 @@ public class FirmAccountServiceImpl implements FirmAccountService {
         // a proprietor can spam-create N accounts named "Savings", each backed
         // by a distinct Treasury BUSINESS account_id — making subsequent
         // /business account deposit / withdraw by name ambiguous and the
-        // member-sync churn unbounded.
-        for (FirmAccount existing : firmAccounts.listAccountsByFirm(firmId)) {
-            Account a = treasury.getAccountById(existing.getAccountId());
-            if (a != null && a.getDisplayName() != null
+        // member-sync churn unbounded. One batch read instead of N (ADT-36).
+        List<Integer> existingIds = firmAccounts.listAccountsByFirm(firmId).stream()
+                .map(FirmAccount::getAccountId)
+                .toList();
+        for (Account a : treasury.getAccountsByIds(existingIds).values()) {
+            if (a.getDisplayName() != null
                     && a.getDisplayName().equalsIgnoreCase(accountName)) {
                 throw new BadCommandException("An account named '" + accountName
                         + "' already exists for this firm.");
@@ -106,9 +110,14 @@ public class FirmAccountServiceImpl implements FirmAccountService {
 
     @Override
     public List<Account> listAccounts(Integer firmId) {
-        List<FirmAccount> firmAccountList = firmAccounts.listAccountsByFirm(firmId);
-        return firmAccountList.stream()
-                .map(fa -> treasury.getAccountById(fa.getAccountId()))
+        // One batch read instead of one getAccountById per linked account (ADT-36).
+        List<Integer> accountIds = firmAccounts.listAccountsByFirm(firmId).stream()
+                .map(FirmAccount::getAccountId)
+                .toList();
+        Map<Integer, Account> byId = treasury.getAccountsByIds(accountIds);
+        return accountIds.stream()
+                .map(byId::get)
+                .filter(Objects::nonNull)
                 .toList();
     }
 
