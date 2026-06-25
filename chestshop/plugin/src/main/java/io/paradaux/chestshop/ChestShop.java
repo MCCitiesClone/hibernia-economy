@@ -47,8 +47,6 @@ import io.paradaux.chestshop.Logging.FileFormatter;
 import io.paradaux.chestshop.Metadata.ItemDatabase;
 import io.paradaux.chestshop.Signs.RestrictedSign;
 import io.paradaux.chestshop.UUIDs.NameManager;
-import io.paradaux.chestshop.Updater.JenkinsBuildsNotifier;
-import io.paradaux.chestshop.Updater.Updater;
 
 import io.paradaux.chestshop.Utils.VersionAdapter;
 import com.google.common.collect.ImmutableMap;
@@ -92,7 +90,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Callable;
@@ -176,8 +173,6 @@ public class ChestShop extends JavaPlugin {
         registerPluginMessagingChannels();
 
         startStatistics();
-        startBuildNotificatier();
-        startUpdater();
     }
 
     private void registerCommand(String name, CommandExecutor executor, Permission permission) {
@@ -537,9 +532,6 @@ public class ChestShop extends JavaPlugin {
         bStats.addCustomChart(new SimplePie("allow-partial-transactions", () -> Properties.ALLOW_PARTIAL_TRANSACTIONS ? "enabled" : "disabled"));
         bStats.addCustomChart(new SimplePie("log-to-console", () -> Properties.LOG_TO_CONSOLE ? "enabled" : "disabled"));
         bStats.addCustomChart(new SimplePie("log-to-file", () -> Properties.LOG_TO_FILE ? "enabled" : "disabled"));
-        bStats.addCustomChart(new SimplePie("auto-update", () -> !Properties.TURN_OFF_UPDATES ? "enabled" : "disabled"));
-        bStats.addCustomChart(new SimplePie("release-notifications", () -> !Properties.TURN_OFF_UPDATE_NOTIFIER ? "enabled" : "disabled"));
-        bStats.addCustomChart(new SimplePie("dev-build-notifications", () -> !Properties.TURN_OFF_DEV_UPDATE_NOTIFIER ? "enabled" : "disabled"));
 
         bStats.addCustomChart(new AdvancedBarChart("pluginProperties", () -> {
             Map<String, int[]> map = new LinkedHashMap<>();
@@ -558,9 +550,6 @@ public class ChestShop extends JavaPlugin {
             map.put("bungeecord-messages", getChartArray(Properties.BUNGEECORD_MESSAGES));
             map.put("log-to-console", getChartArray(Properties.LOG_TO_CONSOLE));
             map.put("log-to-file", getChartArray(Properties.LOG_TO_FILE));
-            map.put("auto-update", getChartArray(!Properties.TURN_OFF_UPDATES));
-            map.put("release-notifications", getChartArray(!Properties.TURN_OFF_UPDATE_NOTIFIER));
-            map.put("dev-build-notifications", getChartArray(!Properties.TURN_OFF_DEV_UPDATE_NOTIFIER));
             return map;
         }));
         bStats.addCustomChart(new SimpleBarChart("shopContainers",
@@ -584,35 +573,6 @@ public class ChestShop extends JavaPlugin {
 
     private int[] getChartArray(boolean value) {
         return new int[]{!value ? 1 : 0, value ? 0 : 1};
-    }
-
-    private static final int PROJECT_BUKKITDEV_ID = 31263;
-
-    private void startUpdater() {
-        if (Properties.TURN_OFF_UPDATES) {
-            getLogger().info("Auto-updater is disabled. If you want the plugin to automatically download new releases then set 'TURN_OFF_UPDATES' to 'false' in your config.yml!");
-            if (!Properties.TURN_OFF_UPDATE_NOTIFIER) {
-                final Updater updater = new Updater(this, getPluginName().toLowerCase(Locale.ROOT), this.getFile(), Updater.UpdateType.NO_DOWNLOAD, true);
-                runInAsyncThread(() -> {
-                    if (updater.getResult() == Updater.UpdateResult.UPDATE_AVAILABLE) {
-                        getLogger().info("There is a new version available: " + updater.getLatestName() + ". You can download it from https://modrinth.com/plugin/" + getPluginName().toLowerCase(Locale.ROOT));
-                    }
-                });
-            }
-            return;
-        }
-
-        new Updater(this, getPluginName().toLowerCase(Locale.ROOT), this.getFile(), Updater.UpdateType.DEFAULT, true);
-    }
-
-    private static final String PROJECT_JENKINS_JOB_URL = "https://ci.minebench.de/job/ChestShop-3/";
-
-    private void startBuildNotificatier() {
-        if (Properties.TURN_OFF_DEV_UPDATE_NOTIFIER) {
-            return;
-        }
-
-        new JenkinsBuildsNotifier(this, PROJECT_JENKINS_JOB_URL);
     }
 
     ///////////////////////////////////////////////////////////////////////////////

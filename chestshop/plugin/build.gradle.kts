@@ -141,7 +141,6 @@ tasks.jacocoTestReport {
                     "io/paradaux/chestshop/Listeners/**",
                     "io/paradaux/chestshop/Commands/**",
                     "io/paradaux/chestshop/Plugins/**",
-                    "io/paradaux/chestshop/Updater/**",
                     "io/paradaux/chestshop/Database/**",
                     "io/paradaux/chestshop/breeze/Database/**",
                 )
@@ -185,7 +184,6 @@ tasks.shadowJar {
     relocate("de.themoep.minedown.adventure", "io.paradaux.chestshop.Libs.MineDown")
     relocate("net.kyori", "io.paradaux.chestshop.Libs.Kyori")
     relocate("org.bstats", "io.paradaux.chestshop.Metrics.BStats")
-    relocate("net.gravitydevelopment.updater", "io.paradaux.chestshop.Updater")
     relocate("com.j256.ormlite", "io.paradaux.chestshop.Libs.ORMlite")
     relocate("javax.persistence", "io.paradaux.chestshop.Libs.javax.persistence")
 
