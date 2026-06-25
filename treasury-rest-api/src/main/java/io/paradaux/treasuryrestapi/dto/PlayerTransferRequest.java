@@ -7,7 +7,7 @@ package io.paradaux.treasuryrestapi.dto;
  * <ul>
  *   <li>{@code toPlayerUuid} — the player's Mojang UUID, or</li>
  *   <li>{@code toPlayerName} — their in-game name (case-insensitive, resolved
- *       via the {@code firm_players} name cache).</li>
+ *       via the {@code economy_players} name cache).</li>
  * </ul>
  * The server resolves it to the player's PERSONAL account before transferring.
  *

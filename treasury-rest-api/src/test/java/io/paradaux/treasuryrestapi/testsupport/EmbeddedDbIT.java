@@ -113,7 +113,7 @@ public abstract class EmbeddedDbIT {
     }
 
     protected void insertPlayer(UUID uuid, String currentName) {
-        exec("INSERT INTO firm_players (player_uuid_bin, current_name) VALUES (?,?)", ps -> {
+        exec("INSERT INTO economy_players (player_uuid_bin, current_name) VALUES (?,?)", ps -> {
             ps.setBytes(1, EmbeddedMariaDb.uuidBytes(uuid));
             ps.setString(2, currentName);
         });

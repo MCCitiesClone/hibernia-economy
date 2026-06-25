@@ -56,7 +56,7 @@ public final class EmbeddedMariaDb {
         try (Connection c = connect(); Statement st = c.createStatement()) {
             st.execute("SET FOREIGN_KEY_CHECKS = 0");
             for (String t : new String[]{
-                    "accounts", "firm", "firm_accounts", "firm_players", "account_balances_mat",
+                    "accounts", "firm", "firm_accounts", "economy_players", "account_balances_mat",
                     "ledger_txns", "ledger_postings", "chestshop_sale", "chestshop_shop",
                     "account_access"}) {
                 st.execute("TRUNCATE TABLE " + t);
@@ -156,13 +156,17 @@ public final class EmbeddedMariaDb {
               PRIMARY KEY (firm_id, account_id)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
             """,
+            // Unified player directory (PAR-35) — name resolution reads this now.
             """
-            CREATE TABLE firm_players (
+            CREATE TABLE economy_players (
               player_uuid_bin BINARY(16) NOT NULL,
-              current_name VARCHAR(64) NULL,
-              name_lower VARCHAR(64) AS (LOWER(current_name)) VIRTUAL,
-              first_seen TIMESTAMP NULL,
-              PRIMARY KEY (player_uuid_bin)
+              current_name VARCHAR(32) NOT NULL,
+              name_lower VARCHAR(32) AS (LOWER(current_name)) VIRTUAL,
+              first_seen TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+              last_seen TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+              last_login_epoch BIGINT NULL,
+              PRIMARY KEY (player_uuid_bin),
+              UNIQUE KEY uq_economy_players_name (name_lower)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
             """,
             // ChestShop analytics tables read by the market endpoints — mirrors
