@@ -36,7 +36,15 @@ public class EconomyPlayerLoginListener implements Listener {
         String name = event.getPlayer().getName();
         long loginEpochSecs = Instant.now().getEpochSecond();
 
-        Bukkit.getScheduler().runTaskAsynchronously(plugin,
-                () -> playerDirectory.recordLogin(playerUuid, name, loginEpochSecs));
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+            try {
+                playerDirectory.recordLogin(playerUuid, name, loginEpochSecs);
+            } catch (RuntimeException e) {
+                // Best-effort directory upkeep: never let a write failure surface as an
+                // uncaught async scheduler error. Log so a persistent problem is visible.
+                plugin.getLogger().warning("Failed to record player directory entry for "
+                        + name + " (" + playerUuid + "): " + e);
+            }
+        });
     }
 }

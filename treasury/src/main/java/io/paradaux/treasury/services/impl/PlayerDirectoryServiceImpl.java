@@ -22,6 +22,10 @@ public class PlayerDirectoryServiceImpl implements PlayerDirectoryService {
     @Override
     @Transactional
     public void recordLogin(UUID playerUuid, String currentName, long epochSeconds) {
+        // A name belongs to exactly one player at a time; evict any stale claim by a
+        // different player first so the upsert can't collide on UNIQUE(name_lower)
+        // when a name is changed or reused (the old holder re-registers on next login).
+        economyPlayers.releaseNameFromOthers(currentName, playerUuid);
         economyPlayers.upsertLogin(playerUuid, currentName, epochSeconds);
     }
 
