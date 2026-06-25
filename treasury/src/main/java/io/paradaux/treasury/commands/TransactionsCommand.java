@@ -164,6 +164,12 @@ public class TransactionsCommand implements CommandHandler {
      * have actually played (the framework resolver returns a synthetic
      * OfflinePlayer for unknown names) and to own a PERSONAL account — never
      * creates one.
+     *
+     * <p>Like the rest of this audit surface, access is governed solely by the
+     * {@code treasury.transactions.audit} node and intentionally <em>bypasses</em>
+     * {@code account_access}: it is the in-game government's audit tool for
+     * viewing any account, not an account-membership feature (ADT-18). Every
+     * audit is logged in {@link #renderAudit} for accountability.
      */
     private void showPlayerAudit(Player viewer, OfflinePlayer target, int page) {
         if (target == null || (!target.hasPlayedBefore() && !target.isOnline())) {
@@ -175,40 +181,28 @@ public class TransactionsCommand implements CommandHandler {
             message.send(viewer, "treasury.transactions.audit.no-account", "target", target.getName());
             return;
         }
-        if (!canAudit(viewer, accountId)) {
-            message.send(viewer, "treasury.transactions.audit.no-access");
-            return;
-        }
         renderAudit(viewer, accountId, page, target.getName(), "/transactions audit " + target.getName());
     }
 
-    /** Renders any account's history by id for an auditor (covers business/government accounts). */
+    /**
+     * Renders any account's history by id for an auditor (covers business/government accounts).
+     *
+     * <p>Intentionally gated only by {@code treasury.transactions.audit} (op by
+     * default; granted to the in-game government), with no {@code canAccessAccount}
+     * check — viewing accounts the auditor is not a member of is the whole point.
+     * The asymmetry with the export route ({@code canAccessAccount}-gated) is
+     * deliberate: export is a player-facing {@code default:true} node, this is a
+     * government audit override (ADT-18).
+     */
     private void showAccountAudit(Player viewer, int accountId, int page) {
         if (!accountService.hasAccountByAccountId(accountId)) {
             message.send(viewer, "treasury.transactions.audit.not-found");
-            return;
-        }
-        if (!canAudit(viewer, accountId)) {
-            message.send(viewer, "treasury.transactions.audit.no-access");
             return;
         }
         Account account = accountService.getAccountById(accountId);
         String label = account != null && account.getDisplayName() != null
                 ? account.getDisplayName() : ("#" + accountId);
         renderAudit(viewer, accountId, page, label, "/transactions auditaccount " + accountId);
-    }
-
-    /**
-     * Defence-in-depth for the audit routes (ADT-18). The {@code transactions.audit}
-     * node alone (op by default, but an operator could grant it to a non-staff
-     * rank) must not expose any account's full ledger. A genuine admin — one
-     * holding {@code treasury.admin.inspect}, the same node that already dumps any
-     * account via {@code /treasury admin info} — may audit any account; everyone
-     * else is limited to accounts they can access, mirroring the export route.
-     */
-    private boolean canAudit(Player viewer, int accountId) {
-        return viewer.hasPermission("treasury.admin.inspect")
-                || accountService.canAccessAccount(viewer.getUniqueId(), accountId);
     }
 
     private void renderAudit(Player viewer, int accountId, int page, String subjectLabel, String navBase) {

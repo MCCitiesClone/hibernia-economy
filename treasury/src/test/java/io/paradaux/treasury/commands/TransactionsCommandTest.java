@@ -25,15 +25,15 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * Per-account authorization on the audit routes (ADT-18). The
- * {@code treasury.transactions.audit} node alone must not expose any account's
- * ledger: a genuine admin ({@code treasury.admin.inspect}) may audit anything,
- * everyone else is limited to accounts they can access.
+ * The audit routes are the in-game government's audit tool: gated solely by
+ * {@code treasury.transactions.audit} and intentionally <em>bypassing</em>
+ * {@code account_access} so an auditor can read any account regardless of
+ * membership (ADT-18). These tests pin that intent — in particular that no
+ * {@code canAccessAccount} membership check ever runs.
  */
 @ExtendWith(MockitoExtension.class)
 class TransactionsCommandTest {
 
-    private static final String ADMIN_NODE = "treasury.admin.inspect";
     private static final int ACCOUNT_ID = 5;
 
     @Mock AccountService accountService;
@@ -56,62 +56,25 @@ class TransactionsCommandTest {
     // ---------- auditaccount ----------
 
     @Test
-    void auditAccount_nonAdminWithoutAccess_deniedAndNoLedgerRead() {
-        UUID uuid = UUID.randomUUID();
-        when(accountService.hasAccountByAccountId(ACCOUNT_ID)).thenReturn(true);
-        when(viewer.hasPermission(ADMIN_NODE)).thenReturn(false);
-        when(viewer.getUniqueId()).thenReturn(uuid);
-        when(accountService.canAccessAccount(uuid, ACCOUNT_ID)).thenReturn(false);
-
-        cmd.auditAccount(viewer, ACCOUNT_ID);
-
-        verify(message).send(viewer, "treasury.transactions.audit.no-access");
-        verify(ledgerService, never()).getTransactionHistory(anyInt(), anyInt(), anyInt());
-        verify(accountService, never()).getAccountById(anyInt());
-    }
-
-    @Test
-    void auditAccount_adminOverride_allowedWithoutMembershipCheck() {
+    void auditAccount_readsAnyAccountWithoutMembershipCheck() {
         Account account = new Account();
         account.setAccountId(ACCOUNT_ID);
         account.setDisplayName("Acme Corp");
         when(accountService.hasAccountByAccountId(ACCOUNT_ID)).thenReturn(true);
-        when(viewer.hasPermission(ADMIN_NODE)).thenReturn(true);
         when(accountService.getAccountById(ACCOUNT_ID)).thenReturn(account);
         when(ledgerService.getTransactionHistory(ACCOUNT_ID, 0, 10)).thenReturn(emptyPage());
         when(viewer.getName()).thenReturn("Auditor");
 
         cmd.auditAccount(viewer, ACCOUNT_ID);
 
-        // Admin path never consults membership, and the ledger read happens.
+        // The whole point: any account is readable, with NO account_access gate.
         verify(accountService, never()).canAccessAccount(any(), anyInt());
         verify(ledgerService).getTransactionHistory(ACCOUNT_ID, 0, 10);
         verify(message).send(viewer, "treasury.transactions.audit.empty", "target", "Acme Corp");
-        verify(message, never()).send(viewer, "treasury.transactions.audit.no-access");
     }
 
     @Test
-    void auditAccount_memberWithAccess_allowed() {
-        UUID uuid = UUID.randomUUID();
-        Account account = new Account();
-        account.setAccountId(ACCOUNT_ID);
-        account.setDisplayName("Acme Corp");
-        when(accountService.hasAccountByAccountId(ACCOUNT_ID)).thenReturn(true);
-        when(viewer.hasPermission(ADMIN_NODE)).thenReturn(false);
-        when(viewer.getUniqueId()).thenReturn(uuid);
-        when(accountService.canAccessAccount(uuid, ACCOUNT_ID)).thenReturn(true);
-        when(accountService.getAccountById(ACCOUNT_ID)).thenReturn(account);
-        when(ledgerService.getTransactionHistory(ACCOUNT_ID, 0, 10)).thenReturn(emptyPage());
-        when(viewer.getName()).thenReturn("Member");
-
-        cmd.auditAccount(viewer, ACCOUNT_ID);
-
-        verify(ledgerService).getTransactionHistory(ACCOUNT_ID, 0, 10);
-        verify(message, never()).send(viewer, "treasury.transactions.audit.no-access");
-    }
-
-    @Test
-    void auditAccount_unknownAccount_notFound_andNoAccessCheck() {
+    void auditAccount_unknownAccount_notFound_andNoLedgerRead() {
         when(accountService.hasAccountByAccountId(ACCOUNT_ID)).thenReturn(false);
 
         cmd.auditAccount(viewer, ACCOUNT_ID);
@@ -124,32 +87,13 @@ class TransactionsCommandTest {
     // ---------- audit <player> ----------
 
     @Test
-    void auditPlayer_nonAdminWithoutAccess_denied() {
-        UUID viewerUuid = UUID.randomUUID();
-        UUID targetUuid = UUID.randomUUID();
-        OfflinePlayer target = org.mockito.Mockito.mock(OfflinePlayer.class);
-        when(target.hasPlayedBefore()).thenReturn(true);
-        when(target.getUniqueId()).thenReturn(targetUuid);
-        when(accountService.findPersonalAccountId(targetUuid)).thenReturn(7);
-        when(viewer.hasPermission(ADMIN_NODE)).thenReturn(false);
-        when(viewer.getUniqueId()).thenReturn(viewerUuid);
-        when(accountService.canAccessAccount(viewerUuid, 7)).thenReturn(false);
-
-        cmd.auditPlayer(viewer, target);
-
-        verify(message).send(viewer, "treasury.transactions.audit.no-access");
-        verify(ledgerService, never()).getTransactionHistory(anyInt(), anyInt(), anyInt());
-    }
-
-    @Test
-    void auditPlayer_adminOverride_allowed() {
+    void auditPlayer_readsTargetLedgerWithoutMembershipCheck() {
         UUID targetUuid = UUID.randomUUID();
         OfflinePlayer target = org.mockito.Mockito.mock(OfflinePlayer.class);
         when(target.hasPlayedBefore()).thenReturn(true);
         when(target.getUniqueId()).thenReturn(targetUuid);
         when(target.getName()).thenReturn("Bob");
         when(accountService.findPersonalAccountId(targetUuid)).thenReturn(7);
-        when(viewer.hasPermission(ADMIN_NODE)).thenReturn(true);
         when(ledgerService.getTransactionHistory(7, 0, 10)).thenReturn(emptyPage());
         when(viewer.getName()).thenReturn("Auditor");
 
@@ -158,5 +102,33 @@ class TransactionsCommandTest {
         verify(accountService, never()).canAccessAccount(any(), anyInt());
         verify(ledgerService).getTransactionHistory(7, 0, 10);
         verify(message).send(viewer, "treasury.transactions.audit.empty", "target", "Bob");
+    }
+
+    @Test
+    void auditPlayer_unknownPlayer_isRejectedBeforeAnyLookup() {
+        OfflinePlayer target = org.mockito.Mockito.mock(OfflinePlayer.class);
+        when(target.hasPlayedBefore()).thenReturn(false);
+        when(target.isOnline()).thenReturn(false);
+
+        cmd.auditPlayer(viewer, target);
+
+        verify(message).send(viewer, "treasury.general.unknown-player");
+        verify(accountService, never()).findPersonalAccountId(any());
+        verify(ledgerService, never()).getTransactionHistory(anyInt(), anyInt(), anyInt());
+    }
+
+    @Test
+    void auditPlayer_targetHasNoAccount_reportsNoAccount() {
+        UUID targetUuid = UUID.randomUUID();
+        OfflinePlayer target = org.mockito.Mockito.mock(OfflinePlayer.class);
+        when(target.hasPlayedBefore()).thenReturn(true);
+        when(target.getUniqueId()).thenReturn(targetUuid);
+        when(target.getName()).thenReturn("Bob");
+        when(accountService.findPersonalAccountId(targetUuid)).thenReturn(null);
+
+        cmd.auditPlayer(viewer, target);
+
+        verify(message).send(viewer, "treasury.transactions.audit.no-account", "target", "Bob");
+        verify(ledgerService, never()).getTransactionHistory(anyInt(), anyInt(), anyInt());
     }
 }

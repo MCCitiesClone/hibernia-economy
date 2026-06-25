@@ -86,7 +86,7 @@ permissions:
     description: Export transaction history as CSV
     default: true
   treasury.transactions.audit:
-    description: View any player's or account's transaction history (staff/DOC auditing)
+    description: Audit any player's or account's transaction history. Government/DOC override — intentionally bypasses account membership; every use is server-logged. Grant only to trusted staff/government ranks.
     default: op
   treasury.eco:
     description: Base economy admin permission
