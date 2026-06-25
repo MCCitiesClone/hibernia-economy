@@ -44,6 +44,9 @@ dependencies {
     testImplementation(libs.junit.jupiter)
     testRuntimeOnly(libs.junit.platform.launcher)
     testImplementation(libs.assertj.core)
+    // FirmPlayer implements HiberniaPlayer (compileOnly above); the test
+    // instantiates it, so the interface must be on the test classpath.
+    testImplementation(libs.hibernia.framework)
 }
 
 tasks.test {

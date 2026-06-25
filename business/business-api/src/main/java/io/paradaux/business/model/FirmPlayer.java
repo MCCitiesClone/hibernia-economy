@@ -20,7 +20,15 @@ public class FirmPlayer implements HiberniaPlayer {
     private LocalDateTime firstSeen; // TIMESTAMP
     private LocalDateTime lastSeen;  // TIMESTAMP
 
+    /**
+     * @return the player's UUID, or {@code null} when this instance carries no
+     *         UUID (e.g. default-constructed). Previously threw
+     *         {@link NullPointerException} on a null {@code playerUuid} (ADT-35).
+     */
     public UUID getUniqueId() {
+        if (playerUuid == null || playerUuid.isBlank()) {
+            return null;
+        }
         return UUID.fromString(playerUuid);
     }
 }
