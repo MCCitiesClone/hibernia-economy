@@ -142,7 +142,6 @@ tasks.jacocoTestReport {
                     "io/paradaux/chestshop/Commands/**",
                     "io/paradaux/chestshop/Plugins/**",
                     "io/paradaux/chestshop/Database/**",
-                    "io/paradaux/chestshop/breeze/Database/**",
                 )
             }
         })
