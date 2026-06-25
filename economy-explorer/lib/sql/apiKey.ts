@@ -36,7 +36,7 @@ export async function listAdminApiKeys(): Promise<AdminApiKey[]> {
            k.firm_id, f.display_name AS firm_name,
            k.revoked, k.issued_at, k.expires_at
     FROM api_keys k
-    LEFT JOIN firm_players fp ON fp.player_uuid_bin = k.owner_uuid_bin
+    LEFT JOIN economy_players fp ON fp.player_uuid_bin = k.owner_uuid_bin
     LEFT JOIN accounts a ON a.account_id = k.account_id
     LEFT JOIN firm f ON f.firm_id = k.firm_id
     ORDER BY k.revoked ASC, k.issued_at DESC

@@ -151,14 +151,15 @@ CREATE TABLE `firm_role_permission` (
   KEY `idx_rp_active` (`role_id`,`deleted_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE `firm_players` (
+CREATE TABLE `economy_players` (
   `player_uuid_bin` binary(16) NOT NULL,
   `current_name` varchar(32) NOT NULL,
   `name_lower` varchar(32) GENERATED ALWAYS AS (lcase(`current_name`)) VIRTUAL,
   `first_seen` timestamp NOT NULL DEFAULT current_timestamp(),
   `last_seen` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `last_login_epoch` bigint(20) DEFAULT NULL,
   PRIMARY KEY (`player_uuid_bin`),
-  UNIQUE KEY `uq_firm_players_name` (`name_lower`)
+  UNIQUE KEY `uq_economy_players_name` (`name_lower`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE `chestshop_sale` (

@@ -137,7 +137,7 @@ export async function listAccounts(args: {
            a.credit_limit, a.created_at, COALESCE(abm.balance, 0.00) AS balance
     FROM accounts a
     LEFT JOIN account_balances_mat abm ON abm.account_id = a.account_id
-    LEFT JOIN firm_players fp ON fp.player_uuid_bin = a.owner_uuid_bin
+    LEFT JOIN economy_players fp ON fp.player_uuid_bin = a.owner_uuid_bin
     ${where}
     ${order}
     LIMIT ${args.limit} OFFSET ${args.offset}
@@ -153,10 +153,10 @@ export async function countAccounts(args: {
   q: string | null;
 }): Promise<number> {
   const where = buildAccountsWhere(args.type, args.archived, args.q);
-  // firm_players is only referenced by the `q` name filter; skip the join on the
+  // economy_players is only referenced by the `q` name filter; skip the join on the
   // common no-search count so it doesn't join every account row for nothing.
   const nameJoin = args.q
-    ? sql`LEFT JOIN firm_players fp ON fp.player_uuid_bin = a.owner_uuid_bin`
+    ? sql`LEFT JOIN economy_players fp ON fp.player_uuid_bin = a.owner_uuid_bin`
     : sql``;
   const result = await sql<{ c: string | number }>`
     SELECT COUNT(*) AS c
@@ -175,7 +175,7 @@ export async function findAccount(accountId: number): Promise<ExplorerAccountRow
            a.credit_limit, a.created_at, COALESCE(abm.balance, 0.00) AS balance
     FROM accounts a
     LEFT JOIN account_balances_mat abm ON abm.account_id = a.account_id
-    LEFT JOIN firm_players fp ON fp.player_uuid_bin = a.owner_uuid_bin
+    LEFT JOIN economy_players fp ON fp.player_uuid_bin = a.owner_uuid_bin
     WHERE a.account_id = ${accountId}
   `.execute(db);
   const row = result.rows[0];
@@ -218,7 +218,7 @@ export async function listAccountTransactions(args: {
            fp.current_name AS initiator_name, lt.plugin_system
     FROM ledger_postings lp
     JOIN ledger_txns lt ON lp.txn_id = lt.txn_id
-    LEFT JOIN firm_players fp ON fp.player_uuid_bin = lt.initiator_uuid_bin
+    LEFT JOIN economy_players fp ON fp.player_uuid_bin = lt.initiator_uuid_bin
     WHERE lp.account_id = ${args.accountId}
     -- Order by txn_id (auto-increment, monotonic with creation) rather than
     -- lt.settlement_time: settlement_time lives on the other table, so ordering
@@ -257,7 +257,7 @@ export async function getCounterparties(accountId: number, limit: number): Promi
     JOIN ledger_postings partner ON partner.txn_id = me.txn_id
                                   AND partner.account_id != me.account_id
     JOIN accounts a ON a.account_id = partner.account_id
-    LEFT JOIN firm_players fp ON fp.player_uuid_bin = a.owner_uuid_bin
+    LEFT JOIN economy_players fp ON fp.player_uuid_bin = a.owner_uuid_bin
     WHERE me.account_id = ${accountId}
     GROUP BY partner.account_id, a.display_name, a.account_type,
              a.owner_uuid_bin, fp.current_name
@@ -350,7 +350,7 @@ export async function listTransactions(args: {
            lt.plugin_system,
            (SELECT COUNT(*) FROM ledger_postings lp WHERE lp.txn_id = lt.txn_id) AS posting_count
     FROM ledger_txns lt
-    LEFT JOIN firm_players fp ON fp.player_uuid_bin = lt.initiator_uuid_bin
+    LEFT JOIN economy_players fp ON fp.player_uuid_bin = lt.initiator_uuid_bin
     ${where}
     ${order}
     LIMIT ${args.limit} OFFSET ${args.offset}
@@ -361,11 +361,11 @@ export async function listTransactions(args: {
 /** Mirrors LedgerExplorerMapper.countTransactions (line 153-165). */
 export async function countTransactions(args: TxnFilters): Promise<number> {
   const where = buildTxnsWhere(args);
-  // The firm_players join only exists to let the `q` filter match on
+  // The economy_players join only exists to let the `q` filter match on
   // initiator_name; with no text query it's pure overhead on a full-table count,
   // so skip it (the default firehose count is the common case).
   const nameJoin = args.q
-    ? sql`LEFT JOIN firm_players fp ON fp.player_uuid_bin = lt.initiator_uuid_bin`
+    ? sql`LEFT JOIN economy_players fp ON fp.player_uuid_bin = lt.initiator_uuid_bin`
     : sql``;
   const result = await sql<{ c: string | number }>`
     SELECT COUNT(*) AS c FROM ledger_txns lt
@@ -382,7 +382,7 @@ export async function findTransaction(txnId: number): Promise<ExplorerTxnRow | n
            lt.initiator_uuid_bin, fp.current_name AS initiator_name,
            lt.plugin_system, 0 AS posting_count
     FROM ledger_txns lt
-    LEFT JOIN firm_players fp ON fp.player_uuid_bin = lt.initiator_uuid_bin
+    LEFT JOIN economy_players fp ON fp.player_uuid_bin = lt.initiator_uuid_bin
     WHERE lt.txn_id = ${txnId}
   `.execute(db);
   const row = result.rows[0];
@@ -405,7 +405,7 @@ export async function findPostingsByTxnId(txnId: number): Promise<ExplorerPostin
            fp.current_name AS owner_name, a.owner_uuid_bin, lp.amount, lp.memo
     FROM ledger_postings lp
     LEFT JOIN accounts a ON a.account_id = lp.account_id
-    LEFT JOIN firm_players fp ON fp.player_uuid_bin = a.owner_uuid_bin
+    LEFT JOIN economy_players fp ON fp.player_uuid_bin = a.owner_uuid_bin
     WHERE lp.txn_id = ${txnId}
     ORDER BY lp.posting_id
   `.execute(db);
@@ -513,7 +513,7 @@ export async function getTopAccounts(limit: number): Promise<TopAccountRow[]> {
            a.account_type, abm.balance
     FROM accounts a
     JOIN account_balances_mat abm ON abm.account_id = a.account_id
-    LEFT JOIN firm_players fp ON fp.player_uuid_bin = a.owner_uuid_bin
+    LEFT JOIN economy_players fp ON fp.player_uuid_bin = a.owner_uuid_bin
     WHERE a.is_archived = 0
     ORDER BY abm.balance DESC
     LIMIT ${limit}

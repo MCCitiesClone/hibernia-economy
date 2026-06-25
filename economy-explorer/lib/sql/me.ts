@@ -24,7 +24,7 @@ export async function findAccountsForPlayer(playerUuid: string): Promise<Explore
            a.credit_limit, a.created_at, COALESCE(abm.balance, 0.00) AS balance
     FROM accounts a
     LEFT JOIN account_balances_mat abm ON abm.account_id = a.account_id
-    LEFT JOIN firm_players fp ON fp.player_uuid_bin = a.owner_uuid_bin
+    LEFT JOIN economy_players fp ON fp.player_uuid_bin = a.owner_uuid_bin
     WHERE a.owner_uuid_bin = ${bin}
        OR a.account_id IN (SELECT account_id FROM account_access
                            WHERE subject_uuid_bin = ${bin}
@@ -110,7 +110,7 @@ export async function getPlayerCounterparties(accountIds: number[], limit: numbe
     JOIN ledger_txns lt ON lt.txn_id = me.txn_id
     JOIN ledger_postings partner ON partner.txn_id = me.txn_id AND partner.account_id != me.account_id
     JOIN accounts a ON a.account_id = partner.account_id
-    LEFT JOIN firm_players fp ON fp.player_uuid_bin = a.owner_uuid_bin
+    LEFT JOIN economy_players fp ON fp.player_uuid_bin = a.owner_uuid_bin
     WHERE me.account_id IN (${ids})
       AND lt.settlement_time >= NOW() - INTERVAL ${days} DAY
       AND partner.account_id NOT IN (${ids})
@@ -129,18 +129,18 @@ export async function getPlayerCounterparties(accountIds: number[], limit: numbe
   }));
 }
 
-/** Resolve a player's current name from the firm_players cache (null if unknown). */
+/** Resolve a player's current name from the economy_players cache (null if unknown). */
 export async function findPlayerName(uuid: string): Promise<string | null> {
   const r = await sql<{ current_name: string | null }>`
-    SELECT current_name FROM firm_players WHERE player_uuid_bin = ${uuidToBin(uuid)} LIMIT 1
+    SELECT current_name FROM economy_players WHERE player_uuid_bin = ${uuidToBin(uuid)} LIMIT 1
   `.execute(db);
   return r.rows[0]?.current_name ?? null;
 }
 
-/** Name/UUID search over the firm_players cache, for the admin player lookup. */
+/** Name/UUID search over the economy_players cache, for the admin player lookup. */
 export async function searchPlayers(q: string, limit: number): Promise<{ uuid: string; name: string }[]> {
   const r = await sql<{ player_uuid_bin: Buffer; current_name: string }>`
-    SELECT player_uuid_bin, current_name FROM firm_players
+    SELECT player_uuid_bin, current_name FROM economy_players
     WHERE current_name LIKE CONCAT('%', ${q}, '%')
     ORDER BY current_name
     LIMIT ${limit}

@@ -136,7 +136,7 @@ export async function getFirmHeader(firmId: number): Promise<FirmReportHeader | 
               LEFT JOIN account_balances_mat abm ON abm.account_id = fa.account_id
              WHERE fa.firm_id = f.firm_id AND fa.removed_at IS NULL) AS total_balance
     FROM firm f
-    LEFT JOIN firm_players pp ON pp.player_uuid_bin = f.proprietor_uuid_bin
+    LEFT JOIN economy_players pp ON pp.player_uuid_bin = f.proprietor_uuid_bin
     WHERE f.firm_id = ${firmId}
   `.execute(db);
   const row = r.rows[0];
@@ -169,7 +169,7 @@ export async function listFirmEmployees(firmId: number): Promise<FirmEmployeeRow
            fr.name AS roleName, fe.joined_at AS joinedAt
     FROM firm_employee fe
     JOIN firm_role fr ON fr.role_id = fe.role_id AND fr.deleted_at IS NULL
-    LEFT JOIN firm_players fp ON fp.player_uuid_bin = fe.player_uuid_bin
+    LEFT JOIN economy_players fp ON fp.player_uuid_bin = fe.player_uuid_bin
     WHERE fe.firm_id = ${firmId} AND fe.left_at IS NULL
     ORDER BY fr.rank_order, fe.joined_at
   `.execute(db);

@@ -36,7 +36,7 @@ d('account name resolution', () => {
     expect(accountLabel(a!)).toBe('Acme Corp');
   });
 
-  it('falls back to a short UUID for a player not in firm_players (Dave)', async () => {
+  it('falls back to a short UUID for a player not in economy_players (Dave)', async () => {
     const a = await findAccount(7);
     expect(a!.owner_name).toBeNull();
     expect(accountLabel(a!)).toMatch(/…$/); // shortened UUID

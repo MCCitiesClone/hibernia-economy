@@ -1,11 +1,11 @@
 -- Deterministic fixtures for the integration suite. Designed so each assertion
 -- has an unambiguous expected value. UUIDs are 32-hex; personal accounts store
 -- their display_name as the hyphenated UUID (the real-world "junk name" case)
--- so name resolution via firm_players is actually exercised. DAVE is absent
--- from firm_players to test the short-UUID fallback.
+-- so name resolution via economy_players is actually exercised. DAVE is absent
+-- from economy_players to test the short-UUID fallback.
 
 -- Players (uuid -> name) — everyone except DAVE.
-INSERT INTO firm_players (player_uuid_bin, current_name) VALUES
+INSERT INTO economy_players (player_uuid_bin, current_name) VALUES
   (UNHEX('0000000000000000000000000000A1CE'), 'Alice'),
   (UNHEX('00000000000000000000000000000B0B'), 'Bob'),
   (UNHEX('0000000000000000000000000000CA01'), 'Carol');
@@ -86,7 +86,7 @@ INSERT INTO explorer_group_member (group_id, player_uuid_bin, source) VALUES
 -- distribution / gini assertions above (those count only positive, active
 -- personal balances). Proves a linked Bedrock player's wallet resolves the
 -- dotted name (never a bare UUID) and is searchable by it.
-INSERT INTO firm_players (player_uuid_bin, current_name) VALUES
+INSERT INTO economy_players (player_uuid_bin, current_name) VALUES
   (UNHEX('0000000000000000000000000000BED0'), '.BedrockBob');
 INSERT INTO accounts (account_id, account_type, owner_uuid_bin, display_name, is_archived) VALUES
   (8, 'PERSONAL', UNHEX('0000000000000000000000000000BED0'), '00000000-0000-0000-0000-00000000bed0', 0);

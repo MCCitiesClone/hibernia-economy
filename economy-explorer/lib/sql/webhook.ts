@@ -227,7 +227,7 @@ const ADMIN_JOINS = sql`
   FROM webhook_subscription s
   LEFT JOIN accounts a ON a.account_id = s.account_id
   LEFT JOIN firm fm ON fm.firm_id = s.firm_id
-  LEFT JOIN firm_players fp ON fp.player_uuid_bin = s.owner_uuid_bin`;
+  LEFT JOIN economy_players fp ON fp.player_uuid_bin = s.owner_uuid_bin`;
 
 /** Every webhook across all owners/accounts, filtered + paginated (admin). */
 export async function listAllWebhooks(f: AdminWebhookFilters, limit: number, offset: number): Promise<AdminWebhookRow[]> {
