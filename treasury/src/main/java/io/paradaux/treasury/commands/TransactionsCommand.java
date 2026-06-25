@@ -9,6 +9,7 @@ import io.paradaux.treasury.model.Page;
 import io.paradaux.treasury.model.economy.Account;
 import io.paradaux.treasury.model.economy.TransactionEntry;
 import io.paradaux.treasury.services.AccountService;
+import io.paradaux.treasury.services.AuditService;
 import io.paradaux.treasury.services.DataExportService;
 import io.paradaux.treasury.services.LedgerService;
 import org.bukkit.OfflinePlayer;
@@ -29,16 +30,19 @@ public class TransactionsCommand implements CommandHandler {
     private final AccountService accountService;
     private final LedgerService ledgerService;
     private final DataExportService dataExportService;
+    private final AuditService auditService;
     private final Message message;
 
     @Inject
     public TransactionsCommand(AccountService accountService,
                                LedgerService ledgerService,
                                DataExportService dataExportService,
+                               AuditService auditService,
                                Message message) {
         this.accountService = accountService;
         this.ledgerService = ledgerService;
         this.dataExportService = dataExportService;
+        this.auditService = auditService;
         this.message = message;
     }
 
@@ -214,6 +218,8 @@ public class TransactionsCommand implements CommandHandler {
         // Leave a server-log trail of who audited whom, mirroring the explorer's auditView.
         log.info("{} audited transactions of {} (account #{}, page {})",
                 viewer.getName(), subjectLabel, accountId, page);
+        // Durable trail in the shared explorer_audit access log (fail-open).
+        auditService.recordTransactionAudit(viewer.getUniqueId(), viewer.getName(), accountId, navBase, page);
 
         if (result.items().isEmpty()) {
             message.send(viewer, "treasury.transactions.audit.empty", "target", subjectLabel);

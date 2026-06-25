@@ -5,6 +5,7 @@ import io.paradaux.treasury.model.Page;
 import io.paradaux.treasury.model.economy.Account;
 import io.paradaux.treasury.model.economy.TransactionEntry;
 import io.paradaux.treasury.services.AccountService;
+import io.paradaux.treasury.services.AuditService;
 import io.paradaux.treasury.services.DataExportService;
 import io.paradaux.treasury.services.LedgerService;
 import org.bukkit.OfflinePlayer;
@@ -39,6 +40,7 @@ class TransactionsCommandTest {
     @Mock AccountService accountService;
     @Mock LedgerService ledgerService;
     @Mock DataExportService dataExportService;
+    @Mock AuditService auditService;
     @Mock Message message;
     @Mock Player viewer;
 
@@ -46,7 +48,7 @@ class TransactionsCommandTest {
 
     @BeforeEach
     void setUp() {
-        cmd = new TransactionsCommand(accountService, ledgerService, dataExportService, message);
+        cmd = new TransactionsCommand(accountService, ledgerService, dataExportService, auditService, message);
     }
 
     private static Page<TransactionEntry> emptyPage() {
@@ -56,7 +58,8 @@ class TransactionsCommandTest {
     // ---------- auditaccount ----------
 
     @Test
-    void auditAccount_readsAnyAccountWithoutMembershipCheck() {
+    void auditAccount_readsAnyAccountWithoutMembershipCheck_andRecordsAudit() {
+        UUID viewerUuid = UUID.randomUUID();
         Account account = new Account();
         account.setAccountId(ACCOUNT_ID);
         account.setDisplayName("Acme Corp");
@@ -64,6 +67,7 @@ class TransactionsCommandTest {
         when(accountService.getAccountById(ACCOUNT_ID)).thenReturn(account);
         when(ledgerService.getTransactionHistory(ACCOUNT_ID, 0, 10)).thenReturn(emptyPage());
         when(viewer.getName()).thenReturn("Auditor");
+        when(viewer.getUniqueId()).thenReturn(viewerUuid);
 
         cmd.auditAccount(viewer, ACCOUNT_ID);
 
@@ -71,10 +75,13 @@ class TransactionsCommandTest {
         verify(accountService, never()).canAccessAccount(any(), anyInt());
         verify(ledgerService).getTransactionHistory(ACCOUNT_ID, 0, 10);
         verify(message).send(viewer, "treasury.transactions.audit.empty", "target", "Acme Corp");
+        // ...and the access is persisted to the shared audit log.
+        verify(auditService).recordTransactionAudit(
+                viewerUuid, "Auditor", ACCOUNT_ID, "/transactions auditaccount 5", 1);
     }
 
     @Test
-    void auditAccount_unknownAccount_notFound_andNoLedgerRead() {
+    void auditAccount_unknownAccount_notFound_noLedgerReadOrAudit() {
         when(accountService.hasAccountByAccountId(ACCOUNT_ID)).thenReturn(false);
 
         cmd.auditAccount(viewer, ACCOUNT_ID);
@@ -82,12 +89,14 @@ class TransactionsCommandTest {
         verify(message).send(viewer, "treasury.transactions.audit.not-found");
         verify(accountService, never()).canAccessAccount(any(), anyInt());
         verify(ledgerService, never()).getTransactionHistory(anyInt(), anyInt(), anyInt());
+        verify(auditService, never()).recordTransactionAudit(any(), any(), anyInt(), any(), anyInt());
     }
 
     // ---------- audit <player> ----------
 
     @Test
-    void auditPlayer_readsTargetLedgerWithoutMembershipCheck() {
+    void auditPlayer_readsTargetLedgerWithoutMembershipCheck_andRecordsAudit() {
+        UUID viewerUuid = UUID.randomUUID();
         UUID targetUuid = UUID.randomUUID();
         OfflinePlayer target = org.mockito.Mockito.mock(OfflinePlayer.class);
         when(target.hasPlayedBefore()).thenReturn(true);
@@ -96,16 +105,19 @@ class TransactionsCommandTest {
         when(accountService.findPersonalAccountId(targetUuid)).thenReturn(7);
         when(ledgerService.getTransactionHistory(7, 0, 10)).thenReturn(emptyPage());
         when(viewer.getName()).thenReturn("Auditor");
+        when(viewer.getUniqueId()).thenReturn(viewerUuid);
 
         cmd.auditPlayer(viewer, target);
 
         verify(accountService, never()).canAccessAccount(any(), anyInt());
         verify(ledgerService).getTransactionHistory(7, 0, 10);
         verify(message).send(viewer, "treasury.transactions.audit.empty", "target", "Bob");
+        verify(auditService).recordTransactionAudit(
+                viewerUuid, "Auditor", 7, "/transactions audit Bob", 1);
     }
 
     @Test
-    void auditPlayer_unknownPlayer_isRejectedBeforeAnyLookup() {
+    void auditPlayer_unknownPlayer_isRejectedBeforeAnyLookupOrAudit() {
         OfflinePlayer target = org.mockito.Mockito.mock(OfflinePlayer.class);
         when(target.hasPlayedBefore()).thenReturn(false);
         when(target.isOnline()).thenReturn(false);
@@ -115,10 +127,11 @@ class TransactionsCommandTest {
         verify(message).send(viewer, "treasury.general.unknown-player");
         verify(accountService, never()).findPersonalAccountId(any());
         verify(ledgerService, never()).getTransactionHistory(anyInt(), anyInt(), anyInt());
+        verify(auditService, never()).recordTransactionAudit(any(), any(), anyInt(), any(), anyInt());
     }
 
     @Test
-    void auditPlayer_targetHasNoAccount_reportsNoAccount() {
+    void auditPlayer_targetHasNoAccount_reportsNoAccount_noAudit() {
         UUID targetUuid = UUID.randomUUID();
         OfflinePlayer target = org.mockito.Mockito.mock(OfflinePlayer.class);
         when(target.hasPlayedBefore()).thenReturn(true);
@@ -130,5 +143,6 @@ class TransactionsCommandTest {
 
         verify(message).send(viewer, "treasury.transactions.audit.no-account", "target", "Bob");
         verify(ledgerService, never()).getTransactionHistory(anyInt(), anyInt(), anyInt());
+        verify(auditService, never()).recordTransactionAudit(any(), any(), anyInt(), any(), anyInt());
     }
 }
