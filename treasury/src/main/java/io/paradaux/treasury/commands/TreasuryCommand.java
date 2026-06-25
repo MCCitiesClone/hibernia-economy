@@ -211,6 +211,7 @@ public class TreasuryCommand implements CommandHandler {
 
     @Route("admin balance <type> <id>")
     @Permission("treasury.admin.inspect")
+    @Async // resolves + reads balance off the main thread, like every sibling route (ADT-18).
     @Description("Show the balance of any account (player/government/business/account)")
     public void adminBalance(@Sender CommandSender sender,
                              @Arg("type") String type, @Arg("id") String id) {
@@ -222,6 +223,7 @@ public class TreasuryCommand implements CommandHandler {
 
     @Route("admin info <type> <id>")
     @Permission("treasury.admin.inspect")
+    @Async // ~5 sequential DB round-trips — must not run on the Bukkit main thread (ADT-18).
     @Description("Dump account details (id, type, balance, flags, members) for debugging")
     public void adminInfo(@Sender CommandSender sender,
                           @Arg("type") String type, @Arg("id") String id) {

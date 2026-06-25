@@ -175,6 +175,10 @@ public class TransactionsCommand implements CommandHandler {
             message.send(viewer, "treasury.transactions.audit.no-account", "target", target.getName());
             return;
         }
+        if (!canAudit(viewer, accountId)) {
+            message.send(viewer, "treasury.transactions.audit.no-access");
+            return;
+        }
         renderAudit(viewer, accountId, page, target.getName(), "/transactions audit " + target.getName());
     }
 
@@ -184,10 +188,27 @@ public class TransactionsCommand implements CommandHandler {
             message.send(viewer, "treasury.transactions.audit.not-found");
             return;
         }
+        if (!canAudit(viewer, accountId)) {
+            message.send(viewer, "treasury.transactions.audit.no-access");
+            return;
+        }
         Account account = accountService.getAccountById(accountId);
         String label = account != null && account.getDisplayName() != null
                 ? account.getDisplayName() : ("#" + accountId);
         renderAudit(viewer, accountId, page, label, "/transactions auditaccount " + accountId);
+    }
+
+    /**
+     * Defence-in-depth for the audit routes (ADT-18). The {@code transactions.audit}
+     * node alone (op by default, but an operator could grant it to a non-staff
+     * rank) must not expose any account's full ledger. A genuine admin — one
+     * holding {@code treasury.admin.inspect}, the same node that already dumps any
+     * account via {@code /treasury admin info} — may audit any account; everyone
+     * else is limited to accounts they can access, mirroring the export route.
+     */
+    private boolean canAudit(Player viewer, int accountId) {
+        return viewer.hasPermission("treasury.admin.inspect")
+                || accountService.canAccessAccount(viewer.getUniqueId(), accountId);
     }
 
     private void renderAudit(Player viewer, int accountId, int page, String subjectLabel, String navBase) {
