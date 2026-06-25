@@ -16,7 +16,7 @@ import java.util.UUID;
  * {@code mysql}/{@code mariadb} CLI needed — these DDLs have no triggers).
  *
  * <p>Covers the ledger write side ({@code accounts}, {@code account_balances_mat},
- * {@code ledger_txns}, {@code ledger_postings}) plus {@code firm}/{@code firm_players}
+ * {@code ledger_txns}, {@code ledger_postings}) plus {@code firm}/{@code economy_players}
  * for type-aware owner/recipient resolution.
  */
 public final class EmbeddedMariaDb {

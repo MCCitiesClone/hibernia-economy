@@ -352,7 +352,7 @@ public class FirmCommands implements CommandHandler {
             Firm f = list.get(i);
             String name = f.getArchived() ? "<strikethrough>" + f.getDisplayName() + "</strikethrough>" : f.getDisplayName();
             String status = f.getArchived() ? "<red>Defunct</red>" : f.getFirmId().toString();
-            // firm_players is populated lazily on join — proprietors who haven't
+            // economy_players is populated on join (by Treasury) — proprietors who haven't
             // logged in to the new server (e.g. legacy firms imported via
             // TreasuryIngest) have no row yet. Fall back to the raw UUID rather
             // than crashing the entire listing on Optional.get().

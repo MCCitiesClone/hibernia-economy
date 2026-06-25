@@ -16,7 +16,7 @@ public class SaleRow {
     private LocalDateTime occurredAt;
     private String direction;        // BUY | SELL (customer's perspective)
     private UUID customerUuid;
-    private String customerName;     // resolved from firm_players; null if unknown
+    private String customerName;     // resolved from economy_players; null if unknown
     private int quantity;
     private String material;
     private String itemName;

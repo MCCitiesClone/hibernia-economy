@@ -12,7 +12,6 @@ import io.paradaux.business.guice.DatabaseModule;
 import io.paradaux.business.jobs.ExpireRequestsJob;
 import io.paradaux.business.listeners.ChestShopSaleListener;
 import io.paradaux.business.listeners.FirmBalanceTaxListener;
-import io.paradaux.business.listeners.FirmPlayerCreationEventListener;
 import io.paradaux.business.model.config.DatabaseConfiguration;
 import io.paradaux.business.model.config.FirmConfiguration;
 import io.paradaux.business.services.FirmSalesNotificationService;
@@ -86,7 +85,6 @@ public final class Business extends JavaPlugin {
 
         // 5) Register events
         var pm = this.getServer().getPluginManager();
-        pm.registerEvents(injector.getInstance(FirmPlayerCreationEventListener.class), this);
         pm.registerEvents(injector.getInstance(FirmBalanceTaxListener.class), this);
         pm.registerEvents(injector.getInstance(ChestShopSaleListener.class), this);
 

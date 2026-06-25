@@ -13,7 +13,7 @@ import java.util.UUID;
 @AllArgsConstructor
 public class TopCustomer {
     private UUID customerUuid;
-    private String customerName;   // resolved from firm_players; null if unknown
+    private String customerName;   // resolved from economy_players; null if unknown
     private long saleCount;
     private BigDecimal volume;     // total price
 }
