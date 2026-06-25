@@ -239,13 +239,13 @@ public class BusinessApiImpl implements BusinessApi {
         }
 
         @Override
-        public void acceptOffer(int firmId, UUID playerId) {
-            service.acceptEmploymentOffer(String.valueOf(firmId), playerId);
+        public void acceptOffer(int firmId, UUID playerId, UUID actorId) {
+            service.acceptEmploymentOffer(String.valueOf(firmId), playerId, actorId);
         }
 
         @Override
-        public void rejectOffer(int firmId, UUID playerId) {
-            service.rejectEmploymentOffer(String.valueOf(firmId), playerId);
+        public void rejectOffer(int firmId, UUID playerId, UUID actorId) {
+            service.rejectEmploymentOffer(String.valueOf(firmId), playerId, actorId);
         }
     }
 

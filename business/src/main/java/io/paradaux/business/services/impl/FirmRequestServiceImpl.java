@@ -105,11 +105,18 @@ public class FirmRequestServiceImpl implements FirmRequestService {
     }
 
     @Override
-    public void acceptEmploymentOffer(String firmName, UUID playerId) {
+    public void acceptEmploymentOffer(String firmName, UUID playerId, UUID actorId) {
         Firm firm = firms.getFirmByNameOrId(firmName);
 
         if (firm == null) {
             throw new NotFoundException("Firm not found.");
+        }
+
+        // Only the offer's target may accept it. Without this, the public API
+        // (RequestApi.acceptOffer) would let any caller accept a pending offer
+        // on another player's behalf (ADT-34).
+        if (!actorId.equals(playerId)) {
+            throw new NoPermissionException("You can only accept your own employment offer.");
         }
 
         if (!requests.hasPendingJobOffer(firm.getFirmId(), playerId.toString())) {
@@ -136,11 +143,16 @@ public class FirmRequestServiceImpl implements FirmRequestService {
     }
 
     @Override
-    public void rejectEmploymentOffer(String firmName, UUID playerId) {
+    public void rejectEmploymentOffer(String firmName, UUID playerId, UUID actorId) {
         Firm firm = firms.getFirmByNameOrId(firmName);
 
         if (firm == null) {
             throw new NotFoundException("Firm not found.");
+        }
+
+        // Only the offer's target may reject it (ADT-34) — mirrors accept.
+        if (!actorId.equals(playerId)) {
+            throw new NoPermissionException("You can only reject your own employment offer.");
         }
 
         if (!requests.hasPendingJobOffer(firm.getFirmId(), playerId.toString())) {
@@ -210,6 +222,13 @@ public class FirmRequestServiceImpl implements FirmRequestService {
             throw new NotFoundException("Firm not found.");
         }
 
+        // Only the proprietor who began the transfer may cancel it. Without this,
+        // anyone with the cancel permission could tear down a legitimate pending
+        // ownership transfer for a firm they don't own (griefing) (ADT-34).
+        if (!firm.getProprietorUuid().equalsIgnoreCase(actorId.toString())) {
+            throw new NoPermissionException("Only the current proprietor can cancel a transfer.");
+        }
+
         requests.rejectTransfer(firm.getFirmId(), newProprietorId.toString());
     }
 
@@ -246,11 +265,19 @@ public class FirmRequestServiceImpl implements FirmRequestService {
     }
 
     @Override
-    public UUID rejectTransferProprietorship(String firmName, UUID newProprietorId) {
+    public UUID rejectTransferProprietorship(String firmName, UUID newProprietorId, UUID actorId) {
         Firm firm = firms.getFirmByNameOrId(firmName);
         if (firm == null) {
             throw new NotFoundException("Firm not found.");
         }
+
+        // Only the prospective new proprietor may decline the transfer addressed
+        // to them. Without this, anyone could reject a pending transfer on the
+        // target's behalf (ADT-34).
+        if (!actorId.equals(newProprietorId)) {
+            throw new NoPermissionException("You can only reject a transfer addressed to you.");
+        }
+
         requests.rejectTransfer(firm.getFirmId(), newProprietorId.toString());
         return UUID.fromString(firm.getProprietorUuid());
     }

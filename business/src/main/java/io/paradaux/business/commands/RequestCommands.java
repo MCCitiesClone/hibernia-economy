@@ -77,7 +77,7 @@ public class RequestCommands implements CommandHandler {
     @Description("Accept a pending job offer")
     public void accept(@Sender Player sender, @Arg("firm") FirmName firmRef) {
         String firm = firmRef.value();
-        requests.acceptEmploymentOffer(firm, sender.getUniqueId());
+        requests.acceptEmploymentOffer(firm, sender.getUniqueId(), sender.getUniqueId());
         message.send(sender, "business.staff.offer.accept", "firm", firm);
         // Notify the firm of the new hire, excluding the joiner (they got the
         // direct confirmation above) so they aren't told they joined themselves.
@@ -94,7 +94,7 @@ public class RequestCommands implements CommandHandler {
     @Description("Reject a pending job offer")
     public void reject(@Sender Player sender, @Arg("firm") FirmName firmRef) {
         String firm = firmRef.value();
-        requests.rejectEmploymentOffer(firm, sender.getUniqueId());
+        requests.rejectEmploymentOffer(firm, sender.getUniqueId(), sender.getUniqueId());
         message.send(sender, "business.staff.offer.reject", "firm", firm);
         message.send(staff.getOnlineEmployees(firm), "business.staff.offer.reject.staff-broadcast", "sender", sender.getName(), "firm", firm);
     }
@@ -160,7 +160,7 @@ public class RequestCommands implements CommandHandler {
     @Async
     public void transferReject(@Sender Player sender, @Arg("firm") FirmName firmRef, @Arg("user") OfflinePlayer target) {
         String firm = firmRef.value();
-        UUID previousProprietor = requests.rejectTransferProprietorship(firm, sender.getUniqueId());
+        UUID previousProprietor = requests.rejectTransferProprietorship(firm, sender.getUniqueId(), sender.getUniqueId());
 
         message.send(sender, "business.firm.transfer.rejected", "firm", firm);
         message.send(staff.getOnlineEmployees(firm), "business.firm.transfer.rejected.staff-broadcast","target", target.getName(), "firm", firm);

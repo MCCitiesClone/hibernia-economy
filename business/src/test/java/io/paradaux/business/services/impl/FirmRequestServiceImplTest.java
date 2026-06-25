@@ -197,15 +197,23 @@ class FirmRequestServiceImplTest {
     @Test
     void acceptEmploymentOffer_unknownFirm_throws() {
         when(firms.getFirmByNameOrId("Ghost")).thenReturn(null);
-        assertThatThrownBy(() -> svc.acceptEmploymentOffer("Ghost", target))
+        assertThatThrownBy(() -> svc.acceptEmploymentOffer("Ghost", target, target))
                 .isInstanceOf(NotFoundException.class);
+    }
+
+    @Test
+    void acceptEmploymentOffer_wrongActor_throwsNoPermission() {
+        when(firms.getFirmByNameOrId("Acme")).thenReturn(firm());
+        assertThatThrownBy(() -> svc.acceptEmploymentOffer("Acme", target, actor))
+                .isInstanceOf(NoPermissionException.class);
+        verify(requests, never()).acceptInvite(anyInt(), anyString());
     }
 
     @Test
     void acceptEmploymentOffer_noPendingThrows() {
         when(firms.getFirmByNameOrId("Acme")).thenReturn(firm());
         when(requests.hasPendingJobOffer(1, target.toString())).thenReturn(false);
-        assertThatThrownBy(() -> svc.acceptEmploymentOffer("Acme", target))
+        assertThatThrownBy(() -> svc.acceptEmploymentOffer("Acme", target, target))
                 .isInstanceOf(BadCommandException.class);
     }
 
@@ -214,7 +222,7 @@ class FirmRequestServiceImplTest {
         when(firms.getFirmByNameOrId("Acme")).thenReturn(firm());
         when(requests.hasPendingJobOffer(1, target.toString())).thenReturn(true);
         when(requests.lockPendingInviter(1, target.toString())).thenReturn(null);
-        assertThatThrownBy(() -> svc.acceptEmploymentOffer("Acme", target))
+        assertThatThrownBy(() -> svc.acceptEmploymentOffer("Acme", target, target))
                 .isInstanceOf(BadCommandException.class);
     }
 
@@ -224,7 +232,7 @@ class FirmRequestServiceImplTest {
         when(requests.hasPendingJobOffer(1, target.toString())).thenReturn(true);
         when(requests.lockPendingInviter(1, target.toString())).thenReturn(actor.toString());
         when(requests.acceptInvite(1, target.toString())).thenReturn(0);
-        assertThatThrownBy(() -> svc.acceptEmploymentOffer("Acme", target))
+        assertThatThrownBy(() -> svc.acceptEmploymentOffer("Acme", target, target))
                 .isInstanceOf(InternalException.class);
         verify(staff, never()).hireEmployee(anyInt(), any(), any());
     }
@@ -236,7 +244,7 @@ class FirmRequestServiceImplTest {
         when(requests.lockPendingInviter(1, target.toString())).thenReturn(actor.toString());
         when(requests.acceptInvite(1, target.toString())).thenReturn(1);
 
-        svc.acceptEmploymentOffer("Acme", target);
+        svc.acceptEmploymentOffer("Acme", target, target);
         // The invite-acceptance path goes through hireEmployeeFromInvite, which
         // skips the ADMIN check on the inviter — see FirmStaffService Javadoc.
         verify(staff).hireEmployeeFromInvite(1, target, actor);
@@ -245,15 +253,23 @@ class FirmRequestServiceImplTest {
     @Test
     void rejectEmploymentOffer_unknownFirm_throws() {
         when(firms.getFirmByNameOrId("Ghost")).thenReturn(null);
-        assertThatThrownBy(() -> svc.rejectEmploymentOffer("Ghost", target))
+        assertThatThrownBy(() -> svc.rejectEmploymentOffer("Ghost", target, target))
                 .isInstanceOf(NotFoundException.class);
+    }
+
+    @Test
+    void rejectEmploymentOffer_wrongActor_throwsNoPermission() {
+        when(firms.getFirmByNameOrId("Acme")).thenReturn(firm());
+        assertThatThrownBy(() -> svc.rejectEmploymentOffer("Acme", target, actor))
+                .isInstanceOf(NoPermissionException.class);
+        verify(requests, never()).rejectInvite(anyInt(), anyString());
     }
 
     @Test
     void rejectEmploymentOffer_noPendingThrows() {
         when(firms.getFirmByNameOrId("Acme")).thenReturn(firm());
         when(requests.hasPendingJobOffer(1, target.toString())).thenReturn(false);
-        assertThatThrownBy(() -> svc.rejectEmploymentOffer("Acme", target))
+        assertThatThrownBy(() -> svc.rejectEmploymentOffer("Acme", target, target))
                 .isInstanceOf(BadCommandException.class);
     }
 
@@ -262,7 +278,7 @@ class FirmRequestServiceImplTest {
         when(firms.getFirmByNameOrId("Acme")).thenReturn(firm());
         when(requests.hasPendingJobOffer(1, target.toString())).thenReturn(true);
         when(requests.rejectInvite(1, target.toString())).thenReturn(0);
-        assertThatThrownBy(() -> svc.rejectEmploymentOffer("Acme", target))
+        assertThatThrownBy(() -> svc.rejectEmploymentOffer("Acme", target, target))
                 .isInstanceOf(InternalException.class);
     }
 
@@ -271,7 +287,7 @@ class FirmRequestServiceImplTest {
         when(firms.getFirmByNameOrId("Acme")).thenReturn(firm());
         when(requests.hasPendingJobOffer(1, target.toString())).thenReturn(true);
         when(requests.rejectInvite(1, target.toString())).thenReturn(1);
-        svc.rejectEmploymentOffer("Acme", target);
+        svc.rejectEmploymentOffer("Acme", target, target);
         verify(requests).rejectInvite(1, target.toString());
     }
 
@@ -351,8 +367,18 @@ class FirmRequestServiceImplTest {
     }
 
     @Test
-    void cancelTransferProprietorship_callsReject() {
+    void cancelTransferProprietorship_nonProprietor_throwsNoPermission() {
+        // firm() has a random proprietor, so `actor` is not the owner.
         when(firms.getFirmByNameOrId("Acme")).thenReturn(firm());
+        assertThatThrownBy(() -> svc.cancelTransferProprietorship("Acme", target, actor))
+                .isInstanceOf(NoPermissionException.class);
+        verify(requests, never()).rejectTransfer(anyInt(), anyString());
+    }
+
+    @Test
+    void cancelTransferProprietorship_callsReject() {
+        // Only the proprietor may cancel (ADT-34): the actor must own the firm.
+        when(firms.getFirmByNameOrId("Acme")).thenReturn(firmOwnedBy(actor));
         svc.cancelTransferProprietorship("Acme", target, actor);
         verify(requests).rejectTransfer(1, target.toString());
     }
@@ -410,15 +436,24 @@ class FirmRequestServiceImplTest {
     @Test
     void rejectTransferProprietorship_unknownFirm_throws() {
         when(firms.getFirmByNameOrId("Ghost")).thenReturn(null);
-        assertThatThrownBy(() -> svc.rejectTransferProprietorship("Ghost", target))
+        assertThatThrownBy(() -> svc.rejectTransferProprietorship("Ghost", target, target))
                 .isInstanceOf(NotFoundException.class);
+    }
+
+    @Test
+    void rejectTransferProprietorship_wrongActor_throwsNoPermission() {
+        when(firms.getFirmByNameOrId("Acme")).thenReturn(firm());
+        // actor is not the transfer's target (newProprietorId == target).
+        assertThatThrownBy(() -> svc.rejectTransferProprietorship("Acme", target, actor))
+                .isInstanceOf(NoPermissionException.class);
+        verify(requests, never()).rejectTransfer(anyInt(), anyString());
     }
 
     @Test
     void rejectTransferProprietorship_returnsCurrentProprietor() {
         Firm f = firm();
         when(firms.getFirmByNameOrId("Acme")).thenReturn(f);
-        UUID returned = svc.rejectTransferProprietorship("Acme", target);
+        UUID returned = svc.rejectTransferProprietorship("Acme", target, target);
         assertThat(returned).isEqualTo(UUID.fromString(f.getProprietorUuid()));
         verify(requests).rejectTransfer(1, target.toString());
     }

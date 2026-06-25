@@ -280,14 +280,14 @@ class BusinessApiImplTest {
 
     @Test
     void requests_acceptOffer_delegates() {
-        api.requests().acceptOffer(7, target);
-        verify(requestService).acceptEmploymentOffer("7", target);
+        api.requests().acceptOffer(7, target, actor);
+        verify(requestService).acceptEmploymentOffer("7", target, actor);
     }
 
     @Test
     void requests_rejectOffer_delegates() {
-        api.requests().rejectOffer(7, target);
-        verify(requestService).rejectEmploymentOffer("7", target);
+        api.requests().rejectOffer(7, target, actor);
+        verify(requestService).rejectEmploymentOffer("7", target, actor);
     }
 
     // ---- PlayerApi delegate ----
