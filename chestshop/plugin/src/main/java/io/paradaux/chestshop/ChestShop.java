@@ -413,7 +413,6 @@ public class ChestShop extends JavaPlugin {
         registerEvent(new PermissionChecker());
         registerEvent(new PriceValidator());
         registerEvent(new ShopValidator());
-        registerEvent(new SpamClickProtector());
         registerEvent(new StockFittingChecker());
     }
 

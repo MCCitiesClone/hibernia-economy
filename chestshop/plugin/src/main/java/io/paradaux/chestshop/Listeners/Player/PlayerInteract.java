@@ -38,6 +38,8 @@ import java.math.BigDecimal;
 import java.math.MathContext;
 import java.math.RoundingMode;
 import java.util.Arrays;
+import java.util.Map;
+import java.util.WeakHashMap;
 import java.util.logging.Level;
 
 import static io.paradaux.chestshop.breeze.Utils.ImplementationAdapter.getState;
@@ -54,6 +56,14 @@ import static org.bukkit.event.block.Action.RIGHT_CLICK_BLOCK;
  * @author Acrobot
  */
 public class PlayerInteract implements Listener {
+
+    /**
+     * Per-player timestamp of the last shop-trade click, used to throttle the
+     * expensive trade resolution below (ADT-44). Main-thread only, so a plain
+     * {@link WeakHashMap} is safe; weak keys let logged-out players' entries be
+     * collected without an explicit quit handler.
+     */
+    private static final Map<Player, Long> LAST_TRADE_CLICK = new WeakHashMap<>();
 
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
     public static void onInteract(PlayerInteractEvent event) {
@@ -169,7 +179,19 @@ public class PlayerInteract implements Listener {
             return;
         }
 
-        //Bukkit.getLogger().info("ChestShop - DEBUG - "+block.getWorld().getName()+": "+block.getLocation().getBlockX()+", "+block.getLocation().getBlockY()+", "+block.getLocation().getBlockZ());
+        // Throttle per player BEFORE the expensive trade resolution. The prep
+        // below dispatches AccountQuery/AccountCheck/ItemParse events and scans
+        // inventories; an auto-clicker would otherwise force that work (and a
+        // DB/economy round-trip) every tick. The old SpamClickProtector only
+        // cancelled the already-built PreTransactionEvent, i.e. after the cost
+        // was already paid (ADT-44).
+        long now = System.currentTimeMillis();
+        Long lastClick = LAST_TRADE_CLICK.get(player);
+        if (lastClick != null && (now - lastClick) < Properties.SHOP_INTERACTION_INTERVAL) {
+            return;
+        }
+        LAST_TRADE_CLICK.put(player, now);
+
         PreTransactionEvent pEvent = preparePreTransactionEvent(sign, player, action);
         if (pEvent == null)
             return;
