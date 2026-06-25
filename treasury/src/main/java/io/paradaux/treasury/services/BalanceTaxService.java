@@ -4,7 +4,6 @@ import com.google.inject.Inject;
 import lombok.extern.slf4j.Slf4j;
 import io.paradaux.treasury.api.TaxApi;
 import io.paradaux.treasury.mappers.AccountMapper;
-import io.paradaux.treasury.mappers.PlayerLoginMapper;
 import io.paradaux.treasury.model.config.BalanceTaxConfiguration;
 import io.paradaux.treasury.model.economy.Account;
 import io.paradaux.treasury.model.economy.AccountBalance;
@@ -19,10 +18,10 @@ import org.mybatis.guice.transactional.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Computes and collects the prorated personal balance tax on player login.
+ * Computes and collects the prorated personal balance tax owed since a player's
+ * previous login.
  *
  * <p>Tax formula:
  * <pre>
@@ -31,8 +30,11 @@ import java.util.concurrent.ConcurrentHashMap;
  *   tax         = balance × weekly_rate × proration
  * </pre>
  *
- * <p>The new login time is recorded <em>before</em> tax collection so that a crash
- * mid-collection doesn't double-charge on the next login. The dedup key on the
+ * <p>This service does not own the login clock: {@link io.paradaux.treasury.services.PlayerDirectoryService}
+ * atomically records the new login and hands back the previous epoch, which is
+ * passed in here as {@code previousLoginEpoch}. Because the directory advances
+ * the clock <em>before</em> collection, a crash mid-collection drops that one
+ * period rather than double-charging on the next login. The dedup key on the
  * {@link TaxCollection} prevents a second charge if the same login timestamp is
  * seen again (e.g. from a retry).
  */
@@ -45,62 +47,38 @@ public class BalanceTaxService {
     private final BalanceTaxConfiguration config;
     private final TaxApi taxApi;
     private final AccountMapper accountMapper;
-    private final PlayerLoginMapper loginMapper;
 
     /** Lazily cached destination account ID. */
     private volatile Integer destinationAccountId;
 
-    /**
-     * Per-player locks to serialise concurrent processLogin calls for the same UUID.
-     * Prevents the TOCTOU race where two async tasks both read the old lastLogin value
-     * and independently collect tax for the same period with different dedup keys.
-     */
-    private final ConcurrentHashMap<UUID, Object> loginLocks = new ConcurrentHashMap<>();
-
     @Inject
     public BalanceTaxService(BalanceTaxConfiguration config,
                              TaxApi taxApi,
-                             AccountMapper accountMapper,
-                             PlayerLoginMapper loginMapper) {
+                             AccountMapper accountMapper) {
         this.config        = config;
         this.taxApi        = taxApi;
         this.accountMapper = accountMapper;
-        this.loginMapper   = loginMapper;
     }
 
     /**
-     * Called asynchronously on player join. Records the login, then collects
-     * any personal balance tax owed since the previous login.
+     * Collects any personal balance tax owed for the period between a player's
+     * previous login and now. The login clock is advanced by the player directory,
+     * which supplies {@code previousLoginEpoch}; this method only reads balance and
+     * collects — it never writes login times.
      *
-     * @param playerUuid      the joining player's UUID
-     * @param loginEpochSecs  the current login time as Unix epoch seconds
+     * @param playerUuid          the joining player's UUID
+     * @param previousLoginEpoch  the player's previous login epoch (seconds), or
+     *                            {@code null} if this is their first ever login
+     * @param loginEpochSecs      the current login time as Unix epoch seconds
      */
     @Transactional
-    public void processLogin(@NotNull UUID playerUuid, long loginEpochSecs) {
-        // Serialise concurrent calls for the same player.
-        // Without this lock, two async tasks (e.g. a real login racing with a manual
-        // /tax trigger balance) can both read the same old lastLogin value and collect
-        // tax for the same period with different dedup keys, doubling the charge.
-        Object lock = loginLocks.computeIfAbsent(playerUuid, k -> new Object());
-        synchronized (lock) {
-            processLoginLocked(playerUuid, loginEpochSecs);
-        }
-    }
-
-    private void processLoginLocked(@NotNull UUID playerUuid, long loginEpochSecs) {
-        // 1. Read previous login (null = first ever join).
-        Long lastLogin = loginMapper.findLastLogin(playerUuid);
-
-        // 2. Record new login time before doing anything else.
-        //    This prevents double-charging if collection fails and the player reconnects.
-        loginMapper.upsertLogin(playerUuid, loginEpochSecs);
-
-        if (lastLogin == null) {
+    public void collect(@NotNull UUID playerUuid, Long previousLoginEpoch, long loginEpochSecs) {
+        if (previousLoginEpoch == null) {
             // First ever login — nothing to prorate against.
             return;
         }
 
-        long secondsElapsed = loginEpochSecs - lastLogin;
+        long secondsElapsed = loginEpochSecs - previousLoginEpoch;
         if (secondsElapsed <= 0) {
             // Clock skew or same-second reconnect — skip.
             return;

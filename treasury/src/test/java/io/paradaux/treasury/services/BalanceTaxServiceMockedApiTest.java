@@ -2,7 +2,6 @@ package io.paradaux.treasury.services;
 
 import io.paradaux.treasury.api.TaxApi;
 import io.paradaux.treasury.mappers.AccountMapper;
-import io.paradaux.treasury.mappers.PlayerLoginMapper;
 import io.paradaux.treasury.model.config.BalanceTaxConfiguration;
 import io.paradaux.treasury.model.economy.Account;
 import io.paradaux.treasury.model.economy.AccountBalance;
@@ -27,14 +26,14 @@ import static org.mockito.Mockito.when;
 /**
  * Unit tests for {@link BalanceTaxService} branches that are awkward to trigger
  * end-to-end: {@code Skipped}/{@code Failed} result handling, and the missing
- * balance row short-circuit.
+ * balance row short-circuit. The previous-login epoch is supplied directly (the
+ * player directory owns the login clock), so these never touch login storage.
  */
 @ExtendWith(MockitoExtension.class)
 class BalanceTaxServiceMockedApiTest {
 
     @Mock TaxApi taxApi;
     @Mock AccountMapper accountMapper;
-    @Mock PlayerLoginMapper loginMapper;
 
     private BalanceTaxService svc;
 
@@ -47,20 +46,18 @@ class BalanceTaxServiceMockedApiTest {
 
     @BeforeEach
     void setUp() {
-        svc = new BalanceTaxService(enabledConfig(), taxApi, accountMapper, loginMapper);
+        svc = new BalanceTaxService(enabledConfig(), taxApi, accountMapper);
     }
 
     @Test
     void missingBalanceRow_shortCircuitsBeforeCollect() {
         UUID player = UUID.randomUUID();
         long now = 1_700_000_000L;
-        when(loginMapper.findLastLogin(player)).thenReturn(now - 86_400);
         when(accountMapper.findPersonalAccountId(player)).thenReturn(42);
         when(accountMapper.readBalance(42)).thenReturn(null);
 
-        svc.processLogin(player, now);
+        svc.collect(player, now - 86_400, now);
 
-        verify(loginMapper).upsertLogin(player, now);
         verify(taxApi, never()).collectTax(any());
     }
 
@@ -68,13 +65,22 @@ class BalanceTaxServiceMockedApiTest {
     void nullBalanceField_shortCircuits() {
         UUID player = UUID.randomUUID();
         long now = 1_700_000_000L;
-        when(loginMapper.findLastLogin(player)).thenReturn(now - 86_400);
         when(accountMapper.findPersonalAccountId(player)).thenReturn(42);
         AccountBalance ab = new AccountBalance();
         ab.setBalance(null);
         when(accountMapper.readBalance(42)).thenReturn(ab);
 
-        svc.processLogin(player, now);
+        svc.collect(player, now - 86_400, now);
+
+        verify(taxApi, never()).collectTax(any());
+    }
+
+    @Test
+    void firstLogin_nullPrevious_shortCircuits() {
+        UUID player = UUID.randomUUID();
+        long now = 1_700_000_000L;
+
+        svc.collect(player, null, now);
 
         verify(taxApi, never()).collectTax(any());
     }
@@ -84,7 +90,6 @@ class BalanceTaxServiceMockedApiTest {
         UUID player = UUID.randomUUID();
         long now = 1_700_000_000L;
         long lastLogin = now - 7L * 24 * 3600 / 2;
-        when(loginMapper.findLastLogin(player)).thenReturn(lastLogin);
         when(accountMapper.findPersonalAccountId(player)).thenReturn(42);
         AccountBalance ab = new AccountBalance();
         ab.setBalance(new BigDecimal("100000.00"));
@@ -97,7 +102,7 @@ class BalanceTaxServiceMockedApiTest {
         when(taxApi.collectTax(any(TaxCollection.class)))
                 .thenReturn(new TaxResult.Skipped("dedup"));
 
-        svc.processLogin(player, now);
+        svc.collect(player, lastLogin, now);
 
         verify(taxApi).collectTax(any(TaxCollection.class));
     }
@@ -107,7 +112,6 @@ class BalanceTaxServiceMockedApiTest {
         UUID player = UUID.randomUUID();
         long now = 1_700_000_000L;
         long lastLogin = now - 7L * 24 * 3600 / 2;
-        when(loginMapper.findLastLogin(player)).thenReturn(lastLogin);
         when(accountMapper.findPersonalAccountId(player)).thenReturn(42);
         AccountBalance ab = new AccountBalance();
         ab.setBalance(new BigDecimal("100000.00"));
@@ -120,7 +124,7 @@ class BalanceTaxServiceMockedApiTest {
         when(taxApi.collectTax(any(TaxCollection.class)))
                 .thenReturn(new TaxResult.Failed("boom"));
 
-        svc.processLogin(player, now);
+        svc.collect(player, lastLogin, now);
 
         verify(taxApi).collectTax(any(TaxCollection.class));
     }

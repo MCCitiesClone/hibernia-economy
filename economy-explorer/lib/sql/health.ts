@@ -46,9 +46,9 @@ export async function getDailyDeltaByType(days: number): Promise<DailyDeltaByTyp
 export async function getActivePlayersSummary(): Promise<ActivePlayers> {
   const r = await sql<{ active1d: string | number; active7d: string | number; active30d: string | number; registered: string | number }>`
     SELECT
-      (SELECT COUNT(*) FROM player_login_times WHERE last_login_epoch >= UNIX_TIMESTAMP() - 86400) AS active1d,
-      (SELECT COUNT(*) FROM player_login_times WHERE last_login_epoch >= UNIX_TIMESTAMP() - 7*86400) AS active7d,
-      (SELECT COUNT(*) FROM player_login_times WHERE last_login_epoch >= UNIX_TIMESTAMP() - 30*86400) AS active30d,
+      (SELECT COUNT(*) FROM economy_players WHERE last_login_epoch >= UNIX_TIMESTAMP() - 86400) AS active1d,
+      (SELECT COUNT(*) FROM economy_players WHERE last_login_epoch >= UNIX_TIMESTAMP() - 7*86400) AS active7d,
+      (SELECT COUNT(*) FROM economy_players WHERE last_login_epoch >= UNIX_TIMESTAMP() - 30*86400) AS active30d,
       (SELECT COUNT(*) FROM economy_players) AS registered
   `.execute(db);
   const row = r.rows[0];

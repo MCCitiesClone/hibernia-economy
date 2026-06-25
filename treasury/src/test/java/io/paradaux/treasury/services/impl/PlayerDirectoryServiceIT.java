@@ -59,6 +59,16 @@ class PlayerDirectoryServiceIT extends IntegrationTestBase {
     }
 
     @Test
+    void recordLogin_returnsPreviousLoginEpoch() {
+        UUID uuid = UUID.randomUUID();
+        // First ever login — no previous epoch.
+        assertThat(directory.recordLogin(uuid, "Casca", 1000L)).isNull();
+        // Re-login returns the epoch the prior call recorded, then advances it.
+        assertThat(directory.recordLogin(uuid, "Casca", 2000L)).isEqualTo(1000L);
+        assertThat(directory.recordLogin(uuid, "Casca", 3000L)).isEqualTo(2000L);
+    }
+
+    @Test
     void recordLogin_upsertUpdatesNameOnReLogin() {
         UUID uuid = UUID.randomUUID();
         directory.recordLogin(uuid, "OldName", 1000L);

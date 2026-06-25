@@ -10,6 +10,7 @@ import io.paradaux.treasury.model.config.TaxCycleConfiguration;
 import io.paradaux.treasury.model.tax.TaxCycleReport;
 import io.paradaux.treasury.model.tax.TaxCycleType;
 import io.paradaux.treasury.services.BalanceTaxService;
+import io.paradaux.treasury.services.PlayerDirectoryService;
 import io.paradaux.treasury.services.TaxCycleRegistry;
 import io.paradaux.treasury.services.TaxWebhookService;
 import org.bukkit.Bukkit;
@@ -48,17 +49,20 @@ public class TaxCommand implements CommandHandler {
     private final TaxCycleConfiguration cycleConfig;
     private final TaxWebhookService webhookService;
     private final BalanceTaxService balanceTaxService;
+    private final PlayerDirectoryService playerDirectory;
     private final Message message;
 
     @Inject
     public TaxCommand(TaxApi taxApi, TaxCycleRegistry cycleRegistry,
                       TaxCycleConfiguration cycleConfig, TaxWebhookService webhookService,
-                      BalanceTaxService balanceTaxService, Message message) {
+                      BalanceTaxService balanceTaxService, PlayerDirectoryService playerDirectory,
+                      Message message) {
         this.taxApi            = taxApi;
         this.cycleRegistry     = cycleRegistry;
         this.cycleConfig       = cycleConfig;
         this.webhookService    = webhookService;
         this.balanceTaxService = balanceTaxService;
+        this.playerDirectory   = playerDirectory;
         this.message           = message;
     }
 
@@ -183,8 +187,15 @@ public class TaxCommand implements CommandHandler {
                 + "<yellow>[MANUAL]</yellow> Running balance tax for <#6f6fff>" + playerName + "</#6f6fff>…");
 
         long loginEpochSecs = Instant.now().getEpochSecond();
+        // Resolve a name for the directory upsert; the typed arg is the fallback when
+        // the usercache has no entry. economy_players.current_name is NOT NULL.
+        String directoryName = target.getName() != null ? target.getName() : playerName;
         try {
-            balanceTaxService.processLogin(uuid, loginEpochSecs);
+            // Advance the login clock exactly as a real join would, then collect for
+            // the period the directory just closed off (force-collect even if the
+            // balance-tax feature is disabled — this is a manual admin override).
+            Long previousLoginEpoch = playerDirectory.recordLogin(uuid, directoryName, loginEpochSecs);
+            balanceTaxService.collect(uuid, previousLoginEpoch, loginEpochSecs);
             sender.sendRichMessage("<bold><blue>TREASURY</blue></bold> <gray>»</gray> "
                     + "<green>Done.</green> Check server logs for the result.");
         } catch (Exception e) {
