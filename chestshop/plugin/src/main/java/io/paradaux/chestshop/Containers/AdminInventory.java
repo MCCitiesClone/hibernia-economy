@@ -60,7 +60,10 @@ public class AdminInventory implements Inventory {
             throw new IllegalArgumentException("Slot is outside inventory. Max size is " + getSize());
         }
         if (i >= content.length) {
-            content = Arrays.copyOfRange(content, 0, i);
+            // Grow to length i + 1 so index i is in bounds; copyOfRange's
+            // "to" is exclusive, so the old code produced a length-i array
+            // and writing content[i] threw ArrayIndexOutOfBounds.
+            content = Arrays.copyOfRange(content, 0, i + 1);
         }
         content[i] = itemStack;
     }
@@ -125,7 +128,7 @@ public class AdminInventory implements Inventory {
         int amount = 0;
         for (ItemStack item : content) {
             if (MaterialUtil.equals(item, itemStack)) {
-                amount += itemStack.getAmount();
+                amount += item.getAmount();
             }
         }
         return amount >= i;
