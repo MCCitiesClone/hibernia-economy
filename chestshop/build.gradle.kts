@@ -124,6 +124,12 @@ dependencies {
     compileOnly(project(":business:business-api")) { isTransitive = false }
     compileOnly("me.crafter.mc:lockettepro:2.10-SNAPSHOT") { isTransitive = false }
 
+    // --- HiberniaFramework: Guice DI, the annotation-driven Configurator,
+    //     Commander, and i18n. Bundled (and relocated below) like treasury/business.
+    implementation(libs.hibernia.framework)
+    implementation(libs.guice)
+    implementation(libs.reflections)
+
     // --- bundled libraries (relocated + shaded into ChestShop.jar below).
     // `api` (rather than implementation) is harmless now that everything is one
     // module; kept so they stay on the runtime classpath that shadowJar bundles.
@@ -208,25 +214,22 @@ tasks.shadowJar {
     archiveClassifier.set("")
     archiveVersion.set("")
 
-    // Whitelist exactly the libraries to bundle; everything else (server +
-    // soft-depend APIs) is compileOnly and never shaded. The plugin's own
-    // classes — including the folded-in version adapters — are always included.
-    dependencies {
-        include(dependency("de.themoep:.*:.*"))
-        include(dependency("de.themoep.utils:.*:.*"))
-        include(dependency("net.kyori:.*:.*"))
-        include(dependency("org.bstats:.*:.*"))
-        include(dependency("com.j256.ormlite:.*:.*"))
-        include(dependency("javax.persistence:.*:.*"))
-    }
+    // Bundle every runtime (api/implementation) dependency. The server API and
+    // the soft-depend plugin APIs are compileOnly, so they never reach the
+    // runtime classpath and are never shaded. (Replaced the old include-whitelist
+    // when HiberniaFramework + Guice were added — enumerating Guice's transitives
+    // in a whitelist is fragile; this mirrors treasury/business.)
 
-    // The 7 relocations from the Maven shade, verbatim.
+    // Relocate shaded libraries so they don't clash with the server or other plugins.
     relocate("de.themoep.utils.lang", "io.paradaux.chestshop.Libs.Lang")
     relocate("de.themoep.minedown.adventure", "io.paradaux.chestshop.Libs.MineDown")
     relocate("net.kyori", "io.paradaux.chestshop.Libs.Kyori")
     relocate("org.bstats", "io.paradaux.chestshop.Metrics.BStats")
     relocate("com.j256.ormlite", "io.paradaux.chestshop.Libs.ORMlite")
     relocate("javax.persistence", "io.paradaux.chestshop.Libs.javax.persistence")
+    relocate("com.google.inject", "io.paradaux.chestshop.Libs.guice")
+    relocate("javax.inject", "io.paradaux.chestshop.Libs.javaxinject")
+    relocate("org.aopalliance", "io.paradaux.chestshop.Libs.aopalliance")
 
     mergeServiceFiles()
 
