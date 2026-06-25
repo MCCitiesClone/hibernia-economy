@@ -3,10 +3,10 @@ package io.paradaux.treasuryapi;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import io.paradaux.hibernia.framework.commander.CommandManager;
-import io.paradaux.hibernia.framework.configurator.ConfigurationLoader;
+import io.paradaux.hibernia.framework.guice.HiberniaModule;
 import io.paradaux.business.api.BusinessApi;
 import io.paradaux.treasury.api.TreasuryApi;
-import io.paradaux.treasuryapi.guice.CommanderModule;
+import io.paradaux.treasuryapi.commands.TreasuryAPICommand;
 import io.paradaux.treasuryapi.guice.DatabaseModule;
 import io.paradaux.treasuryapi.guice.TreasuryAPIModule;
 import io.paradaux.treasuryapi.model.config.ApiConfiguration;
@@ -25,11 +25,15 @@ public final class TreasuryAPI extends JavaPlugin {
     public void onEnable() {
         getLogger().info("Loading configuration...");
 
-        // 1) Load typed config components
-        ConfigurationLoader configLoader = new ConfigurationLoader(this);
-        configLoader.scanPackage("io.paradaux.treasuryapi.model.config");
+        // 1) Build the framework module — scans @ConfigurationComponents, binds the plugin,
+        //    ConfigurationLoader, Message (eager), PlaceholderAPI support and the command
+        //    multibinder (TreasuryAPICommand, which also carries /treasuryapi help).
+        HiberniaModule hibernia = HiberniaModule.forPlugin(this)
+                .scanConfiguration("io.paradaux.treasuryapi.model.config")
+                .handlers(TreasuryAPICommand.class)
+                .build();
 
-        DatabaseConfiguration dbCfg = configLoader.getComponent(DatabaseConfiguration.class);
+        DatabaseConfiguration dbCfg = hibernia.configuration(DatabaseConfiguration.class);
         if (dbCfg == null) {
             throw new IllegalStateException("DatabaseConfiguration not found. Check @ConfigurationComponent and package scan.");
         }
@@ -38,7 +42,7 @@ public final class TreasuryAPI extends JavaPlugin {
         //     The Treasury REST API that verifies these tokens hard-fails on the
         //     same placeholder and on <32 chars; signing with the public default
         //     would let anyone who reads it forge admin/government JWTs.
-        ApiConfiguration apiCfg = configLoader.getComponent(ApiConfiguration.class);
+        ApiConfiguration apiCfg = hibernia.configuration(ApiConfiguration.class);
         String jwtSecret = apiCfg != null ? apiCfg.getJwtSecret() : null;
         if (jwtSecret == null || jwtSecret.isBlank()
                 || jwtSecret.equals("change-me-please-use-a-long-random-secret-key")
@@ -69,21 +73,22 @@ public final class TreasuryAPI extends JavaPlugin {
         }
         BusinessApi businessApi = businessRsp.getProvider();
 
-        // 4) Create the injector
+        // 4) Create the injector. HiberniaModule owns the framework bindings;
+        //    TreasuryAPIModule adds the economy APIs and plugin services.
         getLogger().info("Setting up dependency injection...");
         this.injector = Guice.createInjector(
-                new TreasuryAPIModule(this, configLoader, treasuryApi, businessApi),
-                new DatabaseModule(dbCfg),
-                new CommanderModule(this)
+                hibernia,
+                new TreasuryAPIModule(treasuryApi, businessApi),
+                new DatabaseModule(dbCfg)
         );
 
-        // 5) Register commands (none yet — ready to add)
+        // 5) Register commands (/treasuryapi … and /treasuryapi help).
         injector.getInstance(CommandManager.class).registerAll();
 
         // 6) Schedule the LuckPerms → explorer-group reconciliation cron (opt-in,
         //    requires LuckPerms). Check the plugin by name so the LuckPerms class
         //    is never referenced when it is absent.
-        ReconciliationConfiguration reconCfg = configLoader.getComponent(ReconciliationConfiguration.class);
+        ReconciliationConfiguration reconCfg = hibernia.configuration(ReconciliationConfiguration.class);
         if (reconCfg != null && reconCfg.isEnabled()) {
             if (getServer().getPluginManager().getPlugin("LuckPerms") != null) {
                 injector.getInstance(GroupReconciliationTask.class).schedule(reconCfg.getIntervalSeconds());

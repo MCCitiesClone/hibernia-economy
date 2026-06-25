@@ -1,6 +1,7 @@
 package io.paradaux.treasuryapi.commands;
 
 import com.google.inject.Inject;
+import io.paradaux.hibernia.framework.commander.HelpGenerator;
 import io.paradaux.hibernia.framework.commander.annotations.*;
 import io.paradaux.hibernia.framework.commander.spi.CommandHandler;
 import io.paradaux.hibernia.framework.i18n.Message;
@@ -14,6 +15,7 @@ public class TreasuryAPICommand implements CommandHandler {
 
     @Inject private TreasuryAPI plugin;
     @Inject private Message message;
+    @Inject private HelpGenerator help;
     @Inject private PersonalKeyHandler personalHandler;
     @Inject private BusinessKeyHandler businessHandler;
     @Inject private UiAccessHandler uiHandler;
@@ -24,6 +26,16 @@ public class TreasuryAPICommand implements CommandHandler {
     public void info(@Sender CommandSender sender) {
         message.send(sender, "treasuryapi.info",
                 "version", plugin.getDescription().getVersion());
+    }
+
+    // /treasuryapi help [page] — paginated, permission-filtered help built from the
+    // registered routes (each carries its @Description), so it stays in sync with the
+    // real commands instead of being hand-maintained.
+    @Route("help [page]")
+    @Description("Show command help")
+    public void help(@Sender CommandSender sender,
+                     @OptionalArg(value = "page", defaultValue = "1") int page) {
+        sender.sendMessage(help.render(sender, "treasuryapi", page));
     }
 
     // ---- Personal ----
