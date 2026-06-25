@@ -15,7 +15,16 @@
 -- account_viewers / account_group_viewers were introduced one migration earlier
 -- (PAR-237) but never reached a persistent environment, so there is nothing to
 -- migrate out of them — they're simply not created.
+--
+-- PROD SHIM: economy-explorer was deployed ahead of this migration and bridged
+-- with a read-only compat VIEW named account_access (PAR-250). Drop it first so
+-- the CREATE TABLE below doesn't collide with an existing object. IF EXISTS makes
+-- this a harmless no-op in any environment where the shim was never applied
+-- (fresh installs, CI, dev), so the migration is self-contained — no manual step.
 -- =====================================================================
+
+DROP VIEW IF EXISTS account_access;
+DROP VIEW IF EXISTS account_group_access;
 
 CREATE TABLE account_access (
     account_id        INT UNSIGNED NOT NULL,
