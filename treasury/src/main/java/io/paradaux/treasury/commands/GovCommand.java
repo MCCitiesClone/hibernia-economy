@@ -1,6 +1,9 @@
 package io.paradaux.treasury.commands;
 
 import com.google.inject.Inject;
+import com.google.inject.Provider;
+import io.paradaux.hibernia.framework.commander.CommandManager;
+import io.paradaux.hibernia.framework.commander.HelpGenerator;
 import io.paradaux.hibernia.framework.commander.annotations.*;
 import io.paradaux.hibernia.framework.commander.spi.CommandHandler;
 import io.paradaux.hibernia.framework.i18n.Message;
@@ -45,6 +48,9 @@ public class GovCommand implements CommandHandler {
     private final GovService govService;
     private final PlayerDirectoryService playerDirectory;
     private final Message message;
+    // Provider breaks the construction cycle: CommandManager injects Set<CommandHandler>
+    // (which includes this handler), so resolve it lazily when help is rendered.
+    private final Provider<CommandManager> commandManager;
 
     @Inject
     public GovCommand(AccountService accountService,
@@ -52,13 +58,15 @@ public class GovCommand implements CommandHandler {
                       MembershipService membershipService,
                       GovService govService,
                       PlayerDirectoryService playerDirectory,
-                      Message message) {
+                      Message message,
+                      Provider<CommandManager> commandManager) {
         this.accountService   = accountService;
         this.ledgerService    = ledgerService;
         this.membershipService = membershipService;
         this.govService       = govService;
         this.playerDirectory  = playerDirectory;
         this.message          = message;
+        this.commandManager   = commandManager;
     }
 
     // =====================================================================
@@ -68,37 +76,20 @@ public class GovCommand implements CommandHandler {
     @Route("")
     @Description("Show /government help")
     public void root(@Sender CommandSender sender) {
-        message.send(sender, "treasury.help.gov");
+        helpPage(sender, 1);
     }
 
     @Route("help")
     @Description("Show /government help")
     public void help(@Sender CommandSender sender) {
-        message.send(sender, "treasury.help.gov");
+        helpPage(sender, 1);
     }
 
-    @Route("help account")
-    @Description("Show government account lifecycle help")
-    public void helpAccount(@Sender CommandSender sender) {
-        message.send(sender, "treasury.help.gov.account");
-    }
-
-    @Route("help member")
-    @Description("Show government member-management help")
-    public void helpMember(@Sender CommandSender sender) {
-        message.send(sender, "treasury.help.gov.member");
-    }
-
-    @Route("help auth")
-    @Description("Show government authorizer-management help")
-    public void helpAuth(@Sender CommandSender sender) {
-        message.send(sender, "treasury.help.gov.auth");
-    }
-
-    @Route("help transfer")
-    @Description("Show government transfer / pay / payout help")
-    public void helpTransfer(@Sender CommandSender sender) {
-        message.send(sender, "treasury.help.gov.transfer");
+    @Route("help <page>")
+    @Description("Show a page of the /government help index")
+    public void helpPage(@Sender CommandSender sender, @Arg("page") int page) {
+        HelpGenerator help = new HelpGenerator(commandManager.get());
+        sender.sendMessage(help.render(sender, "government", page));
     }
 
     // =====================================================================

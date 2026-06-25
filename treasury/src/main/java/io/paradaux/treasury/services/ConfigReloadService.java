@@ -71,6 +71,15 @@ public class ConfigReloadService {
 
         // 2) Re-populate the @ConfigurationComponent singletons in place (same
         //    instances injected into services), reading the now-fresh config.
+        //
+        //    INTENTIONAL — do NOT "simplify" this to ConfigurationLoader.reload().
+        //    Under hibernia-framework 1.2.0, ConfigurationLoader.reload() constructs
+        //    *fresh* component instances; the existing singletons that Guice already
+        //    injected into every service would then be stale (services would keep
+        //    reading the old objects while the loader's map points at new ones). By
+        //    re-running ConfigurationProcessor over the live component instances we
+        //    mutate the exact objects the injector handed out, so the reload is
+        //    visible everywhere without rebuilding the injector.
         ConfigurationProcessor processor = new ConfigurationProcessor(plugin);
         configurationLoader.getComponents().values().forEach(processor::process);
 

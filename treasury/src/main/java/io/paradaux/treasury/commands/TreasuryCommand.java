@@ -1,6 +1,9 @@
 package io.paradaux.treasury.commands;
 
 import com.google.inject.Inject;
+import com.google.inject.Provider;
+import io.paradaux.hibernia.framework.commander.CommandManager;
+import io.paradaux.hibernia.framework.commander.HelpGenerator;
 import io.paradaux.hibernia.framework.commander.annotations.*;
 import io.paradaux.hibernia.framework.commander.spi.CommandHandler;
 import io.paradaux.hibernia.framework.i18n.Message;
@@ -40,12 +43,17 @@ public class TreasuryCommand implements CommandHandler {
     private final MembershipService membershipService;
     private final AccountResolver accountResolver;
     private final ConfigReloadService configReloadService;
+    // Provider breaks the construction cycle: CommandManager injects Set<CommandHandler>
+    // (which includes this handler), so this handler must defer resolving it until help
+    // is rendered, after the injector is fully built.
+    private final Provider<CommandManager> commandManager;
 
     @Inject
     public TreasuryCommand(Treasury plugin, Message message,
                            AccountService accountService, LedgerService ledgerService,
                            MembershipService membershipService, AccountResolver accountResolver,
-                           ConfigReloadService configReloadService) {
+                           ConfigReloadService configReloadService,
+                           Provider<CommandManager> commandManager) {
         this.plugin = plugin;
         this.message = message;
         this.accountService = accountService;
@@ -53,6 +61,7 @@ public class TreasuryCommand implements CommandHandler {
         this.membershipService = membershipService;
         this.accountResolver = accountResolver;
         this.configReloadService = configReloadService;
+        this.commandManager = commandManager;
     }
 
     /**
@@ -87,49 +96,14 @@ public class TreasuryCommand implements CommandHandler {
     @Route("help")
     @Description("Show Treasury help index")
     public void help(@Sender CommandSender sender) {
-        message.send(sender, "treasury.help");
+        helpPage(sender, 1);
     }
 
-    @Route("help balance")
-    @Description("Show balance / baltop help")
-    public void helpBalance(@Sender CommandSender sender) {
-        message.send(sender, "treasury.help.balance");
-    }
-
-    @Route("help pay")
-    @Description("Show /pay help")
-    public void helpPay(@Sender CommandSender sender) {
-        message.send(sender, "treasury.help.pay");
-    }
-
-    @Route("help transactions")
-    @Description("Show /transactions help")
-    public void helpTransactions(@Sender CommandSender sender) {
-        message.send(sender, "treasury.help.transactions");
-    }
-
-    @Route("help eco")
-    @Description("Show /eco (admin) help")
-    public void helpEco(@Sender CommandSender sender) {
-        message.send(sender, "treasury.help.eco");
-    }
-
-    @Route("help fine")
-    @Description("Show /fine help")
-    public void helpFine(@Sender CommandSender sender) {
-        message.send(sender, "treasury.help.fine");
-    }
-
-    @Route("help gov")
-    @Description("Show /government help")
-    public void helpGov(@Sender CommandSender sender) {
-        message.send(sender, "treasury.help.gov");
-    }
-
-    @Route("help tax")
-    @Description("Show /tax help")
-    public void helpTax(@Sender CommandSender sender) {
-        message.send(sender, "treasury.help.tax");
+    @Route("help <page>")
+    @Description("Show a page of the Treasury help index")
+    public void helpPage(@Sender CommandSender sender, @Arg("page") int page) {
+        HelpGenerator help = new HelpGenerator(commandManager.get());
+        sender.sendMessage(help.render(sender, "treasury", page));
     }
 
     @Route("admin ingest <source>")

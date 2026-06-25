@@ -28,7 +28,7 @@ public final class TestConfigs {
         setField(cfg, "economyFormat", "$#,##0.00");
         setField(cfg, "currencyNameSingular", "Dollar");
         setField(cfg, "currencyNamePlural", "Dollars");
-        setField(cfg, "startingBalance", startingBalance);
+        setField(cfg, "startingBalance", java.math.BigDecimal.valueOf(startingBalance));
         return cfg;
     }
 

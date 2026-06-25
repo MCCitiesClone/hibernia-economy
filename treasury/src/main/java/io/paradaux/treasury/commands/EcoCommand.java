@@ -184,7 +184,7 @@ public class EcoCommand implements CommandHandler {
         UUID adminUuid = sender instanceof Player p ? p.getUniqueId() : TreasuryConstants.VIRTUAL_TREASURY_INITIATOR;
         ledgerService.adminReset(target.getUniqueId(), adminUuid);
 
-        BigDecimal startingBalance = Money.normalize(BigDecimal.valueOf(economyConfig.getStartingBalance()));
+        BigDecimal startingBalance = Money.normalize(economyConfig.getStartingBalance());
         String formattedAmount = accountService.formatAmount(startingBalance);
         message.send(sender, "treasury.eco.reset.success",
                 "target", target.getName(), "amount", formattedAmount);

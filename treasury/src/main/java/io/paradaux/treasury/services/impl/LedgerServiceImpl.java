@@ -113,7 +113,7 @@ public class LedgerServiceImpl implements LedgerService {
         Account personal = accountMapper.findById(newPersonalId);
 
         Account startingGov = getOrCreateGovernmentAccount(govConfig.getStartingBalancesAccount());
-        BigDecimal startingBalance = BigDecimal.valueOf(economyConfig.getStartingBalance());
+        BigDecimal startingBalance = economyConfig.getStartingBalance();
         byte[] dedup = Idempotency.sha256("starting-balance:" + playerUuid);
         TransferRequest seedReq = new TransferRequest(
                 startingGov.getAccountId(),
@@ -325,7 +325,7 @@ public class LedgerServiceImpl implements LedgerService {
     @Override
     @Transactional
     public void adminReset(UUID playerUuid, UUID adminUuid) {
-        BigDecimal starting = Money.normalize(BigDecimal.valueOf(economyConfig.getStartingBalance()));
+        BigDecimal starting = Money.normalize(economyConfig.getStartingBalance());
         adminSet(playerUuid, starting, "Admin reset balance", adminUuid);
     }
 

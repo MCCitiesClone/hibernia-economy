@@ -4,7 +4,12 @@ import com.google.inject.*;
 import com.google.inject.Module;
 import com.zaxxer.hikari.HikariDataSource;
 import io.paradaux.hibernia.framework.commander.CommandManager;
-import io.paradaux.hibernia.framework.configurator.ConfigurationLoader;
+import io.paradaux.hibernia.framework.events.ListenerManager;
+import io.paradaux.hibernia.framework.guice.HiberniaModule;
+import io.paradaux.treasury.commands.resolvers.PayTargetResolver;
+import io.paradaux.treasury.commands.*;
+import io.paradaux.treasury.events.FirstPlayerJoinEvent;
+import io.paradaux.treasury.events.PlayerLoginListener;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import io.paradaux.treasury.adapters.VaultEconomyRegistrar;
@@ -31,14 +36,12 @@ import io.paradaux.treasury.tasks.SalaryTask;
 import io.paradaux.treasury.tasks.TaxCycleTask;
 import io.paradaux.treasury.utils.LoggingConfigurer;
 import org.bukkit.Bukkit;
-import org.bukkit.event.Listener;
 import org.bukkit.plugin.ServicePriority;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import javax.sql.DataSource;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
 @Slf4j
 public final class Treasury extends JavaPlugin {
@@ -48,19 +51,41 @@ public final class Treasury extends JavaPlugin {
 
     @Override
     public void onEnable() {
-        // 1) Load configuration first so we can apply the configured log level
-        //    before anything else gets a chance to spam the console.
-        ConfigurationLoader configLoader = new ConfigurationLoader(this);
-        configLoader.scanPackage("io.paradaux.treasury.model.config");
+        // 1) Build the framework module. HiberniaModule scans the config package and
+        //    binds the plugin, ConfigurationLoader, every @ConfigurationComponent,
+        //    Message, the command/resolver/listener multibinders, PapiSupport and the
+        //    dialog renderer. We fetch the configs needed for early bootstrap (log
+        //    level, DataSource) off the module before the injector exists.
+        HiberniaModule hiberniaModule = HiberniaModule.forPlugin(this)
+                .scanConfiguration("io.paradaux.treasury.model.config")
+                .handlers(
+                        TreasuryCommand.class,
+                        PayCommand.class,
+                        PayAccountCommand.class,
+                        BalanceCommand.class,
+                        BaltopCommand.class,
+                        EconomyCommand.class,
+                        SalesCommand.class,
+                        TransactionsCommand.class,
+                        EcoCommand.class,
+                        GovCommand.class,
+                        FineCommand.class,
+                        TaxCommand.class)
+                .resolvers(PayTargetResolver.class)
+                .listeners(
+                        FirstPlayerJoinEvent.class,
+                        PlayerLoginListener.class)
+                .build();
 
-        LoggingConfiguration logCfg = configLoader.getComponent(LoggingConfiguration.class);
+        // Apply the configured log level before anything else spams the console.
+        LoggingConfiguration logCfg = hiberniaModule.configuration(LoggingConfiguration.class);
         if (logCfg != null) {
             LoggingConfigurer.apply(logCfg.getLevel());
         }
 
         log.info("Loading Treasury…");
 
-        DatabaseConfiguration dbCfg = configLoader.getComponent(DatabaseConfiguration.class);
+        DatabaseConfiguration dbCfg = hiberniaModule.configuration(DatabaseConfiguration.class);
         if (dbCfg == null) {
             throw new IllegalStateException(
                     "DatabaseConfiguration not found. Check @ConfigurationComponent and package scan.");
@@ -82,10 +107,9 @@ public final class Treasury extends JavaPlugin {
         ).get();
 
         List<Module> modules = new ArrayList<>();
-        modules.add(new TreasuryModule(this, configLoader));
+        modules.add(hiberniaModule);
+        modules.add(new TreasuryModule(this));
         modules.add(new DatabaseModule(dataSource));
-        modules.add(new CommanderModule(this));
-        modules.add(new EventsModule());
         if (isVaultAvailable()) {
             modules.add(new VaultModule());
         }
@@ -102,8 +126,8 @@ public final class Treasury extends JavaPlugin {
         // 4) Register commands.
         injector.getInstance(CommandManager.class).registerAll();
 
-        // 5) Register listeners (set bound by EventsModule).
-        registerListeners();
+        // 5) Register listeners (Set<Listener> bound via HiberniaModule.listeners(...)).
+        injector.getInstance(ListenerManager.class).registerAll();
 
         // 6) Register Vault economy if available.
         if (isVaultAvailable()) {
@@ -145,14 +169,6 @@ public final class Treasury extends JavaPlugin {
     }
 
     // ---- Helpers ----
-
-    private void registerListeners() {
-        Set<Listener> listeners = injector.getInstance(Key.get(new TypeLiteral<Set<Listener>>() {}));
-        for (Listener listener : listeners) {
-            Bukkit.getPluginManager().registerEvents(listener, this);
-            log.debug("Registered listener: {}", listener.getClass().getSimpleName());
-        }
-    }
 
     private void registerTreasuryApi() {
         TreasuryApi api = injector.getInstance(TreasuryApiImpl.class);
