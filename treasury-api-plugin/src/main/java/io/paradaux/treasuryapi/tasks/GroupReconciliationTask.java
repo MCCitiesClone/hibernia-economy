@@ -6,13 +6,17 @@ import io.paradaux.treasuryapi.mappers.ExplorerGroupMapper;
 import io.paradaux.treasuryapi.model.ReconciliationDiff;
 import io.paradaux.treasuryapi.model.SyncedGroup;
 import net.luckperms.api.LuckPerms;
+import net.luckperms.api.model.group.Group;
+import net.luckperms.api.model.group.GroupManager;
 import net.luckperms.api.node.Node;
 import net.luckperms.api.node.matcher.NodeMatcher;
 import net.luckperms.api.node.types.InheritanceNode;
 import net.luckperms.api.node.types.PermissionNode;
+import net.luckperms.api.query.QueryOptions;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.HashSet;
+import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -52,7 +56,15 @@ public class GroupReconciliationTask extends BukkitRunnable {
         try {
             for (SyncedGroup group : mapper.listSyncedGroups()) {
                 try {
-                    apply(group.getGroupId(), resolveMembers(group.getLuckpermsNode()));
+                    Set<UUID> desired = resolveMembers(group.getLuckpermsNode());
+                    if (desired.isEmpty()) {
+                        // Fail loudly instead of silently syncing nothing — the usual cause of
+                        // "the cron isn't working" is a node that resolves to no one.
+                        log.warning("Explorer group " + group.getGroupId() + " (node '"
+                                + group.getLuckpermsNode() + "') resolved 0 LuckPerms members. Verify the node "
+                                + "is a real LuckPerms group (e.g. 'group.<rank>') or a granted permission.");
+                    }
+                    apply(group.getGroupId(), desired);
                 } catch (Exception e) {
                     log.warning("Reconciliation of group " + group.getGroupId()
                             + " (node '" + group.getLuckpermsNode() + "') failed: " + e.getMessage());
@@ -114,12 +126,53 @@ public class GroupReconciliationTask extends BukkitRunnable {
         }
     }
 
-    /** All players (offline included) carrying the configured node. */
+    /**
+     * All players (offline included) who effectively carry the configured node —
+     * whether they hold it directly OR inherit it from a LuckPerms group.
+     *
+     * <p>{@code searchAll} only matches <em>directly-stored</em> nodes, so a node
+     * granted to a rank/group (and inherited by its members) would resolve to zero
+     * — the exact silent failure this guards against. We therefore union the direct
+     * holders with the members of every group that <em>effectively</em> grants the
+     * node (its members carry that group's {@code group.<name>} node directly).
+     */
     private Set<UUID> resolveMembers(String node) throws Exception {
-        // Bound the LuckPerms storage lookup so a stalled backend can't pin this async
-        // worker indefinitely; a timeout surfaces to run()'s per-group catch (group skipped).
-        return luckPerms.getUserManager().searchAll(matcherFor(node))
-                .get(15, TimeUnit.SECONDS).keySet();
+        Set<UUID> result = new HashSet<>(searchAll(matcherFor(node)));
+
+        GroupManager groups = luckPerms.getGroupManager();
+        // Bounded so a stalled backend can't pin this async worker indefinitely.
+        groups.loadAllGroups().get(15, TimeUnit.SECONDS);
+        String key = nodeKey(node);
+        QueryOptions opts = QueryOptions.nonContextual();
+        for (Group g : groups.getLoadedGroups()) {
+            // Skip the group whose own membership IS the node — its members are
+            // already the direct holders above.
+            if (key.equals("group." + g.getName().toLowerCase(Locale.ROOT))) {
+                continue;
+            }
+            if (g.getCachedData().getPermissionData(opts).checkPermission(key).asBoolean()) {
+                result.addAll(searchAll(matcherFor("group." + g.getName())));
+            }
+        }
+        return result;
+    }
+
+    /** Bounded storage search for the UUIDs of users directly carrying a matched node. */
+    private Set<UUID> searchAll(NodeMatcher<? extends Node> matcher) throws Exception {
+        return luckPerms.getUserManager().searchAll(matcher).get(15, TimeUnit.SECONDS).keySet();
+    }
+
+    /**
+     * The canonical LuckPerms permission-key for a configured node, matching how
+     * {@link #matcherFor} interprets it: a bare name or {@code group.<name>} keys to
+     * {@code group.<name>} (group membership); a dotted node is the permission itself.
+     * Used to ask each group whether it effectively grants the node.
+     */
+    static String nodeKey(String node) {
+        String n = node.toLowerCase(Locale.ROOT);
+        if (n.startsWith("group.")) return n;
+        if (n.indexOf('.') < 0) return "group." + n;
+        return n;
     }
 
     /**

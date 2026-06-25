@@ -76,6 +76,10 @@ dependencies {
     testImplementation(platform(libs.junit.bom))
     testImplementation(libs.junit.jupiter)
     testRuntimeOnly(libs.junit.platform.launcher)
+    // GroupReconciliationTask extends BukkitRunnable and references the LuckPerms
+    // API, so the test classpath needs both to load the class (even for pure tests).
+    testImplementation(libs.paper.api)
+    testImplementation(libs.luckperms.api)
 }
 
 tasks {
