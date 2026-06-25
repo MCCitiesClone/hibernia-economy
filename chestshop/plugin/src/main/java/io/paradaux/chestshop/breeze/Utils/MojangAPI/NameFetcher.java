@@ -15,6 +15,8 @@ import java.util.concurrent.Callable;
 
 public class NameFetcher implements Callable<Map<UUID, String>> {
     private static final String PROFILE_URL = "https://sessionserver.mojang.com/session/minecraft/profile/";
+    private static final int CONNECT_TIMEOUT_MS = 5000;
+    private static final int READ_TIMEOUT_MS = 5000;
 
     private final JSONParser jsonParser = new JSONParser();
     private final List<UUID> uuids;
@@ -29,6 +31,10 @@ public class NameFetcher implements Callable<Map<UUID, String>> {
 
         for (UUID uuid: uuids) {
             HttpURLConnection connection = (HttpURLConnection) new URL(PROFILE_URL+uuid.toString().replace("-", "")).openConnection();
+            // Without timeouts a hung Mojang endpoint blocks the calling thread
+            // indefinitely.
+            connection.setConnectTimeout(CONNECT_TIMEOUT_MS);
+            connection.setReadTimeout(READ_TIMEOUT_MS);
             JSONObject response = (JSONObject) jsonParser.parse(new InputStreamReader(connection.getInputStream()));
 
             String name = (String) response.get("name");

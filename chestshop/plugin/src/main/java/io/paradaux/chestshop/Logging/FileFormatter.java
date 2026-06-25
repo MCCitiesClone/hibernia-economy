@@ -2,9 +2,8 @@ package io.paradaux.chestshop.Logging;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.logging.Formatter;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
@@ -13,7 +12,10 @@ import java.util.logging.LogRecord;
  * @author Acrobot
  */
 public class FileFormatter extends Formatter {
-    private final DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+    // DateTimeFormatter is immutable and thread-safe, unlike the shared
+    // SimpleDateFormat this replaced (which corrupts output under concurrent
+    // logging from async tasks).
+    private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss");
 
     @Override
     public String format(LogRecord record) {
@@ -38,8 +40,6 @@ public class FileFormatter extends Formatter {
     }
 
     private String getDateAndTime() {
-        Date date = new Date();
-
-        return dateFormat.format(date);
+        return DATE_FORMAT.format(LocalDateTime.now());
     }
 }

@@ -70,9 +70,17 @@ public class UUIDFetcher implements Callable<Map<String, UUID>> {
         writer.close();
     }
 
+    private static final int CONNECT_TIMEOUT_MS = 5000;
+    private static final int READ_TIMEOUT_MS = 5000;
+
     private static HttpURLConnection createConnection(int page) throws Exception {
         URL url = new URL(PROFILE_URL + page);
         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+
+        // Without timeouts a hung Mojang endpoint blocks the calling thread
+        // indefinitely.
+        connection.setConnectTimeout(CONNECT_TIMEOUT_MS);
+        connection.setReadTimeout(READ_TIMEOUT_MS);
 
         connection.setRequestMethod("POST");
         connection.setRequestProperty("Content-Type", "application/json");

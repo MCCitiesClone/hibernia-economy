@@ -68,14 +68,27 @@ public class DiscountModule implements Listener {
             return;
         }
 
+        // groupList is an (unordered) HashSet, so picking the first matching
+        // group gave a non-deterministic discount when a player held several.
+        // Select the most favourable (lowest resulting percentage) instead, and
+        // clamp each configured value to [0, 100] so a typo can't produce a
+        // negative price or charge more than the sticker price.
+        Double bestDiscount = null;
         for (String group : groupList) {
             if (Permission.has(client, Permission.DISCOUNT + group)) {
-                double discount = config.getDouble(group);
-                BigDecimal discountedPrice = event.getExactPrice().multiply(BigDecimal.valueOf(discount / 100));
-                event.setExactPrice(discountedPrice);
-                ChestShop.getBukkitLogger().info(String.format(DISCOUNT_MESSAGE, discount, discountedPrice));
-                return;
+                double discount = Math.max(0, Math.min(100, config.getDouble(group)));
+                if (bestDiscount == null || discount < bestDiscount) {
+                    bestDiscount = discount;
+                }
             }
         }
+
+        if (bestDiscount == null) {
+            return;
+        }
+
+        BigDecimal discountedPrice = event.getExactPrice().multiply(BigDecimal.valueOf(bestDiscount / 100));
+        event.setExactPrice(discountedPrice);
+        ChestShop.getBukkitLogger().info(String.format(DISCOUNT_MESSAGE, bestDiscount, discountedPrice));
     }
 }

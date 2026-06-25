@@ -96,7 +96,10 @@ public class PreShopCreationEvent extends Event implements Cancellable {
      * @param signLines Text to set
      */
     public void setSignLines(String[] signLines) {
-        this.signLines = signLines;
+        // Clone so the event doesn't alias the caller's array; mutating it
+        // afterwards must not retroactively change the validated payload (and
+        // the constructor already clones, so this keeps the two paths matched).
+        this.signLines = signLines.clone();
     }
 
     /**
