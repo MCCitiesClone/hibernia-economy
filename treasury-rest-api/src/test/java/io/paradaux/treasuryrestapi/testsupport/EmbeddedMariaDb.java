@@ -57,7 +57,8 @@ public final class EmbeddedMariaDb {
             st.execute("SET FOREIGN_KEY_CHECKS = 0");
             for (String t : new String[]{
                     "accounts", "firm", "firm_accounts", "firm_players", "account_balances_mat",
-                    "ledger_txns", "ledger_postings", "chestshop_sale", "chestshop_shop"}) {
+                    "ledger_txns", "ledger_postings", "chestshop_sale", "chestshop_shop",
+                    "account_access"}) {
                 st.execute("TRUNCATE TABLE " + t);
             }
             st.execute("SET FOREIGN_KEY_CHECKS = 1");
@@ -224,6 +225,20 @@ public final class EmbeddedMariaDb {
               KEY idx_shop_item   (item_key, active),
               KEY idx_shop_mat    (material, active),
               KEY idx_shop_firm   (shop_firm_id)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+            """,
+            // Consolidated per-account access (PAR-249) — backs MembershipMapper.isMember,
+            // which gates non-owner transaction-history reads.
+            """
+            CREATE TABLE account_access (
+              account_id        INT UNSIGNED NOT NULL,
+              subject_uuid_bin  BINARY(16)   NOT NULL,
+              level             ENUM('VIEWER','MEMBER','AUTHORIZER') NOT NULL,
+              added_by_uuid_bin BINARY(16)   NOT NULL,
+              created_at        TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+              removed_at        TIMESTAMP    NULL,
+              PRIMARY KEY (account_id, subject_uuid_bin),
+              KEY idx_access_active (account_id, removed_at)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
             """,
     };
