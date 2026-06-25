@@ -307,12 +307,6 @@ CREATE TABLE `explorer_link_code` (
   KEY `idx_link_code_expiry` (`expires_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE TABLE `player_login_times` (
-  `player_uuid_bin` binary(16) NOT NULL,
-  `last_login_epoch` bigint(20) NOT NULL,
-  PRIMARY KEY (`player_uuid_bin`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 CREATE TABLE `explorer_identity` (
   `keycloak_sub` varchar(64) NOT NULL,
   `player_uuid_bin` binary(16) NOT NULL,
