@@ -11,6 +11,7 @@ import io.paradaux.treasury.api.exceptions.InsufficientFineFundsException;
 import io.paradaux.treasury.model.economy.Account;
 import io.paradaux.treasury.model.economy.GovernmentFine;
 import io.paradaux.treasury.services.AccountService;
+import io.paradaux.treasury.services.FineWebhookService;
 import io.paradaux.treasury.services.GovService;
 import io.paradaux.treasury.services.MembershipService;
 import io.paradaux.treasury.services.PlayerDirectoryService;
@@ -36,6 +37,7 @@ public class FineCommand implements CommandHandler {
     private final GovService govService;
     private final MembershipService membershipService;
     private final PlayerDirectoryService playerDirectory;
+    private final FineWebhookService fineWebhook;
     private final Message message;
 
     @Inject
@@ -43,11 +45,13 @@ public class FineCommand implements CommandHandler {
                        GovService govService,
                        MembershipService membershipService,
                        PlayerDirectoryService playerDirectory,
+                       FineWebhookService fineWebhook,
                        Message message) {
         this.accountService    = accountService;
         this.govService        = govService;
         this.membershipService = membershipService;
         this.playerDirectory   = playerDirectory;
+        this.fineWebhook       = fineWebhook;
         this.message           = message;
     }
 
@@ -131,6 +135,7 @@ public class FineCommand implements CommandHandler {
                 "player", targetName,
                 "amount", formattedAmount,
                 "reason", reason);
+        fineWebhook.sendFineIssued(fine);
 
         Player online = Bukkit.getPlayer(targetUuid);
         if (online != null) {
@@ -184,6 +189,7 @@ public class FineCommand implements CommandHandler {
                 "firm", business.getDisplayName(),
                 "amount", formattedAmount,
                 "reason", reason);
+        fineWebhook.sendFineIssued(fine);
     }
 
     @Route("revoke <id>")
@@ -227,6 +233,7 @@ public class FineCommand implements CommandHandler {
                 "id", String.valueOf(fineId),
                 "player", playerName,
                 "amount", formattedAmount);
+        fineWebhook.sendFineRevoked(fine);
 
         Player online = Bukkit.getPlayer(fine.getPlayerUuid());
         if (online != null) {

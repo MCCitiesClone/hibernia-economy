@@ -96,6 +96,17 @@ tax:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Government fines — issued/revoked via /fine. Optionally announce each to Discord.
+# ─────────────────────────────────────────────────────────────────────────────
+fines:
+  # Discord webhook — posts an embed when a fine is issued (red) or revoked (green),
+  # showing the target, amount, government account, actor and reason.
+  webhook:
+    enabled: false
+    # Full Discord webhook URL. Leave blank to disable even if enabled is true.
+    url: ""
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Government salaries — a recurring timer pays ONLINE players a salary from a
 # GOVERNMENT account based on their LuckPerms group. A player in several salaried
 # groups is paid the HIGHEST single salary (their top-paying role); salaries are
