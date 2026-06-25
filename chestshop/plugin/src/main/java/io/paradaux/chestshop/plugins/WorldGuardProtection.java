@@ -1,6 +1,6 @@
 package io.paradaux.chestshop.plugins;
 
-import io.paradaux.chestshop.breeze.utils.BlockUtil;
+import io.paradaux.chestshop.utils.BlockUtil;
 import io.paradaux.chestshop.events.protection.ProtectionCheckEvent;
 import com.sk89q.worldedit.bukkit.BukkitAdapter;
 import com.sk89q.worldedit.util.Location;

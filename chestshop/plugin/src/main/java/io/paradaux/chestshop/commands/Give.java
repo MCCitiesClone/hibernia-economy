@@ -1,8 +1,8 @@
 package io.paradaux.chestshop.commands;
 
-import io.paradaux.chestshop.breeze.utils.InventoryUtil;
-import io.paradaux.chestshop.breeze.utils.MaterialUtil;
-import io.paradaux.chestshop.breeze.utils.NumberUtil;
+import io.paradaux.chestshop.utils.InventoryUtil;
+import io.paradaux.chestshop.utils.MaterialUtil;
+import io.paradaux.chestshop.utils.NumberUtil;
 import io.paradaux.chestshop.configuration.Messages;
 import io.paradaux.chestshop.events.ItemParseEvent;
 import io.paradaux.chestshop.utils.ItemUtil;

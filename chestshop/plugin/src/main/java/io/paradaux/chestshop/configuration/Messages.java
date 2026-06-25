@@ -1,6 +1,6 @@
 package io.paradaux.chestshop.configuration;
 
-import io.paradaux.chestshop.breeze.configuration.Configuration;
+import io.paradaux.chestshop.configuration.Configuration;
 import io.paradaux.chestshop.ChestShop;
 import de.themoep.minedown.adventure.MineDown;
 import de.themoep.utils.lang.bukkit.BukkitLanguageConfig;

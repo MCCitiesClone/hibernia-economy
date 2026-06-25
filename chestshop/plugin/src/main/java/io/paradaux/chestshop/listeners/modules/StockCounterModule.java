@@ -1,8 +1,8 @@
 package io.paradaux.chestshop.listeners.modules;
 
-import io.paradaux.chestshop.breeze.utils.InventoryUtil;
-import io.paradaux.chestshop.breeze.utils.MaterialUtil;
-import io.paradaux.chestshop.breeze.utils.QuantityUtil;
+import io.paradaux.chestshop.utils.InventoryUtil;
+import io.paradaux.chestshop.utils.MaterialUtil;
+import io.paradaux.chestshop.utils.QuantityUtil;
 import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.configuration.Properties;
 import io.paradaux.chestshop.events.ItemParseEvent;
@@ -25,7 +25,7 @@ import org.bukkit.inventory.ItemStack;
 
 import java.util.IllegalFormatException;
 
-import static io.paradaux.chestshop.breeze.utils.ImplementationAdapter.getHolder;
+import static io.paradaux.chestshop.utils.ImplementationAdapter.getHolder;
 import static io.paradaux.chestshop.signs.ChestShopSign.QUANTITY_LINE;
 
 

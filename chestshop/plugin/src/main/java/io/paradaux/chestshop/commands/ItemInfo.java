@@ -1,7 +1,7 @@
 package io.paradaux.chestshop.commands;
 
-import io.paradaux.chestshop.breeze.utils.MaterialUtil;
-import io.paradaux.chestshop.breeze.utils.StringUtil;
+import io.paradaux.chestshop.utils.MaterialUtil;
+import io.paradaux.chestshop.utils.StringUtil;
 import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.configuration.Messages;
 import io.paradaux.chestshop.configuration.Properties;

@@ -10,7 +10,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryMoveItemEvent;
 import org.bukkit.inventory.InventoryHolder;
 
-import static io.paradaux.chestshop.breeze.utils.ImplementationAdapter.getHolder;
+import static io.paradaux.chestshop.utils.ImplementationAdapter.getHolder;
 
 /**
  * @author Acrobot

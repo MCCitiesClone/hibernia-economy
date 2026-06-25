@@ -1,6 +1,6 @@
 package io.paradaux.chestshop.listeners.preshopcreation;
 
-import io.paradaux.chestshop.breeze.utils.PriceUtil;
+import io.paradaux.chestshop.utils.PriceUtil;
 import io.paradaux.chestshop.configuration.Properties;
 import io.paradaux.chestshop.events.PreShopCreationEvent;
 import io.paradaux.chestshop.signs.ChestShopSign;
@@ -10,7 +10,7 @@ import org.bukkit.event.Listener;
 
 import java.util.Locale;
 
-import static io.paradaux.chestshop.breeze.utils.PriceUtil.isPrice;
+import static io.paradaux.chestshop.utils.PriceUtil.isPrice;
 import static io.paradaux.chestshop.events.PreShopCreationEvent.CreationOutcome.INVALID_PRICE;
 import static io.paradaux.chestshop.signs.ChestShopSign.PRICE_LINE;
 

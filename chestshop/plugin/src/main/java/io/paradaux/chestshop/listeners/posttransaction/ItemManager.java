@@ -1,7 +1,7 @@
 package io.paradaux.chestshop.listeners.posttransaction;
 
-import io.paradaux.chestshop.breeze.utils.ImplementationAdapter;
-import io.paradaux.chestshop.breeze.utils.InventoryUtil;
+import io.paradaux.chestshop.utils.ImplementationAdapter;
+import io.paradaux.chestshop.utils.InventoryUtil;
 import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.configuration.Properties;
 import io.paradaux.chestshop.events.TransactionEvent;

@@ -1,7 +1,7 @@
 package io.paradaux.chestshop.utils;
 
-import io.paradaux.chestshop.breeze.utils.InventoryUtil;
-import io.paradaux.chestshop.breeze.utils.MaterialUtil;
+import io.paradaux.chestshop.utils.InventoryUtil;
+import io.paradaux.chestshop.utils.MaterialUtil;
 import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.events.ItemParseEvent;
 import io.paradaux.chestshop.events.ItemStringQueryEvent;
@@ -12,8 +12,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import static io.paradaux.chestshop.breeze.utils.MaterialUtil.MAXIMUM_SIGN_WIDTH;
-import static io.paradaux.chestshop.breeze.utils.StringUtil.getMinecraftStringWidth;
+import static io.paradaux.chestshop.utils.MaterialUtil.MAXIMUM_SIGN_WIDTH;
+import static io.paradaux.chestshop.utils.StringUtil.getMinecraftStringWidth;
 
 public class ItemUtil {
 

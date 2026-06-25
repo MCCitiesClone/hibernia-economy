@@ -6,8 +6,8 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 
 import io.paradaux.chestshop.ChestShop;
-import io.paradaux.chestshop.uuids.NameManager;
-import io.paradaux.chestshop.uuids.PlayerDTO;
+import io.paradaux.chestshop.players.NameManager;
+import io.paradaux.chestshop.players.PlayerDTO;
 
 /**
  * @author Acrobot

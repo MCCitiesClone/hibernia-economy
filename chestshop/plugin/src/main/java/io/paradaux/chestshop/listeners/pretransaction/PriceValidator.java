@@ -8,7 +8,7 @@ import org.bukkit.event.Listener;
 
 import java.math.BigDecimal;
 
-import static io.paradaux.chestshop.breeze.utils.PriceUtil.NO_PRICE;
+import static io.paradaux.chestshop.utils.PriceUtil.NO_PRICE;
 import static io.paradaux.chestshop.events.PreTransactionEvent.TransactionOutcome.SHOP_DOES_NOT_BUY_THIS_ITEM;
 import static io.paradaux.chestshop.events.PreTransactionEvent.TransactionOutcome.SHOP_DOES_NOT_SELL_THIS_ITEM;
 import static io.paradaux.chestshop.events.TransactionEvent.TransactionType.BUY;

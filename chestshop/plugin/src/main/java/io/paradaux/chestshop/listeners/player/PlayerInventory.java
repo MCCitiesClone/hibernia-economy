@@ -21,9 +21,9 @@ import org.bukkit.inventory.InventoryHolder;
 import java.util.ArrayList;
 import java.util.List;
 
-import static io.paradaux.chestshop.breeze.utils.ImplementationAdapter.getHolder;
-import static io.paradaux.chestshop.breeze.utils.ImplementationAdapter.getLeftSide;
-import static io.paradaux.chestshop.breeze.utils.ImplementationAdapter.getRightSide;
+import static io.paradaux.chestshop.utils.ImplementationAdapter.getHolder;
+import static io.paradaux.chestshop.utils.ImplementationAdapter.getLeftSide;
+import static io.paradaux.chestshop.utils.ImplementationAdapter.getRightSide;
 
 /**
  * @author Acrobot

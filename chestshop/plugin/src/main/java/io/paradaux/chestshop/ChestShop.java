@@ -1,6 +1,6 @@
 package io.paradaux.chestshop;
 
-import io.paradaux.chestshop.breeze.configuration.Configuration;
+import io.paradaux.chestshop.configuration.Configuration;
 import io.paradaux.chestshop.commands.Give;
 import io.paradaux.chestshop.commands.ItemInfo;
 import io.paradaux.chestshop.commands.ShopInfo;
@@ -44,9 +44,9 @@ import io.paradaux.chestshop.listeners.pretransaction.PermissionChecker;
 import io.paradaux.chestshop.listeners.shopremoval.ShopRefundListener;
 import io.paradaux.chestshop.listeners.shopremoval.ShopRemovalLogger;
 import io.paradaux.chestshop.logging.FileFormatter;
-import io.paradaux.chestshop.metadata.ItemDatabase;
+import io.paradaux.chestshop.database.ItemDatabase;
 import io.paradaux.chestshop.signs.RestrictedSign;
-import io.paradaux.chestshop.uuids.NameManager;
+import io.paradaux.chestshop.players.NameManager;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.ByteArrayDataOutput;
@@ -166,7 +166,7 @@ public class ChestShop extends JavaPlugin {
         }
 
         registerEvents();
-        registerVersionedAdapters();
+        registerFeatureListeners();
         MarketHook.init();
 
         registerPluginMessagingChannels();
@@ -440,19 +440,13 @@ public class ChestShop extends JavaPlugin {
         registerEvent(new TaxModule());
     }
 
-    private void registerVersionedAdapters() {
-        // These listeners provide the API-tier-specific /iteminfo details, sign
-        // backside protection, physics-break handling and getProvides() plugin
-        // aliasing. They were historically discovered by scanning the jar for
-        // VersionAdapter implementations and gated by isSupported(); since this
-        // fork targets a single Paper version, every gate always passed, so they
-        // are now registered directly and the reflection scheme is gone (PAR-255).
-        registerEvent(new io.paradaux.chestshop.adapter.Paper_1_13_2());
-        registerEvent(new io.paradaux.chestshop.adapter.Spigot_1_14());
-        registerEvent(new io.paradaux.chestshop.adapter.Spigot_1_15_2());
-        registerEvent(new io.paradaux.chestshop.adapter.Spigot_1_17());
-        registerEvent(new io.paradaux.chestshop.adapter.Spigot_1_20());
-        registerEvent(new io.paradaux.chestshop.adapter.Spigot_1_20_5());
+    private void registerFeatureListeners() {
+        // Feature listeners that used to live in the version-named adapter/
+        // classes, now in semantic homes (PAR-257). The getProvides() plugin
+        // aliasing (formerly Spigot_1_15_2) is folded into Dependencies.onEnable.
+        registerEvent(new io.paradaux.chestshop.listeners.block.breaking.PaperBlockDestroyListener());
+        registerEvent(new io.paradaux.chestshop.listeners.block.SignBacksideProtector());
+        registerEvent(new io.paradaux.chestshop.listeners.iteminfo.ExtendedItemInfoListener());
     }
 
     private void registerPluginMessagingChannels() {

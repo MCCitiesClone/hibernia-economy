@@ -1,6 +1,6 @@
 package io.paradaux.chestshop.database;
 
-import io.paradaux.chestshop.breeze.utils.NameUtil;
+import io.paradaux.chestshop.utils.NameUtil;
 import com.j256.ormlite.field.DataType;
 import com.j256.ormlite.field.DatabaseField;
 import com.j256.ormlite.table.DatabaseTable;

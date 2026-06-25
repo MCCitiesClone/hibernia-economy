@@ -1,6 +1,6 @@
 package io.paradaux.chestshop.tests;
 
-import io.paradaux.chestshop.breeze.utils.PriceUtil;
+import io.paradaux.chestshop.utils.PriceUtil;
 import io.paradaux.chestshop.events.PreShopCreationEvent;
 import io.paradaux.chestshop.signs.ChestShopSign;
 import org.junit.jupiter.api.Test;

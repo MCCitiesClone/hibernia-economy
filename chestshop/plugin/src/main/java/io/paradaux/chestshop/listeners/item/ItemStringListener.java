@@ -1,6 +1,6 @@
 package io.paradaux.chestshop.listeners.item;
 
-import io.paradaux.chestshop.breeze.utils.MaterialUtil;
+import io.paradaux.chestshop.utils.MaterialUtil;
 import io.paradaux.chestshop.events.ItemStringQueryEvent;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;

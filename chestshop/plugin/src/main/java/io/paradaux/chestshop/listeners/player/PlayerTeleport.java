@@ -9,7 +9,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.inventory.InventoryHolder;
 
-import static io.paradaux.chestshop.breeze.utils.ImplementationAdapter.getHolder;
+import static io.paradaux.chestshop.utils.ImplementationAdapter.getHolder;
 
 /**
  * A fix for a CraftBukkit bug.

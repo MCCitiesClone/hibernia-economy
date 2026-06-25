@@ -1,6 +1,6 @@
 package io.paradaux.chestshop.listeners.posttransaction;
 
-import io.paradaux.chestshop.breeze.utils.MaterialUtil;
+import io.paradaux.chestshop.utils.MaterialUtil;
 import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.commands.Toggle;
 import io.paradaux.chestshop.configuration.Messages;

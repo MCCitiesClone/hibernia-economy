@@ -9,7 +9,7 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.inventory.ItemStack;
 
-import static io.paradaux.chestshop.breeze.utils.StringUtil.getMinecraftStringWidth;
+import static io.paradaux.chestshop.utils.StringUtil.getMinecraftStringWidth;
 
 /**
  * Support for the <a href="https://www.spigotmc.org/resources/77080/">ItemBridge plugin</a> to use their strings for

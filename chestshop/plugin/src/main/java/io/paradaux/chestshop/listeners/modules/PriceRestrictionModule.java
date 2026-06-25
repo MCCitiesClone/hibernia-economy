@@ -1,6 +1,6 @@
 package io.paradaux.chestshop.listeners.modules;
 
-import io.paradaux.chestshop.breeze.utils.PriceUtil;
+import io.paradaux.chestshop.utils.PriceUtil;
 import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.configuration.Messages;
 import io.paradaux.chestshop.events.ChestShopReloadEvent;

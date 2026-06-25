@@ -1,6 +1,6 @@
 package io.paradaux.chestshop;
 
-import io.paradaux.chestshop.breeze.utils.BlockUtil;
+import io.paradaux.chestshop.utils.BlockUtil;
 import io.paradaux.chestshop.configuration.Properties;
 import io.paradaux.chestshop.database.Account;
 import io.paradaux.chestshop.events.AccountQueryEvent;
@@ -17,7 +17,7 @@ import org.bukkit.event.Event;
 
 import java.util.UUID;
 
-import static io.paradaux.chestshop.breeze.utils.ImplementationAdapter.getState;
+import static io.paradaux.chestshop.utils.ImplementationAdapter.getState;
 
 /**
  * @author Acrobot

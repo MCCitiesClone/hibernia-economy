@@ -2,7 +2,7 @@ package io.paradaux.chestshop.listeners.economy;
 
 import io.paradaux.chestshop.database.Account;
 import io.paradaux.chestshop.events.economy.*;
-import io.paradaux.chestshop.uuids.NameManager;
+import io.paradaux.chestshop.players.NameManager;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;

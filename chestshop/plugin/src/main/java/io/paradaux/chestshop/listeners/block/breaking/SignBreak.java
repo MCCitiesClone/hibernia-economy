@@ -1,13 +1,13 @@
 package io.paradaux.chestshop.listeners.block.breaking;
 
-import io.paradaux.chestshop.breeze.utils.BlockUtil;
+import io.paradaux.chestshop.utils.BlockUtil;
 import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.configuration.Messages;
 import io.paradaux.chestshop.configuration.Properties;
 import io.paradaux.chestshop.events.ShopDestroyedEvent;
 import io.paradaux.chestshop.listeners.block.breaking.attached.PhysicsBreak;
 import io.paradaux.chestshop.signs.ChestShopSign;
-import io.paradaux.chestshop.uuids.NameManager;
+import io.paradaux.chestshop.players.NameManager;
 import io.paradaux.chestshop.utils.uBlock;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -30,9 +30,9 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
-import static io.paradaux.chestshop.breeze.utils.ImplementationAdapter.getState;
-import static io.paradaux.chestshop.breeze.utils.BlockUtil.getAttachedBlock;
-import static io.paradaux.chestshop.breeze.utils.BlockUtil.isSign;
+import static io.paradaux.chestshop.utils.ImplementationAdapter.getState;
+import static io.paradaux.chestshop.utils.BlockUtil.getAttachedBlock;
+import static io.paradaux.chestshop.utils.BlockUtil.isSign;
 import static io.paradaux.chestshop.Permission.OTHER_NAME_DESTROY;
 
 /**

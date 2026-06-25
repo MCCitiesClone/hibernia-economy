@@ -1,6 +1,6 @@
 package io.paradaux.chestshop.listeners.pretransaction;
 
-import io.paradaux.chestshop.breeze.utils.InventoryUtil;
+import io.paradaux.chestshop.utils.InventoryUtil;
 import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.events.economy.CurrencyCheckEvent;
 import io.paradaux.chestshop.events.PreTransactionEvent;

@@ -19,7 +19,7 @@ import io.paradaux.chestshop.listeners.economy.TaxModule;
 import io.paradaux.chestshop.Permission;
 import io.paradaux.chestshop.signs.ChestShopSign;
 import io.paradaux.chestshop.utils.ItemUtil;
-import io.paradaux.chestshop.uuids.NameManager;
+import io.paradaux.chestshop.players.NameManager;
 import io.paradaux.business.api.BusinessApi;
 import io.paradaux.business.model.RolePermission;
 import io.paradaux.treasury.api.TaxApi;

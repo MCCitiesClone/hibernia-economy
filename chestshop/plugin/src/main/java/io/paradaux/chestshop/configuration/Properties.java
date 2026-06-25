@@ -1,10 +1,10 @@
 package io.paradaux.chestshop.configuration;
 
-import io.paradaux.chestshop.breeze.configuration.annotations.ConfigurationComment;
-import io.paradaux.chestshop.breeze.configuration.annotations.Parser;
-import io.paradaux.chestshop.breeze.configuration.annotations.PrecededBySpace;
-import io.paradaux.chestshop.breeze.configuration.Configuration;
-import io.paradaux.chestshop.breeze.configuration.ValueParser;
+import io.paradaux.chestshop.configuration.annotations.ConfigurationComment;
+import io.paradaux.chestshop.configuration.annotations.Parser;
+import io.paradaux.chestshop.configuration.annotations.PrecededBySpace;
+import io.paradaux.chestshop.configuration.Configuration;
+import io.paradaux.chestshop.configuration.ValueParser;
 import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.Security;
 import org.bukkit.Material;

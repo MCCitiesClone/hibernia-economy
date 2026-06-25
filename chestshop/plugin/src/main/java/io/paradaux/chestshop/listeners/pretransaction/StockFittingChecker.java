@@ -1,6 +1,6 @@
 package io.paradaux.chestshop.listeners.pretransaction;
 
-import io.paradaux.chestshop.breeze.utils.InventoryUtil;
+import io.paradaux.chestshop.utils.InventoryUtil;
 import io.paradaux.chestshop.database.Item;
 import io.paradaux.chestshop.events.PreTransactionEvent;
 import org.bukkit.event.EventHandler;

@@ -1,8 +1,8 @@
 package io.paradaux.chestshop.market;
 
-import io.paradaux.chestshop.breeze.utils.InventoryUtil;
-import io.paradaux.chestshop.breeze.utils.MaterialUtil;
-import io.paradaux.chestshop.breeze.utils.PriceUtil;
+import io.paradaux.chestshop.utils.InventoryUtil;
+import io.paradaux.chestshop.utils.MaterialUtil;
+import io.paradaux.chestshop.utils.PriceUtil;
 import io.paradaux.chestshop.signs.ChestShopSign;
 import io.paradaux.chestshop.utils.ItemUtil;
 import io.paradaux.business.api.BusinessApi;

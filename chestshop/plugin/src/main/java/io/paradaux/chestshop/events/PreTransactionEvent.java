@@ -1,7 +1,7 @@
 package io.paradaux.chestshop.events;
 
 import io.paradaux.chestshop.database.Account;
-import io.paradaux.chestshop.uuids.NameManager;
+import io.paradaux.chestshop.players.NameManager;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.block.Sign;

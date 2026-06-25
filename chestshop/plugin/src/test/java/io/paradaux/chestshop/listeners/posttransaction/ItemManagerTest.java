@@ -2,7 +2,7 @@ package io.paradaux.chestshop.listeners.posttransaction;
 
 import io.paradaux.chestshop.configuration.Properties;
 import io.paradaux.chestshop.events.TransactionEvent;
-import io.paradaux.chestshop.breeze.utils.InventoryUtil;
+import io.paradaux.chestshop.utils.InventoryUtil;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.junit.jupiter.api.AfterEach;

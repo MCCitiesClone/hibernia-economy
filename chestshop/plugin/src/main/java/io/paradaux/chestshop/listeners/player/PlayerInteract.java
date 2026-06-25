@@ -1,11 +1,11 @@
 package io.paradaux.chestshop.listeners.player;
 
-import io.paradaux.chestshop.breeze.utils.*;
+import io.paradaux.chestshop.utils.*;
 import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.commands.AccessToggle;
 import io.paradaux.chestshop.configuration.Messages;
 import io.paradaux.chestshop.configuration.Properties;
-import io.paradaux.chestshop.containers.AdminInventory;
+import io.paradaux.chestshop.economy.AdminInventory;
 import io.paradaux.chestshop.database.Account;
 import io.paradaux.chestshop.events.AccountQueryEvent;
 import io.paradaux.chestshop.events.economy.AccountCheckEvent;
@@ -42,8 +42,8 @@ import java.util.Map;
 import java.util.WeakHashMap;
 import java.util.logging.Level;
 
-import static io.paradaux.chestshop.breeze.utils.ImplementationAdapter.getState;
-import static io.paradaux.chestshop.breeze.utils.BlockUtil.isSign;
+import static io.paradaux.chestshop.utils.ImplementationAdapter.getState;
+import static io.paradaux.chestshop.utils.BlockUtil.isSign;
 import static io.paradaux.chestshop.events.TransactionEvent.TransactionType;
 import static io.paradaux.chestshop.events.TransactionEvent.TransactionType.BUY;
 import static io.paradaux.chestshop.events.TransactionEvent.TransactionType.SELL;

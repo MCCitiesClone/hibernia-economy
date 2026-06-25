@@ -1,6 +1,6 @@
 package io.paradaux.chestshop.listeners.pretransaction;
 
-import io.paradaux.chestshop.breeze.utils.PriceUtil;
+import io.paradaux.chestshop.utils.PriceUtil;
 import io.paradaux.chestshop.configuration.Properties;
 import io.paradaux.chestshop.events.PreTransactionEvent;
 import io.paradaux.chestshop.listeners.block.breaking.SignBreak;

@@ -1,11 +1,11 @@
 package io.paradaux.chestshop.listeners.preshopcreation;
 
-import io.paradaux.chestshop.breeze.utils.PriceUtil;
+import io.paradaux.chestshop.utils.PriceUtil;
 import io.paradaux.chestshop.events.ItemParseEvent;
 import io.paradaux.chestshop.events.PreShopCreationEvent;
 import io.paradaux.chestshop.Permission;
 import io.paradaux.chestshop.signs.ChestShopSign;
-import io.paradaux.chestshop.uuids.NameManager;
+import io.paradaux.chestshop.players.NameManager;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;

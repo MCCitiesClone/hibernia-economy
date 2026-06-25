@@ -1,6 +1,6 @@
 package io.paradaux.chestshop.signs;
 
-import io.paradaux.chestshop.breeze.utils.BlockUtil;
+import io.paradaux.chestshop.utils.BlockUtil;
 import io.paradaux.chestshop.configuration.Messages;
 import io.paradaux.chestshop.events.PreTransactionEvent;
 import io.paradaux.chestshop.Permission;
@@ -15,7 +15,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.SignChangeEvent;
 
-import static io.paradaux.chestshop.breeze.utils.ImplementationAdapter.getState;
+import static io.paradaux.chestshop.utils.ImplementationAdapter.getState;
 import static io.paradaux.chestshop.events.PreTransactionEvent.TransactionOutcome.SHOP_IS_RESTRICTED;
 import static io.paradaux.chestshop.Permission.ADMIN;
 

@@ -1,6 +1,6 @@
 package io.paradaux.chestshop.listeners.preshopcreation;
 
-import io.paradaux.chestshop.breeze.utils.PriceUtil;
+import io.paradaux.chestshop.utils.PriceUtil;
 import io.paradaux.chestshop.configuration.Properties;
 import io.paradaux.chestshop.events.PreShopCreationEvent;
 import io.paradaux.chestshop.signs.ChestShopSign;

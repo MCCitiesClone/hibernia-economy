@@ -1,6 +1,6 @@
 package io.paradaux.chestshop.listeners.posttransaction;
 
-import io.paradaux.chestshop.breeze.utils.LocationUtil;
+import io.paradaux.chestshop.utils.LocationUtil;
 import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.events.TransactionEvent;
 import org.bukkit.event.EventHandler;
@@ -10,7 +10,7 @@ import org.bukkit.inventory.ItemStack;
 
 import java.util.Map;
 
-import static io.paradaux.chestshop.breeze.utils.InventoryUtil.getItemCounts;
+import static io.paradaux.chestshop.utils.InventoryUtil.getItemCounts;
 import static io.paradaux.chestshop.utils.ItemUtil.getName;
 import static io.paradaux.chestshop.events.TransactionEvent.TransactionType.BUY;
 

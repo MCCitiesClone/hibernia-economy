@@ -1,6 +1,6 @@
 package io.paradaux.chestshop.listeners;
 
-import io.paradaux.chestshop.breeze.utils.StringUtil;
+import io.paradaux.chestshop.utils.StringUtil;
 import io.paradaux.chestshop.events.ItemInfoEvent;
 import org.bukkit.ChatColor;
 import org.bukkit.Color;
@@ -25,9 +25,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import static io.paradaux.chestshop.breeze.utils.NumberUtil.toRoman;
-import static io.paradaux.chestshop.breeze.utils.NumberUtil.toTime;
-import static io.paradaux.chestshop.breeze.utils.StringUtil.capitalizeFirstLetter;
+import static io.paradaux.chestshop.utils.NumberUtil.toRoman;
+import static io.paradaux.chestshop.utils.NumberUtil.toTime;
+import static io.paradaux.chestshop.utils.StringUtil.capitalizeFirstLetter;
 import static io.paradaux.chestshop.configuration.Messages.iteminfo_book;
 import static io.paradaux.chestshop.configuration.Messages.iteminfo_book_generation;
 import static io.paradaux.chestshop.configuration.Messages.iteminfo_leather_color;

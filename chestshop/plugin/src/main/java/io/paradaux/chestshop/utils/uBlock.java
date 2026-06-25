@@ -1,6 +1,6 @@
 package io.paradaux.chestshop.utils;
 
-import io.paradaux.chestshop.breeze.utils.BlockUtil;
+import io.paradaux.chestshop.utils.BlockUtil;
 import io.paradaux.chestshop.configuration.Properties;
 import io.paradaux.chestshop.signs.ChestShopSign;
 import org.bukkit.Location;
@@ -18,9 +18,9 @@ import org.bukkit.inventory.InventoryHolder;
 import java.util.ArrayList;
 import java.util.List;
 
-import static io.paradaux.chestshop.breeze.utils.ImplementationAdapter.getLeftSide;
-import static io.paradaux.chestshop.breeze.utils.ImplementationAdapter.getRightSide;
-import static io.paradaux.chestshop.breeze.utils.ImplementationAdapter.getState;
+import static io.paradaux.chestshop.utils.ImplementationAdapter.getLeftSide;
+import static io.paradaux.chestshop.utils.ImplementationAdapter.getRightSide;
+import static io.paradaux.chestshop.utils.ImplementationAdapter.getState;
 
 /**
  * @author Acrobot

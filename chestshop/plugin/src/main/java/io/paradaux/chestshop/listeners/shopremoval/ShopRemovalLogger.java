@@ -1,6 +1,6 @@
 package io.paradaux.chestshop.listeners.shopremoval;
 
-import io.paradaux.chestshop.breeze.utils.LocationUtil;
+import io.paradaux.chestshop.utils.LocationUtil;
 import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.configuration.Properties;
 import io.paradaux.chestshop.events.ShopDestroyedEvent;

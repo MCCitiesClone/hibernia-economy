@@ -1,18 +1,18 @@
 package io.paradaux.chestshop.signs;
 
-import io.paradaux.chestshop.breeze.utils.BlockUtil;
-import io.paradaux.chestshop.breeze.utils.ImplementationAdapter;
-import io.paradaux.chestshop.breeze.utils.QuantityUtil;
-import io.paradaux.chestshop.breeze.utils.StringUtil;
+import io.paradaux.chestshop.utils.BlockUtil;
+import io.paradaux.chestshop.utils.ImplementationAdapter;
+import io.paradaux.chestshop.utils.QuantityUtil;
+import io.paradaux.chestshop.utils.StringUtil;
 import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.configuration.Properties;
-import io.paradaux.chestshop.containers.AdminInventory;
+import io.paradaux.chestshop.economy.AdminInventory;
 import io.paradaux.chestshop.database.Account;
 import io.paradaux.chestshop.events.AccountAccessEvent;
 import io.paradaux.chestshop.events.AccountQueryEvent;
 import io.paradaux.chestshop.events.SignValidationEvent;
 import io.paradaux.chestshop.Permission;
-import io.paradaux.chestshop.uuids.NameManager;
+import io.paradaux.chestshop.players.NameManager;
 import io.paradaux.chestshop.utils.uBlock;
 import org.bukkit.Bukkit;
 import org.bukkit.block.Block;
@@ -28,9 +28,9 @@ import java.util.Locale;
 import java.util.Optional;
 import java.util.regex.Pattern;
 
-import static io.paradaux.chestshop.breeze.utils.ImplementationAdapter.getState;
-import static io.paradaux.chestshop.breeze.utils.MaterialUtil.DURABILITY;
-import static io.paradaux.chestshop.breeze.utils.MaterialUtil.METADATA;
+import static io.paradaux.chestshop.utils.ImplementationAdapter.getState;
+import static io.paradaux.chestshop.utils.MaterialUtil.DURABILITY;
+import static io.paradaux.chestshop.utils.MaterialUtil.METADATA;
 
 /**
  * @author Acrobot

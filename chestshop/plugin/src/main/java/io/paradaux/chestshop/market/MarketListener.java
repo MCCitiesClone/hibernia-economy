@@ -1,6 +1,6 @@
 package io.paradaux.chestshop.market;
 
-import io.paradaux.chestshop.breeze.utils.MaterialUtil;
+import io.paradaux.chestshop.utils.MaterialUtil;
 import io.paradaux.chestshop.events.ShopCreatedEvent;
 import io.paradaux.chestshop.events.ShopDestroyedEvent;
 import io.paradaux.chestshop.events.TransactionEvent;

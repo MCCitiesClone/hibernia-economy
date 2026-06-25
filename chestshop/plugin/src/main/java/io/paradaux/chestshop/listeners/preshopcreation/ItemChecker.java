@@ -1,7 +1,7 @@
 package io.paradaux.chestshop.listeners.preshopcreation;
 
-import io.paradaux.chestshop.breeze.utils.MaterialUtil;
-import io.paradaux.chestshop.breeze.utils.StringUtil;
+import io.paradaux.chestshop.utils.MaterialUtil;
+import io.paradaux.chestshop.utils.StringUtil;
 import io.paradaux.chestshop.configuration.Properties;
 import io.paradaux.chestshop.events.ItemParseEvent;
 import io.paradaux.chestshop.events.PreShopCreationEvent;
@@ -18,7 +18,7 @@ import org.bukkit.inventory.ItemStack;
 
 import java.util.regex.Matcher;
 
-import static io.paradaux.chestshop.breeze.utils.MaterialUtil.*;
+import static io.paradaux.chestshop.utils.MaterialUtil.*;
 import static io.paradaux.chestshop.events.PreShopCreationEvent.CreationOutcome.INVALID_ITEM;
 import static io.paradaux.chestshop.events.PreShopCreationEvent.CreationOutcome.ITEM_AUTOFILL;
 import static io.paradaux.chestshop.signs.ChestShopSign.ITEM_LINE;

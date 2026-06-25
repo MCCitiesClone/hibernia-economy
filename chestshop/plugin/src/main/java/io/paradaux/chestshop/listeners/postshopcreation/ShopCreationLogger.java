@@ -1,6 +1,6 @@
 package io.paradaux.chestshop.listeners.postshopcreation;
 
-import io.paradaux.chestshop.breeze.utils.LocationUtil;
+import io.paradaux.chestshop.utils.LocationUtil;
 import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.events.ShopCreatedEvent;
 import io.paradaux.chestshop.signs.ChestShopSign;

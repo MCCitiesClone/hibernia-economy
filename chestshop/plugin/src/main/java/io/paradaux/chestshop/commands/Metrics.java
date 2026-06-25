@@ -2,7 +2,7 @@ package io.paradaux.chestshop.commands;
 
 import io.paradaux.chestshop.configuration.Messages;
 import io.paradaux.chestshop.listeners.modules.MetricsModule;
-import io.paradaux.chestshop.uuids.NameManager;
+import io.paradaux.chestshop.players.NameManager;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;

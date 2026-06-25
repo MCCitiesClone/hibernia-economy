@@ -1,6 +1,6 @@
 package io.paradaux.chestshop.listeners.modules;
 
-import io.paradaux.chestshop.breeze.utils.MaterialUtil;
+import io.paradaux.chestshop.utils.MaterialUtil;
 import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.events.ChestShopReloadEvent;
 import io.paradaux.chestshop.events.ItemParseEvent;
@@ -18,7 +18,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.logging.Level;
 
-import static io.paradaux.chestshop.breeze.utils.StringUtil.getMinecraftStringWidth;
+import static io.paradaux.chestshop.utils.StringUtil.getMinecraftStringWidth;
 
 /**
  * @author Acrobot

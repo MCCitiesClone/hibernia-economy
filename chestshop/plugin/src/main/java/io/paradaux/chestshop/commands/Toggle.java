@@ -3,7 +3,7 @@ package io.paradaux.chestshop.commands;
 import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.configuration.Messages;
 import io.paradaux.chestshop.database.Account;
-import io.paradaux.chestshop.uuids.NameManager;
+import io.paradaux.chestshop.players.NameManager;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.command.Command;

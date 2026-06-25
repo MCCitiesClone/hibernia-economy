@@ -1,6 +1,6 @@
 package io.paradaux.chestshop;
 
-import io.paradaux.chestshop.breeze.utils.MaterialUtil;
+import io.paradaux.chestshop.utils.MaterialUtil;
 import io.paradaux.chestshop.configuration.Properties;
 import io.paradaux.chestshop.listeners.economy.EconomyAdapter;
 import io.paradaux.chestshop.listeners.economy.plugins.TreasuryListener;
@@ -230,6 +230,13 @@ public class Dependencies implements Listener {
         Plugin plugin = event.getPlugin();
         try {
             loadPlugin(plugin.getName(), plugin);
+            // Also try the plugin's declared provided aliases (getProvides()), so
+            // a dependency we support under a different "provides" name still hooks.
+            for (String pluginAlias : plugin.getDescription().getProvides()) {
+                if (loadPlugin(pluginAlias, plugin)) {
+                    break;
+                }
+            }
         } catch (Exception e) {
             plugin.getLogger().log(Level.WARNING, "Unable to hook into " + plugin.getName() + " " + plugin.getDescription().getVersion(), e);
         }

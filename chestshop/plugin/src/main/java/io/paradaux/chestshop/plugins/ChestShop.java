@@ -12,8 +12,8 @@ import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 
-import static io.paradaux.chestshop.breeze.utils.ImplementationAdapter.getState;
-import static io.paradaux.chestshop.breeze.utils.BlockUtil.isSign;
+import static io.paradaux.chestshop.utils.ImplementationAdapter.getState;
+import static io.paradaux.chestshop.utils.BlockUtil.isSign;
 
 /**
  * @author Acrobot

@@ -1,6 +1,6 @@
 package io.paradaux.chestshop.listeners.modules;
 
-import io.paradaux.chestshop.breeze.utils.NumberUtil;
+import io.paradaux.chestshop.utils.NumberUtil;
 import io.paradaux.chestshop.events.TransactionEvent;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;

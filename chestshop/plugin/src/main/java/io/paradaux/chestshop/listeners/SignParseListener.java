@@ -1,7 +1,7 @@
 package io.paradaux.chestshop.listeners;
 
-import io.paradaux.chestshop.breeze.utils.MaterialUtil;
-import io.paradaux.chestshop.breeze.utils.StringUtil;
+import io.paradaux.chestshop.utils.MaterialUtil;
+import io.paradaux.chestshop.utils.StringUtil;
 import io.paradaux.chestshop.configuration.Properties;
 import io.paradaux.chestshop.events.ItemParseEvent;
 import io.paradaux.chestshop.events.MaterialParseEvent;
