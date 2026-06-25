@@ -4,7 +4,7 @@ version: '${bukkit.plugin.version}'
 author: Acrobot
 authors: ['https://github.com/ChestShop-authors/ChestShop-3/contributors']
 description: A chest shop for economy plugins.
-softdepend: [Treasury, Business, Vault, Reserve, LWC, Lockette, LockettePro, Deadbolt, BlockLocker, OddItem, WorldGuard, GriefPrevention, RedProtect, Heroes, SimpleChestLock, Residence, ShowItem, ItemBridge, AuthMe]
+softdepend: [Treasury, Business, LWC, LockettePro, BlockLocker, OddItem, WorldGuard, GriefPrevention, RedProtect, Heroes, ShowItem, ItemBridge, AuthMe]
 api-version: '1.13'
 # Not Folia-ready: scheduling uses a plain ExecutorService and synchronous
 # callEvent, and shared statics (NameManager caches, MetricsModule counters)

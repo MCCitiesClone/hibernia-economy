@@ -52,13 +52,6 @@ subprojects {
         maven("https://s01.oss.sonatype.org/content/repositories/snapshots/")
         maven("https://repo.paradaux.io/releases")
         maven("https://repo.paradaux.io/snapshots")
-        // Vendored plugin jars not available from any public repo (Maven-layout).
-        // Resolve against the chestshop project dir explicitly — `rootDir` is the
-        // monorepo root in the single build, not this subtree.
-        maven {
-            name = "chestshopLocalRepo"
-            url = uri("${project(":chestshop").projectDir}/repo")
-        }
     }
 
     plugins.withType<JavaPlugin> {

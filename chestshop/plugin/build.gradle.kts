@@ -43,11 +43,9 @@ dependencies {
     //     RedProtect -> de.keyle:mypet (gone), worldguard -> worldedit 8.0.0
     //     -SNAPSHOT (needs Java 25). Add a specific transitive back explicitly
     //     below only if compilation actually requires it.
-    compileOnly("net.milkbowl.vault:Vault:1.6.6") { isTransitive = false }
     compileOnly("com.herocraftonline.heroes:Heroes:1.5.5") { isTransitive = false }
     compileOnly("fr.xephi:authme:5.6.0-SNAPSHOT") { isTransitive = false }
     compileOnly("com.griefcraft.lwc:LWCX:2.2.5") { isTransitive = false }
-    compileOnly("com.daemitus.deadbolt:deadbolt:2.2") { isTransitive = false }
     // WorldGuard integration genuinely needs WorldGuard's transitives (StateFlag,
     // Flags, RegionPermissionModel) + WorldEdit's BukkitAdapter, so these stay
     // transitive — but WorldEdit is force-pinned to 7.3.9 below (the snapshot
@@ -65,12 +63,8 @@ dependencies {
     compileOnly("com.github.jojodmo:ItemBridge:b0054538c1") { isTransitive = false }
     compileOnly("br.net.fabiozumbi12.RedProtect:RedProtect-Spigot:7.7.3") { isTransitive = false }
     compileOnly("br.net.fabiozumbi12.RedProtect:RedProtect-Core:7.7.3") { isTransitive = false }
-    compileOnly("com.webkonsept.bukkit.simplechestlock:simplechestlock:1.2.1") { isTransitive = false }
-    compileOnly("org.yi.acru.bukkit.lockette:lockette:1.8.14") { isTransitive = false }
     compileOnly("nl.rutgerkok:blocklocker:1.9") { isTransitive = false }
-    compileOnly("com.bekvon.bukkit:residence:4.6.1.4") { isTransitive = false }
     compileOnly("de.themoep.showitem:api:1.6.3") { isTransitive = false }
-    compileOnly("net.tnemc:Reserve:0.1.5.4") { isTransitive = false }
     // Substituted to the local Treasury/Business builds by the root composite
     // (settings.gradle.kts); the version here only governs standalone builds,
     // so it tracks the current dev version which carries the API ChestShop uses

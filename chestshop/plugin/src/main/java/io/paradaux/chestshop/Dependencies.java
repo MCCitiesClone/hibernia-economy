@@ -3,9 +3,7 @@ package io.paradaux.chestshop;
 import io.paradaux.chestshop.breeze.Utils.MaterialUtil;
 import io.paradaux.chestshop.Configuration.Properties;
 import io.paradaux.chestshop.Listeners.Economy.EconomyAdapter;
-import io.paradaux.chestshop.Listeners.Economy.Plugins.ReserveListener;
 import io.paradaux.chestshop.Listeners.Economy.Plugins.TreasuryListener;
-import io.paradaux.chestshop.Listeners.Economy.Plugins.VaultListener;
 import io.paradaux.chestshop.Plugins.*;
 import com.google.common.collect.ImmutableMap;
 import org.bstats.charts.DrilldownPie;
@@ -106,18 +104,8 @@ public class Dependencies implements Listener {
             economy = TreasuryListener.prepareListener();
         }
 
-        if (economy == null && Bukkit.getPluginManager().getPlugin("Reserve") != null) {
-            plugin = "Reserve";
-            economy = ReserveListener.prepareListener();
-        }
-
-        if (economy == null && Bukkit.getPluginManager().getPlugin("Vault") != null) {
-            plugin = "Vault";
-            economy = VaultListener.initializeVault();
-        }
-
         if (economy == null) {
-            ChestShop.getBukkitLogger().severe("No Economy adapter found! You need to install either Treasury, Vault, or Reserve!");
+            ChestShop.getBukkitLogger().severe("No Economy adapter found! You need to install Treasury!");
             return false;
         }
 
@@ -137,12 +125,6 @@ public class Dependencies implements Listener {
 
         try {
             dependency = Dependency.valueOf(name);
-
-            if (dependency.author != null && !plugin.getDescription().getAuthors().contains(dependency.author)) {
-                ChestShop.getBukkitLogger().info("You are not using the supported variant of " + name + " by " + dependency.author + "."
-                        + " This variant of " + name + " seems to be made by " + plugin.getDescription().getAuthors().get(0) + " which isn't supported!");
-                return false;
-            }
         } catch (IllegalArgumentException exception) {
             return false;
         }
@@ -154,30 +136,11 @@ public class Dependencies implements Listener {
             case LWC:
                 listener = new LightweightChestProtection();
                 break;
-            case Lockette:
-                listener = new Lockette();
-                break;
             case LockettePro:
                 listener = new LockettePro();
                 break;
-            case Deadbolt:
-                listener = new Deadbolt();
-                break;
-            case SimpleChestLock:
-                listener = SimpleChestLock.getSimpleChestLock(plugin);
-                break;
             case BlockLocker:
                 listener = new BlockLocker();
-                break;
-            case Residence:
-                if (plugin.getDescription().getVersion().startsWith("2")) {
-                    ChestShop.getBukkitLogger().severe("You are using an old version of Residence! " +
-                            "Please update to the newest one, which supports UUIDs: http://ci.drtshock.net/job/Residence/");
-
-                    break;
-                }
-
-                listener = new ResidenceChestProtection();
                 break;
 
             //Terrain protection plugins
@@ -246,12 +209,8 @@ public class Dependencies implements Listener {
 
     private enum Dependency {
         LWC,
-        Lockette("Acru"),
         LockettePro,
-        Deadbolt,
-        SimpleChestLock,
         BlockLocker,
-        Residence,
 
         WorldGuard,
         GriefPrevention,
@@ -263,17 +222,7 @@ public class Dependencies implements Listener {
 
         ItemBridge,
 
-        ShowItem;
-
-        private final String author;
-
-        Dependency() {
-            this.author = null;
-        }
-
-        Dependency(String author) {
-            this.author = author;
-        }
+        ShowItem
     }
 
     @EventHandler(priority = EventPriority.MONITOR)

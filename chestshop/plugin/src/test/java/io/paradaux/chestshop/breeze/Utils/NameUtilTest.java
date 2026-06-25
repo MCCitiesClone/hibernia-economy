@@ -1,26 +1,25 @@
 package io.paradaux.chestshop.breeze.Utils;
 
-import org.bukkit.entity.Player;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.lenient;
 
-@ExtendWith(MockitoExtension.class)
 class NameUtilTest {
 
-    @Mock private Player player;
+    @Test
+    void stripUsername_shorterThanLimit_isReturnedUnchanged() {
+        assertThat(NameUtil.stripUsername("Notch")).isEqualTo("Notch");
+    }
 
     @Test
-    void getUUID_byPlayer_delegatesToGetUniqueId() {
-        UUID id = UUID.fromString("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa");
-        lenient().when(player.getUniqueId()).thenReturn(id);
+    void stripUsername_longerThan15_isTruncatedToSignWidth() {
+        assertThat(NameUtil.stripUsername("ThisNameIsWayTooLong")).isEqualTo("ThisNameIsWayTo");
+        assertThat(NameUtil.stripUsername("ThisNameIsWayTooLong")).hasSize(15);
+    }
 
-        assertThat(NameUtil.getUUID(player)).isEqualTo(id);
+    @Test
+    void stripUsername_customLength_truncatesToThatLength() {
+        assertThat(NameUtil.stripUsername("abcdefgh", 3)).isEqualTo("abc");
+        assertThat(NameUtil.stripUsername("ab", 3)).isEqualTo("ab");
     }
 }
