@@ -6,7 +6,11 @@ authors: ['https://github.com/ChestShop-authors/ChestShop-3/contributors']
 description: A chest shop for economy plugins.
 softdepend: [Treasury, Business, Vault, Reserve, LWC, Lockette, LockettePro, Deadbolt, BlockLocker, OddItem, WorldGuard, GriefPrevention, RedProtect, Heroes, SimpleChestLock, Residence, ShowItem, ItemBridge, AuthMe]
 api-version: '1.13'
-folia-supported: true
+# Not Folia-ready: scheduling uses a plain ExecutorService and synchronous
+# callEvent, and shared statics (NameManager caches, MetricsModule counters)
+# are not synchronised across region threads. Do not advertise Folia support
+# until those are ported/audited (ADT-43).
+folia-supported: false
 
 commands:
   iteminfo:
