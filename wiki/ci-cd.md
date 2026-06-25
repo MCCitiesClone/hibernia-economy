@@ -68,6 +68,6 @@ They need updating to invoke the root build, e.g.:
 - run: ./gradlew --no-daemon :treasury:shadowJar -Pci=true
 ```
 
-`chestshop-test` already uses the root form (`./gradlew :chestshop:plugin:test`)
+`chestshop-test` already uses the root form (`./gradlew :chestshop:test`)
 and is the pattern to follow. The `paths:` filters, service containers, and
 Harbor/Argo steps stay as they are. This is a known follow-up.

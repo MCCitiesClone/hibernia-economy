@@ -159,8 +159,8 @@ Everything is one Gradle build, so you can build any artifact from the repo root
 ./gradlew :business:shadowJar
 ./gradlew :treasury-api-plugin:shadowJar
 
-# ChestShop  ->  chestshop/plugin/build/libs/ChestShop.jar
-./gradlew :chestshop:plugin:shadowJar
+# ChestShop  ->  chestshop/build/libs/ChestShop.jar
+./gradlew :chestshop:shadowJar
 
 # REST API (Spring Boot)  ->  treasury-rest-api/build/libs/
 ./gradlew :treasury-rest-api:bootJar

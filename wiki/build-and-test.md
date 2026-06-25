@@ -30,7 +30,7 @@ On Windows use `.\gradlew.bat`.
 | Treasury plugin | `:treasury:shadowJar` | `treasury/build/libs/` |
 | Business plugin | `:business:shadowJar` | `business/build/libs/` |
 | API-key plugin | `:treasury-api-plugin:shadowJar` | `treasury-api-plugin/build/libs/` |
-| ChestShop | `:chestshop:plugin:shadowJar` | `chestshop/plugin/build/libs/ChestShop.jar` |
+| ChestShop | `:chestshop:shadowJar` | `chestshop/build/libs/ChestShop.jar` |
 | REST API | `:treasury-rest-api:bootJar` | `treasury-rest-api/build/libs/` |
 | API jars | `:treasury:treasury-api:jar`, `:business:business-api:jar` | each `build/libs/` |
 
@@ -50,16 +50,17 @@ For consumers **outside** this repo:
 
 ## ChestShop specifics
 
-ChestShop is a **single module** (`:chestshop:plugin`) compiled against the **Paper
+ChestShop is a **single module** (`:chestshop`) compiled against the **Paper
 1.21.11** API and shaded straight to `ChestShop.jar`. It was ported from Maven with
 upstream's multi-version adapter matrix — a 1.13.2-baseline core plus seven
 `Spigot_*`/`Paper_*` adapter modules and an `assemble` module — but since DC runs a
 single modern server version, the adapters were folded into the core and the extra
-modules removed.
+modules removed (including the former `:chestshop:plugin` nesting — the code now
+lives at `chestshop/src` like every other project).
 
 Things worth knowing if you touch it:
 
-- **Shading & relocations.** `:chestshop:plugin`'s shadowJar bundles a whitelisted
+- **Shading & relocations.** `:chestshop`'s shadowJar bundles a whitelisted
   set of libraries (adventure/kyori, minedown, bStats, ORMLite, javax.persistence)
   and relocates them under `io.paradaux.chestshop.Libs.*` / `.Metrics.*` /
   `.Updater`. The server/soft-depend APIs are `compileOnly` and never bundled.
