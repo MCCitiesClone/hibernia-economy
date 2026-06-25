@@ -11,6 +11,9 @@ import com.j256.ormlite.table.TableUtils;
 
 import java.security.InvalidParameterException;
 import java.sql.SQLException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.logging.Level;
 
 /**
  * Creates a DAO appropriate for the plugin
@@ -18,6 +21,14 @@ import java.sql.SQLException;
  * @author Andrzej Pomirski
  */
 public class DaoCreator {
+
+    /**
+     * One {@link ConnectionSource} per database file (keyed by JDBC URI),
+     * reused across all DAOs for that file and closed on plugin disable. Each
+     * {@code getDao} call used to open a fresh {@link JdbcConnectionSource} that
+     * was never closed, leaking a connection source per call (ADT-42).
+     */
+    private static final Map<String, ConnectionSource> CONNECTION_SOURCES = new HashMap<>();
 
     /**
      * Returns a DAO for the given entity and with the given ID
@@ -35,12 +46,39 @@ public class DaoCreator {
         String fileName = entity.getAnnotation(DatabaseFileName.class).value();
         String uri = ConnectionManager.getURI(ChestShop.loadFile(fileName));
 
-        ConnectionSource connectionSource = new JdbcConnectionSource(uri, new SqliteDatabaseType());
+        ConnectionSource connectionSource = getConnectionSource(uri);
 
         Dao<ENTITY, ID> dao = DaoManager.createDao(connectionSource, entity);
         dao.setObjectCache(new LruObjectCache(200));
 
         return dao;
+    }
+
+    private static synchronized ConnectionSource getConnectionSource(String uri) throws SQLException {
+        ConnectionSource existing = CONNECTION_SOURCES.get(uri);
+        if (existing != null) {
+            return existing;
+        }
+
+        ConnectionSource created = new JdbcConnectionSource(uri, new SqliteDatabaseType());
+        CONNECTION_SOURCES.put(uri, created);
+        return created;
+    }
+
+    /**
+     * Close every cached {@link ConnectionSource}. Call from the plugin's
+     * {@code onDisable} so the SQLite handles are released on reload/shutdown.
+     */
+    public static synchronized void closeAll() {
+        for (ConnectionSource source : CONNECTION_SOURCES.values()) {
+            try {
+                source.close();
+            } catch (Exception e) {
+                ChestShop.getBukkitLogger().log(Level.WARNING,
+                        "Failed to close a ChestShop database connection source", e);
+            }
+        }
+        CONNECTION_SOURCES.clear();
     }
 
     /**

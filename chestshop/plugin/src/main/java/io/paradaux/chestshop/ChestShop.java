@@ -323,6 +323,8 @@ public class ChestShop extends JavaPlugin {
             executorService.awaitTermination(15, TimeUnit.SECONDS);
         } catch (InterruptedException ignored) {}
 
+        io.paradaux.chestshop.Database.DaoCreator.closeAll();
+
         if (handler != null) {
             handler.close();
             getLogger().removeHandler(handler);
