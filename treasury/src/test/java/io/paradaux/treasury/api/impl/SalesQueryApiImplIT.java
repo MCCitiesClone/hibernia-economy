@@ -24,7 +24,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * {@code ChestShopSalesReadMapper}) against a real (embedded) MariaDB. Exercises
  * the actual dynamic SQL: owner scoping, filters, pagination, the BUY/SELL split,
  * the time window, and the item/customer leaderboards. chestshop_sale and
- * firm_players come from the economy-flyway migrations (PAR-239).
+ * economy_players come from the economy-flyway migrations (PAR-239).
  */
 class SalesQueryApiImplIT extends IntegrationTestBase {
 
@@ -41,7 +41,7 @@ class SalesQueryApiImplIT extends IntegrationTestBase {
         sales = injector.getInstance(SalesQueryApiImpl.class);
         market = injector.getInstance(MarketApiImpl.class);
         exec("TRUNCATE TABLE chestshop_sale");
-        exec("DELETE FROM firm_players");
+        exec("DELETE FROM economy_players");
 
         firmPlayer(ALICE, "Alice");
         firmPlayer(BOB, "Bob");
@@ -144,7 +144,7 @@ class SalesQueryApiImplIT extends IntegrationTestBase {
     }
 
     private void firmPlayer(UUID uuid, String name) throws Exception {
-        exec("INSERT INTO firm_players (player_uuid_bin, current_name) VALUES (UNHEX('"
+        exec("INSERT INTO economy_players (player_uuid_bin, current_name) VALUES (UNHEX('"
                 + hex(uuid) + "'), '" + name + "')");
     }
 

@@ -55,7 +55,7 @@ public interface ChestShopSalesReadMapper {
                    s.sign_z       AS signZ,
                    s.txn_id       AS txnId
             FROM chestshop_sale s
-            LEFT JOIN firm_players fp ON fp.player_uuid_bin = s.customer_uuid_bin
+            LEFT JOIN economy_players fp ON fp.player_uuid_bin = s.customer_uuid_bin
             """ + WHERE + """
             ORDER BY s.occurred_at DESC, s.sale_id DESC
             LIMIT #{q.limit} OFFSET #{q.offset}
@@ -111,7 +111,7 @@ public interface ChestShopSalesReadMapper {
                    COUNT(*)                 AS saleCount,
                    COALESCE(SUM(s.total_price), 0.00) AS volume
             FROM chestshop_sale s
-            LEFT JOIN firm_players fp ON fp.player_uuid_bin = s.customer_uuid_bin
+            LEFT JOIN economy_players fp ON fp.player_uuid_bin = s.customer_uuid_bin
             """ + WHERE + """
             GROUP BY s.customer_uuid_bin
             ORDER BY saleCount DESC, volume DESC
