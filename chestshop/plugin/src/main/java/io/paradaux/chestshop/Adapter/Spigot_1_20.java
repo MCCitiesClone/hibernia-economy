@@ -5,7 +5,6 @@ import io.paradaux.chestshop.breeze.Utils.ImplementationAdapter;
 import io.paradaux.chestshop.Configuration.Messages;
 import io.paradaux.chestshop.Events.ItemInfoEvent;
 import io.paradaux.chestshop.Signs.ChestShopSign;
-import io.paradaux.chestshop.Utils.VersionAdapter;
 import org.bukkit.block.Block;
 import org.bukkit.block.Sign;
 import org.bukkit.block.sign.Side;
@@ -19,7 +18,7 @@ import org.bukkit.inventory.meta.ItemMeta;
 import static io.paradaux.chestshop.breeze.Utils.StringUtil.capitalizeFirstLetter;
 import static io.paradaux.chestshop.Configuration.Messages.iteminfo_armor_trim;
 
-public class Spigot_1_20 implements Listener, VersionAdapter {
+public class Spigot_1_20 implements Listener {
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.LOW)
     public static void onSignChange(SignChangeEvent event) {
@@ -47,17 +46,6 @@ public class Spigot_1_20 implements Listener, VersionAdapter {
                         "pattern", capitalizeFirstLetter(((ArmorMeta) meta).getTrim().getPattern().getKey().getKey(), '_'),
                         "material", capitalizeFirstLetter(((ArmorMeta) meta).getTrim().getMaterial().getKey().getKey(), '_'));
             }
-        }
-    }
-
-    @Override
-    public boolean isSupported() {
-        try {
-            Class.forName("org.bukkit.block.sign.Side");
-            Class.forName("org.bukkit.inventory.meta.ArmorMeta");
-            return true;
-        } catch (ClassNotFoundException e) {
-            return false;
         }
     }
 }

@@ -4,7 +4,6 @@ import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.Commands.ItemInfo;
 import io.paradaux.chestshop.Configuration.Messages;
 import io.paradaux.chestshop.Events.ItemInfoEvent;
-import io.paradaux.chestshop.Utils.VersionAdapter;
 import org.bukkit.ChatColor;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -23,7 +22,7 @@ import static io.paradaux.chestshop.Configuration.Messages.iteminfo_crossbow_pro
 import static io.paradaux.chestshop.Configuration.Messages.iteminfo_map_location;
 import static io.paradaux.chestshop.Configuration.Messages.iteminfo_map_view;
 
-public class Spigot_1_14 implements Listener, VersionAdapter {
+public class Spigot_1_14 implements Listener {
 
     @EventHandler(priority = EventPriority.HIGH)
     public static void addMapInfo(ItemInfoEvent event) {
@@ -63,17 +62,6 @@ public class Spigot_1_14 implements Listener, VersionAdapter {
                     event.addRawMessage("crossbow_projectile_" + chargedProjectile.hashCode() + "_divider", ChatColor.GRAY + "---");
                 }
             }
-        }
-    }
-
-    @Override
-    public boolean isSupported() {
-        try {
-            Class.forName("org.bukkit.inventory.meta.CrossbowMeta");
-            MapView.class.getMethod("isLocked");
-            return true;
-        } catch (ClassNotFoundException | NoSuchMethodException e) {
-            return false;
         }
     }
 }

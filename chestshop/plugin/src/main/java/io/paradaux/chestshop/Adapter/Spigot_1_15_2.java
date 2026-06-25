@@ -1,18 +1,16 @@
 package io.paradaux.chestshop.Adapter;
 
-import io.paradaux.chestshop.Utils.VersionAdapter;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.server.PluginEnableEvent;
 import org.bukkit.plugin.Plugin;
-import org.bukkit.plugin.PluginDescriptionFile;
 
 import java.util.logging.Level;
 
 import static io.paradaux.chestshop.Dependencies.loadPlugin;
 
-public class Spigot_1_15_2 implements Listener, VersionAdapter {
+public class Spigot_1_15_2 implements Listener {
 
 
     @EventHandler(priority = EventPriority.MONITOR)
@@ -26,16 +24,6 @@ public class Spigot_1_15_2 implements Listener, VersionAdapter {
             }
         } catch (Exception e) {
             plugin.getLogger().log(Level.WARNING, "Unable to hook into " + plugin.getName() + " " + plugin.getDescription().getVersion(), e);
-        }
-    }
-
-    @Override
-    public boolean isSupported() {
-        try {
-            PluginDescriptionFile.class.getMethod("getProvides");
-            return true;
-        } catch (NoSuchMethodException e) {
-            return false;
         }
     }
 }

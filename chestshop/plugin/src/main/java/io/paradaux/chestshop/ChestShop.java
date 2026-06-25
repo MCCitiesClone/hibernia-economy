@@ -48,7 +48,6 @@ import io.paradaux.chestshop.Metadata.ItemDatabase;
 import io.paradaux.chestshop.Signs.RestrictedSign;
 import io.paradaux.chestshop.UUIDs.NameManager;
 
-import io.paradaux.chestshop.Utils.VersionAdapter;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.ByteArrayDataOutput;
 import com.google.common.io.ByteStreams;
@@ -442,37 +441,18 @@ public class ChestShop extends JavaPlugin {
     }
 
     private void registerVersionedAdapters() {
-        // Search jar file for version adapters
-        try (JarFile jarFile = new JarFile(this.getFile())) {
-            jarFile.stream()
-                    .filter(entry -> !entry.isDirectory())
-                    .filter(entry -> entry.getName().startsWith("io/paradaux/chestshop/Adapter/") && entry.getName().endsWith(".class"))
-                    .map(entry -> entry.getName().replace('/', '.').replace(".class", ""))
-                    .forEach(className -> {
-                        try {
-                            Class<?> clazz = getClassLoader().loadClass(className);
-                            if (VersionAdapter.class.isAssignableFrom(clazz)) {
-                                VersionAdapter adapterInstance = (VersionAdapter) clazz.getDeclaredConstructor().newInstance();
-                                if (adapterInstance.isSupported()) {
-                                    if (adapterInstance instanceof Listener) {
-                                        registerEvent((Listener) adapterInstance);
-                                        logDebug("Registered listener for "
-                                                + clazz.getSimpleName().replaceFirst("_", " ").replace('_', '.')
-                                                + " features.");
-                                    } else {
-                                        logDebug("Found adapter for "
-                                                + clazz.getSimpleName().replaceFirst("_", " ").replace('_', '.')
-                                                + " features.");
-                                    }
-                                }
-                            }
-                        } catch (ReflectiveOperationException e) {
-                            getLogger().log(java.util.logging.Level.WARNING, "Unable to register adapter " + className, e);
-                        }
-                    });
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        // These listeners provide the API-tier-specific /iteminfo details, sign
+        // backside protection, physics-break handling and getProvides() plugin
+        // aliasing. They were historically discovered by scanning the jar for
+        // VersionAdapter implementations and gated by isSupported(); since this
+        // fork targets a single Paper version, every gate always passed, so they
+        // are now registered directly and the reflection scheme is gone (PAR-255).
+        registerEvent(new io.paradaux.chestshop.Adapter.Paper_1_13_2());
+        registerEvent(new io.paradaux.chestshop.Adapter.Spigot_1_14());
+        registerEvent(new io.paradaux.chestshop.Adapter.Spigot_1_15_2());
+        registerEvent(new io.paradaux.chestshop.Adapter.Spigot_1_17());
+        registerEvent(new io.paradaux.chestshop.Adapter.Spigot_1_20());
+        registerEvent(new io.paradaux.chestshop.Adapter.Spigot_1_20_5());
     }
 
     private void registerPluginMessagingChannels() {

@@ -140,7 +140,7 @@ public class Migrations {
 
             long start = System.currentTimeMillis();
             try {
-                items.executeRawNoArgs("INSERT INTO `items` (id, code) SELECT id, code uuid FROM `items-old`");
+                items.executeRawNoArgs("INSERT INTO `items` (id, code) SELECT id, code FROM `items-old`");
             } catch (SQLException e) {
                 ChestShop.getBukkitLogger().log(Level.SEVERE, "Error while inserting items into new database while migrating to v4", e);
             }

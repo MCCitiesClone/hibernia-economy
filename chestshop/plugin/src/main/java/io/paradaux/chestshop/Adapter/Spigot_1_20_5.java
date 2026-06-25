@@ -1,7 +1,6 @@
 package io.paradaux.chestshop.Adapter;
 
 import io.paradaux.chestshop.Events.ItemInfoEvent;
-import io.paradaux.chestshop.Utils.VersionAdapter;
 import org.bukkit.ChatColor;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -14,7 +13,7 @@ import org.bukkit.potion.PotionEffect;
 import static io.paradaux.chestshop.breeze.Utils.NumberUtil.toTime;
 import static io.paradaux.chestshop.breeze.Utils.StringUtil.capitalizeFirstLetter;
 
-public class Spigot_1_20_5 implements Listener, VersionAdapter {
+public class Spigot_1_20_5 implements Listener {
 
 
     @EventHandler(priority = EventPriority.HIGH)
@@ -50,17 +49,6 @@ public class Spigot_1_20_5 implements Listener, VersionAdapter {
         }
         if (message.length() > 0) {
             event.addRawMessage("iteminfo_potion", message.toString());
-        }
-    }
-
-    @Override
-    public boolean isSupported() {
-        try {
-            PotionMeta.class.getMethod("getBasePotionType");
-            PotionMeta.class.getMethod("getCustomEffects");
-            return true;
-        } catch (NoSuchMethodException e) {
-            return false;
         }
     }
 }

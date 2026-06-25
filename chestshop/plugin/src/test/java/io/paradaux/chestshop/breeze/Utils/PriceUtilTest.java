@@ -100,14 +100,4 @@ class PriceUtilTest {
     void hasSingleMultiplier_returnsFalseForMultipleDistinctMultipliers(String text) {
         assertThat(PriceUtil.hasSingleMultiplier(text)).isFalse();
     }
-
-    // ── deprecated double overloads ──────────────────────────────────────────
-
-    @Test
-    @SuppressWarnings("deprecation")
-    void deprecatedGet_returnsDoubleEquivalent() {
-        assertThat(PriceUtil.get("b 100", 'b')).isEqualTo(100.0);
-        assertThat(PriceUtil.getBuyPrice("b 100")).isEqualTo(100.0);
-        assertThat(PriceUtil.getSellPrice("s 50")).isEqualTo(50.0);
-    }
 }

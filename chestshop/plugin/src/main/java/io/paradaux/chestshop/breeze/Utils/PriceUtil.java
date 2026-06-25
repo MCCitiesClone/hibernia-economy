@@ -103,19 +103,6 @@ public class PriceUtil {
     }
 
     /**
-     * Gets the price from the text
-     *
-     * @param text      Text to check
-     * @param indicator Price indicator (for example, B for buy)
-     * @return price
-     * @deprecated Use {@link #getExact(String, char)}
-     */
-    @Deprecated
-    public static double get(String text, char indicator) {
-        return getExact(text, indicator).doubleValue();
-    }
-
-    /**
      * Gets the exact buy price from the text
      *
      * @param text Text to check
@@ -133,30 +120,6 @@ public class PriceUtil {
      */
     public static BigDecimal getExactSellPrice(String text) {
         return getExact(text, SELL_INDICATOR);
-    }
-
-    /**
-     * Gets the buy price from the text
-     *
-     * @param text Text to check
-     * @return Buy price
-     * @deprecated Use {@link #getExactBuyPrice(String)}
-     */
-    @Deprecated
-    public static double getBuyPrice(String text) {
-        return getExactBuyPrice(text).doubleValue();
-    }
-
-    /**
-     * Gets the sell price from the text
-     *
-     * @param text Text to check
-     * @return Sell price
-     * @deprecated Use {@link #getExactSellPrice(String)}
-     */
-    @Deprecated
-    public static double getSellPrice(String text) {
-        return getExactSellPrice(text).doubleValue();
     }
 
     /**
