@@ -1,13 +1,13 @@
 package io.paradaux.chestshop;
 
-import io.paradaux.chestshop.breeze.Utils.BlockUtil;
-import io.paradaux.chestshop.Configuration.Properties;
-import io.paradaux.chestshop.Database.Account;
-import io.paradaux.chestshop.Events.AccountQueryEvent;
-import io.paradaux.chestshop.Events.Protection.ProtectBlockEvent;
-import io.paradaux.chestshop.Events.Protection.ProtectionCheckEvent;
-import io.paradaux.chestshop.Signs.ChestShopSign;
-import io.paradaux.chestshop.Utils.uBlock;
+import io.paradaux.chestshop.breeze.utils.BlockUtil;
+import io.paradaux.chestshop.configuration.Properties;
+import io.paradaux.chestshop.database.Account;
+import io.paradaux.chestshop.events.AccountQueryEvent;
+import io.paradaux.chestshop.events.protection.ProtectBlockEvent;
+import io.paradaux.chestshop.events.protection.ProtectionCheckEvent;
+import io.paradaux.chestshop.signs.ChestShopSign;
+import io.paradaux.chestshop.utils.uBlock;
 import org.bukkit.Bukkit;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
@@ -17,7 +17,7 @@ import org.bukkit.event.Event;
 
 import java.util.UUID;
 
-import static io.paradaux.chestshop.breeze.Utils.ImplementationAdapter.getState;
+import static io.paradaux.chestshop.breeze.utils.ImplementationAdapter.getState;
 
 /**
  * @author Acrobot

@@ -1,10 +1,10 @@
 package io.paradaux.chestshop;
 
-import io.paradaux.chestshop.breeze.Utils.MaterialUtil;
-import io.paradaux.chestshop.Configuration.Properties;
-import io.paradaux.chestshop.Listeners.Economy.EconomyAdapter;
-import io.paradaux.chestshop.Listeners.Economy.Plugins.TreasuryListener;
-import io.paradaux.chestshop.Plugins.*;
+import io.paradaux.chestshop.breeze.utils.MaterialUtil;
+import io.paradaux.chestshop.configuration.Properties;
+import io.paradaux.chestshop.listeners.economy.EconomyAdapter;
+import io.paradaux.chestshop.listeners.economy.plugins.TreasuryListener;
+import io.paradaux.chestshop.plugins.*;
 import com.google.common.collect.ImmutableMap;
 import org.bstats.charts.DrilldownPie;
 import org.bukkit.Bukkit;

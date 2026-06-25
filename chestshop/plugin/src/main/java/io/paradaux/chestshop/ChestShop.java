@@ -1,52 +1,52 @@
 package io.paradaux.chestshop;
 
-import io.paradaux.chestshop.breeze.Configuration.Configuration;
-import io.paradaux.chestshop.Commands.Give;
-import io.paradaux.chestshop.Commands.ItemInfo;
-import io.paradaux.chestshop.Commands.ShopInfo;
-import io.paradaux.chestshop.Commands.Toggle;
-import io.paradaux.chestshop.Commands.Version;
-import io.paradaux.chestshop.Commands.AccessToggle;
-import io.paradaux.chestshop.Configuration.Messages;
-import io.paradaux.chestshop.Configuration.Properties;
-import io.paradaux.chestshop.Database.Migrations;
-import io.paradaux.chestshop.Market.MarketHook;
-import io.paradaux.chestshop.Market.MarketListener;
-import io.paradaux.chestshop.Listeners.Block.BlockPlace;
-import io.paradaux.chestshop.Listeners.Block.Break.ChestBreak;
-import io.paradaux.chestshop.Listeners.Block.Break.SignBreak;
-import io.paradaux.chestshop.Listeners.Block.SignCreate;
-import io.paradaux.chestshop.Listeners.Economy.EconomyAdapter;
-import io.paradaux.chestshop.Listeners.Economy.ServerAccountCorrector;
-import io.paradaux.chestshop.Listeners.Economy.TaxModule;
-import io.paradaux.chestshop.Plugins.AuthMe;
-import io.paradaux.chestshop.Listeners.GarbageTextListener;
-import io.paradaux.chestshop.Listeners.Item.ItemMoveListener;
-import io.paradaux.chestshop.Listeners.Item.ItemStringListener;
-import io.paradaux.chestshop.Listeners.ItemInfoListener;
-import io.paradaux.chestshop.Listeners.Modules.ItemAliasModule;
-import io.paradaux.chestshop.Listeners.Modules.MetricsModule;
-import io.paradaux.chestshop.Listeners.Modules.StockCounterModule;
-import io.paradaux.chestshop.Listeners.ShopInfoListener;
-import io.paradaux.chestshop.Listeners.SignParseListener;
-import io.paradaux.chestshop.Listeners.Modules.DiscountModule;
-import io.paradaux.chestshop.Listeners.Modules.PriceRestrictionModule;
-import io.paradaux.chestshop.Listeners.Player.*;
-import io.paradaux.chestshop.Listeners.PreShopCreation.CreationFeeGetter;
-import io.paradaux.chestshop.Listeners.PostShopCreation.MessageSender;
-import io.paradaux.chestshop.Listeners.PostShopCreation.ShopCreationLogger;
-import io.paradaux.chestshop.Listeners.PostShopCreation.SignSticker;
-import io.paradaux.chestshop.Listeners.PostTransaction.*;
-import io.paradaux.chestshop.Listeners.PreShopCreation.*;
-import io.paradaux.chestshop.Listeners.PreTransaction.*;
-import io.paradaux.chestshop.Listeners.PreTransaction.ErrorMessageSender;
-import io.paradaux.chestshop.Listeners.PreTransaction.PermissionChecker;
-import io.paradaux.chestshop.Listeners.ShopRemoval.ShopRefundListener;
-import io.paradaux.chestshop.Listeners.ShopRemoval.ShopRemovalLogger;
-import io.paradaux.chestshop.Logging.FileFormatter;
-import io.paradaux.chestshop.Metadata.ItemDatabase;
-import io.paradaux.chestshop.Signs.RestrictedSign;
-import io.paradaux.chestshop.UUIDs.NameManager;
+import io.paradaux.chestshop.breeze.configuration.Configuration;
+import io.paradaux.chestshop.commands.Give;
+import io.paradaux.chestshop.commands.ItemInfo;
+import io.paradaux.chestshop.commands.ShopInfo;
+import io.paradaux.chestshop.commands.Toggle;
+import io.paradaux.chestshop.commands.Version;
+import io.paradaux.chestshop.commands.AccessToggle;
+import io.paradaux.chestshop.configuration.Messages;
+import io.paradaux.chestshop.configuration.Properties;
+import io.paradaux.chestshop.database.Migrations;
+import io.paradaux.chestshop.market.MarketHook;
+import io.paradaux.chestshop.market.MarketListener;
+import io.paradaux.chestshop.listeners.block.BlockPlace;
+import io.paradaux.chestshop.listeners.block.breaking.ChestBreak;
+import io.paradaux.chestshop.listeners.block.breaking.SignBreak;
+import io.paradaux.chestshop.listeners.block.SignCreate;
+import io.paradaux.chestshop.listeners.economy.EconomyAdapter;
+import io.paradaux.chestshop.listeners.economy.ServerAccountCorrector;
+import io.paradaux.chestshop.listeners.economy.TaxModule;
+import io.paradaux.chestshop.plugins.AuthMe;
+import io.paradaux.chestshop.listeners.GarbageTextListener;
+import io.paradaux.chestshop.listeners.item.ItemMoveListener;
+import io.paradaux.chestshop.listeners.item.ItemStringListener;
+import io.paradaux.chestshop.listeners.ItemInfoListener;
+import io.paradaux.chestshop.listeners.modules.ItemAliasModule;
+import io.paradaux.chestshop.listeners.modules.MetricsModule;
+import io.paradaux.chestshop.listeners.modules.StockCounterModule;
+import io.paradaux.chestshop.listeners.ShopInfoListener;
+import io.paradaux.chestshop.listeners.SignParseListener;
+import io.paradaux.chestshop.listeners.modules.DiscountModule;
+import io.paradaux.chestshop.listeners.modules.PriceRestrictionModule;
+import io.paradaux.chestshop.listeners.player.*;
+import io.paradaux.chestshop.listeners.preshopcreation.CreationFeeGetter;
+import io.paradaux.chestshop.listeners.postshopcreation.MessageSender;
+import io.paradaux.chestshop.listeners.postshopcreation.ShopCreationLogger;
+import io.paradaux.chestshop.listeners.postshopcreation.SignSticker;
+import io.paradaux.chestshop.listeners.posttransaction.*;
+import io.paradaux.chestshop.listeners.preshopcreation.*;
+import io.paradaux.chestshop.listeners.pretransaction.*;
+import io.paradaux.chestshop.listeners.pretransaction.ErrorMessageSender;
+import io.paradaux.chestshop.listeners.pretransaction.PermissionChecker;
+import io.paradaux.chestshop.listeners.shopremoval.ShopRefundListener;
+import io.paradaux.chestshop.listeners.shopremoval.ShopRemovalLogger;
+import io.paradaux.chestshop.logging.FileFormatter;
+import io.paradaux.chestshop.metadata.ItemDatabase;
+import io.paradaux.chestshop.signs.RestrictedSign;
+import io.paradaux.chestshop.uuids.NameManager;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.ByteArrayDataOutput;
@@ -151,7 +151,7 @@ public class ChestShop extends JavaPlugin {
         registerCommand("iteminfo", new ItemInfo(), Permission.ITEMINFO);
         registerCommand("shopinfo", new ShopInfo(), Permission.SHOPINFO);
         registerCommand("csVersion", new Version(), Permission.ADMIN);
-        registerCommand("csMetrics", new io.paradaux.chestshop.Commands.Metrics(), Permission.ADMIN);
+        registerCommand("csMetrics", new io.paradaux.chestshop.commands.Metrics(), Permission.ADMIN);
         registerCommand("csGive", new Give(), Permission.ADMIN);
         registerCommand("cstoggle", new Toggle(), Permission.NOTIFY_TOGGLE);
         registerCommand("csaccess", new AccessToggle(), Permission.ACCESS_TOGGLE);
@@ -322,7 +322,7 @@ public class ChestShop extends JavaPlugin {
             executorService.awaitTermination(15, TimeUnit.SECONDS);
         } catch (InterruptedException ignored) {}
 
-        io.paradaux.chestshop.Database.DaoCreator.closeAll();
+        io.paradaux.chestshop.database.DaoCreator.closeAll();
 
         if (handler != null) {
             handler.close();
@@ -332,7 +332,7 @@ public class ChestShop extends JavaPlugin {
 
     //////////////////    REGISTER EVENTS, SCHEDULER & STATS    ///////////////////////////
     private void registerEvents() {
-        registerEvent(new io.paradaux.chestshop.Plugins.ChestShop()); //Chest protection
+        registerEvent(new io.paradaux.chestshop.plugins.ChestShop()); //Chest protection
 
         registerEvent(new Dependencies());
 
@@ -385,8 +385,8 @@ public class ChestShop extends JavaPlugin {
         registerEvent(new ItemChecker());
         registerEvent(new MoneyChecker());
         registerEvent(new NameChecker());
-        registerEvent(new io.paradaux.chestshop.Listeners.PreShopCreation.PermissionChecker());
-        registerEvent(new io.paradaux.chestshop.Listeners.PreShopCreation.ErrorMessageSender());
+        registerEvent(new io.paradaux.chestshop.listeners.preshopcreation.PermissionChecker());
+        registerEvent(new io.paradaux.chestshop.listeners.preshopcreation.ErrorMessageSender());
         registerEvent(new PriceChecker());
         registerEvent(new FreePriceChecker()); // DC: block free (b:0 / s:0) shops
         registerEvent(new QuantityChecker());
@@ -447,12 +447,12 @@ public class ChestShop extends JavaPlugin {
         // VersionAdapter implementations and gated by isSupported(); since this
         // fork targets a single Paper version, every gate always passed, so they
         // are now registered directly and the reflection scheme is gone (PAR-255).
-        registerEvent(new io.paradaux.chestshop.Adapter.Paper_1_13_2());
-        registerEvent(new io.paradaux.chestshop.Adapter.Spigot_1_14());
-        registerEvent(new io.paradaux.chestshop.Adapter.Spigot_1_15_2());
-        registerEvent(new io.paradaux.chestshop.Adapter.Spigot_1_17());
-        registerEvent(new io.paradaux.chestshop.Adapter.Spigot_1_20());
-        registerEvent(new io.paradaux.chestshop.Adapter.Spigot_1_20_5());
+        registerEvent(new io.paradaux.chestshop.adapter.Paper_1_13_2());
+        registerEvent(new io.paradaux.chestshop.adapter.Spigot_1_14());
+        registerEvent(new io.paradaux.chestshop.adapter.Spigot_1_15_2());
+        registerEvent(new io.paradaux.chestshop.adapter.Spigot_1_17());
+        registerEvent(new io.paradaux.chestshop.adapter.Spigot_1_20());
+        registerEvent(new io.paradaux.chestshop.adapter.Spigot_1_20_5());
     }
 
     private void registerPluginMessagingChannels() {

@@ -130,12 +130,12 @@ tasks.jacocoTestReport {
         files(classDirectories.files.map {
             fileTree(it) {
                 exclude(
-                    "io/paradaux/chestshop/breeze/Utils/Encoding/Base64.class",
+                    "io/paradaux/chestshop/breeze/utils/encoding/Base64.class",
                     "io/paradaux/chestshop/ChestShop.class",
-                    "io/paradaux/chestshop/Listeners/**",
-                    "io/paradaux/chestshop/Commands/**",
-                    "io/paradaux/chestshop/Plugins/**",
-                    "io/paradaux/chestshop/Database/**",
+                    "io/paradaux/chestshop/listeners/**",
+                    "io/paradaux/chestshop/commands/**",
+                    "io/paradaux/chestshop/plugins/**",
+                    "io/paradaux/chestshop/database/**",
                 )
             }
         })
