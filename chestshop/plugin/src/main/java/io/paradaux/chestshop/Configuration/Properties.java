@@ -219,6 +219,12 @@ public class Properties {
     public static boolean BLOCK_SHOPS_WITH_SELL_PRICE_HIGHER_THAN_BUY_PRICE = true;
 
     @PrecededBySpace
+    @ConfigurationComment("Should shops with a buy or sell price of exactly 0 (\"free\" shops, e.g. b:0 or s:0) be allowed?\n" +
+            "DC fork default is false: free shops are rejected at creation and any pre-existing ones are removed on use.\n" +
+            "Set to true to permit free shops (e.g. a department handing out items without the charge-a-cent workaround).")
+    public static boolean ALLOW_FREE_SHOPS = false;
+
+    @PrecededBySpace
     @ConfigurationComment("Maximum amount of items that can be bought/sold at a shop. Default 3456 is a double chest of 64 stacks.")
     public static int MAX_SHOP_AMOUNT = 3456;
 

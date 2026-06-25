@@ -1,6 +1,7 @@
 package io.paradaux.chestshop.Listeners.PreShopCreation;
 
 import io.paradaux.chestshop.breeze.Utils.PriceUtil;
+import io.paradaux.chestshop.Configuration.Properties;
 import io.paradaux.chestshop.Events.PreShopCreationEvent;
 import io.paradaux.chestshop.Signs.ChestShopSign;
 import org.bukkit.event.EventHandler;
@@ -18,11 +19,17 @@ import static io.paradaux.chestshop.Events.PreShopCreationEvent.CreationOutcome.
  * rejects creation if either offered side is priced at 0. An <em>unoffered</em>
  * side ({@link PriceUtil#NO_PRICE} / -1) is fine — a buy-only or sell-only shop
  * with a non-zero price is unaffected.
+ *
+ * <p>Disabled when {@link Properties#ALLOW_FREE_SHOPS} is set, letting operators
+ * opt into free shops (PAR-88).
  */
 public class FreePriceChecker implements Listener {
 
     @EventHandler(priority = EventPriority.NORMAL)
     public static void onPreShopCreation(PreShopCreationEvent event) {
+        if (Properties.ALLOW_FREE_SHOPS) {
+            return;
+        }
         String price = ChestShopSign.getPrice(event.getSignLines());
         if (isFree(PriceUtil.getExactBuyPrice(price)) || isFree(PriceUtil.getExactSellPrice(price))) {
             event.setOutcome(INVALID_PRICE);
