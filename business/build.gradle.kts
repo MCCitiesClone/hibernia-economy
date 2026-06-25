@@ -168,6 +168,7 @@ tasks {
         "io/paradaux/business/listeners/**",
         "io/paradaux/business/jobs/**",
         "io/paradaux/business/guice/**",
+        "io/paradaux/business/integration/**",
         "io/paradaux/business/utils/resolvers/**"
     )
 

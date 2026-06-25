@@ -10,6 +10,7 @@ import io.paradaux.business.model.Firm;
 import io.paradaux.business.model.FirmAccount;
 import io.paradaux.business.model.RolePermission;
 import io.paradaux.business.model.config.FirmConfiguration;
+import io.paradaux.business.services.FirmAreaShopService;
 import io.paradaux.business.services.FirmStaffService;
 import io.paradaux.treasury.api.TreasuryApi;
 import io.paradaux.treasury.model.economy.Account;
@@ -49,13 +50,14 @@ class FirmServiceImplTest {
     @Mock FirmRoleMapper roles;
     @Mock FirmStaffService staffService;
     @Mock FirmConfiguration firmConfig;
+    @Mock FirmAreaShopService areas;
 
     private FirmServiceImpl svc;
     private MockedStatic<Bukkit> bukkit;
 
     @BeforeEach
     void setUp() {
-        svc = new FirmServiceImpl(firms, treasury, accounts, roles, () -> staffService, firmConfig);
+        svc = new FirmServiceImpl(firms, treasury, accounts, roles, () -> staffService, firmConfig, areas);
         bukkit = org.mockito.Mockito.mockStatic(Bukkit.class);
         // Default to the production limit of 3 (lenient — not every test reaches the check).
         org.mockito.Mockito.lenient().when(firmConfig.hasOwnedFirmLimit()).thenReturn(true);
@@ -466,6 +468,7 @@ class FirmServiceImplTest {
         firm.setFirmId(5);
         when(firms.getFirmByName("Acme")).thenReturn(firm);
         when(staffService.hasPermission(5, actor, RolePermission.ADMIN)).thenReturn(true);
+        when(areas.isValidPlot("plaza-1")).thenReturn(true);
 
         svc.updateFirmHq("Acme", "plaza-1", actor);
 
@@ -474,6 +477,20 @@ class FirmServiceImplTest {
         assertThat(cap.getValue().getFirmId()).isEqualTo(5);
         assertThat(cap.getValue().getHqRegion()).isEqualTo("plaza-1");
         assertThat(cap.getValue().getDisplayName()).isNull();
+    }
+
+    @Test
+    void updateFirmHq_invalidPlot_throws() {
+        UUID actor = UUID.randomUUID();
+        Firm firm = new Firm();
+        firm.setFirmId(5);
+        when(firms.getFirmByName("Acme")).thenReturn(firm);
+        when(staffService.hasPermission(5, actor, RolePermission.ADMIN)).thenReturn(true);
+        when(areas.isValidPlot("nowhere")).thenReturn(false);
+
+        assertThatThrownBy(() -> svc.updateFirmHq("Acme", "nowhere", actor))
+                .isInstanceOf(BadCommandException.class);
+        verify(firms, never()).updateFirm(any());
     }
 
     @Test

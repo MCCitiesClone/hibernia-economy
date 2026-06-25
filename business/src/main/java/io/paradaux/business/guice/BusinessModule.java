@@ -8,6 +8,7 @@ import io.paradaux.business.Business;
 
 import io.paradaux.business.api.BusinessApi;
 import io.paradaux.business.api.impl.BusinessApiImpl;
+import io.paradaux.business.integration.RealtyRegionValidator;
 import io.paradaux.business.jobs.ExpireRequestsJob;
 import io.paradaux.business.listeners.FirmBalanceTaxListener;
 import io.paradaux.business.model.config.BalanceTaxConfiguration;
@@ -55,6 +56,9 @@ public class BusinessModule extends AbstractModule {
         // Bind services
         bind(FirmAccountService.class).to(FirmAccountServiceImpl.class).in(Singleton.class);
         bind(FirmAreaShopService.class).to(FirmAreaShopServiceImpl.class).in(Singleton.class);
+        // Region provider for HQ validation — backed by Realty when installed,
+        // reached reflectively as a soft dependency (ADT-37).
+        bind(RegionValidator.class).to(RealtyRegionValidator.class).in(Singleton.class);
         bind(FirmRoleService.class).to(FirmRoleServiceImpl.class).in(Singleton.class);
         bind(FirmService.class).to(FirmServiceImpl.class).in(Singleton.class);
         bind(FirmStaffService.class).to(FirmStaffServiceImpl.class).in(Singleton.class);

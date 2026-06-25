@@ -33,7 +33,6 @@ public class MiscCommands implements CommandHandler {
     private final FirmStaffService staff;
     private final FirmRoleService roles;
     private final FirmTransactionService audit;
-    private final FirmAreaShopService areas;
     private final TreasuryApi treasury;
     private final Message message;
     private final FirmNotificationService notifications;
@@ -41,13 +40,12 @@ public class MiscCommands implements CommandHandler {
     @Inject
     public MiscCommands(FirmService firms, FirmStaffService staff, FirmRoleService roles,
                         FirmTransactionService audit,
-                        FirmAreaShopService areas, TreasuryApi treasury, Message message,
+                        TreasuryApi treasury, Message message,
                         FirmNotificationService notifications) {
         this.firms = firms;
         this.staff = staff;
         this.roles = roles;
         this.audit = audit;
-        this.areas = areas;
         this.treasury = treasury;
         this.message = message;
         this.notifications = notifications;

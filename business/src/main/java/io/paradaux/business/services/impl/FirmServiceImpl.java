@@ -16,6 +16,7 @@ import io.paradaux.business.model.FirmRolePermission;
 import io.paradaux.business.model.RolePermission;
 import io.paradaux.business.mappers.FirmAccountsMapper;
 import io.paradaux.business.model.config.FirmConfiguration;
+import io.paradaux.business.services.FirmAreaShopService;
 import io.paradaux.business.services.FirmService;
 import io.paradaux.business.services.FirmStaffService;
 import io.paradaux.business.utils.NameValidator;
@@ -45,6 +46,7 @@ public class FirmServiceImpl implements FirmService {
     /** Lazy-injected to break the FirmService ↔ FirmStaffService cycle. */
     private final Provider<FirmStaffService> staffProvider;
     private final FirmConfiguration firmConfig;
+    private final FirmAreaShopService areas;
 
     @Inject
     public FirmServiceImpl(FirmMapper firms,
@@ -52,13 +54,15 @@ public class FirmServiceImpl implements FirmService {
                            FirmAccountsMapper accounts,
                            FirmRoleMapper roles,
                            Provider<FirmStaffService> staffProvider,
-                           FirmConfiguration firmConfig) {
+                           FirmConfiguration firmConfig,
+                           FirmAreaShopService areas) {
         this.firms = firms;
         this.treasury = treasury;
         this.accounts = accounts;
         this.roles = roles;
         this.staffProvider = staffProvider;
         this.firmConfig = firmConfig;
+        this.areas = areas;
     }
 
     private boolean canAdministerFirm(int firmId, UUID actorId) {
@@ -227,6 +231,13 @@ public class FirmServiceImpl implements FirmService {
         }
         if (!canAdministerFirm(firm.getFirmId(), actorId)) {
             throw new NoPermissionException("You don't have permission to manage this firm.");
+        }
+        // Reject HQ regions the region provider (Realty) doesn't recognise so
+        // firms can't claim arbitrary/nonexistent plots. Fails open when no
+        // provider is installed (ADT-37). The admin override (adminSetHq) is
+        // intentionally exempt.
+        if (!areas.isValidPlot(plotName)) {
+            throw new BadCommandException("'" + plotName + "' is not a valid HQ region.");
         }
         Firm updatedFirm = new Firm();
         updatedFirm.setFirmId(firm.getFirmId());
