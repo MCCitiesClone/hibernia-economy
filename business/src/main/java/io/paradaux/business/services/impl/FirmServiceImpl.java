@@ -33,11 +33,14 @@ import org.jetbrains.annotations.Nullable;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 @Singleton
 public class FirmServiceImpl implements FirmService {
 
     private static final int FIRM_NAME_LENGTH_LIMIT = 32;
+    private static final Logger LOG = Logger.getLogger("Business");
 
     private final FirmMapper firms;
     private final TreasuryApi treasury;
@@ -74,11 +77,12 @@ public class FirmServiceImpl implements FirmService {
      *
      * <p>Wrapped in a JDBC transaction so the local-DB writes (firm, roles,
      * permissions, firm_accounts, default_account_id update) are atomic. The
-     * Treasury account-creation calls in the middle are external IPC and
-     * cannot participate in a JDBC transaction — if the DB rolls back after
-     * a successful Treasury account creation, the Treasury account is left
-     * orphaned (still owned by the actor, no firm linkage). Operators should
-     * watch for that pattern in Treasury logs and clean up manually if needed.
+     * Treasury account creation is external IPC that can't join the JDBC
+     * transaction, so if a later DB write fails and the transaction rolls back,
+     * the just-created Treasury account would be orphaned. To avoid that
+     * divergence the DB writes that follow account creation are guarded: on any
+     * failure the orphaned account is archived (compensation) before the
+     * exception propagates and the transaction unwinds (ADT-11).
      */
     @Transactional
     @Override
@@ -115,32 +119,58 @@ public class FirmServiceImpl implements FirmService {
         // Create a treasury account via the TreasuryApi
         Account account = treasury.createAccount(AccountType.BUSINESS, actorId, name + " Corporate Account");
 
-        // Auto-add the owner as a member + authorizer on the treasury account
-        treasury.addMember(account.getAccountId(), actorId, actorId);
-        treasury.addAuthorizer(account.getAccountId(), actorId, actorId);
+        // Everything past this point either completes or compensates: if any DB
+        // write fails, the transaction rolls back the firm rows, so the Treasury
+        // account just created would dangle unlinked. Archive it on failure so
+        // there's no orphaned account left behind (ADT-11).
+        try {
+            // Auto-add the owner as a member + authorizer on the treasury account
+            treasury.addMember(account.getAccountId(), actorId, actorId);
+            treasury.addAuthorizer(account.getAccountId(), actorId, actorId);
 
-        // Create a record of the firm owning this account
-        accounts.insertFirmAccount(firm.getFirmId(), account.getAccountId());
+            // Create a record of the firm owning this account
+            accounts.insertFirmAccount(firm.getFirmId(), account.getAccountId());
 
-        // Set it as the firm's default treasury account.
-        firm.setDefaultAccountId(account.getAccountId());
+            // Set it as the firm's default treasury account.
+            firm.setDefaultAccountId(account.getAccountId());
 
-        // Add the default roles
-        for (FirmRole role : RoleUtils.getDefaultRoles(firm.getFirmId())) {
-            roles.insertRole(role);
+            // Add the default roles
+            for (FirmRole role : RoleUtils.getDefaultRoles(firm.getFirmId())) {
+                roles.insertRole(role);
+            }
+
+            // Add the default permissions for every role
+            for (FirmRolePermission permission : RoleUtils.getDefaultPermissions(firm.getFirmId())) {
+                roles.addRolePermission(permission);
+            }
+
+            // Update the firm with the updated default account.
+            firms.updateFirm(firm);
+        } catch (RuntimeException ex) {
+            compensateOrphanedAccount(account.getAccountId(), ex);
+            throw ex;
         }
-
-        // Add the default permissions for every role
-        for (FirmRolePermission permission : RoleUtils.getDefaultPermissions(firm.getFirmId())) {
-            roles.addRolePermission(permission);
-        }
-
-        // Update the firm with the updated default account.
-        firms.updateFirm(firm);
         return firm;
     }
 
-    @Transactional
+    /**
+     * Best-effort archive of a Treasury account left orphaned when firm creation
+     * fails after the account was created. A failure to compensate is logged and
+     * attached to the original cause rather than masking it.
+     */
+    private void compensateOrphanedAccount(int accountId, RuntimeException cause) {
+        try {
+            treasury.archiveAccount(accountId);
+        } catch (RuntimeException cleanupFailure) {
+            cause.addSuppressed(cleanupFailure);
+            LOG.log(Level.SEVERE, "Failed to archive orphaned Treasury account " + accountId
+                    + " after firm creation rolled back; manual cleanup required.", cleanupFailure);
+        }
+    }
+
+    // Not @Transactional: the firm-archive DB write must commit BEFORE any
+    // money moves (see disbandInternal), which a single enclosing JDBC
+    // transaction would prevent (ADT-11).
     @Override
     public void disbandFirm(String firmName, UUID actorId) {
         // Archived-inclusive: a disbanded firm must report "already disbanded", not "not found".
@@ -157,7 +187,6 @@ public class FirmServiceImpl implements FirmService {
         disbandInternal(firm);
     }
 
-    @Transactional
     @Override
     public void adminDisbandFirm(String firmName) {
         Firm firm = getAnyFirmByNameOrId(firmName);
@@ -170,35 +199,53 @@ public class FirmServiceImpl implements FirmService {
         disbandInternal(firm);
     }
 
-    /** Shared disband mechanics: drains balances to the proprietor and archives the firm. */
+    /**
+     * Shared disband mechanics. The firm is marked disbanded <em>first</em> and
+     * that write commits before any balance is moved, so a failure partway
+     * through draining can never leave the firm looking alive while its accounts
+     * are emptied. Each account is drained, archived, and unlinked
+     * independently; a step that fails leaves that account still linked with its
+     * balance intact, so the drain is idempotent and safe to re-run (ADT-11).
+     */
     private void disbandInternal(Firm firm) {
         UUID proprietorUuid = UUID.fromString(firm.getProprietorUuid());
+
+        // Snapshot the linked accounts and resolve the payout target before any
+        // destructive step — a failure here aborts cleanly with no money moved
+        // and the firm still active.
+        List<FirmAccount> firmAccountList = accounts.listAccountsByFirm(firm.getFirmId());
         Account personal = treasury.resolveOrCreatePersonal(proprietorUuid);
 
-        // Withdraw balances and archive every firm account
-        List<FirmAccount> firmAccountList = accounts.listAccountsByFirm(firm.getFirmId());
-        for (FirmAccount fa : firmAccountList) {
-            BigDecimal balance = treasury.getBalanceByAccountId(fa.getAccountId());
-            if (balance.compareTo(BigDecimal.ZERO) > 0) {
-                TransferRequest req = new TransferRequest(
-                        fa.getAccountId(),
-                        personal.getAccountId(),
-                        balance,
-                        "Firm disbanded",
-                        proprietorUuid,
-                        proprietorUuid,
-                        "BusinessPlugin",
-                        null
-                );
-                treasury.transfer(req);
-            }
-            treasury.archiveAccount(fa.getAccountId());
-            accounts.removeFirmAccount(firm.getFirmId(), fa.getAccountId());
-        }
-
-        // Atomically flip is_archived and clear default_account_id so the firm
-        // doesn't dangle a reference to a now-archived account.
+        // Mark disbanded first (auto-commits — this method isn't @Transactional)
+        // so money only ever moves once the firm is durably archived.
         firms.archiveFirm(firm.getFirmId());
+
+        for (FirmAccount fa : firmAccountList) {
+            try {
+                BigDecimal balance = treasury.getBalanceByAccountId(fa.getAccountId());
+                if (balance.compareTo(BigDecimal.ZERO) > 0) {
+                    TransferRequest req = new TransferRequest(
+                            fa.getAccountId(),
+                            personal.getAccountId(),
+                            balance,
+                            "Firm disbanded",
+                            proprietorUuid,
+                            proprietorUuid,
+                            "BusinessPlugin",
+                            null
+                    );
+                    treasury.transfer(req);
+                }
+                treasury.archiveAccount(fa.getAccountId());
+                accounts.removeFirmAccount(firm.getFirmId(), fa.getAccountId());
+            } catch (RuntimeException ex) {
+                // Leave this account linked so a later disband re-run (or
+                // reconciliation) can finish draining it; don't strand the rest.
+                LOG.log(Level.WARNING, "Failed to drain/archive account " + fa.getAccountId()
+                        + " while disbanding firm " + firm.getFirmId()
+                        + "; it stays linked for a later reconciliation.", ex);
+            }
+        }
     }
 
     @Transactional

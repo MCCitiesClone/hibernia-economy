@@ -112,6 +112,29 @@ class FirmServiceImplTest {
     }
 
     @Test
+    void createFirm_archivesOrphanedTreasuryAccountWhenDbWriteFails() {
+        UUID actor = UUID.randomUUID();
+        when(firms.getFirmsByNameCount("Acme")).thenReturn(0);
+        when(firms.getFirmsOwnedByCount(actor.toString())).thenReturn(0);
+        doAnswer(inv -> {
+            ((Firm) inv.getArgument(0)).setFirmId(42);
+            return null;
+        }).when(firms).createFirm(any());
+
+        Account treasuryAccount = new Account();
+        treasuryAccount.setAccountId(7);
+        when(treasury.createAccount(eq(AccountType.BUSINESS), eq(actor), any())).thenReturn(treasuryAccount);
+
+        // A DB write after the Treasury account is created fails → the firm rows
+        // roll back, so the account must be compensated (archived) (ADT-11).
+        org.mockito.Mockito.doThrow(new RuntimeException("db down")).when(firms).updateFirm(any());
+
+        assertThatThrownBy(() -> svc.createFirm("Acme", actor))
+                .isInstanceOf(RuntimeException.class);
+        verify(treasury).archiveAccount(7);
+    }
+
+    @Test
     void createFirm_withinCooldown_throws() {
         UUID actor = UUID.randomUUID();
         when(firms.getFirmsByNameCount("Acme")).thenReturn(0);
@@ -228,6 +251,38 @@ class FirmServiceImplTest {
         verify(accounts).removeFirmAccount(1, 10);
         verify(accounts).removeFirmAccount(1, 11);
         verify(firms).archiveFirm(1);
+    }
+
+    @Test
+    void disbandFirm_archivesFirmAndContinuesWhenOneAccountFails() {
+        UUID proprietor = UUID.randomUUID();
+        Firm firm = new Firm();
+        firm.setFirmId(1);
+        firm.setProprietorUuid(proprietor.toString());
+        when(firms.getFirmByName("Acme")).thenReturn(firm);
+        when(firms.isProprietorByFirmId(1, proprietor.toString())).thenReturn(true);
+
+        Account personal = new Account();
+        personal.setAccountId(99);
+        when(treasury.resolveOrCreatePersonal(proprietor)).thenReturn(personal);
+
+        FirmAccount fa1 = new FirmAccount(1, 10, null);
+        FirmAccount fa2 = new FirmAccount(1, 11, null);
+        when(accounts.listAccountsByFirm(1)).thenReturn(List.of(fa1, fa2));
+
+        // First account fails mid-drain; the firm must still be archived (it is
+        // archived before any money moves) and the second account still drained.
+        when(treasury.getBalanceByAccountId(10)).thenThrow(new RuntimeException("treasury down"));
+        when(treasury.getBalanceByAccountId(11)).thenReturn(BigDecimal.ZERO);
+
+        svc.disbandFirm("Acme", proprietor);
+
+        verify(firms).archiveFirm(1);
+        verify(treasury).archiveAccount(11);
+        verify(accounts).removeFirmAccount(1, 11);
+        // The failed account is left linked for a later reconciliation.
+        verify(treasury, never()).archiveAccount(10);
+        verify(accounts, never()).removeFirmAccount(1, 10);
     }
 
     @Test
