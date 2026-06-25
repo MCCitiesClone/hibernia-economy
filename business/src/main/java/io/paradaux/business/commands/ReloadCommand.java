@@ -48,10 +48,9 @@ public class ReloadCommand implements CommandHandler {
             balanceTaxConfig.reload();    // refresh tax.balance.* brackets
         } catch (RuntimeException e) {
             business.getLogger().warning("Config reload failed: " + e);
-            sender.sendMessage("§cReload failed: " + e.getMessage() + " (see console).");
+            message.send(sender, "business.admin.reload.failed", "error", e.getMessage());
             return;
         }
-        sender.sendMessage("§aReloaded messages.properties and config.yml "
-                + "(firm limits + balance-tax brackets). DB pool and scheduled jobs still need a restart.");
+        message.send(sender, "business.admin.reload.success");
     }
 }

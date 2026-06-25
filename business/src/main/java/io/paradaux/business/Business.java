@@ -4,10 +4,21 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 
 import io.paradaux.hibernia.framework.commander.CommandManager;
-import io.paradaux.hibernia.framework.configurator.ConfigurationLoader;
+import io.paradaux.hibernia.framework.events.ListenerManager;
+import io.paradaux.hibernia.framework.guice.HiberniaModule;
 import io.paradaux.business.api.BusinessApi;
+import io.paradaux.business.commands.AccountCommands;
+import io.paradaux.business.commands.ChatCommands;
+import io.paradaux.business.commands.FirmCommands;
+import io.paradaux.business.commands.HelpCommands;
+import io.paradaux.business.commands.MiscCommands;
+import io.paradaux.business.commands.ReloadCommand;
+import io.paradaux.business.commands.RequestCommands;
+import io.paradaux.business.commands.RoleCommands;
+import io.paradaux.business.commands.SalesCommands;
+import io.paradaux.business.commands.StaffCommands;
+import io.paradaux.business.commands.TaxCommands;
 import io.paradaux.business.guice.BusinessModule;
-import io.paradaux.business.guice.CommanderModule;
 import io.paradaux.business.guice.DatabaseModule;
 import io.paradaux.business.jobs.ExpireRequestsJob;
 import io.paradaux.business.listeners.ChestShopSaleListener;
@@ -15,6 +26,9 @@ import io.paradaux.business.listeners.FirmBalanceTaxListener;
 import io.paradaux.business.model.config.DatabaseConfiguration;
 import io.paradaux.business.model.config.FirmConfiguration;
 import io.paradaux.business.services.FirmSalesNotificationService;
+import io.paradaux.business.utils.resolvers.FirmNameResolver;
+import io.paradaux.business.utils.resolvers.FirmPlayerResolver;
+import io.paradaux.business.utils.resolvers.OnlineFirmNameResolver;
 import io.paradaux.treasury.api.SalesQueryApi;
 import io.paradaux.treasury.api.TreasuryApi;
 import org.bukkit.Bukkit;
@@ -31,11 +45,39 @@ public final class Business extends JavaPlugin {
     public void onEnable() {
         getLogger().info("Loading configuration...");
 
-        // 1) Load typed config components
-        ConfigurationLoader configLoader = new ConfigurationLoader(this);
-        configLoader.scanPackage("io.paradaux.business.model.config"); // <- fix package
+        // 1) Build the HiberniaModule: it scans the config package, binds the
+        //    plugin, the ConfigurationLoader, the discovered @ConfigurationComponents
+        //    (DatabaseConfiguration), Message (eager), the command/resolver/listener
+        //    multibinders, and the PAPI/dialog support.
+        HiberniaModule hiberniaModule = HiberniaModule.forPlugin(this)
+                .scanConfiguration("io.paradaux.business.model.config")
+                .handlers(
+                        AccountCommands.class,
+                        FirmCommands.class,
+                        HelpCommands.class,
+                        MiscCommands.class,
+                        RequestCommands.class,
+                        RoleCommands.class,
+                        StaffCommands.class,
+                        ReloadCommand.class,
+                        TaxCommands.class,
+                        SalesCommands.class,
+                        ChatCommands.class
+                )
+                .resolvers(
+                        FirmPlayerResolver.class,
+                        FirmNameResolver.class,
+                        OnlineFirmNameResolver.class
+                )
+                .listeners(
+                        FirmBalanceTaxListener.class,
+                        ChestShopSaleListener.class
+                )
+                .build();
 
-        DatabaseConfiguration dbCfg = configLoader.getComponent(DatabaseConfiguration.class);
+        // Pull the typed DatabaseConfiguration out of the (already-loaded)
+        // HiberniaModule so DatabaseModule can wire the DataSource pre-injector.
+        DatabaseConfiguration dbCfg = hiberniaModule.configuration(DatabaseConfiguration.class);
         if (dbCfg == null) {
             throw new IllegalStateException("DatabaseConfiguration not found. Check @ConfigurationComponent and package scan.");
         }
@@ -62,14 +104,14 @@ public final class Business extends JavaPlugin {
         SalesQueryApi salesQueryApi = salesRsp.getProvider();
 
         // 2) Create the injector, wiring:
-        //    - BusinessModule (binds plugin + all config components + Treasury APIs)
+        //    - HiberniaModule (plugin + config components + Message + command/listener wiring)
+        //    - BusinessModule (services, Treasury APIs, hand-rolled config singletons)
         //    - DatabaseModule (needs the typed DatabaseConfiguration)
-        //    - CommanderModule (commands)
         getLogger().info("Setting up dependency injection...");
         this.injector = Guice.createInjector(
-                new BusinessModule(this, configLoader, treasuryApi, salesQueryApi),
-                new DatabaseModule(dbCfg),
-                new CommanderModule(this)
+                hiberniaModule,
+                new BusinessModule(this, treasuryApi, salesQueryApi),
+                new DatabaseModule(dbCfg)
         );
 
         // 3) Register commands (DI-managed)
@@ -83,10 +125,9 @@ public final class Business extends JavaPlugin {
         BusinessApi api = injector.getInstance(BusinessApi.class);
         getServer().getServicesManager().register(BusinessApi.class, api, this, ServicePriority.Normal);
 
-        // 5) Register events
-        var pm = this.getServer().getPluginManager();
-        pm.registerEvents(injector.getInstance(FirmBalanceTaxListener.class), this);
-        pm.registerEvents(injector.getInstance(ChestShopSaleListener.class), this);
+        // 5) Register events via the framework ListenerManager (FirmBalanceTaxListener,
+        //    ChestShopSaleListener — declared in HiberniaModule.listeners(...) above).
+        injector.getInstance(ListenerManager.class).registerAll();
 
         // 6) Drive the firm sale-notification digest: flush buffered sales on a
         // timer so bursts are condensed into one message per firm per window.
