@@ -131,6 +131,19 @@ d('firm financial-access tiers', () => {
     const acme = await findFirmByDisplayName('Acme Corp');
     expect(acme?.exempt).toBe(false);
   });
+
+  it('resolves the proprietor name, falling back to null when uncached (PAR-208)', async () => {
+    // Acme Corp's proprietor (Alice) is in economy_players → name resolves.
+    const acme = await findFirmByDisplayName('Acme Corp');
+    expect(acme?.proprietor_uuid).toBe('00000000-0000-0000-0000-00000000a1ce');
+    expect(acme?.proprietor_name).toBe('Alice');
+
+    // TaxFree Co's proprietor (DAVE) is absent from economy_players → name is null
+    // (the page renders the short UUID via <Player/>).
+    const taxFree = await findFirmByDisplayName('TaxFree Co');
+    expect(taxFree?.proprietor_uuid).toBe('00000000-0000-0000-0000-00000000da7e');
+    expect(taxFree?.proprietor_name).toBeNull();
+  });
 });
 
 d('money flow counts only clean cross-type transfers', () => {
