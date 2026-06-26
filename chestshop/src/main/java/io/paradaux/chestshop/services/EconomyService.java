@@ -178,6 +178,22 @@ public class EconomyService {
         return true;
     }
 
+    /** Whether {@code account} exists in the Treasury ledger (was {@code AccountCheckEvent}). */
+    public boolean hasAccount(UUID account) {
+        try {
+            if (isBusinessUuid(account)) {
+                return treasury.hasAccountByAccountId((int) account.getLeastSignificantBits());
+            }
+            Integer governmentAccountId = resolveGovernmentAccountId(account);
+            return governmentAccountId != null
+                    ? treasury.hasAccountByAccountId(governmentAccountId)
+                    : treasury.hasAccountByOwnerUuid(account);
+        } catch (Exception e) {
+            ChestShop.getBukkitLogger().log(Level.WARNING, "Treasury: Could not check account for " + account, e);
+            return false;
+        }
+    }
+
     /**
      * Settle the money leg of a trade: move {@code amount} from the buyer to the
      * seller. {@code initiator} is the player who clicked the shop and {@code partner}

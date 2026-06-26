@@ -1,36 +1,24 @@
 package io.paradaux.chestshop.listeners.economy.plugins;
 
 import io.paradaux.chestshop.ChestShop;
-import io.paradaux.chestshop.configuration.Properties;
 import io.paradaux.chestshop.database.Account;
 import io.paradaux.chestshop.events.AccountAccessEvent;
 import io.paradaux.chestshop.events.AccountQueryEvent;
-import io.paradaux.chestshop.events.economy.AccountCheckEvent;
 import io.paradaux.chestshop.events.TransactionEvent;
 import io.paradaux.chestshop.listeners.economy.EconomyAdapter;
-import io.paradaux.chestshop.Permission;
 import io.paradaux.chestshop.signs.ChestShopSign;
-import io.paradaux.chestshop.utils.ItemUtil;
 import io.paradaux.business.api.BusinessApi;
 import io.paradaux.business.model.RolePermission;
 import io.paradaux.treasury.api.TaxApi;
 import io.paradaux.treasury.model.economy.AccountType;
-import io.paradaux.treasury.model.economy.TransferRequest;
-import io.paradaux.treasury.model.tax.TaxResult;
 import io.paradaux.treasury.api.TreasuryApi;
-import io.paradaux.treasury.utils.Idempotency;
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.block.Sign;
-import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
-import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.RegisteredServiceProvider;
 
 import javax.annotation.Nullable;
-import java.math.BigDecimal;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
@@ -46,14 +34,10 @@ public class TreasuryListener extends EconomyAdapter {
     static final UUID CHESTSHOP_SYSTEM_UUID = new UUID(0xC5B0FFFFFFFFFFFEL, 0xFFFFFFFFFFFFFFFEL);
 
     private final TreasuryApi treasury;
-    private final TaxApi taxApi;
-    private final int systemAccountId;
     @Nullable private final BusinessApi businessApi;
 
-    private TreasuryListener(TreasuryApi treasury, TaxApi taxApi, int systemAccountId, @Nullable BusinessApi businessApi) {
+    private TreasuryListener(TreasuryApi treasury, @Nullable BusinessApi businessApi) {
         this.treasury = treasury;
-        this.taxApi = taxApi;
-        this.systemAccountId = systemAccountId;
         this.businessApi = businessApi;
     }
 
@@ -126,7 +110,7 @@ public class TreasuryListener extends EconomyAdapter {
             }
         }
 
-        return new TreasuryListener(treasury, taxApi, systemAccountId, businessApi);
+        return new TreasuryListener(treasury, businessApi);
     }
 
     @Override
@@ -185,30 +169,6 @@ public class TreasuryListener extends EconomyAdapter {
                     "Treasury: government account lookup failed for " + uuid, e);
         }
         return null;
-    }
-
-    // --- Economy event handlers ---
-
-    @EventHandler
-    public void onAccountCheck(AccountCheckEvent event) {
-        if (event.wasHandled() || event.hasAccount()) {
-            return;
-        }
-
-        try {
-            if (isBusinessUuid(event.getAccount())) {
-                int accountId = (int) event.getAccount().getLeastSignificantBits();
-                event.hasAccount(treasury.hasAccountByAccountId(accountId));
-            } else {
-                Integer governmentAccountId = resolveGovernmentAccountId(event.getAccount());
-                event.hasAccount(governmentAccountId != null
-                        ? treasury.hasAccountByAccountId(governmentAccountId)
-                        : treasury.hasAccountByOwnerUuid(event.getAccount()));
-            }
-            event.setHandled(true);
-        } catch (Exception e) {
-            ChestShop.getBukkitLogger().log(Level.WARNING, "Treasury: Could not check account for " + event.getAccount(), e);
-        }
     }
 
     // --- Account query/access handlers for business accounts ---

@@ -6,7 +6,6 @@ import io.paradaux.chestshop.configuration.Properties;
 import io.paradaux.chestshop.economy.AdminInventory;
 import io.paradaux.chestshop.database.Account;
 import io.paradaux.chestshop.events.AccountQueryEvent;
-import io.paradaux.chestshop.events.economy.AccountCheckEvent;
 import io.paradaux.chestshop.events.ItemParseEvent;
 import io.paradaux.chestshop.events.PreTransactionEvent;
 import io.paradaux.chestshop.events.ShopInfoEvent;
@@ -218,13 +217,9 @@ public class PlayerInteract implements Listener {
         boolean adminShop = ChestShopSign.isAdminShop(sign);
 
         // check if player exists in economy
-        if (!adminShop) {
-            AccountCheckEvent event = new AccountCheckEvent(account.getUuid(), player.getWorld());
-            Bukkit.getPluginManager().callEvent(event);
-            if(!event.hasAccount()) {
-                ChestShop.message().send(player, "chestshop.NO_ECONOMY_ACCOUNT");
-                return null;
-            }
+        if (!adminShop && !ChestShop.economy().hasAccount(account.getUuid())) {
+            ChestShop.message().send(player, "chestshop.NO_ECONOMY_ACCOUNT");
+            return null;
         }
 
         Action buy = Properties.REVERSE_BUTTONS ? LEFT_CLICK_BLOCK : RIGHT_CLICK_BLOCK;
