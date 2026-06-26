@@ -111,6 +111,7 @@ public class ChestShop extends JavaPlugin {
     private static ItemCodeService itemCodes;
     private static io.paradaux.chestshop.services.TransactionService transactions;
     private static io.paradaux.chestshop.services.AccountService accounts;
+    private static io.paradaux.chestshop.services.ShopService shops;
 
     private static Logger logger;
     private static Logger shopLogger;
@@ -166,6 +167,7 @@ public class ChestShop extends JavaPlugin {
         itemCodes = injector.getInstance(io.paradaux.chestshop.services.ItemCodeService.class);
         transactions = injector.getInstance(io.paradaux.chestshop.services.TransactionService.class);
         accounts = injector.getInstance(io.paradaux.chestshop.services.AccountService.class);
+        shops = injector.getInstance(io.paradaux.chestshop.services.ShopService.class);
 
         injector.getInstance(io.paradaux.hibernia.framework.commander.CommandManager.class).registerAll();
 
@@ -567,6 +569,11 @@ public class ChestShop extends JavaPlugin {
     /** The account service (username ↔ UUID ↔ short-name store, caches, access rules). */
     public static io.paradaux.chestshop.services.AccountService accounts() {
         return accounts;
+    }
+
+    /** The shop service (shop-lifecycle money logic: creation fee, removal refund). */
+    public static io.paradaux.chestshop.services.ShopService shops() {
+        return shops;
     }
 
     public static File getFolder() {

@@ -8,6 +8,7 @@ import io.paradaux.chestshop.dao.impl.SqliteAccountRepository;
 import io.paradaux.chestshop.dao.impl.SqliteItemCodeRepository;
 import io.paradaux.chestshop.services.AccountService;
 import io.paradaux.chestshop.services.ItemCodeService;
+import io.paradaux.chestshop.services.ShopService;
 import io.paradaux.chestshop.services.TransactionService;
 
 /**
@@ -28,5 +29,7 @@ public class ChestShopModule extends AbstractModule {
 
         bind(AccountRepository.class).to(SqliteAccountRepository.class).in(Singleton.class);
         bind(AccountService.class).in(Singleton.class);
+
+        bind(ShopService.class).in(Singleton.class);
     }
 }
