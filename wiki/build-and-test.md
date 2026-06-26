@@ -38,6 +38,21 @@ A successful `:treasury:shadowJar` / `:business:shadowJar` also **stages** the j
 into `server/plugins/` (via a `copyPlugin` task) for a local dev server. Pass
 `-Pci=true` to skip that copy (CI, or to avoid disturbing a running server).
 
+### The release bundle
+
+```bash
+./gradlew release        # build every Paper plugin into a clean release/ folder
+```
+
+The root `release` task gathers the shaded jar of every deployable Paper plugin
+(`:treasury`, `:business`, `:treasury-api-plugin`, `:chestshop`) into `release/`
+at the repo root. It's a `Sync`, so the folder is **mirrored** to exactly the
+current set of jars — stale artifacts from a prior run are removed, so you always
+get a clean folder. `release/` is git-ignored (the `*.jar` rule).
+
+`treasury-rest-api` is intentionally excluded: it ships as a container image
+(`bootJar` → Docker → Harbor/Argo CD), not as a server plugin.
+
 ### Publishing an API jar
 
 For consumers **outside** this repo:

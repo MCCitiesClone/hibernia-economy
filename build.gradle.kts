@@ -28,3 +28,36 @@ allprojects {
     group = "io.paradaux"
     version = providers.gradleProperty("version").orElse("2.3.0-SNAPSHOT").get()
 }
+
+// =============================================================================
+// Release bundle.
+//
+//   ./gradlew release        build every Paper plugin into a clean release/ folder
+//
+// Gathers the shaded jar of each deployable Paper plugin into `release/` at the
+// repo root. It's a Sync (not a Copy), so the destination is mirrored to exactly
+// the current set of jars — stale artifacts from a previous run are removed,
+// giving a clean folder every time.
+//
+// treasury-rest-api is intentionally excluded: it ships as a container image
+// (bootJar → Docker → Harbor/Argo CD), not as a server plugin.
+// =============================================================================
+val pluginProjectPaths = listOf(
+    ":treasury",
+    ":business",
+    ":treasury-api-plugin",
+    ":chestshop",
+)
+
+tasks.register<Sync>("release") {
+    group = "distribution"
+    description = "Build every Paper plugin and stage the jars into a clean release/ folder."
+
+    into(layout.projectDirectory.dir("release"))
+
+    pluginProjectPaths.forEach { path ->
+        val shadowJar = project(path).tasks
+            .named<org.gradle.api.tasks.bundling.AbstractArchiveTask>("shadowJar")
+        from(shadowJar.flatMap { it.archiveFile })
+    }
+}
