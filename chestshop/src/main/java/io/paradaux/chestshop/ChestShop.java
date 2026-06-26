@@ -42,7 +42,7 @@ import io.paradaux.chestshop.listeners.pretransaction.PermissionChecker;
 import io.paradaux.chestshop.listeners.shopremoval.ShopRefundListener;
 import io.paradaux.chestshop.listeners.shopremoval.ShopRemovalLogger;
 import io.paradaux.chestshop.logging.FileFormatter;
-import io.paradaux.chestshop.database.ItemDatabase;
+import io.paradaux.chestshop.services.ItemCodeService;
 import io.paradaux.chestshop.signs.RestrictedSign;
 import io.paradaux.chestshop.players.NameManager;
 
@@ -110,7 +110,7 @@ public class ChestShop extends JavaPlugin {
     private static io.paradaux.hibernia.framework.i18n.Message message;
 
     private static File dataFolder;
-    private static ItemDatabase itemDatabase;
+    private static ItemCodeService itemCodes;
 
     private static Logger logger;
     private static Logger shopLogger;
@@ -158,16 +158,18 @@ public class ChestShop extends JavaPlugin {
                                 io.paradaux.chestshop.commands.Metrics.class, Give.class,
                                 Toggle.class, AccessToggle.class)
                         .build();
-        this.injector = com.google.inject.Guice.createInjector(hibernia);
+        this.injector = com.google.inject.Guice.createInjector(hibernia,
+                new io.paradaux.chestshop.guice.ChestShopModule());
         this.configurationLoader = injector.getInstance(
                 io.paradaux.hibernia.framework.configurator.ConfigurationLoader.class);
         message = injector.getInstance(io.paradaux.hibernia.framework.i18n.Message.class);
+        itemCodes = injector.getInstance(io.paradaux.chestshop.services.ItemCodeService.class);
 
         injector.getInstance(io.paradaux.hibernia.framework.commander.CommandManager.class).registerAll();
 
         loadConfig();
 
-        itemDatabase = new ItemDatabase();
+        itemCodes.migrateIfNeeded();
 
         if (!Dependencies.loadPlugins()) {
             getServer().getPluginManager().disablePlugin(this);
@@ -551,8 +553,9 @@ public class ChestShop extends JavaPlugin {
 
     ///////////////////////////////////////////////////////////////////////////////
 
-    public static ItemDatabase getItemDatabase() {
-        return itemDatabase;
+    /** The item-code service (serialised-item ↔ sign-code store). */
+    public static ItemCodeService itemCodes() {
+        return itemCodes;
     }
 
     public static File getFolder() {

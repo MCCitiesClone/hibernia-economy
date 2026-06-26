@@ -590,7 +590,7 @@ public class MaterialUtil {
          * @return ItemMeta represented by code
          */
         public static ItemMeta getFromCode(String code) {
-            ItemStack item = ChestShop.getItemDatabase().getFromCode(code);
+            ItemStack item = ChestShop.itemCodes().getFromCode(code);
 
             if (item == null) {
                 return null;
@@ -606,7 +606,7 @@ public class MaterialUtil {
          * @return Code representing the item
          */
         public static String getItemCode(ItemStack item) {
-            return ChestShop.getItemDatabase().getItemCode(item);
+            return ChestShop.itemCodes().getItemCode(item);
         }
     }
 
