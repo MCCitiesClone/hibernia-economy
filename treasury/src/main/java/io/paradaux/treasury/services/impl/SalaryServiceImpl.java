@@ -10,6 +10,7 @@ import io.paradaux.treasury.services.AccountService;
 import io.paradaux.treasury.services.EconomyNotifier;
 import io.paradaux.treasury.services.LedgerService;
 import io.paradaux.treasury.services.SalaryService;
+import io.paradaux.treasury.utils.Idempotency;
 import io.paradaux.treasury.utils.TreasuryConstants;
 import net.luckperms.api.LuckPerms;
 import net.luckperms.api.context.ContextManager;
@@ -19,6 +20,7 @@ import net.luckperms.api.model.user.User;
 import org.bukkit.Server;
 import org.bukkit.entity.Player;
 
+import java.time.Clock;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -37,6 +39,7 @@ public class SalaryServiceImpl implements SalaryService {
     private final LedgerService ledgerService;
     private final Server server;
     private final EconomyNotifier notifier;
+    private final Clock clock;
 
     /** Optional soft-dependency; injected only when LuckPerms is present. */
     private LuckPerms luckPerms;
@@ -44,11 +47,19 @@ public class SalaryServiceImpl implements SalaryService {
     @Inject
     public SalaryServiceImpl(SalaryConfiguration config, AccountService accountService,
                              LedgerService ledgerService, Server server, EconomyNotifier notifier) {
+        this(config, accountService, ledgerService, server, notifier, Clock.systemUTC());
+    }
+
+    /** Test seam: lets a test pin the clock so the per-run dedup key is deterministic. */
+    SalaryServiceImpl(SalaryConfiguration config, AccountService accountService,
+                      LedgerService ledgerService, Server server, EconomyNotifier notifier,
+                      Clock clock) {
         this.config = config;
         this.accountService = accountService;
         this.ledgerService = ledgerService;
         this.server = server;
         this.notifier = notifier;
+        this.clock = clock;
     }
 
     @Inject(optional = true)
@@ -107,10 +118,18 @@ public class SalaryServiceImpl implements SalaryService {
         }
         int fromAccountId = gov.getAccountId();
 
+        // One deterministic run id per payout period: derived from the current
+        // period bucket so two overlapping runs (a manual run racing the scheduled
+        // SalaryTask, or a retry after a partial failure) within the same interval
+        // collapse to a single credit via the ledger's dedup UNIQUE — while the
+        // next scheduled period still pays a fresh salary (PAR / ADT-8).
+        long runId = currentPeriodStart();
+
         int paid = 0;
         for (SalaryPayment payment : payments) {
             try {
                 int toAccountId = accountService.getOrCreatePersonalAccountId(payment.player());
+                byte[] dedupKey = Idempotency.sha256("salary:" + runId + ":" + payment.player());
                 ledgerService.transfer(new TransferRequest(
                         fromAccountId,
                         toAccountId,
@@ -119,7 +138,7 @@ public class SalaryServiceImpl implements SalaryService {
                         TreasuryConstants.VIRTUAL_TREASURY_INITIATOR,
                         null,
                         "treasury-salary",
-                        null));
+                        dedupKey));
                 notifier.notifySalaryPaid(payment.player(), payment.amount());
                 paid++;
             } catch (Exception e) {
@@ -130,6 +149,17 @@ public class SalaryServiceImpl implements SalaryService {
             log.info("Paid {} salary(ies) from {}.", paid, config.getGovernmentAccount());
         }
         return paid;
+    }
+
+    /**
+     * Start-of-period epoch seconds for the current payout, bucketed by the
+     * configured interval. Stable for the whole interval (so retries/overlaps
+     * dedup) and advances each interval (so the next run pays again).
+     */
+    private long currentPeriodStart() {
+        long interval = Math.max(1L, config.getIntervalSeconds());
+        long now = clock.instant().getEpochSecond();
+        return now - Math.floorMod(now, interval);
     }
 
     /** LuckPerms inherited group names for a player (empty if unknown/offline). */

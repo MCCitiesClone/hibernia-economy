@@ -7,6 +7,7 @@ import io.paradaux.treasury.model.salary.SalaryPayment;
 import io.paradaux.treasury.services.AccountService;
 import io.paradaux.treasury.services.EconomyNotifier;
 import io.paradaux.treasury.services.LedgerService;
+import io.paradaux.treasury.utils.Idempotency;
 import io.paradaux.treasury.utils.TreasuryConstants;
 import net.luckperms.api.LuckPerms;
 import net.luckperms.api.context.ContextManager;
@@ -24,6 +25,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -192,6 +196,30 @@ class SalaryServiceImplTest {
         ArgumentCaptor<BigDecimal> amt = ArgumentCaptor.forClass(BigDecimal.class);
         verify(notifier).notifySalaryPaid(org.mockito.ArgumentMatchers.eq(alice), amt.capture());
         assertThat(amt.getValue()).isEqualByComparingTo("65.0");
+    }
+
+    @Test
+    void payout_attachesDeterministicPerPeriodDedupKey() {
+        // Without a dedup key, two overlapping payout runs in the same interval
+        // would pay a player twice. The key is derived from the period bucket
+        // (interval 900s), so a retry/overlap collapses while the next period pays.
+        UUID alice = UUID.randomUUID();
+        Account gov = new Account();
+        gov.setAccountId(7);
+        when(accountService.getGovernmentAccountByName("DCGovernment")).thenReturn(gov);
+        when(accountService.getOrCreatePersonalAccountId(alice)).thenReturn(42);
+
+        Clock clock = Clock.fixed(Instant.ofEpochSecond(1_000_000L), ZoneOffset.UTC);
+        SalaryServiceImpl svc = new SalaryServiceImpl(
+                cfg(true, AMOUNTS), accountService, ledgerService, server, notifier, clock);
+
+        svc.payout(List.of(new SalaryPayment(alice, "senator", new BigDecimal("65.0"))));
+
+        ArgumentCaptor<TransferRequest> cap = ArgumentCaptor.forClass(TransferRequest.class);
+        verify(ledgerService).transfer(cap.capture());
+        // 1_000_000 mod 900 == 100 → period start 999_900.
+        byte[] expected = Idempotency.sha256("salary:999900:" + alice);
+        assertThat(cap.getValue().dedupKey()).isEqualTo(expected);
     }
 
     @Test
