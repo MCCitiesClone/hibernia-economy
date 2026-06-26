@@ -78,7 +78,7 @@ public final class TreasuryAPI extends JavaPlugin {
         getLogger().info("Setting up dependency injection...");
         this.injector = Guice.createInjector(
                 hibernia,
-                new TreasuryAPIModule(treasuryApi, businessApi),
+                new TreasuryAPIModule(this, treasuryApi, businessApi),
                 new DatabaseModule(dbCfg)
         );
 

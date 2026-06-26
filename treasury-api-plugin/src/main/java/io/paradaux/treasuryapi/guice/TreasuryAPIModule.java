@@ -4,6 +4,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Singleton;
 import io.paradaux.business.api.BusinessApi;
 import io.paradaux.treasury.api.TreasuryApi;
+import io.paradaux.treasuryapi.TreasuryAPI;
 import io.paradaux.treasuryapi.commands.BusinessKeyHandler;
 import io.paradaux.treasuryapi.commands.PersonalKeyHandler;
 import io.paradaux.treasuryapi.commands.UiAccessHandler;
@@ -13,8 +14,10 @@ import io.paradaux.treasuryapi.services.impl.ApiKeyServiceImpl;
 
 /**
  * Plugin-specific bindings that {@link io.paradaux.hibernia.framework.guice.HiberniaModule}
- * does not provide. HiberniaModule already binds {@code TreasuryAPI}/{@code JavaPlugin}/
- * {@code Plugin}, the {@link io.paradaux.hibernia.framework.configurator.ConfigurationLoader},
+ * does not provide. HiberniaModule binds {@code JavaPlugin}/{@code Plugin} (but NOT the
+ * concrete {@code TreasuryAPI} subtype — this module binds that, mirroring Treasury's
+ * {@code TreasuryModule}, so handlers injecting {@code TreasuryAPI} don't get a second
+ * instance JIT-constructed), the {@link io.paradaux.hibernia.framework.configurator.ConfigurationLoader},
  * every discovered {@code @ConfigurationComponent} (as a {@code toInstance} singleton),
  * {@link io.paradaux.hibernia.framework.i18n.Message} (eager), the command/resolver/listener
  * multibinders and PlaceholderAPI support — so this module must NOT re-bind any of those.
@@ -28,16 +31,23 @@ import io.paradaux.treasuryapi.services.impl.ApiKeyServiceImpl;
  */
 public class TreasuryAPIModule extends AbstractModule {
 
+    private final TreasuryAPI plugin;
     private final TreasuryApi treasuryApi;
     private final BusinessApi businessApi;
 
-    public TreasuryAPIModule(TreasuryApi treasuryApi, BusinessApi businessApi) {
+    public TreasuryAPIModule(TreasuryAPI plugin, TreasuryApi treasuryApi, BusinessApi businessApi) {
+        this.plugin = plugin;
         this.treasuryApi = treasuryApi;
         this.businessApi = businessApi;
     }
 
     @Override
     protected void configure() {
+        // Bind the concrete plugin instance so handlers injecting TreasuryAPI reuse
+        // it instead of having Guice JIT-construct a second JavaPlugin (which throws
+        // "Plugin already initialized!"). HiberniaModule only binds JavaPlugin/Plugin.
+        bind(TreasuryAPI.class).toInstance(plugin);
+
         // Economy APIs obtained from Bukkit services (Treasury/Business load first).
         bind(TreasuryApi.class).toInstance(treasuryApi);
         bind(BusinessApi.class).toInstance(businessApi);
