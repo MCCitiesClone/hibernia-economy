@@ -12,6 +12,8 @@ import org.jetbrains.annotations.Nullable;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Owns mutable state related to tax cycles:
@@ -32,10 +34,19 @@ public class TaxCycleRegistry {
 
     private final AccountMapper accountMapper;
 
-    private final Map<TaxCycleType, Instant> nextFireTimes = new EnumMap<>(TaxCycleType.class);
-    private final Map<TaxCycleType, Set<String>> cycleParticipants = new EnumMap<>(TaxCycleType.class);
+    // Written from the async scheduler thread, read from /tax on the main thread —
+    // ConcurrentHashMap (not a plain EnumMap) so the cross-thread read can't see a
+    // partially-rehashed map or throw a ConcurrentModificationException (ADT-29).
+    private final Map<TaxCycleType, Instant> nextFireTimes = new ConcurrentHashMap<>();
+    private final Map<TaxCycleType, Set<String>> cycleParticipants = new ConcurrentHashMap<>();
 
-    private volatile CycleSession activeSession;
+    // Each tax cycle runs on its own scheduler thread (a manual /tax trigger on its
+    // command thread), firing the event and collecting synchronously on that thread.
+    // Scoping the active session to the firing thread keeps co-scheduled cycles
+    // (e.g. daily + weekly + monthly all at the same hour) from clobbering each
+    // other's session and cross-attributing / losing reports (ADT-29). A previous
+    // single `volatile` field was last-writer-wins across concurrent cycles.
+    private final ThreadLocal<CycleSession> activeSession = new ThreadLocal<>();
 
     @Inject
     public TaxCycleRegistry(AccountMapper accountMapper) {
@@ -72,31 +83,31 @@ public class TaxCycleRegistry {
 
     public void startSession(TaxCycleType cycleType, Instant periodStart,
                              boolean manual, @Nullable String triggeredBy) {
-        activeSession = new CycleSession(cycleType, periodStart, manual, triggeredBy);
+        activeSession.set(new CycleSession(cycleType, periodStart, manual, triggeredBy));
     }
 
     public void recordCollected(int destinationAccountId, String taxType, BigDecimal amount) {
-        CycleSession session = activeSession;
+        CycleSession session = activeSession.get();
         if (session != null) session.recordCollected(destinationAccountId, taxType, amount);
     }
 
     public void recordSkipped() {
-        CycleSession session = activeSession;
+        CycleSession session = activeSession.get();
         if (session != null) session.recordSkipped();
     }
 
     public void recordFailed() {
-        CycleSession session = activeSession;
+        CycleSession session = activeSession.get();
         if (session != null) session.recordFailed();
     }
 
     public boolean hasActiveSession() {
-        return activeSession != null;
+        return activeSession.get() != null;
     }
 
     public @Nullable TaxCycleReport endSession() {
-        CycleSession session = activeSession;
-        activeSession = null;
+        CycleSession session = activeSession.get();
+        activeSession.remove();
         if (session == null) return null;
 
         Map<Integer, String> idToName = new LinkedHashMap<>();
@@ -121,7 +132,7 @@ public class TaxCycleRegistry {
         return new TaxCycleReport(
                 session.cycleType, session.periodStart, session.manual, session.triggeredBy,
                 total, byAccount, byTaxType,
-                session.collectedCount, session.skippedCount, session.failedCount
+                session.collectedCount.get(), session.skippedCount.get(), session.failedCount.get()
         );
     }
 
@@ -134,9 +145,11 @@ public class TaxCycleRegistry {
         final String triggeredBy;
 
         final List<Entry> entries = Collections.synchronizedList(new ArrayList<>());
-        volatile int collectedCount;
-        volatile int skippedCount;
-        volatile int failedCount;
+        // Atomic so concurrent collectors within one cycle can't lose an increment
+        // (a `volatile int count++` is a read-modify-write, not atomic) (ADT-29).
+        final AtomicInteger collectedCount = new AtomicInteger();
+        final AtomicInteger skippedCount = new AtomicInteger();
+        final AtomicInteger failedCount = new AtomicInteger();
 
         CycleSession(TaxCycleType cycleType, Instant periodStart, boolean manual, String triggeredBy) {
             this.cycleType   = cycleType;
@@ -147,11 +160,11 @@ public class TaxCycleRegistry {
 
         void recordCollected(int destinationAccountId, String taxType, BigDecimal amount) {
             entries.add(new Entry(destinationAccountId, taxType, amount));
-            collectedCount++;
+            collectedCount.incrementAndGet();
         }
 
-        void recordSkipped() { skippedCount++; }
-        void recordFailed()  { failedCount++; }
+        void recordSkipped() { skippedCount.incrementAndGet(); }
+        void recordFailed()  { failedCount.incrementAndGet(); }
 
         record Entry(int destinationAccountId, String taxType, BigDecimal amount) {}
     }
