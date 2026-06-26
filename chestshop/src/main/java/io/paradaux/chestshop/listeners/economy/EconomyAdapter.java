@@ -5,7 +5,6 @@ import io.paradaux.chestshop.events.economy.AccountCheckEvent;
 import io.paradaux.chestshop.events.economy.CurrencyAddEvent;
 import io.paradaux.chestshop.events.economy.CurrencyAmountEvent;
 import io.paradaux.chestshop.events.economy.CurrencyCheckEvent;
-import io.paradaux.chestshop.events.economy.CurrencyFormatEvent;
 import io.paradaux.chestshop.events.economy.CurrencyHoldEvent;
 import io.paradaux.chestshop.events.economy.CurrencySubtractEvent;
 import io.paradaux.chestshop.events.economy.CurrencyTransferEvent;
@@ -24,8 +23,6 @@ public abstract class EconomyAdapter implements Listener {
     public abstract void onCurrencyCheck(CurrencyCheckEvent event);
 
     public abstract void onAccountCheck(AccountCheckEvent event);
-
-    public abstract void onCurrencyFormat(CurrencyFormatEvent event);
 
     public abstract void onCurrencyAdd(CurrencyAddEvent event);
 

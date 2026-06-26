@@ -9,7 +9,6 @@ import io.paradaux.chestshop.events.economy.AccountCheckEvent;
 import io.paradaux.chestshop.events.economy.CurrencyAddEvent;
 import io.paradaux.chestshop.events.economy.CurrencyAmountEvent;
 import io.paradaux.chestshop.events.economy.CurrencyCheckEvent;
-import io.paradaux.chestshop.events.economy.CurrencyFormatEvent;
 import io.paradaux.chestshop.events.economy.CurrencyHoldEvent;
 import io.paradaux.chestshop.events.economy.CurrencySubtractEvent;
 import io.paradaux.chestshop.events.economy.CurrencyTransferEvent;
@@ -84,6 +83,10 @@ public class TreasuryListener extends EconomyAdapter {
         }
 
         TreasuryApi treasury = rsp.getProvider();
+
+        // Hand the live ledger handle to the EconomyService — ChestShop's direct
+        // TreasuryApi boundary that's replacing the internal currency event bus.
+        ChestShop.economy().bind(treasury);
 
         // Find or create the ChestShop SYSTEM account for intermediary transfers
         int systemAccountId;
@@ -258,21 +261,6 @@ public class TreasuryListener extends EconomyAdapter {
             event.setHandled(true);
         } catch (Exception e) {
             ChestShop.getBukkitLogger().log(Level.WARNING, "Treasury: Could not check account for " + event.getAccount(), e);
-        }
-    }
-
-    @EventHandler
-    public void onCurrencyFormat(CurrencyFormatEvent event) {
-        if (event.wasHandled() || !event.getFormattedAmount().isEmpty()) {
-            return;
-        }
-
-        try {
-            String formatted = treasury.formatAmount(event.getAmount());
-            event.setFormattedAmount(Properties.STRIP_PRICE_COLORS ? ChatColor.stripColor(formatted) : formatted);
-            event.setHandled(true);
-        } catch (Exception e) {
-            ChestShop.getBukkitLogger().log(Level.WARNING, "Treasury: Could not format amount " + event.getAmount(), e);
         }
     }
 

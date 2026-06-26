@@ -111,6 +111,7 @@ public class ChestShop extends JavaPlugin {
     private static io.paradaux.chestshop.services.TransactionService transactions;
     private static io.paradaux.chestshop.services.AccountService accounts;
     private static io.paradaux.chestshop.services.ShopService shops;
+    private static io.paradaux.chestshop.services.EconomyService economy;
 
     private static Logger logger;
     private static Logger shopLogger;
@@ -167,6 +168,7 @@ public class ChestShop extends JavaPlugin {
         transactions = injector.getInstance(io.paradaux.chestshop.services.TransactionService.class);
         accounts = injector.getInstance(io.paradaux.chestshop.services.AccountService.class);
         shops = injector.getInstance(io.paradaux.chestshop.services.ShopService.class);
+        economy = injector.getInstance(io.paradaux.chestshop.services.EconomyService.class);
 
         injector.getInstance(io.paradaux.hibernia.framework.commander.CommandManager.class).registerAll();
 
@@ -573,6 +575,11 @@ public class ChestShop extends JavaPlugin {
     /** The shop service (shop-lifecycle money logic: creation fee, removal refund). */
     public static io.paradaux.chestshop.services.ShopService shops() {
         return shops;
+    }
+
+    /** The economy service (ChestShop's direct TreasuryApi boundary, replacing the currency event bus). */
+    public static io.paradaux.chestshop.services.EconomyService economy() {
+        return economy;
     }
 
     public static File getFolder() {

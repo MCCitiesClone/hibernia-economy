@@ -6,7 +6,6 @@ import io.paradaux.chestshop.utils.PriceUtil;
 import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.configuration.Properties;
 import io.paradaux.chestshop.events.AccountQueryEvent;
-import io.paradaux.chestshop.events.economy.CurrencyFormatEvent;
 import io.paradaux.chestshop.events.ItemInfoEvent;
 import io.paradaux.chestshop.events.ItemParseEvent;
 import io.paradaux.chestshop.events.ShopInfoEvent;
@@ -89,17 +88,15 @@ public class ShopInfoListener implements Listener {
             }
 
             if (!buyPrice.equals(PriceUtil.NO_PRICE)) {
-                CurrencyFormatEvent cfe = ChestShop.callEvent(new CurrencyFormatEvent(buyPrice));
                 ChestShop.message().send(event.getSender(), "chestshop.shopinfo_buy", "prefix", "",
                         "amount", String.valueOf(amount),
-                        "price", cfe.getFormattedAmount()
+                        "price", ChestShop.economy().format(buyPrice)
                 );
             }
             if (!sellPrice.equals(PriceUtil.NO_PRICE)) {
-                CurrencyFormatEvent cfe = ChestShop.callEvent(new CurrencyFormatEvent(sellPrice));
                 ChestShop.message().send(event.getSender(), "chestshop.shopinfo_sell", "prefix", "",
                         "amount", String.valueOf(amount),
-                        "price", cfe.getFormattedAmount()
+                        "price", ChestShop.economy().format(sellPrice)
                 );
             }
         } else {
