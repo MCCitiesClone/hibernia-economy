@@ -17,7 +17,6 @@ import io.paradaux.chestshop.listeners.block.SignCreate;
 import io.paradaux.chestshop.listeners.economy.EconomyAdapter;
 import io.paradaux.chestshop.listeners.economy.ServerAccountCorrector;
 import io.paradaux.chestshop.listeners.economy.TaxModule;
-import io.paradaux.chestshop.plugins.AuthMe;
 import io.paradaux.chestshop.listeners.GarbageTextListener;
 import io.paradaux.chestshop.listeners.item.ItemMoveListener;
 import io.paradaux.chestshop.listeners.item.ItemStringListener;

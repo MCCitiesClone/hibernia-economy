@@ -1,6 +1,5 @@
 package io.paradaux.chestshop.configuration;
 
-import io.paradaux.chestshop.Security;
 import org.bukkit.Material;
 
 import java.math.BigDecimal;
@@ -78,20 +77,10 @@ public class Properties {
     public static boolean TURN_OFF_SIGN_PROTECTION = false;
     public static boolean TURN_OFF_HOPPER_PROTECTION = false;
     public static boolean CHECK_ACCESS_FOR_SHOP_USE = false;
-    public static boolean PROTECT_CHEST_WITH_LWC = false;
-    public static Security.Type LWC_CHEST_PROTECTION_TYPE = Security.Type.PRIVATE;
-    public static boolean PROTECT_SIGN_WITH_LWC = false;
-    public static Security.Type LWC_SIGN_PROTECTION_TYPE = Security.Type.PRIVATE;
-    public static boolean REMOVE_LWC_PROTECTION_AUTOMATICALLY = true;
-    public static boolean LWC_LIMITS_BLOCK_CREATION = true;
     public static boolean WORLDGUARD_INTEGRATION = false;
     public static boolean WORLDGUARD_USE_FLAG = false;
     public static boolean WORLDGUARD_USE_PROTECTION = false;
     public static boolean GRIEFPREVENTION_INTEGRATION = false;
-    public static boolean REDPROTECT_INTEGRATION = false;
-    public static boolean AUTHME_HOOK = true;
-    public static boolean AUTHME_ALLOW_UNREGISTERED = false;
-    public static double HEROES_EXP = 100;
     public static boolean SHOWITEM_MESSAGE = true;
     public static boolean USE_STOCK_COUNTER = false;
     public static Set<String> EXCLUDED_ITEM_ATTRIBUTES = new LinkedHashSet<>();
@@ -159,20 +148,10 @@ public class Properties {
         TURN_OFF_SIGN_PROTECTION = c.isTurnOffSignProtection();
         TURN_OFF_HOPPER_PROTECTION = c.isTurnOffHopperProtection();
         CHECK_ACCESS_FOR_SHOP_USE = c.isCheckAccessForShopUse();
-        PROTECT_CHEST_WITH_LWC = c.isProtectChestWithLwc();
-        LWC_CHEST_PROTECTION_TYPE = c.getLwcChestProtectionType();
-        PROTECT_SIGN_WITH_LWC = c.isProtectSignWithLwc();
-        LWC_SIGN_PROTECTION_TYPE = c.getLwcSignProtectionType();
-        REMOVE_LWC_PROTECTION_AUTOMATICALLY = c.isRemoveLwcProtectionAutomatically();
-        LWC_LIMITS_BLOCK_CREATION = c.isLwcLimitsBlockCreation();
         WORLDGUARD_INTEGRATION = c.isWorldguardIntegration();
         WORLDGUARD_USE_FLAG = c.isWorldguardUseFlag();
         WORLDGUARD_USE_PROTECTION = c.isWorldguardUseProtection();
         GRIEFPREVENTION_INTEGRATION = c.isGriefpreventionIntegration();
-        REDPROTECT_INTEGRATION = c.isRedprotectIntegration();
-        AUTHME_HOOK = c.isAuthmeHook();
-        AUTHME_ALLOW_UNREGISTERED = c.isAuthmeAllowUnregistered();
-        HEROES_EXP = c.getHeroesExp();
         SHOWITEM_MESSAGE = c.isShowitemMessage();
         USE_STOCK_COUNTER = c.isUseStockCounter();
         EXCLUDED_ITEM_ATTRIBUTES = c.getExcludedItemAttributes();

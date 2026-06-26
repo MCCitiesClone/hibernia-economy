@@ -132,17 +132,6 @@ public class Dependencies implements Listener {
         Listener listener = null;
 
         switch (dependency) {
-            //Protection plugins
-            case LWC:
-                listener = new LightweightChestProtection();
-                break;
-            case LockettePro:
-                listener = new LockettePro();
-                break;
-            case BlockLocker:
-                listener = new BlockLocker();
-                break;
-
             //Terrain protection plugins
             case WorldGuard:
                 boolean inUse = Properties.WORLDGUARD_USE_PROTECTION || Properties.WORLDGUARD_INTEGRATION;
@@ -168,26 +157,7 @@ public class Dependencies implements Listener {
                 listener = new GriefPrevenentionBuilding(plugin);
                 break;
 
-            case RedProtect:
-                if (!Properties.REDPROTECT_INTEGRATION) {
-                    return false;
-                }
-                listener = new RedProtectBuilding(plugin);
-                break;
-
             //Other plugins
-            case AuthMe:
-                listener = new AuthMe();
-                break;
-            case Heroes:
-                Heroes heroes = Heroes.getHeroes(plugin);
-
-                if (heroes == null) {
-                    return false;
-                }
-
-                listener = heroes;
-                break;
             case ItemBridge:
                 listener = new ItemBridge();
                 break;
@@ -208,17 +178,8 @@ public class Dependencies implements Listener {
     }
 
     private enum Dependency {
-        LWC,
-        LockettePro,
-        BlockLocker,
-
         WorldGuard,
         GriefPrevention,
-        RedProtect,
-
-        AuthMe,
-
-        Heroes,
 
         ItemBridge,
 

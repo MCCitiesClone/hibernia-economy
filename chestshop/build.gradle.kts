@@ -92,9 +92,6 @@ dependencies {
     //     RedProtect -> de.keyle:mypet (gone), worldguard -> worldedit 8.0.0
     //     -SNAPSHOT (needs Java 25). Add a specific transitive back explicitly
     //     below only if compilation actually requires it.
-    compileOnly("com.herocraftonline.heroes:Heroes:1.5.5") { isTransitive = false }
-    compileOnly("fr.xephi:authme:5.6.0-SNAPSHOT") { isTransitive = false }
-    compileOnly("com.griefcraft.lwc:LWCX:2.2.5") { isTransitive = false }
     // WorldGuard integration genuinely needs WorldGuard's transitives (StateFlag,
     // Flags, RegionPermissionModel) + WorldEdit's BukkitAdapter, so these stay
     // transitive — but WorldEdit is force-pinned to 7.3.9 below (the snapshot
@@ -110,9 +107,6 @@ dependencies {
     compileOnly("com.sk89q.worldguard:worldguard-bukkit:7.1.0-SNAPSHOT") { isTransitive = false }
     compileOnly("com.github.TechFortress:GriefPrevention:16.12.0") { isTransitive = false }
     compileOnly("com.github.jojodmo:ItemBridge:b0054538c1") { isTransitive = false }
-    compileOnly("br.net.fabiozumbi12.RedProtect:RedProtect-Spigot:7.7.3") { isTransitive = false }
-    compileOnly("br.net.fabiozumbi12.RedProtect:RedProtect-Core:7.7.3") { isTransitive = false }
-    compileOnly("nl.rutgerkok:blocklocker:1.9") { isTransitive = false }
     compileOnly("de.themoep.showitem:api:1.6.3") { isTransitive = false }
     // Substituted to the local Treasury/Business builds by the root composite
     // (settings.gradle.kts); the version here only governs standalone builds,
@@ -120,7 +114,6 @@ dependencies {
     // (FirmApi.getFirmByAccountId, StaffApi.hasPermissionForAccount, …).
     compileOnly(project(":treasury:treasury-api")) { isTransitive = false }
     compileOnly(project(":business:business-api")) { isTransitive = false }
-    compileOnly("me.crafter.mc:lockettepro:2.10-SNAPSHOT") { isTransitive = false }
 
     // --- HiberniaFramework: Guice DI, the annotation-driven Configurator,
     //     Commander, and i18n. Bundled (and relocated below) like treasury/business.

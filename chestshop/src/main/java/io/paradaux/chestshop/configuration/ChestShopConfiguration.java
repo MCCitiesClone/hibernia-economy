@@ -1,7 +1,6 @@
 package io.paradaux.chestshop.configuration;
 
 import io.paradaux.chestshop.ChestShop;
-import io.paradaux.chestshop.Security;
 import io.paradaux.hibernia.framework.configurator.annotations.ConfigurationComponent;
 import io.paradaux.hibernia.framework.configurator.annotations.ConfigurationValue;
 import lombok.Getter;
@@ -202,24 +201,6 @@ public class ChestShopConfiguration {
     @ConfigurationValue(path = "CHECK_ACCESS_FOR_SHOP_USE", defaultValue = "false")
     private boolean checkAccessForShopUse;
 
-    @ConfigurationValue(path = "PROTECT_CHEST_WITH_LWC", defaultValue = "false")
-    private boolean protectChestWithLwc;
-
-    @ConfigurationValue(path = "LWC_CHEST_PROTECTION_TYPE", defaultValue = "PRIVATE")
-    private Security.Type lwcChestProtectionType;
-
-    @ConfigurationValue(path = "PROTECT_SIGN_WITH_LWC", defaultValue = "false")
-    private boolean protectSignWithLwc;
-
-    @ConfigurationValue(path = "LWC_SIGN_PROTECTION_TYPE", defaultValue = "PRIVATE")
-    private Security.Type lwcSignProtectionType;
-
-    @ConfigurationValue(path = "REMOVE_LWC_PROTECTION_AUTOMATICALLY", defaultValue = "true")
-    private boolean removeLwcProtectionAutomatically;
-
-    @ConfigurationValue(path = "LWC_LIMITS_BLOCK_CREATION", defaultValue = "true")
-    private boolean lwcLimitsBlockCreation;
-
     @ConfigurationValue(path = "WORLDGUARD_INTEGRATION", defaultValue = "false")
     private boolean worldguardIntegration;
 
@@ -231,18 +212,6 @@ public class ChestShopConfiguration {
 
     @ConfigurationValue(path = "GRIEFPREVENTION_INTEGRATION", defaultValue = "false")
     private boolean griefpreventionIntegration;
-
-    @ConfigurationValue(path = "REDPROTECT_INTEGRATION", defaultValue = "false")
-    private boolean redprotectIntegration;
-
-    @ConfigurationValue(path = "AUTHME_HOOK", defaultValue = "true")
-    private boolean authmeHook;
-
-    @ConfigurationValue(path = "AUTHME_ALLOW_UNREGISTERED", defaultValue = "false")
-    private boolean authmeAllowUnregistered;
-
-    @ConfigurationValue(path = "HEROES_EXP", defaultValue = "100")
-    private double heroesExp;
 
     @ConfigurationValue(path = "SHOWITEM_MESSAGE", defaultValue = "true")
     private boolean showitemMessage;

@@ -172,26 +172,8 @@ TURN_OFF_SIGN_PROTECTION: false
 # Do you want to disable the hopper protection, which prevents Hopper-Minecarts from taking items out of shops?
 TURN_OFF_HOPPER_PROTECTION: false
 
-# Only allow users to buy/sell that have access to the sign's protection? (E.g. LWC protection)
+# Only allow users to buy/sell that have access to the sign's protection? (E.g. WorldGuard regions)
 CHECK_ACCESS_FOR_SHOP_USE: false
-
-# Do you want to protect shop chests with LWC?
-PROTECT_CHEST_WITH_LWC: false
-
-# Of which type should the container protection be? Possible type: PUBLIC, PRIVATE, DONATION, DISPLAY
-LWC_CHEST_PROTECTION_TYPE: PRIVATE
-
-# Do you want to protect shop signs with LWC?
-PROTECT_SIGN_WITH_LWC: false
-
-# Of which type should the sign protection be? Possible type: PUBLIC, PRIVATE, DONATION, DISPLAY
-LWC_SIGN_PROTECTION_TYPE: PRIVATE
-
-# Should the chest's LWC protection be removed once the shop sign is destroyed?
-REMOVE_LWC_PROTECTION_AUTOMATICALLY: true
-
-# Should LWC limits block shop creations?
-LWC_LIMITS_BLOCK_CREATION: true
 
 # Do you want to only let people build inside WorldGuard regions?
 WORLDGUARD_INTEGRATION: false
@@ -204,18 +186,6 @@ WORLDGUARD_USE_PROTECTION: false
 
 # Do you want to only let people build inside GriefPrevention claims?
 GRIEFPREVENTION_INTEGRATION: false
-
-# Do you want to only let people build inside RedProtect regions?
-REDPROTECT_INTEGRATION: false
-
-# Do you want to deny shop access to unlogged users?
-AUTHME_HOOK: true
-
-# Do you want to allow shop access to unregistered users? (Example: registration is optional)
-AUTHME_ALLOW_UNREGISTERED: false
-
-# How much Heroes exp should people get for creating a ChestShop?
-HEROES_EXP: 100
 
 # Add icons and make item names hoverable in transaction messages when ShowItem is installed?
 SHOWITEM_MESSAGE: true
