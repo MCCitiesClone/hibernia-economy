@@ -7,8 +7,9 @@ description: ChestShop's trade limits and rules — and why its sales tax is act
 # ChestShop configuration
 
 ChestShop's settings live in `plugins/ChestShop/config.yml`. It's a large upstream file;
-below are the settings a DemocracyCraft operator actually cares about. Stock ChestShop
-reads its config at enable, so changes need a **restart**.
+below are the settings a DemocracyCraft operator actually cares about. After editing,
+reload the config with **`/csVersion reload`** (alias `/chestshop reload`) — a full
+restart isn't required.
 
 > [!IMPORTANT]
 > **ChestShop sales tax is NOT configured here.** Because Treasury is installed, ChestShop

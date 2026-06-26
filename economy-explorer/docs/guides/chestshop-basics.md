@@ -47,11 +47,14 @@ The `B` (buy) and `S` (sell) letters set the prices, **from the customer's point
 | `B 100` | Players **buy** from you for 100 (your shop **sells** to them) |
 | `S 90` | Players **sell** to you for 90 (your shop **buys** from them) |
 | `100 : 90` | Both — the **first** number is the buy price (100), the **second** is the sell price (90) |
-| `free` | No charge |
 
 A plain number with no letter (like `100`) makes a **buy-only** shop. The letter can go
 before or after the number. Note that the sell price can't be set higher than the buy
 price.
+
+> [!NOTE]
+> Free shops are turned off on this server, so a `0` or `free` price won't work — every
+> shop must charge or pay something.
 
 You can shorten big numbers with `K` and `M` — `1.5K` is 1,500 and `2M` is 2,000,000.
 
@@ -66,8 +69,6 @@ To trade at a shop, click its sign:
 
 - **Right-click** to **buy** from the shop.
 - **Left-click** to **sell** to it.
-
-Hold **shift** while clicking to trade a full stack at once (where the shop allows it).
 
 ## Check a shop
 

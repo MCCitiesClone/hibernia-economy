@@ -53,7 +53,10 @@ view:
 | `B 100` | Players **buy** from the shop for 100 (the shop sells to them). |
 | `S 90` | Players **sell** to the shop for 90 (the shop buys from them). |
 | `100 : 90` | Both — the **first** number is the buy price (100), the **second** is the sell price (90). |
-| `free` | No charge. |
+
+> [!NOTE]
+> Free shops are **disabled** on this server (`ALLOW_FREE_SHOPS` is off). A `0`/`free`
+> price is rejected at creation, and any pre-existing free shop is removed when next used.
 
 The letter can go before or after the number (`B 100`, `100 B`, and `100B` all work). A
 plain number with no letter — like `100` — becomes a **buy-only** shop (the same as
@@ -125,9 +128,9 @@ ChestShop nodes use a `ChestShop.` prefix (defaults: `true` = everyone, `op` = o
 | `ChestShop.admin` | Modify/destroy others' shops; create admin shops (parent of `ChestShop.adminshop`) | `op` |
 | `ChestShop.adminshop` | Create/destroy **Admin Shops** | inherits from `ChestShop.admin` |
 | `ChestShop.mod` | View other players' shop chests (no destroy/admin powers) | `op` |
-| `ChestShop.nofee` | Skip the shop-creation fee | not granted |
-| `ChestShop.notax.buy` · `ChestShop.notax.sell` | Skip transaction tax | not granted |
-| `ChestShop.nolimit.buy.min` · `.buy.max` · `.sell.min` · `.sell.max` | Bypass configured price limits | not granted |
+| `ChestShop.nofee` | Skip the shop-creation fee | `op` |
+| `ChestShop.notax.buy` · `ChestShop.notax.sell` | Skip transaction tax | `op` |
+| `ChestShop.nolimit.buy.min` · `.buy.max` · `.sell.min` · `.sell.max` | Bypass configured price limits | `op` |
 
 > [!NOTE]
 > Most of these have per-item and per-category variants — e.g.

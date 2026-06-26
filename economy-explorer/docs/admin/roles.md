@@ -69,7 +69,9 @@ It's granted by **access-group membership**, on the **Groups** admin screen
    - **From a LuckPerms rank/permission** — set the group's **LuckPerms source** to a
      rank (e.g. `group.moderator`) or a permission node. The reconciliation cron then
      keeps the group's membership in sync with who holds that rank in-game. Manual
-     members are never touched by the cron, so the two can be mixed.
+     members are never touched by the cron, so the two can be mixed. A player can run
+     `/treasuryapi ui sync` in-game to pull their current LuckPerms ranks into their
+     Explorer groups immediately, instead of waiting for the next cron run.
 
 A capability is the *union* across every group a player belongs to, so a player in any
 group that grants **Viewer** has the viewer role.
