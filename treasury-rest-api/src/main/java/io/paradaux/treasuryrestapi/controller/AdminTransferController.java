@@ -5,6 +5,7 @@ import io.paradaux.treasuryrestapi.dto.TransferResponse;
 import io.paradaux.treasuryrestapi.security.VerifiedToken;
 import io.paradaux.treasuryrestapi.service.TransferService;
 import io.swagger.v3.oas.annotations.Hidden;
+import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
@@ -35,7 +36,7 @@ public class AdminTransferController {
     @PostMapping
     public ResponseEntity<TransferResponse> transfer(
             @AuthenticationPrincipal VerifiedToken verified,
-            @RequestBody AdminTransferRequest request,
+            @Valid @RequestBody AdminTransferRequest request,
             @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
         log.info("POST /admin/transfers requested by keyId={} | from={} to={} amount={}",
                 verified != null ? verified.keyId() : null,

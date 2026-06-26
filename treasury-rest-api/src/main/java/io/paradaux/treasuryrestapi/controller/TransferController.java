@@ -7,6 +7,7 @@ import io.paradaux.treasuryrestapi.dto.TransferResponse;
 import io.paradaux.treasuryrestapi.ratelimit.RateLimit;
 import io.paradaux.treasuryrestapi.security.VerifiedToken;
 import io.paradaux.treasuryrestapi.service.TransferService;
+import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DuplicateKeyException;
@@ -59,7 +60,7 @@ public class TransferController {
     @RateLimit(personalPerMinute = 30, businessPerMinute = 120)
     public ResponseEntity<TransferResponse> transfer(
             @AuthenticationPrincipal VerifiedToken verified,
-            @RequestBody TransferRequest request,
+            @Valid @RequestBody TransferRequest request,
             @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
 
         log.info("POST /transfers requested by keyId={} ownerUuid={} | fromAccount={} toAccount={} amount={} idempotencyKey={}",
@@ -86,7 +87,7 @@ public class TransferController {
     @RateLimit(personalPerMinute = 30, businessPerMinute = 120)
     public ResponseEntity<TransferResponse> transferToFirm(
             @AuthenticationPrincipal VerifiedToken verified,
-            @RequestBody FirmTransferRequest request,
+            @Valid @RequestBody FirmTransferRequest request,
             @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
 
         log.info("POST /transfers/to-firm requested by keyId={} ownerUuid={} | fromAccount={} toFirm={} amount={} idempotencyKey={}",
@@ -115,7 +116,7 @@ public class TransferController {
     @RateLimit(personalPerMinute = 30, businessPerMinute = 120)
     public ResponseEntity<TransferResponse> transferToPlayer(
             @AuthenticationPrincipal VerifiedToken verified,
-            @RequestBody PlayerTransferRequest request,
+            @Valid @RequestBody PlayerTransferRequest request,
             @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
 
         log.info("POST /transfers/to-player requested by keyId={} ownerUuid={} | fromAccount={} toPlayerUuid={} toPlayerName={} amount={} idempotencyKey={}",
