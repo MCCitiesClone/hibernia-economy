@@ -5,7 +5,6 @@ import io.paradaux.chestshop.utils.InventoryUtil;
 import io.paradaux.chestshop.utils.MaterialUtil;
 import io.paradaux.chestshop.utils.NumberUtil;
 import io.paradaux.chestshop.ChestShop;
-import io.paradaux.chestshop.events.ItemParseEvent;
 import io.paradaux.chestshop.utils.ItemUtil;
 import io.paradaux.hibernia.framework.commander.annotations.Command;
 import io.paradaux.hibernia.framework.commander.annotations.Description;
@@ -98,8 +97,6 @@ public class Give implements CommandHandler {
             builder.append(arguments[index]).append(' ');
         }
 
-        ItemParseEvent parseEvent = new ItemParseEvent(builder.toString());
-        Bukkit.getPluginManager().callEvent(parseEvent);
-        return parseEvent.getItem();
+        return ChestShop.items().parse(builder.toString());
     }
 }

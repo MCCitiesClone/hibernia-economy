@@ -5,7 +5,6 @@ import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.configuration.Properties;
 import io.paradaux.chestshop.economy.AdminInventory;
 import io.paradaux.chestshop.database.Account;
-import io.paradaux.chestshop.events.ItemParseEvent;
 import io.paradaux.chestshop.events.PreTransactionEvent;
 import io.paradaux.chestshop.events.ShopInfoEvent;
 import io.paradaux.chestshop.events.TransactionEvent;
@@ -225,9 +224,7 @@ public class PlayerInteract implements Listener {
         Container shopBlock = uBlock.findConnectedContainer(sign);
         Inventory ownerInventory = shopBlock != null ? shopBlock.getInventory() : null;
 
-        ItemParseEvent parseEvent = new ItemParseEvent(material);
-        Bukkit.getPluginManager().callEvent(parseEvent);
-        ItemStack item = parseEvent.getItem();
+        ItemStack item = ChestShop.items().parse(material);
         if (item == null) {
             ChestShop.message().send(player, "chestshop.INVALID_SHOP_DETECTED");
             return null;

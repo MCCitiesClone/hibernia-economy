@@ -1,14 +1,12 @@
 package io.paradaux.chestshop.events;
 
 import io.paradaux.chestshop.signs.ChestShopSign;
-import org.bukkit.event.Event;
-import org.bukkit.event.HandlerList;
 
 /**
- * Represents a request whether all sign lines are valid.
+ * Mutable carrier for whether all sign lines are valid, used by
+ * {@link io.paradaux.chestshop.services.ItemService#validateSign}. Formerly a Bukkit event.
  */
-public class SignValidationEvent extends Event {
-    private static final HandlerList handlers = new HandlerList();
+public class SignValidationEvent {
     private final String[] lines;
     private boolean valid;
 
@@ -77,15 +75,6 @@ public class SignValidationEvent extends Event {
      */
     public void setValid(boolean valid) {
         this.valid = valid;
-    }
-
-    @Override
-    public HandlerList getHandlers() {
-        return handlers;
-    }
-
-    public static HandlerList getHandlerList() {
-        return handlers;
     }
 
 }

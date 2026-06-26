@@ -1,9 +1,9 @@
 package io.paradaux.chestshop.listeners.preshopcreation;
 
+import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.utils.MaterialUtil;
 import io.paradaux.chestshop.utils.StringUtil;
 import io.paradaux.chestshop.configuration.Properties;
-import io.paradaux.chestshop.events.ItemParseEvent;
 import io.paradaux.chestshop.events.PreShopCreationEvent;
 import io.paradaux.chestshop.signs.ChestShopSign;
 import io.paradaux.chestshop.utils.ItemUtil;
@@ -33,9 +33,7 @@ public class ItemChecker implements Listener {
     public static void onPreShopCreation(PreShopCreationEvent event) {
         String itemCode = ChestShopSign.getItem(event.getSignLines());
 
-        ItemParseEvent parseEvent = new ItemParseEvent(itemCode);
-        Bukkit.getPluginManager().callEvent(parseEvent);
-        ItemStack item = parseEvent.getItem();
+        ItemStack item = ChestShop.items().parse(itemCode);
 
         if (item == null) {
             if (Properties.ALLOW_AUTO_ITEM_FILL && itemCode.equals(AUTOFILL_CODE)) {
@@ -71,9 +69,7 @@ public class ItemChecker implements Listener {
     }
 
     private static boolean isSameItem(String newCode, ItemStack item) {
-        ItemParseEvent parseEvent = new ItemParseEvent(newCode);
-        Bukkit.getPluginManager().callEvent(parseEvent);
-        ItemStack newItem = parseEvent.getItem();
+        ItemStack newItem = ChestShop.items().parse(newCode);
 
         return newItem != null && MaterialUtil.equals(newItem, item);
     }

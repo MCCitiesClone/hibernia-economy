@@ -1,11 +1,12 @@
 package io.paradaux.chestshop.events;
 
 import org.bukkit.Material;
-import org.bukkit.event.Event;
-import org.bukkit.event.HandlerList;
 
-public class MaterialParseEvent extends Event {
-    private static final HandlerList handlers = new HandlerList();
+/**
+ * Mutable carrier for resolving the material part of an item code, used by
+ * {@link io.paradaux.chestshop.services.ItemService#parseMaterial}. Formerly a Bukkit event.
+ */
+public class MaterialParseEvent {
 
     private final String materialString;
     private final short data;
@@ -14,14 +15,6 @@ public class MaterialParseEvent extends Event {
     public MaterialParseEvent(String materialString, @Deprecated short data) {
         this.materialString = materialString;
         this.data = data;
-    }
-
-    public HandlerList getHandlers() {
-        return handlers;
-    }
-
-    public static HandlerList getHandlerList() {
-        return handlers;
     }
 
     /**

@@ -1,7 +1,6 @@
 package io.paradaux.chestshop.listeners.preshopcreation;
 
 import io.paradaux.chestshop.utils.PriceUtil;
-import io.paradaux.chestshop.events.ItemParseEvent;
 import io.paradaux.chestshop.events.PreShopCreationEvent;
 import io.paradaux.chestshop.Permission;
 import io.paradaux.chestshop.signs.ChestShopSign;
@@ -38,9 +37,7 @@ public class PermissionChecker implements Listener {
         String priceLine = ChestShopSign.getPrice(event.getSignLines());
         String itemLine = ChestShopSign.getItem(event.getSignLines());
 
-        ItemParseEvent parseEvent = new ItemParseEvent(itemLine);
-        Bukkit.getPluginManager().callEvent(parseEvent);
-        ItemStack item = parseEvent.getItem();
+        ItemStack item = ChestShop.items().parse(itemLine);
 
         if (item == null) {
             if ((PriceUtil.hasBuyPrice(priceLine) && !Permission.has(player, SHOP_CREATION_BUY))

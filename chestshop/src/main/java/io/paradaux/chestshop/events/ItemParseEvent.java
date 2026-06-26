@@ -1,25 +1,19 @@
 package io.paradaux.chestshop.events;
 
-import org.bukkit.event.Event;
-import org.bukkit.event.HandlerList;
 import org.bukkit.inventory.ItemStack;
 
-public class ItemParseEvent extends Event {
-    private static final HandlerList handlers = new HandlerList();
+/**
+ * Mutable carrier for parsing a sign item string into an {@link ItemStack}, threaded
+ * through {@link io.paradaux.chestshop.services.ItemService#parse}'s ordered resolvers
+ * (ItemBridge → alias → vanilla). Formerly a Bukkit event.
+ */
+public class ItemParseEvent {
 
     private final String itemString;
     private ItemStack item = null;
 
     public ItemParseEvent(String itemString) {
         this.itemString = itemString;
-    }
-
-    public HandlerList getHandlers() {
-        return handlers;
-    }
-
-    public static HandlerList getHandlerList() {
-        return handlers;
     }
 
     /**

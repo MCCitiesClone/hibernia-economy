@@ -159,7 +159,10 @@ public class Dependencies implements Listener {
 
             //Other plugins
             case ItemBridge:
-                listener = new ItemBridge();
+                // ItemBridge's resolvers are invoked directly by ItemService; flag the
+                // integration as available rather than registering a listener. This keeps
+                // the com.jojodmo.itembridge classes off the path unless the plugin is here.
+                ChestShop.items().enableItemBridge();
                 break;
             case ShowItem:
                 MaterialUtil.Show.initialize(plugin);

@@ -5,7 +5,6 @@ import io.paradaux.chestshop.utils.MaterialUtil;
 import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.configuration.Properties;
 import io.paradaux.chestshop.events.ItemInfoEvent;
-import io.paradaux.chestshop.events.ItemParseEvent;
 import io.paradaux.chestshop.utils.ItemUtil;
 import io.paradaux.hibernia.framework.commander.annotations.Command;
 import io.paradaux.hibernia.framework.commander.annotations.GreedyArg;
@@ -44,9 +43,7 @@ public class ItemInfo implements CommandHandler {
     @Route("<item>")
     public void parsedItem(@Sender CommandSender sender,
                            @GreedyArg(value = "item", sanitize = false) String item) {
-        ItemParseEvent parseEvent = new ItemParseEvent(item);
-        Bukkit.getPluginManager().callEvent(parseEvent);
-        showItemInfo(sender, parseEvent.getItem());
+        showItemInfo(sender, ChestShop.items().parse(item));
     }
 
     private static void showItemInfo(CommandSender sender, ItemStack item) {

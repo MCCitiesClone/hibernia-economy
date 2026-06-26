@@ -17,13 +17,11 @@ import io.paradaux.chestshop.listeners.block.SignCreate;
 import io.paradaux.chestshop.listeners.economy.EconomyAdapter;
 import io.paradaux.chestshop.listeners.GarbageTextListener;
 import io.paradaux.chestshop.listeners.item.ItemMoveListener;
-import io.paradaux.chestshop.listeners.item.ItemStringListener;
 import io.paradaux.chestshop.listeners.ItemInfoListener;
 import io.paradaux.chestshop.listeners.modules.ItemAliasModule;
 import io.paradaux.chestshop.listeners.modules.MetricsModule;
 import io.paradaux.chestshop.listeners.modules.StockCounterModule;
 import io.paradaux.chestshop.listeners.ShopInfoListener;
-import io.paradaux.chestshop.listeners.SignParseListener;
 import io.paradaux.chestshop.listeners.player.*;
 import io.paradaux.chestshop.listeners.preshopcreation.CreationFeeGetter;
 import io.paradaux.chestshop.listeners.posttransaction.*;
@@ -100,6 +98,7 @@ public class ChestShop extends JavaPlugin {
 
     private static File dataFolder;
     private static ItemCodeService itemCodes;
+    private static io.paradaux.chestshop.services.ItemService items;
     private static io.paradaux.chestshop.services.TransactionService transactions;
     private static io.paradaux.chestshop.services.AccountService accounts;
     private static io.paradaux.chestshop.services.ShopService shops;
@@ -157,6 +156,7 @@ public class ChestShop extends JavaPlugin {
                 io.paradaux.hibernia.framework.configurator.ConfigurationLoader.class);
         message = injector.getInstance(io.paradaux.hibernia.framework.i18n.Message.class);
         itemCodes = injector.getInstance(io.paradaux.chestshop.services.ItemCodeService.class);
+        items = injector.getInstance(io.paradaux.chestshop.services.ItemService.class);
         transactions = injector.getInstance(io.paradaux.chestshop.services.TransactionService.class);
         accounts = injector.getInstance(io.paradaux.chestshop.services.AccountService.class);
         shops = injector.getInstance(io.paradaux.chestshop.services.ShopService.class);
@@ -348,8 +348,6 @@ public class ChestShop extends JavaPlugin {
         registerEvent(new PlayerInventory());
         registerEvent(new PlayerTeleport());
 
-        registerEvent(new SignParseListener());
-        registerEvent(new ItemStringListener());
         registerEvent(new ItemInfoListener());
         registerEvent(new ShopInfoListener());
         registerEvent(new GarbageTextListener());
@@ -362,7 +360,10 @@ public class ChestShop extends JavaPlugin {
     }
 
     private void registerModules() {
-        registerEvent(new ItemAliasModule());
+        // The item-alias resolvers are now invoked directly by ItemService; this
+        // registration is for its ChestShopReloadEvent handler only, so it must be the
+        // same singleton ItemService holds.
+        registerEvent(injector.getInstance(io.paradaux.chestshop.listeners.modules.ItemAliasModule.class));
         registerEvent(new StockCounterModule());
     }
 
@@ -481,6 +482,11 @@ public class ChestShop extends JavaPlugin {
     /** The item-code service (serialised-item ↔ sign-code store). */
     public static ItemCodeService itemCodes() {
         return itemCodes;
+    }
+
+    /** The item-resolution service (sign item/material string ↔ ItemStack, sign validation). */
+    public static io.paradaux.chestshop.services.ItemService items() {
+        return items;
     }
 
     /** The transaction service (atomic goods + money legs of a trade). */

@@ -8,7 +8,6 @@ import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.configuration.Properties;
 import io.paradaux.chestshop.economy.AdminInventory;
 import io.paradaux.chestshop.database.Account;
-import io.paradaux.chestshop.events.SignValidationEvent;
 import io.paradaux.chestshop.Permission;
 import io.paradaux.chestshop.utils.uBlock;
 import org.bukkit.Bukkit;
@@ -95,7 +94,7 @@ public class ChestShopSign {
 
     public static boolean isValid(String[] lines) {
         lines = StringUtil.stripColourCodes(lines);
-        return ChestShop.callEvent(new SignValidationEvent(lines)).isValid()
+        return ChestShop.items().validateSign(lines)
                 && (getPrice(lines).toUpperCase(Locale.ROOT).contains("B")
                         || getPrice(lines).toUpperCase(Locale.ROOT).contains("S"))
                 && !getOwner(lines).isEmpty();
@@ -202,7 +201,7 @@ public class ChestShopSign {
      */
     @Deprecated
     public static boolean isValidPreparedSign(String[] lines) {
-        return ChestShop.callEvent(new SignValidationEvent(lines)).isValid();
+        return ChestShop.items().validateSign(lines);
     }
 
     /**

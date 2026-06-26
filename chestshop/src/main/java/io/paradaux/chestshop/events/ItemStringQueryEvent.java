@@ -1,11 +1,13 @@
 package io.paradaux.chestshop.events;
 
-import org.bukkit.event.Event;
-import org.bukkit.event.HandlerList;
 import org.bukkit.inventory.ItemStack;
 
-public class ItemStringQueryEvent extends Event {
-    private static final HandlerList handlers = new HandlerList();
+/**
+ * Mutable carrier for the sign-string representation of an item, threaded through
+ * {@link io.paradaux.chestshop.services.ItemService#queryString}'s ordered resolvers
+ * (ItemBridge → vanilla name → alias). Formerly a Bukkit event.
+ */
+public class ItemStringQueryEvent {
 
     private String itemString = null;
     private final ItemStack item;
@@ -27,15 +29,6 @@ public class ItemStringQueryEvent extends Event {
     public ItemStringQueryEvent(ItemStack item, int maxWidth) {
         this.item = item;
         this.maxWidth = maxWidth;
-    }
-
-    @Override
-    public HandlerList getHandlers() {
-        return handlers;
-    }
-
-    public static HandlerList getHandlerList() {
-        return handlers;
     }
 
     /**

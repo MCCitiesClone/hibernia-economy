@@ -7,9 +7,9 @@ import io.paradaux.chestshop.events.ItemParseEvent;
 import io.paradaux.chestshop.events.ItemStringQueryEvent;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
+import com.google.inject.Singleton;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.event.EventHandler;
-import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 
 import java.io.File;
@@ -21,8 +21,14 @@ import java.util.logging.Level;
 import static io.paradaux.chestshop.utils.StringUtil.getMinecraftStringWidth;
 
 /**
+ * Owns the configurable item-code ↔ alias mapping (itemAliases.yml). The
+ * {@link #onItemParse}/{@link #onItemStringQuery} resolvers are invoked directly by
+ * {@link io.paradaux.chestshop.services.ItemService} (was a LOW/HIGH listener on the
+ * item events); this stays a registered {@link Listener} only for {@link #onReload}.
+ *
  * @author Acrobot
  */
+@Singleton
 public class ItemAliasModule implements Listener {
     private YamlConfiguration configuration;
     /**
@@ -70,7 +76,6 @@ public class ItemAliasModule implements Listener {
         load();
     }
 
-    @EventHandler(priority = EventPriority.LOW)
     public void onItemParse(ItemParseEvent event) {
         String code = aliases.inverse().get(event.getItemString());
         if (code == null) {
@@ -103,7 +108,6 @@ public class ItemAliasModule implements Listener {
         }
     }
 
-    @EventHandler(priority = EventPriority.HIGH)
     public void onItemStringQuery(ItemStringQueryEvent event) {
         if (event.getItemString() != null) {
             String newCode = null;

@@ -3,7 +3,6 @@ package io.paradaux.chestshop.utils;
 import io.paradaux.chestshop.utils.SimpleCache;
 import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.configuration.Properties;
-import io.paradaux.chestshop.events.MaterialParseEvent;
 import io.paradaux.chestshop.utils.ItemUtil;
 import de.themoep.ShowItem.api.ShowItem;
 import net.kyori.adventure.text.Component;
@@ -447,9 +446,7 @@ public class MaterialUtil {
         }
 
         Integer durability = getDurability(itemName);
-        MaterialParseEvent parseEvent = new MaterialParseEvent(split[0], durability != null ? durability.shortValue() : 0);
-        Bukkit.getPluginManager().callEvent(parseEvent);
-        Material material = parseEvent.getMaterial();
+        Material material = ChestShop.items().parseMaterial(split[0], durability != null ? durability.shortValue() : 0);
         if (material == null) {
             return null;
         }

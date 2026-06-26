@@ -7,7 +7,6 @@ import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.configuration.Properties;
 import io.paradaux.chestshop.database.Account;
 import io.paradaux.chestshop.events.ItemInfoEvent;
-import io.paradaux.chestshop.events.ItemParseEvent;
 import io.paradaux.chestshop.events.ShopInfoEvent;
 import io.paradaux.chestshop.signs.ChestShopSign;
 import io.paradaux.chestshop.utils.ItemUtil;
@@ -49,8 +48,7 @@ public class ShopInfoListener implements Listener {
             String ownerName = account.getName();
             ownerName = ownerName != null ? ownerName : nameLine;
 
-            ItemParseEvent parseEvent = new ItemParseEvent(ChestShopSign.getItem(event.getSign()));
-            ItemStack item = ChestShop.callEvent(parseEvent).getItem();
+            ItemStack item = ChestShop.items().parse(ChestShopSign.getItem(event.getSign()));
             if (item == null || amount < 1) {
                 ChestShop.message().send(event.getSender(), "chestshop.INVALID_SHOP_DETECTED");
                 return;

@@ -7,31 +7,30 @@ import io.paradaux.chestshop.events.ItemParseEvent;
 import io.paradaux.chestshop.events.MaterialParseEvent;
 import io.paradaux.chestshop.events.SignValidationEvent;
 import io.paradaux.chestshop.signs.ChestShopSign;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.EventPriority;
-import org.bukkit.event.Listener;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class SignParseListener implements Listener {
+/**
+ * The vanilla fallback resolvers for item/material parsing and the core sign-format
+ * validation. Invoked directly (in order) by {@link io.paradaux.chestshop.services.ItemService}
+ * (was the @NORMAL ItemParse/MaterialParse and the SignValidation listener).
+ */
+public class SignParseListener {
 
-    @EventHandler(priority = EventPriority.NORMAL)
     public static void onItemParse(ItemParseEvent event) {
         if (event.getItem() == null) {
             event.setItem(MaterialUtil.getItem(event.getItemString()));
         }
     }
 
-    @EventHandler(priority = EventPriority.NORMAL)
     public static void onMaterialParse(MaterialParseEvent event) {
         if (event.getMaterial() == null) {
             event.setMaterial(MaterialUtil.getMaterial(event.getMaterialString()));
         }
     }
 
-    @EventHandler
-    public void onSignValidation(SignValidationEvent event) {
+    public static void onSignValidation(SignValidationEvent event) {
         String ownerName = event.getOwner();
         String[] lines = event.getLines();
 

@@ -2,13 +2,14 @@ package io.paradaux.chestshop.listeners.item;
 
 import io.paradaux.chestshop.utils.MaterialUtil;
 import io.paradaux.chestshop.events.ItemStringQueryEvent;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.EventPriority;
-import org.bukkit.event.Listener;
 
-public class ItemStringListener implements Listener {
+/**
+ * The vanilla fallback that names an item from its material. Invoked directly by
+ * {@link io.paradaux.chestshop.services.ItemService#queryString} (was the @NORMAL
+ * ItemStringQueryEvent listener).
+ */
+public class ItemStringListener {
 
-    @EventHandler(priority = EventPriority.NORMAL)
     public static void calculateItemString(ItemStringQueryEvent event) {
         if (event.getItemString() == null) {
             event.setItemString(MaterialUtil.getName(event.getItem(), event.getMaxWidth()));

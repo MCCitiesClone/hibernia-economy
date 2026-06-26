@@ -6,7 +6,6 @@ import io.paradaux.chestshop.utils.StringUtil;
 import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.events.PreShopCreationEvent;
 import io.paradaux.chestshop.events.ShopCreatedEvent;
-import io.paradaux.chestshop.events.SignValidationEvent;
 import io.paradaux.chestshop.listeners.block.breaking.SignBreak;
 import io.paradaux.chestshop.signs.ChestShopSign;
 import io.paradaux.chestshop.utils.uBlock;
@@ -50,10 +49,7 @@ public class SignCreate implements Listener {
 
         String[] lines = StringUtil.stripColourCodes(event.getLines());
 
-        SignValidationEvent signValidationEvent = new SignValidationEvent(lines);
-        ChestShop.callEvent(signValidationEvent);
-
-        if (!signValidationEvent.isValid()) {
+        if (!ChestShop.items().validateSign(lines)) {
             // Check if a valid shop already existed previously
             if (ChestShopSign.isValid(sign)) {
                 SignBreak.sendShopDestroyedEvent(sign, event.getPlayer());

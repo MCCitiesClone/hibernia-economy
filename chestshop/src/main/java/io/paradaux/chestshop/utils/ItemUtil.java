@@ -3,8 +3,6 @@ package io.paradaux.chestshop.utils;
 import io.paradaux.chestshop.utils.InventoryUtil;
 import io.paradaux.chestshop.utils.MaterialUtil;
 import io.paradaux.chestshop.ChestShop;
-import io.paradaux.chestshop.events.ItemParseEvent;
-import io.paradaux.chestshop.events.ItemStringQueryEvent;
 import org.bukkit.Bukkit;
 import org.bukkit.inventory.ItemStack;
 
@@ -54,7 +52,7 @@ public class ItemUtil {
      * @return ItemStack's name
      */
     public static String getName(ItemStack itemStack, int maxWidth) {
-        String code = ChestShop.callEvent(new ItemStringQueryEvent(itemStack, maxWidth)).getItemString();
+        String code = ChestShop.items().queryString(itemStack, maxWidth);
         if (code != null) {
             if (maxWidth > 0) {
                 int codeWidth = getMinecraftStringWidth(code);
@@ -76,9 +74,7 @@ public class ItemUtil {
                 }
             }
 
-            ItemParseEvent parseEvent = new ItemParseEvent(code);
-            Bukkit.getPluginManager().callEvent(parseEvent);
-            ItemStack codeItem = parseEvent.getItem();
+            ItemStack codeItem = ChestShop.items().parse(code);
             if (!MaterialUtil.equals(itemStack, codeItem)) {
                 throw new IllegalArgumentException("Cannot generate code for item " + itemStack
                         + " with maximum length of " + maxWidth

@@ -5,7 +5,6 @@ import io.paradaux.chestshop.utils.MaterialUtil;
 import io.paradaux.chestshop.utils.QuantityUtil;
 import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.configuration.Properties;
-import io.paradaux.chestshop.events.ItemParseEvent;
 import io.paradaux.chestshop.events.PreShopCreationEvent;
 import io.paradaux.chestshop.events.TransactionEvent;
 import io.paradaux.chestshop.signs.ChestShopSign;
@@ -197,8 +196,6 @@ public class StockCounterModule implements Listener {
     }
 
     public static ItemStack determineItemTradedByShop(String material) {
-        ItemParseEvent parseEvent = new ItemParseEvent(material);
-        Bukkit.getPluginManager().callEvent(parseEvent);
-        return parseEvent.getItem();
+        return ChestShop.items().parse(material);
     }
 }
