@@ -87,6 +87,12 @@ dependencies {
     compileOnly("org.apache.logging.log4j:log4j-core:2.17.2")
     compileOnly("com.google.code.findbugs:jsr305:3.0.2")
 
+    // Lombok — @Getter on the framework @ConfigurationComponent (matches treasury/business).
+    compileOnly(libs.lombok)
+    annotationProcessor(libs.lombok)
+    testCompileOnly(libs.lombok)
+    testAnnotationProcessor(libs.lombok)
+
     // --- soft-depend plugin APIs: compiled against, never shaded, and resolved
     //     NON-TRANSITIVELY. We reference each plugin's own classes only; pulling
     //     their full dependency closures (as Gradle's compileOnly does, unlike

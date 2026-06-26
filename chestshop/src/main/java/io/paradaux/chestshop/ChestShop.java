@@ -1,6 +1,6 @@
 package io.paradaux.chestshop;
 
-import io.paradaux.chestshop.configuration.Configuration;
+import io.paradaux.chestshop.configuration.ChestShopConfiguration;
 import io.paradaux.chestshop.commands.Give;
 import io.paradaux.chestshop.commands.ItemInfo;
 import io.paradaux.chestshop.commands.ShopInfo;
@@ -122,6 +122,9 @@ public class ChestShop extends JavaPlugin {
     private static Logger shopLogger;
     private FileHandler handler;
 
+    private com.google.inject.Injector injector;
+    private io.paradaux.hibernia.framework.configurator.ConfigurationLoader configurationLoader;
+
     private List<PluginCommand> commands = new ArrayList<>();
 
     public ChestShop() {
@@ -156,6 +159,19 @@ public class ChestShop extends JavaPlugin {
         registerCommand("cstoggle", new Toggle(), Permission.NOTIFY_TOGGLE);
         registerCommand("csaccess", new AccessToggle(), Permission.ACCESS_TOGGLE);
 
+        // HiberniaFramework DI: loads ChestShopConfiguration from config.yml (and
+        // additively reconciles new default keys on upgrade). Messages stay on
+        // ChestShop's own bundle for now (withoutMessages), so the framework i18n
+        // isn't pulled in yet — that's a follow-up step.
+        io.paradaux.hibernia.framework.guice.HiberniaModule hibernia =
+                io.paradaux.hibernia.framework.guice.HiberniaModule.forPlugin(this)
+                        .scanConfiguration("io.paradaux.chestshop.configuration")
+                        .withoutMessages()
+                        .build();
+        this.injector = com.google.inject.Guice.createInjector(hibernia);
+        this.configurationLoader = injector.getInstance(
+                io.paradaux.hibernia.framework.configurator.ConfigurationLoader.class);
+
         loadConfig();
 
         itemDatabase = new ItemDatabase();
@@ -184,7 +200,10 @@ public class ChestShop extends JavaPlugin {
     }
 
     public void loadConfig() {
-        Configuration.pairFileAndClass(loadFile("config.yml"), Properties.class, getBukkitLogger());
+        // Re-read config.yml through the framework and refresh the static Properties
+        // mirror. reload() re-fetches a fresh component snapshot (1.2.0 semantics).
+        configurationLoader.reload();
+        Properties.applyFrom(configurationLoader.getComponent(ChestShopConfiguration.class));
 
         Messages.load();
 
