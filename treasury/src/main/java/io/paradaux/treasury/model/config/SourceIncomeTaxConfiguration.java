@@ -64,7 +64,11 @@ public class SourceIncomeTaxConfiguration {
         FileConfiguration cfg = plugin.getConfig();
 
         this.enabled = cfg.getBoolean("tax.source-income-tax.enabled", false);
-        this.defaultRate = BigDecimal.valueOf(cfg.getDouble("tax.source-income-tax.default-rate", 0.0));
+        // Parse from the string form (not getDouble) so no IEEE-754 error reaches
+        // the ledger, and range-check to [0,1] — the same handling the per-plugin
+        // rates below already use. A malformed or out-of-range default is dropped
+        // to 0 rather than silently taxing at a nonsense rate.
+        this.defaultRate = parseDefaultRate(cfg.getString("tax.source-income-tax.default-rate", "0"));
 
         String govAccount = cfg.getString("tax.source-income-tax.government-account", "DCGovernment");
         this.governmentAccount = (govAccount == null || govAccount.isBlank()) ? "DCGovernment" : govAccount;
@@ -92,6 +96,27 @@ public class SourceIncomeTaxConfiguration {
         if (enabled) {
             log.info("Source income tax enabled: default-rate={}, government-account={}, plugin-specific-rates={}",
                     defaultRate, governmentAccount, pluginRates.size());
+        }
+    }
+
+    /**
+     * Parse the default rate from its configured string form and constrain it to
+     * the valid {@code [0,1]} range. Falls back to {@link BigDecimal#ZERO} on a
+     * blank, malformed, or out-of-range value (logging a warning), so a bad config
+     * can never tax at a negative or {@code >100%} rate.
+     */
+    private static BigDecimal parseDefaultRate(String raw) {
+        if (raw == null || raw.isBlank()) return BigDecimal.ZERO;
+        try {
+            BigDecimal rate = new BigDecimal(raw.trim());
+            if (rate.compareTo(BigDecimal.ZERO) < 0 || rate.compareTo(BigDecimal.ONE) > 0) {
+                log.warn("Source income tax default-rate is out of range [0,1]: {} — defaulting to 0", raw);
+                return BigDecimal.ZERO;
+            }
+            return rate;
+        } catch (NumberFormatException e) {
+            log.warn("Invalid source income tax default-rate: '{}' — defaulting to 0", raw);
+            return BigDecimal.ZERO;
         }
     }
 

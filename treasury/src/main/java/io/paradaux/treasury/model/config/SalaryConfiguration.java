@@ -102,7 +102,16 @@ public class SalaryConfiguration {
         ConfigurationSection sec = cfg.getConfigurationSection("salaries.amount");
         if (sec != null) {
             for (String key : sec.getKeys(false)) {
-                BigDecimal amt = BigDecimal.valueOf(sec.getDouble(key, 0));
+                // Parse from the string form (not getDouble) so salary amounts
+                // carry no IEEE-754 error into the ledger; skip malformed values.
+                String raw = sec.getString(key, "0");
+                BigDecimal amt;
+                try {
+                    amt = new BigDecimal(raw == null ? "0" : raw.trim());
+                } catch (NumberFormatException e) {
+                    log.warn("Invalid salary for group '{}': '{}' — skipping", key, raw);
+                    continue;
+                }
                 if (amt.signum() < 0) {
                     log.warn("Negative salary for group '{}' ({}) — skipping", key, amt);
                     continue;
