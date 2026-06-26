@@ -193,7 +193,7 @@ public class PlayerInteract implements Listener {
         if (pEvent == null)
             return;
 
-        Bukkit.getPluginManager().callEvent(pEvent);
+        ChestShop.transactions().validate(pEvent);
         if (pEvent.isCancelled())
             return;
 

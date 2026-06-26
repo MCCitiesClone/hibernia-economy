@@ -3,7 +3,18 @@ package io.paradaux.chestshop.services;
 import com.google.inject.Singleton;
 import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.configuration.Properties;
+import io.paradaux.chestshop.events.PreTransactionEvent;
 import io.paradaux.chestshop.events.TransactionEvent;
+import io.paradaux.chestshop.listeners.pretransaction.AmountAndPriceChecker;
+import io.paradaux.chestshop.listeners.pretransaction.CreativeModeIgnorer;
+import io.paradaux.chestshop.listeners.pretransaction.ErrorMessageSender;
+import io.paradaux.chestshop.listeners.pretransaction.FreeShopBreaker;
+import io.paradaux.chestshop.listeners.pretransaction.InvalidNameIgnorer;
+import io.paradaux.chestshop.listeners.pretransaction.PartialTransactionModule;
+import io.paradaux.chestshop.listeners.pretransaction.PermissionChecker;
+import io.paradaux.chestshop.listeners.pretransaction.PriceValidator;
+import io.paradaux.chestshop.listeners.pretransaction.ShopValidator;
+import io.paradaux.chestshop.listeners.pretransaction.StockFittingChecker;
 import io.paradaux.chestshop.utils.ImplementationAdapter;
 import io.paradaux.chestshop.utils.InventoryUtil;
 import org.bukkit.block.BlockState;
@@ -30,6 +41,40 @@ import static io.paradaux.chestshop.events.TransactionEvent.TransactionType.BUY;
  */
 @Singleton
 public class TransactionService {
+
+    /**
+     * Run a shop interaction through the pre-transaction validation steps, cancelling
+     * the {@link PreTransactionEvent} (and adjusting its stock/price) as needed. The
+     * former {@code pretransaction} validators are invoked here in their exact former
+     * priority + registration order; each self-guards on {@code isCancelled} (except
+     * AmountAndPriceChecker, which ran with {@code ignoreCancelled} and is guarded
+     * here). PartialTransactionModule and AmountAndPriceChecker are config-selected
+     * alternatives ({@code ALLOW_PARTIAL_TRANSACTIONS}), exactly as registered.
+     */
+    public void validate(PreTransactionEvent ctx) {
+        // priority LOWEST
+        InvalidNameIgnorer.onPreTransaction(ctx);
+        CreativeModeIgnorer.onPreTransaction(ctx);
+        FreeShopBreaker.onPreTransaction(ctx);
+        PriceValidator.onPriceCheck(ctx);
+        ShopValidator.onCheck(ctx);
+        // priority LOW — partial fulfilment (registered instead of AmountAndPriceChecker)
+        if (Properties.ALLOW_PARTIAL_TRANSACTIONS) {
+            PartialTransactionModule.onPreBuyTransaction(ctx);
+            PartialTransactionModule.onPreSellTransaction(ctx);
+        }
+        // priority NORMAL
+        if (!Properties.ALLOW_PARTIAL_TRANSACTIONS && !ctx.isCancelled()) {
+            // AmountAndPriceChecker ran with ignoreCancelled=true
+            AmountAndPriceChecker.onBuyItemCheck(ctx);
+            AmountAndPriceChecker.onSellItemCheck(ctx);
+        }
+        PermissionChecker.onPermissionCheck(ctx);
+        StockFittingChecker.onSellCheck(ctx);
+        StockFittingChecker.onBuyCheck(ctx);
+        // priority MONITOR
+        ErrorMessageSender.onMessage(ctx);
+    }
 
     /**
      * Run a validated transaction to completion: move the goods, then settle the

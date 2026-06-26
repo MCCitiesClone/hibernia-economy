@@ -1,13 +1,8 @@
 package io.paradaux.chestshop.events;
 
 import io.paradaux.chestshop.database.Account;
-import org.bukkit.Bukkit;
-import org.bukkit.OfflinePlayer;
 import org.bukkit.block.Sign;
 import org.bukkit.entity.Player;
-import org.bukkit.event.Cancellable;
-import org.bukkit.event.Event;
-import org.bukkit.event.HandlerList;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
@@ -18,12 +13,15 @@ import static io.paradaux.chestshop.events.PreTransactionEvent.TransactionOutcom
 import static io.paradaux.chestshop.events.TransactionEvent.TransactionType;
 
 /**
- * Represents a state before transaction occurs
+ * The mutable carrier threaded through the pre-transaction validation steps run by
+ * {@link io.paradaux.chestshop.services.TransactionService#validate}. Formerly a
+ * Bukkit event fired to a pipeline of priority-ordered validators; those validators
+ * are now invoked directly as ordered service steps, so this is a plain
+ * transaction-validation context — they read/mutate its outcome, stock and price.
  *
  * @author Acrobot
  */
-public class PreTransactionEvent extends Event implements Cancellable {
-    private static final HandlerList handlers = new HandlerList();
+public class PreTransactionEvent {
 
     private final Player client;
     private Account ownerAccount;
@@ -194,7 +192,6 @@ public class PreTransactionEvent extends Event implements Cancellable {
         return transactionOutcome != TRANSACTION_SUCCESFUL;
     }
 
-    @Override
     public void setCancelled(boolean cancel) {
         if (cancel) {
             transactionOutcome = OTHER;
@@ -217,14 +214,6 @@ public class PreTransactionEvent extends Event implements Cancellable {
      */
     public void setCancelled(TransactionOutcome reason) {
         transactionOutcome = reason;
-    }
-
-    public HandlerList getHandlers() {
-        return handlers;
-    }
-
-    public static HandlerList getHandlerList() {
-        return handlers;
     }
 
     public enum TransactionOutcome {

@@ -342,7 +342,6 @@ public class ChestShop extends JavaPlugin {
 
         registerEvent(new AccountListener());
 
-        registerPreTransactionEvents();
         registerPostShopCreationEvents();
         registerPostTransactionEvents();
         registerShopRemovalEvents();
@@ -383,23 +382,6 @@ public class ChestShop extends JavaPlugin {
         registerEvent(new MessageSender());
         registerEvent(new SignSticker());
         registerEvent(new ShopCreationLogger());
-    }
-
-    private void registerPreTransactionEvents() {
-        if (Properties.ALLOW_PARTIAL_TRANSACTIONS) {
-            registerEvent(new PartialTransactionModule());
-        } else {
-            registerEvent(new AmountAndPriceChecker());
-        }
-
-        registerEvent(new InvalidNameIgnorer());
-        registerEvent(new CreativeModeIgnorer());
-        registerEvent(new FreeShopBreaker()); // DC: break pre-existing free (b:0 / s:0) shops on interact
-        registerEvent(new ErrorMessageSender());
-        registerEvent(new PermissionChecker());
-        registerEvent(new PriceValidator());
-        registerEvent(new ShopValidator());
-        registerEvent(new StockFittingChecker());
     }
 
     private void registerPostTransactionEvents() {
