@@ -15,6 +15,7 @@ import io.paradaux.treasury.model.economy.EconomySummary;
 import io.paradaux.treasury.services.AccountService;
 import io.paradaux.treasury.utils.AccountRedirectCache;
 import io.paradaux.treasury.utils.PersonalAccountCache;
+import org.apache.ibatis.exceptions.PersistenceException;
 import org.mybatis.guice.transactional.Transactional;
 
 import java.math.BigDecimal;
@@ -227,9 +228,22 @@ public class AccountServiceImpl implements AccountService {
         // transaction commits; caching now would leave a stale id if it rolls back.
         // The id is cached on the next resolve, which reads the committed row.
         Account account = buildPersonalAccount(ownerUuid);
-        accountMapper.insertAccount(account);
-        accountMapper.seedBalance(account.getAccountId());
-        return account.getAccountId();
+        try {
+            accountMapper.insertAccount(account);
+            accountMapper.seedBalance(account.getAccountId());
+            return account.getAccountId();
+        } catch (PersistenceException e) {
+            // Concurrent first-login: another thread/process inserted this player's
+            // PERSONAL account between our check and insert, tripping the
+            // uq_one_personal_per_player unique constraint. Re-resolve to the
+            // committed row (with a locking read so REPEATABLE READ sees it) instead
+            // of propagating the duplicate-key error (ADT-33).
+            Integer raced = accountMapper.findPersonalAccountIdLocking(ownerUuid);
+            if (raced != null) {
+                return raced;
+            }
+            throw e;
+        }
     }
 
     // ---- System account convenience ----

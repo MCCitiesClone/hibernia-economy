@@ -148,6 +148,13 @@ public class LedgerServiceImpl implements LedgerService {
         Objects.requireNonNull(req, "transfer request");
         Money.requirePositive(req.amount(), "amount > 0");
 
+        // A same-account transfer is a net-zero no-op with unspecified semantics
+        // (it would post +x and -x to one balance row). Reject it up front rather
+        // than letting it write a meaningless pair of postings (ADT-33).
+        if (req.fromAccountId() == req.toAccountId()) {
+            throw new IllegalArgumentException("Cannot transfer to the same account (id=" + req.fromAccountId() + ")");
+        }
+
         if (req.dedupKey() != null) {
             LedgerTxn existing = ledgerMapper.findByDedupKey(req.dedupKey());
             if (existing != null) return existing.getTxnId();
@@ -191,9 +198,19 @@ public class LedgerServiceImpl implements LedgerService {
         // (shorter-held) row locks at insert time — cutting hold time on shared
         // GOVERNMENT/SYSTEM accounts. Deadlock-freedom holds because the posting inserts
         // below are also ascending-ordered, so every path acquires low-id before high-id.
-        boolean sourceLimited = !from.isAllowOverdraft()
-                || from.getCreditLimit() == null
-                || from.getCreditLimit().signum() >= 0;
+        // Read the SOURCE overdraft flags under a shared row lock rather than from
+        // the unlocked findByIds snapshot above. Otherwise a concurrent flip of
+        // allow_overdraft / credit_limit (in a separate txn via updateAccount) could
+        // be missed, and a now-limited account would be treated as unlimited and
+        // overdraw (ADT-10). The shared lock excludes only the (rare) exclusive flag
+        // flip, so concurrent transfers from a shared faucet still run in parallel.
+        Account lockedFrom = accountMapper.lockAccountFlagsForShare(fromId);
+        if (lockedFrom == null) {
+            throw new IllegalArgumentException("Account not found (from=" + fromId + ")");
+        }
+        boolean sourceLimited = !lockedFrom.isAllowOverdraft()
+                || lockedFrom.getCreditLimit() == null
+                || lockedFrom.getCreditLimit().signum() >= 0;
         if (sourceLimited) {
             AccountBalance fromBal = null;
             for (AccountBalance b : accountMapper.lockBalances(List.of(fromId, toId))) {
@@ -203,11 +220,11 @@ public class LedgerServiceImpl implements LedgerService {
                 throw new IllegalStateException("Missing balance row for source account " + fromId);
             }
             BigDecimal newFrom = fromBal.getBalance().subtract(Money.normalize(req.amount()));
-            if (!from.isAllowOverdraft()) {
+            if (!lockedFrom.isAllowOverdraft()) {
                 if (newFrom.signum() < 0) {
                     throw new IllegalStateException("Insufficient funds");
                 }
-            } else if (newFrom.compareTo(from.getCreditLimit().negate()) < 0) {
+            } else if (newFrom.compareTo(lockedFrom.getCreditLimit().negate()) < 0) {
                 throw new IllegalStateException("Insufficient funds");
             }
         }
@@ -311,7 +328,12 @@ public class LedgerServiceImpl implements LedgerService {
     @Transactional
     public Optional<Long> adminSet(UUID playerUuid, BigDecimal targetAmount, String memo, UUID adminUuid) {
         Account player = resolveOrCreatePersonal(playerUuid);
-        AccountBalance bal = accountMapper.readBalance(player.getAccountId());
+        // Lock the balance row (FOR UPDATE) before reading it: adminSet is a
+        // read-modify-write (compute delta = target - current) and the follow-up
+        // give/take runs in this same transaction, so the lock is held across both.
+        // An unlocked read let two concurrent `/eco set` land the wrong final
+        // balance (ADT-33).
+        AccountBalance bal = accountMapper.lockBalance(player.getAccountId());
         BigDecimal current = bal == null ? BigDecimal.ZERO : bal.getBalance();
         BigDecimal delta = targetAmount.subtract(current);
         if (delta.signum() == 0) return Optional.empty();

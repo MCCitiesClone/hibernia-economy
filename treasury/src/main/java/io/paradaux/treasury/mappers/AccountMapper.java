@@ -51,6 +51,41 @@ public interface AccountMapper {
             """)
     Integer findPersonalAccountId(@Param("ownerUuid") UUID ownerUuid);
 
+    /**
+     * Locking variant of {@link #findPersonalAccountId} used to re-resolve after a
+     * concurrent-first-login duplicate-key insert. Under REPEATABLE READ a plain
+     * SELECT keeps the transaction's snapshot and can't see the row the other
+     * transaction just committed; {@code LOCK IN SHARE MODE} reads the latest
+     * committed version so the loser of the race resolves to the winner's id.
+     */
+    @Select("""
+            SELECT account_id
+              FROM accounts
+             WHERE account_type = 'PERSONAL'
+               AND owner_uuid_bin = #{ownerUuid}
+             LIMIT 1
+             LOCK IN SHARE MODE
+            """)
+    Integer findPersonalAccountIdLocking(@Param("ownerUuid") UUID ownerUuid);
+
+    /**
+     * Reads one account's overdraft flags under a shared row lock. Used by the
+     * transfer overdraft gate so a concurrent {@code allow_overdraft}/{@code
+     * credit_limit} flip (which needs the exclusive lock via {@link #updateAccount})
+     * cannot race the gate and let a now-limited account be treated as unlimited
+     * and overdraw (ADT-10). A *shared* lock lets concurrent transfers from the same
+     * faucet still run in parallel — only the rare flag-flip is serialised against.
+     */
+    @Select("""
+            SELECT account_id, account_type, owner_uuid_bin, display_name,
+                   requires_authorization, is_archived, allow_overdraft, credit_limit
+              FROM accounts
+             WHERE account_id = #{accountId}
+             LOCK IN SHARE MODE
+            """)
+    @ResultMap("accountMap")
+    Account lockAccountFlagsForShare(@Param("accountId") int accountId);
+
     @Select("""
             SELECT account_id, account_type, owner_uuid_bin, display_name,
                    requires_authorization, is_archived, allow_overdraft, credit_limit

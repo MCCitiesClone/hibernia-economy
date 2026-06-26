@@ -148,7 +148,12 @@ public class GovServiceImpl implements GovService {
         }
 
         BigDecimal normalized = Money.normalize(amount);
+        // Include the amount and reason in the dedup key, not just issuer+debtor+second:
+        // otherwise two legitimate but distinct fines on the same debtor within the same
+        // second collapse to one via the ledger dedup UNIQUE (ADT-33). Two fines that
+        // also share amount and reason in the same second are treated as a double-submit.
         byte[] dedupKey = Idempotency.sha256("fine:" + issuedBy + ":" + debtorAccountId + ":"
+                + normalized.toPlainString() + ":" + reason + ":"
                 + Instant.now().truncatedTo(ChronoUnit.SECONDS));
 
         long txnId;
