@@ -76,8 +76,6 @@ import org.bstats.charts.SingleLineChart;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Server;
-import org.bukkit.command.CommandExecutor;
-import org.bukkit.command.PluginCommand;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.event.Event;
 import org.bukkit.event.Listener;
@@ -86,7 +84,6 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -125,8 +122,6 @@ public class ChestShop extends JavaPlugin {
     private com.google.inject.Injector injector;
     private io.paradaux.hibernia.framework.configurator.ConfigurationLoader configurationLoader;
 
-    private List<PluginCommand> commands = new ArrayList<>();
-
     public ChestShop() {
         dataFolder = getDataFolder();
         logger = getLogger();
@@ -151,26 +146,25 @@ public class ChestShop extends JavaPlugin {
             return;
         }
 
-        registerCommand("iteminfo", new ItemInfo(), Permission.ITEMINFO);
-        registerCommand("shopinfo", new ShopInfo(), Permission.SHOPINFO);
-        registerCommand("csVersion", new Version(), Permission.ADMIN);
-        registerCommand("csMetrics", new io.paradaux.chestshop.commands.Metrics(), Permission.ADMIN);
-        registerCommand("csGive", new Give(), Permission.ADMIN);
-        registerCommand("cstoggle", new Toggle(), Permission.NOTIFY_TOGGLE);
-        registerCommand("csaccess", new AccessToggle(), Permission.ACCESS_TOGGLE);
-
         // HiberniaFramework DI: loads ChestShopConfiguration from config.yml (and
-        // additively reconciles new default keys on upgrade). Messages stay on
-        // ChestShop's own bundle for now (withoutMessages), so the framework i18n
-        // isn't pulled in yet — that's a follow-up step.
+        // additively reconciles new default keys on upgrade). The framework also
+        // owns command registration now (PAR-264): the seven ChestShop commands
+        // are CommandHandlers registered through Brigadier via CommandManager.
+        // The framework Message bean is bound (no withoutMessages()) so the
+        // commander's error feedback renders from messages.properties; ChestShop's
+        // own command output still uses the Messages enum.
         io.paradaux.hibernia.framework.guice.HiberniaModule hibernia =
                 io.paradaux.hibernia.framework.guice.HiberniaModule.forPlugin(this)
                         .scanConfiguration("io.paradaux.chestshop.configuration")
-                        .withoutMessages()
+                        .handlers(ItemInfo.class, ShopInfo.class, Version.class,
+                                io.paradaux.chestshop.commands.Metrics.class, Give.class,
+                                Toggle.class, AccessToggle.class)
                         .build();
         this.injector = com.google.inject.Guice.createInjector(hibernia);
         this.configurationLoader = injector.getInstance(
                 io.paradaux.hibernia.framework.configurator.ConfigurationLoader.class);
+
+        injector.getInstance(io.paradaux.hibernia.framework.commander.CommandManager.class).registerAll();
 
         loadConfig();
 
@@ -190,15 +184,6 @@ public class ChestShop extends JavaPlugin {
         startStatistics();
     }
 
-    private void registerCommand(String name, CommandExecutor executor, Permission permission) {
-        PluginCommand command = getCommand(name);
-        if (command != null) {
-            command.setExecutor(executor);
-            command.setPermission(permission.toString());
-            commands.add(command);
-        }
-    }
-
     public void loadConfig() {
         // Re-read config.yml through the framework and refresh the static Properties
         // mirror. reload() re-fetches a fresh component snapshot (1.2.0 semantics).
@@ -208,8 +193,6 @@ public class ChestShop extends JavaPlugin {
         Messages.load();
 
         NameManager.load();
-
-        commands.forEach(c -> c.setPermissionMessage(Messages.ACCESS_DENIED.getTextWithPrefix(null)));
 
         if (handler != null) {
             shopLogger.removeHandler(handler);

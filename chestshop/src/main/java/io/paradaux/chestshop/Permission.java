@@ -56,6 +56,22 @@ public enum Permission {
     NOLIMIT_MAX_SELL("ChestShop.nolimit.sell.max"),
     NOLIMIT_MAX_SELL_ID("ChestShop.nolimit.sell.max.");
 
+    /**
+     * Compile-time constant node strings for use in {@code @Permission} command
+     * annotations (annotation values must be constant expressions, so the enum's
+     * {@link #toString()} can't be referenced directly). Keep these in sync with
+     * the matching enum constants above.
+     */
+    public static final class Node {
+        public static final String ADMIN = "ChestShop.admin";
+        public static final String NOTIFY_TOGGLE = "ChestShop.toggle";
+        public static final String ACCESS_TOGGLE = "ChestShop.accesstoggle";
+        public static final String ITEMINFO = "ChestShop.iteminfo";
+        public static final String SHOPINFO = "ChestShop.shopinfo";
+
+        private Node() {}
+    }
+
     private final String permission;
 
     Permission(String permission) {

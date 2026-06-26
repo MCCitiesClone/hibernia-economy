@@ -1,14 +1,16 @@
 package io.paradaux.chestshop.commands;
 
 import io.paradaux.chestshop.ChestShop;
+import io.paradaux.chestshop.Permission;
 import io.paradaux.chestshop.configuration.Messages;
 import io.paradaux.chestshop.database.Account;
 import io.paradaux.chestshop.players.NameManager;
+import io.paradaux.hibernia.framework.commander.annotations.Command;
+import io.paradaux.hibernia.framework.commander.annotations.Route;
+import io.paradaux.hibernia.framework.commander.annotations.Sender;
+import io.paradaux.hibernia.framework.commander.spi.CommandHandler;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
-import org.bukkit.command.Command;
-import org.bukkit.command.CommandExecutor;
-import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
 import java.util.UUID;
@@ -17,20 +19,12 @@ import java.util.logging.Level;
 /**
  * @author KingFaris10
  */
-public class Toggle implements CommandExecutor {
+@Command({"cstoggle"})
+@io.paradaux.hibernia.framework.commander.annotations.Permission(Permission.Node.NOTIFY_TOGGLE)
+public class Toggle implements CommandHandler {
 
-    @Override
-    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (!(sender instanceof Player)) {
-            return false;
-        }
-
-        Player player = (Player) sender;
-
-        if (args.length != 0) {
-            return false;
-        }
-
+    @Route("")
+    public void toggle(@Sender Player player) {
         Account account = NameManager.getOrCreateAccount(player);
         account.setIgnoreMessages(!account.isIgnoringMessages());
 
@@ -46,8 +40,6 @@ public class Toggle implements CommandExecutor {
             ChestShop.getBukkitLogger().log(Level.WARNING, "Error while updating account " + account + ":", e);
             Messages.ERROR_OCCURRED.sendWithPrefix(player, "error", "Unable to store account data.");
         }
-
-        return true;
     }
 
     public static boolean isIgnoring(OfflinePlayer player) {

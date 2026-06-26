@@ -12,33 +12,9 @@ api-version: '1.13'
 # until those are ported/audited (ADT-43).
 folia-supported: false
 
-commands:
-  iteminfo:
-    aliases: [iinfo]
-    description: Lists item id and names
-    usage: |
-           /<command> §2(what's the item in hand?)
-           /<command> §7log§f §2(what's the item ID of §7LOG§2?)
-  shopinfo:
-    aliases: [sinfo,shop]
-    description: Shows information about the shop looked at
-    usage: /<command> §2(information about the looked at shop)
-  csGive:
-    description: Gives an item to the appropriate player
-    usage: /<command> <item code> (amount) (player)
-  csVersion:
-    aliases: [chestshop]
-    description: Shows the ChestShop's version
-    usage: /<command>
-  csMetrics:
-    description: Shows ChestShop's metrics
-    usage: /<command>
-  cstoggle:
-    description: Toggle messages to the owner of a shop
-    usage: /<command>
-  csaccess:
-    description: Allows trading at shops that you have access to
-    usage: /<command>
+# Commands are registered through HiberniaFramework's Commander (Brigadier) at
+# runtime (PAR-264), not declared here. Declaring them in plugin.yml as well
+# would double-register them.
 
 permissions:
   ChestShop.*:

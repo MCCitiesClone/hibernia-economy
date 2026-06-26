@@ -1,25 +1,30 @@
 package io.paradaux.chestshop.commands;
 
 import io.paradaux.chestshop.ChestShop;
+import io.paradaux.chestshop.Permission;
 import io.paradaux.chestshop.events.ChestShopReloadEvent;
+import io.paradaux.hibernia.framework.commander.annotations.Command;
+import io.paradaux.hibernia.framework.commander.annotations.Route;
+import io.paradaux.hibernia.framework.commander.annotations.Sender;
+import io.paradaux.hibernia.framework.commander.spi.CommandHandler;
 import org.bukkit.ChatColor;
-import org.bukkit.command.Command;
-import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 
 /**
  * @author Acrobot
  */
-public class Version implements CommandExecutor {
-    public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
-        if (args.length > 0 && args[0].equals("reload")) {
-            ChestShop.callEvent(new ChestShopReloadEvent(sender));
+@Command({"csVersion", "chestshop"})
+@io.paradaux.hibernia.framework.commander.annotations.Permission(Permission.Node.ADMIN)
+public class Version implements CommandHandler {
 
-            sender.sendMessage(ChatColor.DARK_GREEN + "The config was reloaded.");
-            return true;
-        }
-
+    @Route("")
+    public void version(@Sender CommandSender sender) {
         sender.sendMessage(ChatColor.GRAY + ChestShop.getPluginName() + "'s version is: " + ChatColor.GREEN + ChestShop.getVersion());
-        return true;
+    }
+
+    @Route("reload")
+    public void reload(@Sender CommandSender sender) {
+        ChestShop.callEvent(new ChestShopReloadEvent(sender));
+        sender.sendMessage(ChatColor.DARK_GREEN + "The config was reloaded.");
     }
 }

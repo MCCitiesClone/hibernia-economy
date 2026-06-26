@@ -1,23 +1,30 @@
 package io.paradaux.chestshop.commands;
 
 import io.paradaux.chestshop.ChestShop;
+import io.paradaux.chestshop.Permission;
 import io.paradaux.chestshop.configuration.Messages;
 import io.paradaux.chestshop.events.ShopInfoEvent;
 import io.paradaux.chestshop.signs.ChestShopSign;
 import io.paradaux.chestshop.utils.uBlock;
+import io.paradaux.hibernia.framework.commander.annotations.Command;
+import io.paradaux.hibernia.framework.commander.annotations.Route;
+import io.paradaux.hibernia.framework.commander.annotations.Sender;
+import io.paradaux.hibernia.framework.commander.spi.CommandHandler;
 import org.bukkit.ChatColor;
 import org.bukkit.block.Block;
 import org.bukkit.block.Sign;
-import org.bukkit.command.Command;
-import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
 /**
  * @author Phoenix616
  */
-public class ShopInfo implements CommandExecutor {
-    public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
+@Command({"shopinfo", "sinfo", "shop"})
+@io.paradaux.hibernia.framework.commander.annotations.Permission(Permission.Node.SHOPINFO)
+public class ShopInfo implements CommandHandler {
+
+    @Route("")
+    public void shopInfo(@Sender CommandSender sender) {
         if (sender instanceof Player) {
             Block target = ((Player) sender).getTargetBlockExact(5);
             if (target != null) {
@@ -38,6 +45,5 @@ public class ShopInfo implements CommandExecutor {
         } else {
             sender.sendMessage(ChatColor.RED + "Command must be run by a player!");
         }
-        return true;
     }
 }

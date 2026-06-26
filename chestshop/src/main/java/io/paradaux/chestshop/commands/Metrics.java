@@ -1,17 +1,24 @@
 package io.paradaux.chestshop.commands;
 
+import io.paradaux.chestshop.Permission;
 import io.paradaux.chestshop.configuration.Messages;
 import io.paradaux.chestshop.listeners.modules.MetricsModule;
 import io.paradaux.chestshop.players.NameManager;
-import org.bukkit.command.Command;
-import org.bukkit.command.CommandExecutor;
+import io.paradaux.hibernia.framework.commander.annotations.Command;
+import io.paradaux.hibernia.framework.commander.annotations.Route;
+import io.paradaux.hibernia.framework.commander.annotations.Sender;
+import io.paradaux.hibernia.framework.commander.spi.CommandHandler;
 import org.bukkit.command.CommandSender;
 
 /**
  * @author Acrobot
  */
-public class Metrics implements CommandExecutor {
-    public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
+@Command({"csMetrics"})
+@io.paradaux.hibernia.framework.commander.annotations.Permission(Permission.Node.ADMIN)
+public class Metrics implements CommandHandler {
+
+    @Route("")
+    public void metrics(@Sender CommandSender sender) {
         Messages.METRICS.send(sender,
                 "accounts", String.valueOf(NameManager.getAccountCount()),
                 "totalTransactions", String.valueOf(MetricsModule.getTotalTransactions()),
@@ -21,6 +28,5 @@ public class Metrics implements CommandExecutor {
                 "boughtItems", String.valueOf(MetricsModule.getBoughtItemsCount()),
                 "soldItems", String.valueOf(MetricsModule.getSoldItemsCount())
         );
-        return true;
     }
 }
