@@ -257,3 +257,27 @@ tasks.shadowJar {
 
 // Building the module produces the shaded jar.
 tasks.assemble { dependsOn(tasks.shadowJar) }
+
+// =====================================================================
+// Dev-server staging. ChestShop can't apply io.paradaux.paper-server-conventions
+// (its repos/shadow/resources diverge), so it carries its own copyPlugin that
+// mirrors the convention: stage the shaded jar into server/plugins after every
+// shadowJar. Pass -Pci=true to skip (CI, or to avoid disturbing a running dev
+// server). A top-level subproject is one level under the root → "../server/plugins".
+// =====================================================================
+val pluginsDir = layout.projectDirectory.dir("../server/plugins")
+val copyPlugin = tasks.register<Copy>("copyPlugin") {
+    dependsOn(tasks.shadowJar)
+    from(tasks.shadowJar.flatMap { it.archiveFile })
+    into(pluginsDir)
+    onlyIf { !project.hasProperty("ci") } // don't run on CI
+    doFirst {
+        // Remove any previously-staged ChestShop jar so the dev server never loads
+        // two copies of the same plugin: the current chestshop-<version>.jar and
+        // the legacy ChestShop.jar (case-insensitive — it predates the standardised
+        // name from PAR-274).
+        val re = Regex("^chestshop(-\\d.*)?\\.jar$", RegexOption.IGNORE_CASE)
+        pluginsDir.asFile.listFiles { f -> f.isFile && re.matches(f.name) }?.forEach { it.delete() }
+    }
+}
+tasks.shadowJar { finalizedBy(copyPlugin) }
