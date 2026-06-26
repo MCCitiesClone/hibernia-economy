@@ -44,9 +44,12 @@ public class BalanceTaxConfiguration {
     }
 
     // Mutable so {@link #reload()} can refresh them at runtime (Guice singleton,
-    // read live per login). {@code brackets} is replaced wholesale.
-    private boolean enabled;
-    private String governmentAccount;
+    // read live per login). volatile so a balance-tax collection running on another
+    // thread sees a fully-published value after /treasury reload re-populates these
+    // in place, rather than a stale or torn read (ADT-30). {@code brackets} is
+    // replaced wholesale.
+    private volatile boolean enabled;
+    private volatile String governmentAccount;
     /** Sorted ascending by minimum balance. Key = bracket floor, value = weekly rate. */
     private volatile NavigableMap<BigDecimal, BigDecimal> brackets;
     /** Set only via the {@code @Inject} ctor; null for test-factory instances. */

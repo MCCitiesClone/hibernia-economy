@@ -25,10 +25,13 @@ import java.util.Map;
 public class SourceIncomeTaxConfiguration {
 
     // Mutable so {@link #reload()} can refresh them at runtime (Guice singleton,
-    // read live per deposit). {@code pluginRates} is replaced wholesale.
-    private boolean enabled;
-    private BigDecimal defaultRate;
-    private String governmentAccount;
+    // read live per deposit). volatile so a deposit handler on another thread sees a
+    // fully-published value after /treasury reload re-populates these in place,
+    // rather than a stale or torn read (ADT-30). {@code pluginRates} is replaced
+    // wholesale.
+    private volatile boolean enabled;
+    private volatile BigDecimal defaultRate;
+    private volatile String governmentAccount;
     private volatile Map<String, BigDecimal> pluginRates;
     /** Set only via the {@code @Inject} ctor; null for test-factory instances. */
     private Treasury plugin;
