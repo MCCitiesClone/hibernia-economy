@@ -8,8 +8,6 @@ import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.configuration.Properties;
 import io.paradaux.chestshop.economy.AdminInventory;
 import io.paradaux.chestshop.database.Account;
-import io.paradaux.chestshop.events.AccountAccessEvent;
-import io.paradaux.chestshop.events.AccountQueryEvent;
 import io.paradaux.chestshop.events.SignValidationEvent;
 import io.paradaux.chestshop.Permission;
 import io.paradaux.chestshop.utils.uBlock;
@@ -185,19 +183,15 @@ public class ChestShopSign {
         String name = getOwner(sign);
         if (name == null || name.isEmpty()) return false;
 
-        AccountQueryEvent accountQueryEvent = new AccountQueryEvent(name);
-        Bukkit.getPluginManager().callEvent(accountQueryEvent);
-        Account account = accountQueryEvent.getAccount();
+        Account account = ChestShop.accounts().resolveAccount(name);
         if (account == null) {
             return player.getName().equalsIgnoreCase(name);
         }
 
-        // For business accounts, the UUID is synthetic and will never match a player UUID.
-        // Delegate to AccountAccessEvent so TreasuryListener can check membership/ownership.
+        // For business accounts, the UUID is synthetic and will never match a player
+        // UUID; delegate to canAccess so the firm membership/ownership is checked via API.
         if (isBusinessAccount(name)) {
-            AccountAccessEvent accessEvent = new AccountAccessEvent(player, account);
-            Bukkit.getPluginManager().callEvent(accessEvent);
-            return accessEvent.canAccess();
+            return ChestShop.accounts().canAccess(player, account);
         }
 
         return account.getUuid().equals(player.getUniqueId());

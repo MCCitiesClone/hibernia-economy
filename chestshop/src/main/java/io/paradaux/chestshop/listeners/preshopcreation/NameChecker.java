@@ -2,8 +2,6 @@ package io.paradaux.chestshop.listeners.preshopcreation;
 
 import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.database.Account;
-import io.paradaux.chestshop.events.AccountAccessEvent;
-import io.paradaux.chestshop.events.AccountQueryEvent;
 import io.paradaux.chestshop.events.PreShopCreationEvent;
 import io.paradaux.chestshop.Permission;
 import io.paradaux.chestshop.signs.ChestShopSign;
@@ -58,9 +56,7 @@ public class NameChecker implements Listener {
                 if (name.isEmpty() || !ChestShop.accounts().canUseName(player, OTHER_NAME_CREATE, name)) {
                     account = ChestShop.accounts().getOrCreateAccount(player);
                 } else {
-                    AccountQueryEvent accountQueryEvent = new AccountQueryEvent(name);
-                    ChestShop.callEvent(accountQueryEvent);
-                    account = accountQueryEvent.getAccount();
+                    account = ChestShop.accounts().resolveAccount(name);
                     if (account == null) {
                         Player otherPlayer = ChestShop.getBukkitServer().getPlayer(name);
                         try {
@@ -95,7 +91,7 @@ public class NameChecker implements Listener {
      *   <li>Treasury plugin is available (required for business accounts).</li>
      *   <li>The Treasury account with the encoded ID actually exists.</li>
      *   <li>The creating player holds the {@code CHESTSHOP} firm permission for that
-     *       account (via {@link AccountAccessEvent} → TreasuryListener → Business API),
+     *       account (via {@code AccountService.canAccess} → EconomyService → Business API),
      *       unless they have the {@code ChestShop.admin} node.</li>
      * </ol>
      *
@@ -117,9 +113,7 @@ public class NameChecker implements Listener {
         }
 
         // Resolve the Treasury account for the encoded firm account ID.
-        AccountQueryEvent queryEvent = new AccountQueryEvent(name);
-        ChestShop.callEvent(queryEvent);
-        Account account = queryEvent.getAccount();
+        Account account = ChestShop.accounts().resolveAccount(name);
 
         if (account == null) {
             ChestShop.message().send(player, "chestshop.BUSINESS_ACCOUNT_NOT_FOUND");
@@ -130,11 +124,9 @@ public class NameChecker implements Listener {
 
         // ChestShop admins bypass firm-level permission checks.
         if (!Permission.has(player, Permission.ADMIN)) {
-            // Fire AccountAccessEvent: TreasuryListener checks the CHESTSHOP firm
-            // permission via the Business API (or falls back to Treasury membership).
-            AccountAccessEvent accessEvent = new AccountAccessEvent(player, account);
-            ChestShop.callEvent(accessEvent);
-            if (!accessEvent.canAccess()) {
+            // AccountService.canAccess checks the CHESTSHOP firm permission via the
+            // Business API (or falls back to Treasury membership) through EconomyService.
+            if (!ChestShop.accounts().canAccess(player, account)) {
                 ChestShop.message().send(player, "chestshop.BUSINESS_NO_CHESTSHOP_PERMISSION");
                 event.setSignLine(NAME_LINE, "");
                 event.setOutcome(UNKNOWN_PLAYER);

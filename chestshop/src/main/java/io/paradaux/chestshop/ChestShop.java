@@ -39,7 +39,6 @@ import io.paradaux.chestshop.listeners.shopremoval.ShopRemovalLogger;
 import io.paradaux.chestshop.logging.FileFormatter;
 import io.paradaux.chestshop.services.ItemCodeService;
 import io.paradaux.chestshop.signs.RestrictedSign;
-import io.paradaux.chestshop.listeners.account.AccountListener;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.ByteArrayDataOutput;
@@ -339,8 +338,6 @@ public class ChestShop extends JavaPlugin {
         registerEvent(new io.paradaux.chestshop.plugins.ChestShop()); //Chest protection
 
         registerEvent(new Dependencies());
-
-        registerEvent(new AccountListener());
 
         registerPostShopCreationEvents();
         registerPostTransactionEvents();

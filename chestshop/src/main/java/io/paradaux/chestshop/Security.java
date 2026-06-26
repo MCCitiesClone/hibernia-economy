@@ -3,7 +3,6 @@ package io.paradaux.chestshop;
 import io.paradaux.chestshop.utils.BlockUtil;
 import io.paradaux.chestshop.configuration.Properties;
 import io.paradaux.chestshop.database.Account;
-import io.paradaux.chestshop.events.AccountQueryEvent;
 import io.paradaux.chestshop.events.protection.ProtectBlockEvent;
 import io.paradaux.chestshop.events.protection.ProtectionCheckEvent;
 import io.paradaux.chestshop.signs.ChestShopSign;

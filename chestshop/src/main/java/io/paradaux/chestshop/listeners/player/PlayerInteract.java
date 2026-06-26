@@ -5,7 +5,6 @@ import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.configuration.Properties;
 import io.paradaux.chestshop.economy.AdminInventory;
 import io.paradaux.chestshop.database.Account;
-import io.paradaux.chestshop.events.AccountQueryEvent;
 import io.paradaux.chestshop.events.ItemParseEvent;
 import io.paradaux.chestshop.events.PreTransactionEvent;
 import io.paradaux.chestshop.events.ShopInfoEvent;
@@ -206,9 +205,7 @@ public class PlayerInteract implements Listener {
         String prices = ChestShopSign.getPrice(sign);
         String material = ChestShopSign.getItem(sign);
 
-        AccountQueryEvent accountQueryEvent = new AccountQueryEvent(name);
-        Bukkit.getPluginManager().callEvent(accountQueryEvent);
-        Account account = accountQueryEvent.getAccount();
+        Account account = ChestShop.accounts().resolveAccount(name);
         if (account == null) {
             ChestShop.message().send(player, "chestshop.PLAYER_NOT_FOUND");
             return null;

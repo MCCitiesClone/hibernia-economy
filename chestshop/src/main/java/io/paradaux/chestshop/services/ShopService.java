@@ -6,7 +6,6 @@ import io.paradaux.chestshop.Permission;
 import io.paradaux.chestshop.configuration.Properties;
 import io.paradaux.chestshop.database.Account;
 import io.paradaux.chestshop.economy.Economy;
-import io.paradaux.chestshop.events.AccountQueryEvent;
 import io.paradaux.chestshop.events.PreShopCreationEvent;
 import io.paradaux.chestshop.listeners.preshopcreation.ChestChecker;
 import io.paradaux.chestshop.listeners.preshopcreation.CreationFeeGetter;
@@ -134,9 +133,7 @@ public class ShopService {
             return;
         }
 
-        AccountQueryEvent query = new AccountQueryEvent(ChestShopSign.getOwner(sign));
-        ChestShop.callEvent(query);
-        Account account = query.getAccount();
+        Account account = ChestShop.accounts().resolveAccount(ChestShopSign.getOwner(sign));
         if (account == null) {
             return;
         }

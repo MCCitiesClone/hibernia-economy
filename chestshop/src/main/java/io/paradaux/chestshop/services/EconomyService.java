@@ -1,6 +1,8 @@
 package io.paradaux.chestshop.services;
 
 import com.google.inject.Singleton;
+import io.paradaux.business.api.BusinessApi;
+import io.paradaux.business.model.RolePermission;
 import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.Permission;
 import io.paradaux.chestshop.configuration.Properties;
@@ -19,10 +21,12 @@ import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
+import javax.annotation.Nullable;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 import java.util.logging.Level;
 
@@ -55,12 +59,14 @@ public class EconomyService {
     private volatile TreasuryApi treasury;
     private volatile int systemAccountId;
     private volatile TaxApi taxApi;
+    @Nullable private volatile BusinessApi businessApi;
 
-    /** Wire the resolved Treasury handle + SYSTEM account + tax API in once available (enable time). */
-    public void bind(TreasuryApi treasury, int systemAccountId, TaxApi taxApi) {
+    /** Wire the resolved Treasury handle + SYSTEM account + tax/business APIs in once available (enable time). */
+    public void bind(TreasuryApi treasury, int systemAccountId, TaxApi taxApi, @Nullable BusinessApi businessApi) {
         this.treasury = treasury;
         this.systemAccountId = systemAccountId;
         this.taxApi = taxApi;
+        this.businessApi = businessApi;
     }
 
     /** Render a money amount for display through Treasury, honouring STRIP_PRICE_COLORS. */
@@ -356,6 +362,94 @@ public class EconomyService {
 
     private static boolean isBusinessUuid(UUID uuid) {
         return uuid.getMostSignificantBits() == BUSINESS_UUID_MSB;
+    }
+
+    private static UUID toBusinessUuid(int accountId) {
+        return new UUID(BUSINESS_UUID_MSB, (long) accountId);
+    }
+
+    // ── Business-account resolution + access (Treasury/Business API, was AccountQuery/AccessEvent) ──
+
+    /**
+     * Resolve a business-account sign name ({@code B:<base36 id>}, or a legacy
+     * {@code b:<firm name>}) to a synthetic ChestShop {@link Account}, or {@code null}
+     * if {@code name} isn't a business token or doesn't resolve. Replaces the business
+     * half of {@code AccountQueryEvent} → {@code TreasuryListener.onAccountQuery}.
+     */
+    @Nullable
+    public Account resolveBusinessAccount(String name) {
+        if (name == null || name.length() < 3 || !name.regionMatches(true, 0, "B:", 0, 2)) {
+            return null;
+        }
+        try {
+            String token = name.substring(2);
+            int accountId = -1;
+            io.paradaux.treasury.model.economy.Account treasuryAccount = null;
+
+            // Native form: the suffix is a base-36 Treasury account id (e.g. B:1A).
+            try {
+                accountId = Integer.parseInt(token, 36);
+                treasuryAccount = treasury.getAccountById(accountId);
+            } catch (NumberFormatException notBase36) {
+                // e.g. a legacy firm name containing spaces — fall through to the name lookup.
+            }
+
+            // Legacy form: the suffix is an old PlayerBusinesses firm *name* (e.g. b:My Shop).
+            if (treasuryAccount == null && businessApi != null) {
+                io.paradaux.business.model.Firm firm = businessApi.firms().getFirm(token);
+                if (firm != null && firm.getDefaultAccountId() != null) {
+                    accountId = firm.getDefaultAccountId();
+                    treasuryAccount = treasury.getAccountById(accountId);
+                }
+            }
+
+            if (treasuryAccount != null) {
+                String displayName = treasuryAccount.getDisplayName();
+                String shortName = ChestShopSign.businessAccountSignName(accountId);
+                return new Account(displayName, shortName, toBusinessUuid(accountId));
+            }
+        } catch (Exception e) {
+            ChestShop.getBukkitLogger().log(Level.WARNING, "Treasury: Could not resolve business account for " + name, e);
+        }
+        return null;
+    }
+
+    /**
+     * Whether {@code player} may use/own a business {@code account} — the firm's
+     * {@code CHESTSHOP} role permission via the Business API (or Treasury membership
+     * if Business is absent), with disbanded/orphaned firms left accessible. Returns
+     * {@code false} for non-business accounts. Replaces the business half of
+     * {@code AccountAccessEvent} → {@code TreasuryListener.onAccountAccess}.
+     */
+    public boolean canAccessBusinessAccount(Player player, Account account) {
+        if (account == null || account.getShortName() == null) {
+            return false;
+        }
+        if (!account.getShortName().toUpperCase(Locale.ROOT).startsWith("B:")) {
+            return false;
+        }
+        UUID uuid = account.getUuid();
+        if (!isBusinessUuid(uuid)) {
+            return false;
+        }
+        try {
+            int accountId = (int) uuid.getLeastSignificantBits();
+            UUID playerUuid = player.getUniqueId();
+            if (businessApi != null) {
+                if (businessApi.staff().hasPermissionForAccount(accountId, playerUuid, RolePermission.CHESTSHOP)) {
+                    return true;
+                }
+                // PAR-29: no live firm owns this account (disbanded) — leave it accessible.
+                return businessApi.firms().getFirmByAccountId(accountId) == null;
+            }
+            // Business plugin absent: fall back to Treasury account membership.
+            return treasury.isAccountMember(playerUuid, accountId)
+                    || treasury.isOwnerForAccountId(playerUuid, accountId);
+        } catch (Exception e) {
+            ChestShop.getBukkitLogger().log(Level.WARNING,
+                    "Treasury: Could not check access for " + player.getName() + " on account " + account.getShortName(), e);
+            return false;
+        }
     }
 
     private int resolveAccountId(UUID uuid) {

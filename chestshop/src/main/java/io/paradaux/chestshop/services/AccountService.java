@@ -9,8 +9,6 @@ import io.paradaux.chestshop.Permission;
 import io.paradaux.chestshop.configuration.Properties;
 import io.paradaux.chestshop.dao.AccountRepository;
 import io.paradaux.chestshop.database.Account;
-import io.paradaux.chestshop.events.AccountAccessEvent;
-import io.paradaux.chestshop.events.AccountQueryEvent;
 import io.paradaux.chestshop.players.PlayerDTO;
 import io.paradaux.chestshop.signs.ChestShopSign;
 import io.paradaux.chestshop.utils.NameUtil;
@@ -174,11 +172,17 @@ public class AccountService {
         return account;
     }
 
-    /** Resolve an {@link AccountQueryEvent} (entrypoint: {@code AccountListener.onAccountQuery}). */
-    public void onAccountQuery(AccountQueryEvent event) {
-        if (event.getAccount() == null) {
-            event.setAccount(getLastAccountFromName(event.getName(), event.searchOfflinePlayers()));
+    /**
+     * Resolve an owner name to its account: a business token ({@code B:…}) via the
+     * Treasury/Business API ({@link ChestShop#economy()}), otherwise a player account.
+     * Replaces the {@code AccountQueryEvent} dispatch.
+     */
+    public Account resolveAccount(String name) {
+        Account business = ChestShop.economy().resolveBusinessAccount(name);
+        if (business != null) {
+            return business;
         }
+        return getLastAccountFromName(name, false);
     }
 
     /**
@@ -283,7 +287,7 @@ public class AccountService {
         boolean isBusinessAccount = ChestShopSign.isBusinessAccount(name);
 
         // For business accounts, skip permission-based shortcuts — access is controlled
-        // solely by Treasury via AccountAccessEvent. Only ChestShop admins bypass this.
+        // solely by Treasury/Business via canAccess(). Only ChestShop admins bypass this.
         if (isBusinessAccount) {
             if (Permission.has(player, Permission.ADMIN)) {
                 return true;
@@ -294,9 +298,7 @@ public class AccountService {
             }
         }
 
-        AccountQueryEvent queryEvent = new AccountQueryEvent(name);
-        ChestShop.callEvent(queryEvent);
-        Account account = queryEvent.getAccount();
+        Account account = resolveAccount(name);
         if (account == null) {
             // There is no account by the provided name, but it matches the player name
             // Return true as they specified their own name and a new account should get created
@@ -309,21 +311,25 @@ public class AccountService {
         if (!isBusinessAccount && !account.getName().equalsIgnoreCase(name) && Permission.otherName(player, base, account.getName())) {
             return true;
         }
-        AccountAccessEvent event = new AccountAccessEvent(player, account);
-        ChestShop.callEvent(event);
-        return event.canAccess();
+        return canAccess(player, account);
     }
 
-    /** Default access rule (entrypoint: {@code AccountListener.onAccountAccessCheck}): the player owns the account. */
-    public void onAccountAccessCheck(AccountAccessEvent event) {
-        if (!event.canAccess()) {
-            event.setAccess(event.getPlayer().getUniqueId().equals(event.getAccount().getUuid()));
-            if (!event.canAccess()) {
-                ChestShop.logDebug(event.getPlayer().getName() + "/" + event.getPlayer().getUniqueId()
-                        + " cannot access the account " + event.getAccount().getName() + "/" + event.getAccount().getUuid()
-                        + " as their UUID doesn't match!");
-            }
+    /**
+     * Whether {@code player} may use/own {@code account}: a business firm's CHESTSHOP
+     * permission via the Treasury/Business API, or owning the account by UUID. Replaces
+     * the {@code AccountAccessEvent} dispatch.
+     */
+    public boolean canAccess(Player player, Account account) {
+        if (ChestShop.economy().canAccessBusinessAccount(player, account)) {
+            return true;
         }
+        if (player.getUniqueId().equals(account.getUuid())) {
+            return true;
+        }
+        ChestShop.logDebug(player.getName() + "/" + player.getUniqueId()
+                + " cannot access the account " + account.getName() + "/" + account.getUuid()
+                + " as their UUID doesn't match!");
+        return false;
     }
 
     public boolean isAdminShop(UUID uuid) {
