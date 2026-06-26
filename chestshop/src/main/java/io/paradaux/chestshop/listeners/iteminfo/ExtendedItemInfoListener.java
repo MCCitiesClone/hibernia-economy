@@ -2,8 +2,8 @@ package io.paradaux.chestshop.listeners.iteminfo;
 
 import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.commands.ItemInfo;
-import io.paradaux.chestshop.configuration.Messages;
 import io.paradaux.chestshop.events.ItemInfoEvent;
+import net.kyori.adventure.text.Component;
 import org.bukkit.ChatColor;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -21,13 +21,6 @@ import org.bukkit.potion.PotionEffect;
 
 import java.util.Map;
 
-import static io.paradaux.chestshop.configuration.Messages.iteminfo_armor_trim;
-import static io.paradaux.chestshop.configuration.Messages.iteminfo_axolotl_variant;
-import static io.paradaux.chestshop.configuration.Messages.iteminfo_bundle_items;
-import static io.paradaux.chestshop.configuration.Messages.iteminfo_crossbow_projectile;
-import static io.paradaux.chestshop.configuration.Messages.iteminfo_crossbow_projectiles;
-import static io.paradaux.chestshop.configuration.Messages.iteminfo_map_location;
-import static io.paradaux.chestshop.configuration.Messages.iteminfo_map_view;
 import static io.paradaux.chestshop.utils.NumberUtil.toTime;
 import static io.paradaux.chestshop.utils.StringUtil.capitalizeFirstLetter;
 
@@ -49,7 +42,7 @@ public class ExtendedItemInfoListener implements Listener {
             if (meta instanceof MapMeta) {
                 if (((MapMeta) meta).getMapView() != null) {
                     MapView mapView = ((MapMeta) meta).getMapView();
-                    event.addMessage(iteminfo_map_view,
+                    event.addMessage("chestshop.iteminfo_map_view",
                             "id", String.valueOf(mapView.getId()),
                             "x", String.valueOf(mapView.getCenterX()),
                             "z", String.valueOf(mapView.getCenterZ()),
@@ -59,7 +52,7 @@ public class ExtendedItemInfoListener implements Listener {
                     );
                 }
                 if (((MapMeta) meta).hasLocationName()) {
-                    event.addMessage(iteminfo_map_location, "location", String.valueOf(((MapMeta) meta).getLocationName()));
+                    event.addMessage("chestshop.iteminfo_map_location", "location", String.valueOf(((MapMeta) meta).getLocationName()));
                 }
             }
         }
@@ -70,12 +63,12 @@ public class ExtendedItemInfoListener implements Listener {
         if (event.getItem().hasItemMeta()) {
             ItemMeta meta = event.getItem().getItemMeta();
             if (meta instanceof CrossbowMeta && ((CrossbowMeta) meta).hasChargedProjectiles()) {
-                event.addMessage(iteminfo_crossbow_projectiles);
+                event.addMessage("chestshop.iteminfo_crossbow_projectiles");
                 for (ItemStack chargedProjectile : ((CrossbowMeta) meta).getChargedProjectiles()) {
-                    ItemInfo.sendItemName(event.getSender(), chargedProjectile, iteminfo_crossbow_projectile);
+                    ItemInfo.sendItemName(event.getSender(), chargedProjectile, "chestshop.iteminfo_crossbow_projectile");
                     ItemInfoEvent projectileEvent = ChestShop.callEvent(new ItemInfoEvent(event.getSender(), chargedProjectile));
-                    for (Map.Entry<Messages.Message, String[]> entry : projectileEvent.getMessages()) {
-                        event.addMessage("crossbow_projectile_" + chargedProjectile.hashCode() + "_" + entry.getKey().getKey(), entry.getKey(), entry.getValue());
+                    for (Map.Entry<String, Component> entry : projectileEvent.getMessages()) {
+                        event.addRawMessage("crossbow_projectile_" + chargedProjectile.hashCode() + "_" + entry.getKey(), entry.getValue());
                     }
                     event.addRawMessage("crossbow_projectile_" + chargedProjectile.hashCode() + "_divider", ChatColor.GRAY + "---");
                 }
@@ -88,7 +81,7 @@ public class ExtendedItemInfoListener implements Listener {
         if (event.getItem().hasItemMeta()) {
             ItemMeta meta = event.getItem().getItemMeta();
             if (meta instanceof AxolotlBucketMeta) {
-                event.addMessage(iteminfo_axolotl_variant, "variant", capitalizeFirstLetter(((AxolotlBucketMeta) meta).getVariant().name(), '_'));
+                event.addMessage("chestshop.iteminfo_axolotl_variant", "variant", capitalizeFirstLetter(((AxolotlBucketMeta) meta).getVariant().name(), '_'));
             }
         }
     }
@@ -98,7 +91,7 @@ public class ExtendedItemInfoListener implements Listener {
         if (event.getItem().hasItemMeta()) {
             ItemMeta meta = event.getItem().getItemMeta();
             if (meta instanceof BundleMeta) {
-                event.addMessage(iteminfo_bundle_items, "itemcount", String.valueOf(((BundleMeta) meta).getItems().size()));
+                event.addMessage("chestshop.iteminfo_bundle_items", "itemcount", String.valueOf(((BundleMeta) meta).getItems().size()));
             }
         }
     }
@@ -108,7 +101,7 @@ public class ExtendedItemInfoListener implements Listener {
         if (event.getItem().hasItemMeta()) {
             ItemMeta meta = event.getItem().getItemMeta();
             if (meta instanceof ArmorMeta && ((ArmorMeta) meta).hasTrim()) {
-                event.addMessage(iteminfo_armor_trim,
+                event.addMessage("chestshop.iteminfo_armor_trim",
                         "pattern", capitalizeFirstLetter(((ArmorMeta) meta).getTrim().getPattern().getKey().getKey(), '_'),
                         "material", capitalizeFirstLetter(((ArmorMeta) meta).getTrim().getMaterial().getKey().getKey(), '_'));
             }

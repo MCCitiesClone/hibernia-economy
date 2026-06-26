@@ -1,7 +1,6 @@
 package io.paradaux.chestshop.listeners.preshopcreation;
 
 import io.paradaux.chestshop.ChestShop;
-import io.paradaux.chestshop.configuration.Messages;
 import io.paradaux.chestshop.database.Account;
 import io.paradaux.chestshop.events.AccountAccessEvent;
 import io.paradaux.chestshop.events.AccountQueryEvent;
@@ -112,7 +111,7 @@ public class NameChecker implements Listener {
         }
 
         if (Bukkit.getPluginManager().getPlugin("Treasury") == null) {
-            Messages.TREASURY_REQUIRED.sendWithPrefix(player);
+            ChestShop.message().send(player, "chestshop.TREASURY_REQUIRED");
             event.setSignLine(NAME_LINE, "");
             event.setOutcome(UNKNOWN_PLAYER);
             return;
@@ -124,7 +123,7 @@ public class NameChecker implements Listener {
         Account account = queryEvent.getAccount();
 
         if (account == null) {
-            Messages.BUSINESS_ACCOUNT_NOT_FOUND.sendWithPrefix(player);
+            ChestShop.message().send(player, "chestshop.BUSINESS_ACCOUNT_NOT_FOUND");
             event.setSignLine(NAME_LINE, "");
             event.setOutcome(UNKNOWN_PLAYER);
             return;
@@ -137,7 +136,7 @@ public class NameChecker implements Listener {
             AccountAccessEvent accessEvent = new AccountAccessEvent(player, account);
             ChestShop.callEvent(accessEvent);
             if (!accessEvent.canAccess()) {
-                Messages.BUSINESS_NO_CHESTSHOP_PERMISSION.sendWithPrefix(player);
+                ChestShop.message().send(player, "chestshop.BUSINESS_NO_CHESTSHOP_PERMISSION");
                 event.setSignLine(NAME_LINE, "");
                 event.setOutcome(UNKNOWN_PLAYER);
                 return;

@@ -39,7 +39,6 @@ public enum Permission {
     NO_SELL_TAX("ChestShop.notax.sell"),
 
     NOTIFY_TOGGLE("ChestShop.toggle"),
-    ACCESS_TOGGLE("ChestShop.accesstoggle"),
     ITEMINFO("ChestShop.iteminfo"),
     SHOPINFO("ChestShop.shopinfo"),
 
@@ -64,7 +63,6 @@ public enum Permission {
     public static final class Node {
         public static final String ADMIN = "ChestShop.admin";
         public static final String NOTIFY_TOGGLE = "ChestShop.toggle";
-        public static final String ACCESS_TOGGLE = "ChestShop.accesstoggle";
         public static final String ITEMINFO = "ChestShop.iteminfo";
         public static final String SHOPINFO = "ChestShop.shopinfo";
 

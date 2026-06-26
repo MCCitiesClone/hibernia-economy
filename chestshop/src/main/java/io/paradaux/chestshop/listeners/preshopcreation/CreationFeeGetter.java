@@ -1,7 +1,6 @@
 package io.paradaux.chestshop.listeners.preshopcreation;
 
 import io.paradaux.chestshop.ChestShop;
-import io.paradaux.chestshop.configuration.Messages;
 import io.paradaux.chestshop.configuration.Properties;
 import io.paradaux.chestshop.economy.Economy;
 import io.paradaux.chestshop.events.economy.CurrencyAddEvent;
@@ -59,6 +58,6 @@ public class CreationFeeGetter implements Listener {
             ChestShop.callEvent(currencyAddEvent);
         }
 
-        Messages.SHOP_FEE_PAID.sendWithPrefix(player, "amount", Economy.formatBalance(shopCreationPrice));
+        ChestShop.message().send(player, "chestshop.SHOP_FEE_PAID", "amount", Economy.formatBalance(shopCreationPrice));
     }
 }

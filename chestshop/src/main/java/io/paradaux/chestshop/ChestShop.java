@@ -6,8 +6,6 @@ import io.paradaux.chestshop.commands.ItemInfo;
 import io.paradaux.chestshop.commands.ShopInfo;
 import io.paradaux.chestshop.commands.Toggle;
 import io.paradaux.chestshop.commands.Version;
-import io.paradaux.chestshop.commands.AccessToggle;
-import io.paradaux.chestshop.configuration.Messages;
 import io.paradaux.chestshop.configuration.Properties;
 import io.paradaux.chestshop.database.Migrations;
 import io.paradaux.chestshop.market.MarketHook;
@@ -147,9 +145,9 @@ public class ChestShop extends JavaPlugin {
         // additively reconciles new default keys on upgrade). The framework also
         // owns command registration now (PAR-264): the seven ChestShop commands
         // are CommandHandlers registered through Brigadier via CommandManager.
-        // The framework Message bean is bound (no withoutMessages()) so the
-        // commander's error feedback renders from messages.properties; ChestShop's
-        // own command output still uses the Messages enum.
+        // The framework Message bean is bound (no withoutMessages()) so both the
+        // commander's error feedback and ChestShop's own command/listener output
+        // render from messages.properties via ChestShop.message().
         io.paradaux.hibernia.framework.guice.HiberniaModule hibernia =
                 io.paradaux.hibernia.framework.guice.HiberniaModule.forPlugin(this)
                         .scanConfiguration("io.paradaux.chestshop.configuration")
@@ -157,7 +155,7 @@ public class ChestShop extends JavaPlugin {
                                 io.paradaux.chestshop.commands.BypassCommand.class,
                                 ItemInfo.class, ShopInfo.class, Version.class,
                                 io.paradaux.chestshop.commands.Metrics.class, Give.class,
-                                Toggle.class, AccessToggle.class)
+                                Toggle.class)
                         .build();
         this.injector = com.google.inject.Guice.createInjector(hibernia,
                 new io.paradaux.chestshop.guice.ChestShopModule());
@@ -192,8 +190,6 @@ public class ChestShop extends JavaPlugin {
         // mirror. reload() re-fetches a fresh component snapshot (1.2.0 semantics).
         configurationLoader.reload();
         Properties.applyFrom(configurationLoader.getComponent(ChestShopConfiguration.class));
-
-        Messages.load();
 
         NameManager.load();
 
@@ -608,9 +604,28 @@ public class ChestShop extends JavaPlugin {
         return bStats;
     }
 
-    /** The framework i18n bean backing the {@link Messages} catalogue. */
+    /** The framework i18n bean used for all ChestShop player-facing messages. */
     public static io.paradaux.hibernia.framework.i18n.Message message() {
         return message;
+    }
+
+    /**
+     * Build a placeholder-value map for the framework {@link io.paradaux.hibernia.framework.i18n.Message}:
+     * a base map plus key/value replacement pairs, optionally blanking {@code {prefix}}. Every ChestShop
+     * template begins with {@code {prefix}}, so {@code withPrefix=false} suppresses it (continuation lines).
+     */
+    public static Map<String, Object> values(boolean withPrefix, Map<String, String> base, String... replacements) {
+        Map<String, Object> values = new LinkedHashMap<>();
+        if (!withPrefix) {
+            values.put("prefix", "");
+        }
+        if (base != null) {
+            values.putAll(base);
+        }
+        for (int i = 0; i + 1 < replacements.length; i += 2) {
+            values.put(replacements[i], replacements[i + 1]);
+        }
+        return values;
     }
 
     public static void registerListener(Listener listener) {
@@ -622,8 +637,8 @@ public class ChestShop extends JavaPlugin {
         return event;
     }
 
-    public static void sendBungeeMessage(String playerName, Messages.Message message, Map<String, String> replacementMap, String... replacements) {
-        sendBungeeMessage(playerName, message.getComponent(null, true, replacementMap, replacements));
+    public static void sendBungeeMessage(String playerName, String key, Map<String, String> replacementMap, String... replacements) {
+        sendBungeeMessage(playerName, message().component(key, values(true, replacementMap, replacements)));
     }
 
     public static void sendBungeeMessage(String playerName, String message) {

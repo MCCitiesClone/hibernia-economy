@@ -2,7 +2,6 @@ package io.paradaux.chestshop.utils;
 
 import io.paradaux.chestshop.utils.SimpleCache;
 import io.paradaux.chestshop.ChestShop;
-import io.paradaux.chestshop.configuration.Messages;
 import io.paradaux.chestshop.configuration.Properties;
 import io.paradaux.chestshop.events.MaterialParseEvent;
 import io.paradaux.chestshop.utils.ItemUtil;
@@ -629,8 +628,8 @@ public class MaterialUtil {
          * @param message The raw message
          * @param stock   The items in stock
          */
-        public static boolean sendMessage(Player player, Messages.Message message, ItemStack[] stock, Map<String, String> replacementMap, String... replacements) {
-            return sendMessage(player, player.getName(), message, stock, replacementMap, replacements);
+        public static boolean sendMessage(Player player, String key, ItemStack[] stock, Map<String, String> replacementMap, String... replacements) {
+            return sendMessage(player, player.getName(), key, stock, replacementMap, replacements);
         }
 
         /**
@@ -641,8 +640,8 @@ public class MaterialUtil {
          * @param message       The raw message
          * @param stock         The items in stock
          */
-        public static boolean sendMessage(Player player, String playerName, Messages.Message message, ItemStack[] stock, Map<String, String> replacementMap, String... replacements) {
-            return sendMessage(player, playerName, message, true, stock, replacementMap, replacements);
+        public static boolean sendMessage(Player player, String playerName, String key, ItemStack[] stock, Map<String, String> replacementMap, String... replacements) {
+            return sendMessage(player, playerName, key, true, stock, replacementMap, replacements);
         }
 
         /**
@@ -654,7 +653,7 @@ public class MaterialUtil {
          * @param showPrefix    If the prefix should show
          * @param stock         The items in stock
          */
-        public static boolean sendMessage(Player player, String playerName, Messages.Message message, boolean showPrefix, ItemStack[] stock, Map<String, String> replacementMap, String... replacements) {
+        public static boolean sendMessage(Player player, String playerName, String key, boolean showPrefix, ItemStack[] stock, Map<String, String> replacementMap, String... replacements) {
             if (showItem == null) {
                 return false;
             }
@@ -671,7 +670,7 @@ public class MaterialUtil {
                     }
                     itemComponent.append(GsonComponentSerializer.gson().deserialize(showItem.getItemConverter().createComponent(item, Level.FINE).toJsonString(player)));
                 } catch (Exception e) {
-                    ChestShop.getPlugin().getLogger().log(Level.WARNING, "Error while trying to send message '" + message + "' to player " + player.getName() + ": " + e.getMessage());
+                    ChestShop.getPlugin().getLogger().log(Level.WARNING, "Error while trying to send message '" + key + "' to player " + player.getName() + ": " + e.getMessage());
                     return false;
                 }
             }
@@ -679,9 +678,9 @@ public class MaterialUtil {
             // Render through the framework Message with the built item icon passed as
             // the {item} placeholder value: a ComponentLike renders inline, so the
             // item (with its hover) is embedded without MineDown's Replacer.
-            Map<String, Object> values = Messages.Message.values(showPrefix, replacementMap, replacements);
+            Map<String, Object> values = ChestShop.values(showPrefix, replacementMap, replacements);
             values.put("item", itemComponent.build());
-            Component component = ChestShop.message().component(message.getKey(), values);
+            Component component = ChestShop.message().component(key, values);
             if (player != null) {
                 player.sendMessage(component);
                 return true;

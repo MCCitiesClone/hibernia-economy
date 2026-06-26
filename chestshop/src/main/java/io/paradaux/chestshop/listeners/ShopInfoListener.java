@@ -4,7 +4,6 @@ import io.paradaux.chestshop.utils.InventoryUtil;
 import io.paradaux.chestshop.utils.MaterialUtil;
 import io.paradaux.chestshop.utils.PriceUtil;
 import io.paradaux.chestshop.ChestShop;
-import io.paradaux.chestshop.configuration.Messages;
 import io.paradaux.chestshop.configuration.Properties;
 import io.paradaux.chestshop.events.AccountQueryEvent;
 import io.paradaux.chestshop.events.economy.CurrencyFormatEvent;
@@ -15,6 +14,7 @@ import io.paradaux.chestshop.signs.ChestShopSign;
 import io.paradaux.chestshop.utils.ItemUtil;
 import io.paradaux.chestshop.utils.uBlock;
 import com.google.common.collect.ImmutableMap;
+import net.kyori.adventure.text.Component;
 import org.bukkit.block.Container;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -36,7 +36,7 @@ public class ShopInfoListener implements Listener {
             try {
                 amount = ChestShopSign.getQuantity(event.getSign());
             } catch (NumberFormatException notANumber) {
-                Messages.INVALID_SHOP_DETECTED.sendWithPrefix(event.getSender());
+                ChestShop.message().send(event.getSender(), "chestshop.INVALID_SHOP_DETECTED");
                 return;
             }
             String pricesLine = ChestShopSign.getPrice(event.getSign());
@@ -44,7 +44,7 @@ public class ShopInfoListener implements Listener {
             AccountQueryEvent queryEvent = new AccountQueryEvent(nameLine);
             ChestShop.callEvent(queryEvent);
             if (queryEvent.getAccount() == null) {
-                Messages.INVALID_SHOP_DETECTED.sendWithPrefix(event.getSender());
+                ChestShop.message().send(event.getSender(), "chestshop.INVALID_SHOP_DETECTED");
                 return;
             }
 
@@ -54,7 +54,7 @@ public class ShopInfoListener implements Listener {
             ItemParseEvent parseEvent = new ItemParseEvent(ChestShopSign.getItem(event.getSign()));
             ItemStack item = ChestShop.callEvent(parseEvent).getItem();
             if (item == null || amount < 1) {
-                Messages.INVALID_SHOP_DETECTED.sendWithPrefix(event.getSender());
+                ChestShop.message().send(event.getSender(), "chestshop.INVALID_SHOP_DETECTED");
                 return;
             }
 
@@ -74,8 +74,8 @@ public class ShopInfoListener implements Listener {
                     "quantity", String.valueOf(amount)
             );
             if (!Properties.SHOWITEM_MESSAGE
-                    || !MaterialUtil.Show.sendMessage(event.getSender(), event.getSender().getName(), Messages.shopinfo, false, new ItemStack[]{item}, replacementMap)) {
-                Messages.shopinfo.send(event.getSender(), replacementMap);
+                    || !MaterialUtil.Show.sendMessage(event.getSender(), event.getSender().getName(), "chestshop.shopinfo", false, new ItemStack[]{item}, replacementMap)) {
+                event.getSender().sendMessage(ChestShop.message().component("chestshop.shopinfo", ChestShop.values(false, replacementMap)));
             }
 
 
@@ -84,26 +84,26 @@ public class ShopInfoListener implements Listener {
 
             ItemInfoEvent itemInfoEvent = ChestShop.callEvent(new ItemInfoEvent(event.getSender(), item));
 
-            for (Map.Entry<Messages.Message, String[]> entry : itemInfoEvent.getMessages()) {
-                entry.getKey().send(event.getSender(), entry.getValue());
+            for (Map.Entry<String, Component> entry : itemInfoEvent.getMessages()) {
+                event.getSender().sendMessage(entry.getValue());
             }
 
             if (!buyPrice.equals(PriceUtil.NO_PRICE)) {
                 CurrencyFormatEvent cfe = ChestShop.callEvent(new CurrencyFormatEvent(buyPrice));
-                Messages.shopinfo_buy.send(event.getSender(),
+                ChestShop.message().send(event.getSender(), "chestshop.shopinfo_buy", "prefix", "",
                         "amount", String.valueOf(amount),
                         "price", cfe.getFormattedAmount()
                 );
             }
             if (!sellPrice.equals(PriceUtil.NO_PRICE)) {
                 CurrencyFormatEvent cfe = ChestShop.callEvent(new CurrencyFormatEvent(sellPrice));
-                Messages.shopinfo_sell.send(event.getSender(),
+                ChestShop.message().send(event.getSender(), "chestshop.shopinfo_sell", "prefix", "",
                         "amount", String.valueOf(amount),
                         "price", cfe.getFormattedAmount()
                 );
             }
         } else {
-            Messages.INVALID_SHOP_DETECTED.sendWithPrefix(event.getSender());
+            ChestShop.message().send(event.getSender(), "chestshop.INVALID_SHOP_DETECTED");
         }
     }
 }

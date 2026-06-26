@@ -1,7 +1,7 @@
 package io.paradaux.chestshop.commands;
 
 import io.paradaux.chestshop.Permission;
-import io.paradaux.chestshop.configuration.Messages;
+import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.listeners.modules.MetricsModule;
 import io.paradaux.chestshop.players.NameManager;
 import io.paradaux.hibernia.framework.commander.annotations.Command;
@@ -21,7 +21,7 @@ public class Metrics implements CommandHandler {
     @Route("metrics")
     @Description("Show aggregate ChestShop transaction metrics")
     public void metrics(@Sender CommandSender sender) {
-        Messages.METRICS.send(sender,
+        ChestShop.message().send(sender, "chestshop.METRICS", "prefix", "",
                 "accounts", String.valueOf(NameManager.getAccountCount()),
                 "totalTransactions", String.valueOf(MetricsModule.getTotalTransactions()),
                 "buyTransactions", String.valueOf(MetricsModule.getBuyTransactions()),

@@ -4,7 +4,7 @@ import io.paradaux.chestshop.Permission;
 import io.paradaux.chestshop.utils.InventoryUtil;
 import io.paradaux.chestshop.utils.MaterialUtil;
 import io.paradaux.chestshop.utils.NumberUtil;
-import io.paradaux.chestshop.configuration.Messages;
+import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.events.ItemParseEvent;
 import io.paradaux.chestshop.utils.ItemUtil;
 import io.paradaux.hibernia.framework.commander.annotations.Command;
@@ -70,21 +70,21 @@ public class Give implements CommandHandler {
         }
 
         if (receiver == null) {
-            Messages.PLAYER_NOT_FOUND.sendWithPrefix(sender);
+            ChestShop.message().send(sender, "chestshop.PLAYER_NOT_FOUND");
             return;
         }
 
         ItemStack item = getItem(args, disregardedIndexes);
 
         if (MaterialUtil.isEmpty(item)) {
-            Messages.INCORRECT_ITEM_ID.sendWithPrefix(sender);
+            ChestShop.message().send(sender, "chestshop.INCORRECT_ITEM_ID");
             return;
         }
 
         item.setAmount(quantity);
         InventoryUtil.add(item, receiver.getInventory());
 
-        Messages.ITEM_GIVEN.send(sender, "item", ItemUtil.getName(item), "player", receiver.getName());
+        ChestShop.message().send(sender, "chestshop.ITEM_GIVEN", "prefix", "", "item", ItemUtil.getName(item), "player", receiver.getName());
     }
 
     private static ItemStack getItem(String[] arguments, Set<Integer> disregardedElements) {

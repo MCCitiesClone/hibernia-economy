@@ -1,7 +1,6 @@
 package io.paradaux.chestshop.listeners.player;
 
 import io.paradaux.chestshop.ChestShop;
-import io.paradaux.chestshop.configuration.Messages;
 import io.paradaux.chestshop.configuration.Properties;
 import io.paradaux.chestshop.events.ShopInfoEvent;
 import io.paradaux.chestshop.Permission;
@@ -80,7 +79,7 @@ public class PlayerInventory implements Listener {
                     }
                 }
             } else {
-                Messages.ACCESS_DENIED.sendWithPrefix(event.getPlayer());
+                ChestShop.message().send(event.getPlayer(), "chestshop.ACCESS_DENIED");
             }
             event.setCancelled(true);
         }

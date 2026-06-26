@@ -3,7 +3,6 @@ package io.paradaux.chestshop.listeners.posttransaction;
 import io.paradaux.chestshop.utils.MaterialUtil;
 import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.commands.Toggle;
-import io.paradaux.chestshop.configuration.Messages;
 import io.paradaux.chestshop.configuration.Properties;
 import io.paradaux.chestshop.economy.Economy;
 import io.paradaux.chestshop.events.economy.CurrencyTransferEvent;
@@ -41,12 +40,12 @@ public class TransactionMessageSender implements Listener {
         Player player = transactionEvent.getClient();
 
         if (Properties.SHOW_TRANSACTION_INFORMATION_CLIENT) {
-            sendMessage(player, transactionEvent.getClient().getName(), Messages.YOU_BOUGHT_FROM_SHOP, event, MessageTarget.BUYER, "owner", transactionEvent.getOwnerAccount().getName());
+            sendMessage(player, transactionEvent.getClient().getName(), "chestshop.YOU_BOUGHT_FROM_SHOP", event, MessageTarget.BUYER, "owner", transactionEvent.getOwnerAccount().getName());
         }
 
         if (Properties.SHOW_TRANSACTION_INFORMATION_OWNER && !Toggle.isIgnoring(transactionEvent.getOwnerAccount().getUuid())) {
             Player owner = Bukkit.getPlayer(transactionEvent.getOwnerAccount().getUuid());
-            sendMessage(owner, transactionEvent.getOwnerAccount().getName(), Messages.SOMEBODY_BOUGHT_FROM_YOUR_SHOP, event, MessageTarget.SELLER, "buyer", player.getName());
+            sendMessage(owner, transactionEvent.getOwnerAccount().getName(), "chestshop.SOMEBODY_BOUGHT_FROM_YOUR_SHOP", event, MessageTarget.SELLER, "buyer", player.getName());
         }
     }
 
@@ -55,16 +54,16 @@ public class TransactionMessageSender implements Listener {
         Player player = transactionEvent.getClient();
 
         if (Properties.SHOW_TRANSACTION_INFORMATION_CLIENT) {
-            sendMessage(player, transactionEvent.getClient().getName(), Messages.YOU_SOLD_TO_SHOP, event, MessageTarget.SELLER, "buyer", transactionEvent.getOwnerAccount().getName());
+            sendMessage(player, transactionEvent.getClient().getName(), "chestshop.YOU_SOLD_TO_SHOP", event, MessageTarget.SELLER, "buyer", transactionEvent.getOwnerAccount().getName());
         }
 
         if (Properties.SHOW_TRANSACTION_INFORMATION_OWNER && !Toggle.isIgnoring(transactionEvent.getOwnerAccount().getUuid())) {
             Player owner = Bukkit.getPlayer(transactionEvent.getOwnerAccount().getUuid());
-            sendMessage(owner, transactionEvent.getOwnerAccount().getName(), Messages.SOMEBODY_SOLD_TO_YOUR_SHOP, event, MessageTarget.BUYER, "seller", player.getName());
+            sendMessage(owner, transactionEvent.getOwnerAccount().getName(), "chestshop.SOMEBODY_SOLD_TO_YOUR_SHOP", event, MessageTarget.BUYER, "seller", player.getName());
         }
     }
 
-    private static void sendMessage(Player player, String playerName, Messages.Message rawMessage, CurrencyTransferEvent event, MessageTarget messageTarget, String... replacements) {
+    private static void sendMessage(Player player, String playerName, String key, CurrencyTransferEvent event, MessageTarget messageTarget, String... replacements) {
         TransactionEvent transactionEvent = event.getTransactionEvent();
 
         BigDecimal actualAmount = getTransactionActualAmount(event, messageTarget);
@@ -82,16 +81,16 @@ public class TransactionMessageSender implements Listener {
             replacementMap.put(replacements[i], replacements[i + 1]);
         }
 
-        if (Properties.SHOWITEM_MESSAGE && MaterialUtil.Show.sendMessage(player, playerName, rawMessage, transactionEvent.getStock(), replacementMap)) {
+        if (Properties.SHOWITEM_MESSAGE && MaterialUtil.Show.sendMessage(player, playerName, key, transactionEvent.getStock(), replacementMap)) {
             return;
         }
 
         if (player != null) {
             replacementMap.put("item", ItemUtil.getItemList(transactionEvent.getStock()));
-            rawMessage.sendWithPrefix(player, replacementMap);
+            player.sendMessage(ChestShop.message().component(key, ChestShop.values(true, replacementMap)));
         } else if (playerName != null) {
             replacementMap.put("item", ItemUtil.getItemList(transactionEvent.getStock()));
-            ChestShop.sendBungeeMessage(playerName, rawMessage, replacementMap);
+            ChestShop.sendBungeeMessage(playerName, key, replacementMap);
         }
     }
 

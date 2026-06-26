@@ -28,15 +28,6 @@ import java.util.Map;
 import static io.paradaux.chestshop.utils.NumberUtil.toRoman;
 import static io.paradaux.chestshop.utils.NumberUtil.toTime;
 import static io.paradaux.chestshop.utils.StringUtil.capitalizeFirstLetter;
-import static io.paradaux.chestshop.configuration.Messages.iteminfo_book;
-import static io.paradaux.chestshop.configuration.Messages.iteminfo_book_generation;
-import static io.paradaux.chestshop.configuration.Messages.iteminfo_leather_color;
-import static io.paradaux.chestshop.configuration.Messages.iteminfo_lore;
-import static io.paradaux.chestshop.configuration.Messages.iteminfo_map_location;
-import static io.paradaux.chestshop.configuration.Messages.iteminfo_map_view;
-import static io.paradaux.chestshop.configuration.Messages.iteminfo_recipes;
-import static io.paradaux.chestshop.configuration.Messages.iteminfo_repaircost;
-import static io.paradaux.chestshop.configuration.Messages.iteminfo_tropical_fish;
 
 /**
  * @author Acrobot
@@ -48,7 +39,7 @@ public class ItemInfoListener implements Listener {
         if (event.getItem().hasItemMeta()) {
             ItemMeta meta = event.getItem().getItemMeta();
             if (meta instanceof Repairable && ((Repairable) meta).getRepairCost() > 0) {
-                event.addMessage(iteminfo_repaircost, "cost", String.valueOf(((Repairable) meta).getRepairCost()));
+                event.addMessage("chestshop.iteminfo_repaircost", "cost", String.valueOf(((Repairable) meta).getRepairCost()));
             }
         }
     }
@@ -81,7 +72,7 @@ public class ItemInfoListener implements Listener {
             ItemMeta meta = event.getItem().getItemMeta();
             if (meta instanceof LeatherArmorMeta) {
                 Color color = ((LeatherArmorMeta) meta).getColor();
-                event.addMessage(iteminfo_leather_color,
+                event.addMessage("chestshop.iteminfo_leather_color",
                         "colorred", String.valueOf(color.getRed()),
                         "colorgreen", String.valueOf(color.getGreen()),
                         "colorblue", String.valueOf(color.getBlue()),
@@ -96,7 +87,7 @@ public class ItemInfoListener implements Listener {
         if (event.getItem().hasItemMeta()) {
             ItemMeta meta = event.getItem().getItemMeta();
             if (meta instanceof KnowledgeBookMeta && !((KnowledgeBookMeta) meta).getRecipes().isEmpty()) {
-                event.addMessage(iteminfo_recipes);
+                event.addMessage("chestshop.iteminfo_recipes");
                 for (NamespacedKey recipe : ((KnowledgeBookMeta) meta).getRecipes()) {
                     event.getSender().sendMessage(ChatColor.GRAY + recipe.toString());
                 }
@@ -109,7 +100,7 @@ public class ItemInfoListener implements Listener {
         if (event.getItem().hasItemMeta()) {
             ItemMeta meta = event.getItem().getItemMeta();
             if (meta instanceof TropicalFishBucketMeta && ((TropicalFishBucketMeta) meta).hasVariant()) {
-                event.addMessage(iteminfo_tropical_fish,
+                event.addMessage("chestshop.iteminfo_tropical_fish",
                         "pattern", capitalizeFirstLetter(((TropicalFishBucketMeta) meta).getPattern().name()),
                         "patterncolor", capitalizeFirstLetter(((TropicalFishBucketMeta) meta).getPatternColor().name()),
                         "bodycolor", capitalizeFirstLetter(((TropicalFishBucketMeta) meta).getBodyColor().name())
@@ -125,7 +116,7 @@ public class ItemInfoListener implements Listener {
             if (meta instanceof MapMeta) {
                 if (((MapMeta) meta).getMapView() != null) {
                     MapView mapView = ((MapMeta) meta).getMapView();
-                    event.addMessage(iteminfo_map_view,
+                    event.addMessage("chestshop.iteminfo_map_view",
                             "id", String.valueOf(mapView.getId()),
                             "x", String.valueOf(mapView.getCenterX()),
                             "z", String.valueOf(mapView.getCenterZ()),
@@ -135,7 +126,7 @@ public class ItemInfoListener implements Listener {
                     );
                 }
                 if (((MapMeta) meta).hasLocationName()) {
-                    event.addMessage(iteminfo_map_location, "location", String.valueOf(((MapMeta) meta).getLocationName()));
+                    event.addMessage("chestshop.iteminfo_map_location", "location", String.valueOf(((MapMeta) meta).getLocationName()));
                 }
             }
         }
@@ -181,13 +172,13 @@ public class ItemInfoListener implements Listener {
         ItemMeta meta = event.getItem().getItemMeta();
         if (meta instanceof BookMeta) {
             BookMeta book = (BookMeta) meta;
-            event.addMessage(iteminfo_book,
+            event.addMessage("chestshop.iteminfo_book",
                     "title", book.getTitle(),
                     "author", book.getAuthor(),
                     "pages", String.valueOf(book.getPageCount())
             );
             if (book.hasGeneration()) {
-                event.addMessage(iteminfo_book_generation,
+                event.addMessage("chestshop.iteminfo_book_generation",
                         "generation", StringUtil.capitalizeFirstLetter(book.getGeneration().name(), '_')
                 );
             }
@@ -199,7 +190,7 @@ public class ItemInfoListener implements Listener {
         if (event.getItem().hasItemMeta()) {
             ItemMeta meta = event.getItem().getItemMeta();
             if (meta.hasLore()) {
-                event.addMessage(iteminfo_lore, "lore", String.join("\n", meta.getLore()));
+                event.addMessage("chestshop.iteminfo_lore", "lore", String.join("\n", meta.getLore()));
             }
         }
     }

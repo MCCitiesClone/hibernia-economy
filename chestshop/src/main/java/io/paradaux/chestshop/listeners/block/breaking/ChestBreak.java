@@ -1,6 +1,6 @@
 package io.paradaux.chestshop.listeners.block.breaking;
 
-import io.paradaux.chestshop.configuration.Messages;
+import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.configuration.Properties;
 import io.paradaux.chestshop.Permission;
 import io.paradaux.chestshop.signs.ChestShopSign;
@@ -22,7 +22,7 @@ public class ChestBreak implements Listener {
     public static void onChestBreak(BlockBreakEvent event) {
         if (!canBeBroken(event.getBlock(), event.getPlayer())) {
             event.setCancelled(true);
-            Messages.ACCESS_DENIED.sendWithPrefix(event.getPlayer());
+            ChestShop.message().send(event.getPlayer(), "chestshop.ACCESS_DENIED");
         }
     }
 

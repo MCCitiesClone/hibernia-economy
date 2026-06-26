@@ -2,7 +2,6 @@ package io.paradaux.chestshop.commands;
 
 import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.Permission;
-import io.paradaux.chestshop.configuration.Messages;
 import io.paradaux.chestshop.database.Account;
 import io.paradaux.chestshop.players.NameManager;
 import io.paradaux.hibernia.framework.commander.annotations.Command;
@@ -30,16 +29,16 @@ public class Toggle implements CommandHandler {
         account.setIgnoreMessages(!account.isIgnoringMessages());
 
         if (account.isIgnoringMessages()) {
-            Messages.TOGGLE_MESSAGES_OFF.sendWithPrefix(player);
+            ChestShop.message().send(player, "chestshop.TOGGLE_MESSAGES_OFF");
         } else {
-            Messages.TOGGLE_MESSAGES_ON.sendWithPrefix(player);
+            ChestShop.message().send(player, "chestshop.TOGGLE_MESSAGES_ON");
         }
 
         try {
             NameManager.storeAccount(account);
         } catch (Exception e) {
             ChestShop.getBukkitLogger().log(Level.WARNING, "Error while updating account " + account + ":", e);
-            Messages.ERROR_OCCURRED.sendWithPrefix(player, "error", "Unable to store account data.");
+            ChestShop.message().send(player, "chestshop.ERROR_OCCURRED", "error", "Unable to store account data.");
         }
     }
 

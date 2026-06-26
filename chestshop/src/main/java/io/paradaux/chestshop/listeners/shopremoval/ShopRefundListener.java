@@ -1,7 +1,6 @@
 package io.paradaux.chestshop.listeners.shopremoval;
 
 import io.paradaux.chestshop.ChestShop;
-import io.paradaux.chestshop.configuration.Messages;
 import io.paradaux.chestshop.configuration.Properties;
 import io.paradaux.chestshop.database.Account;
 import io.paradaux.chestshop.economy.Economy;
@@ -57,6 +56,6 @@ public class ShopRefundListener implements Listener {
             ChestShop.callEvent(currencySubtractEvent);
         }
 
-        Messages.SHOP_REFUNDED.sendWithPrefix(event.getDestroyer(), "amount", Economy.formatBalance(refundPrice));
+        ChestShop.message().send(event.getDestroyer(), "chestshop.SHOP_REFUNDED", "amount", Economy.formatBalance(refundPrice));
     }
 }

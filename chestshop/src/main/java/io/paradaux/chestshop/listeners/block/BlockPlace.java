@@ -1,6 +1,6 @@
 package io.paradaux.chestshop.listeners.block;
 
-import io.paradaux.chestshop.configuration.Messages;
+import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.Permission;
 import io.paradaux.chestshop.Security;
 import io.paradaux.chestshop.signs.ChestShopSign;
@@ -37,7 +37,7 @@ public class BlockPlace implements Listener {
         }
 
         if (!Security.canAccess(player, placed)) {
-            Messages.ACCESS_DENIED.sendWithPrefix(event.getPlayer());
+            ChestShop.message().send(event.getPlayer(), "chestshop.ACCESS_DENIED");
             event.setCancelled(true);
             return;
         }
@@ -45,7 +45,7 @@ public class BlockPlace implements Listener {
         Block neighbor = uBlock.findNeighbor(placed);
 
         if (neighbor != null && !Security.canAccess(event.getPlayer(), neighbor)) {
-            Messages.ACCESS_DENIED.sendWithPrefix(event.getPlayer());
+            ChestShop.message().send(event.getPlayer(), "chestshop.ACCESS_DENIED");
             event.setCancelled(true);
         }
 
@@ -87,7 +87,7 @@ public class BlockPlace implements Listener {
             }
 
             if (!Security.canAccess(event.getPlayer(), relative)) {
-                Messages.ACCESS_DENIED.sendWithPrefix(event.getPlayer());
+                ChestShop.message().send(event.getPlayer(), "chestshop.ACCESS_DENIED");
                 event.setCancelled(true);
                 return;
             }

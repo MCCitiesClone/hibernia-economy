@@ -3,7 +3,6 @@ package io.paradaux.chestshop.commands;
 import io.paradaux.chestshop.Permission;
 import io.paradaux.chestshop.utils.MaterialUtil;
 import io.paradaux.chestshop.ChestShop;
-import io.paradaux.chestshop.configuration.Messages;
 import io.paradaux.chestshop.configuration.Properties;
 import io.paradaux.chestshop.events.ItemInfoEvent;
 import io.paradaux.chestshop.events.ItemParseEvent;
@@ -14,6 +13,7 @@ import io.paradaux.hibernia.framework.commander.annotations.Route;
 import io.paradaux.hibernia.framework.commander.annotations.Sender;
 import io.paradaux.hibernia.framework.commander.spi.CommandHandler;
 import com.google.common.collect.ImmutableMap;
+import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
@@ -23,9 +23,6 @@ import org.bukkit.inventory.ItemStack;
 
 import java.util.Map;
 import java.util.logging.Level;
-
-import static io.paradaux.chestshop.configuration.Messages.iteminfo;
-import static io.paradaux.chestshop.configuration.Messages.iteminfo_shopname;
 
 /**
  * @author Acrobot
@@ -57,11 +54,11 @@ public class ItemInfo implements CommandHandler {
             return;
         }
 
-        iteminfo.send(sender);
-        if (!sendItemName(sender, item, Messages.iteminfo_fullname)) return;
+        ChestShop.message().send(sender, "chestshop.iteminfo", "prefix", "");
+        if (!sendItemName(sender, item, "chestshop.iteminfo_fullname")) return;
 
         try {
-            iteminfo_shopname.send(sender, "item", ItemUtil.getSignName(item));
+            ChestShop.message().send(sender, "chestshop.iteminfo_shopname", "prefix", "", "item", ItemUtil.getSignName(item));
         } catch (IllegalArgumentException e) {
             sender.sendMessage(ChatColor.RED + "Error while generating shop sign name. Please contact an admin or take a look at the console/log!");
             ChestShop.getPlugin().getLogger().log(Level.SEVERE, "Error while generating shop sign item name", e);
@@ -69,17 +66,17 @@ public class ItemInfo implements CommandHandler {
         }
 
         ItemInfoEvent event = ChestShop.callEvent(new ItemInfoEvent(sender, item));
-        for (Map.Entry<Messages.Message, String[]> entry : event.getMessages()) {
-            entry.getKey().send(sender, entry.getValue());
+        for (Map.Entry<String, Component> entry : event.getMessages()) {
+            sender.sendMessage(entry.getValue());
         }
     }
 
-    public static boolean sendItemName(CommandSender sender, ItemStack item, Messages.Message message) {
+    public static boolean sendItemName(CommandSender sender, ItemStack item, String messageKey) {
         try {
             Map<String, String> replacementMap = ImmutableMap.of("item", ItemUtil.getName(item));
             if (!Properties.SHOWITEM_MESSAGE || !(sender instanceof Player)
-                    || !MaterialUtil.Show.sendMessage((Player) sender, sender.getName(), message, false, new ItemStack[]{item}, replacementMap)) {
-                message.send(sender, replacementMap);
+                    || !MaterialUtil.Show.sendMessage((Player) sender, sender.getName(), messageKey, false, new ItemStack[]{item}, replacementMap)) {
+                sender.sendMessage(ChestShop.message().component(messageKey, ChestShop.values(false, replacementMap)));
             }
         } catch (IllegalArgumentException e) {
             sender.sendMessage(ChatColor.RED + "Error while generating full name. Please contact an admin or take a look at the console/log!");

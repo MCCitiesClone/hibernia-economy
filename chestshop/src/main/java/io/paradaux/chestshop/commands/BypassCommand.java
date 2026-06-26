@@ -2,7 +2,7 @@ package io.paradaux.chestshop.commands;
 
 import io.paradaux.chestshop.AdminBypass;
 import io.paradaux.chestshop.Permission;
-import io.paradaux.chestshop.configuration.Messages;
+import io.paradaux.chestshop.ChestShop;
 import io.paradaux.hibernia.framework.commander.annotations.Command;
 import io.paradaux.hibernia.framework.commander.annotations.Description;
 import io.paradaux.hibernia.framework.commander.annotations.Route;
@@ -25,9 +25,9 @@ public class BypassCommand implements CommandHandler {
     @Description("Toggle your own admin bypass — off lets you play as a normal customer")
     public void bypass(@Sender Player player) {
         if (AdminBypass.toggle(player)) {
-            Messages.BYPASS_OFF.sendWithPrefix(player);
+            ChestShop.message().send(player, "chestshop.BYPASS_OFF");
         } else {
-            Messages.BYPASS_ON.sendWithPrefix(player);
+            ChestShop.message().send(player, "chestshop.BYPASS_ON");
         }
     }
 }

@@ -1,7 +1,7 @@
 package io.paradaux.chestshop.signs;
 
 import io.paradaux.chestshop.utils.BlockUtil;
-import io.paradaux.chestshop.configuration.Messages;
+import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.events.PreTransactionEvent;
 import io.paradaux.chestshop.Permission;
 import org.bukkit.Location;
@@ -46,7 +46,7 @@ public class RestrictedSign implements Listener {
 
         if (isRestricted(lines)) {
             if (!hasPermission(player, lines)) {
-                Messages.ACCESS_DENIED.sendWithPrefix(player);
+                ChestShop.message().send(player, "chestshop.ACCESS_DENIED");
                 dropSignAndCancelEvent(event);
                 return;
             }
@@ -64,7 +64,7 @@ public class RestrictedSign implements Listener {
                 return;
             }
 
-            Messages.RESTRICTED_SIGN_CREATED.sendWithPrefix(player);
+            ChestShop.message().send(player, "chestshop.RESTRICTED_SIGN_CREATED");
         }
     }
 

@@ -1,6 +1,6 @@
 package io.paradaux.chestshop.listeners.block;
 
-import io.paradaux.chestshop.configuration.Messages;
+import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.signs.ChestShopSign;
 import io.paradaux.chestshop.utils.BlockUtil;
 import io.paradaux.chestshop.utils.ImplementationAdapter;
@@ -31,7 +31,7 @@ public class SignBacksideProtector implements Listener {
             Sign sign = (Sign) ImplementationAdapter.getState(signBlock, false);
             if (ChestShopSign.isValid(sign)) {
                 event.setCancelled(true);
-                Messages.CANNOT_CHANGE_SIGN_BACKSIDE.sendWithPrefix(event.getPlayer());
+                ChestShop.message().send(event.getPlayer(), "chestshop.CANNOT_CHANGE_SIGN_BACKSIDE");
             }
         }
     }

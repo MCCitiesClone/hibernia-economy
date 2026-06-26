@@ -1,6 +1,6 @@
 package io.paradaux.chestshop.listeners.postshopcreation;
 
-import io.paradaux.chestshop.configuration.Messages;
+import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.events.ShopCreatedEvent;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -13,6 +13,6 @@ public class MessageSender implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR)
     public static void onShopCreation(ShopCreatedEvent event) {
-        Messages.SHOP_CREATED.sendWithPrefix(event.getPlayer());
+        ChestShop.message().send(event.getPlayer(), "chestshop.SHOP_CREATED");
     }
 }
