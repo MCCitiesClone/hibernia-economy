@@ -5,6 +5,7 @@ import com.google.inject.Singleton;
 import io.paradaux.chestshop.dao.ItemCodeRepository;
 import io.paradaux.chestshop.dao.impl.SqliteItemCodeRepository;
 import io.paradaux.chestshop.services.ItemCodeService;
+import io.paradaux.chestshop.services.TransactionService;
 
 /**
  * ChestShop's own Guice bindings — its service and DAO layer, alongside the
@@ -20,5 +21,6 @@ public class ChestShopModule extends AbstractModule {
     protected void configure() {
         bind(ItemCodeRepository.class).to(SqliteItemCodeRepository.class).in(Singleton.class);
         bind(ItemCodeService.class).in(Singleton.class);
+        bind(TransactionService.class).in(Singleton.class);
     }
 }

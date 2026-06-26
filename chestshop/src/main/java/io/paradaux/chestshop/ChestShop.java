@@ -111,6 +111,7 @@ public class ChestShop extends JavaPlugin {
 
     private static File dataFolder;
     private static ItemCodeService itemCodes;
+    private static io.paradaux.chestshop.services.TransactionService transactions;
 
     private static Logger logger;
     private static Logger shopLogger;
@@ -164,6 +165,7 @@ public class ChestShop extends JavaPlugin {
                 io.paradaux.hibernia.framework.configurator.ConfigurationLoader.class);
         message = injector.getInstance(io.paradaux.hibernia.framework.i18n.Message.class);
         itemCodes = injector.getInstance(io.paradaux.chestshop.services.ItemCodeService.class);
+        transactions = injector.getInstance(io.paradaux.chestshop.services.TransactionService.class);
 
         injector.getInstance(io.paradaux.hibernia.framework.commander.CommandManager.class).registerAll();
 
@@ -421,9 +423,10 @@ public class ChestShop extends JavaPlugin {
     }
 
     private void registerPostTransactionEvents() {
-        registerEvent(new EconomicModule());
+        // Goods + money now run atomically in TransactionService via this one thin
+        // entrypoint (replacing the former ItemManager + EconomicModule listeners).
+        registerEvent(new TransactionExecutor());
         registerEvent(new EmptyShopDeleter());
-        registerEvent(new ItemManager());
         registerEvent(new TransactionLogger());
         registerEvent(new TransactionMessageSender());
     }
@@ -556,6 +559,11 @@ public class ChestShop extends JavaPlugin {
     /** The item-code service (serialised-item ↔ sign-code store). */
     public static ItemCodeService itemCodes() {
         return itemCodes;
+    }
+
+    /** The transaction service (atomic goods + money legs of a trade). */
+    public static io.paradaux.chestshop.services.TransactionService transactions() {
+        return transactions;
     }
 
     public static File getFolder() {

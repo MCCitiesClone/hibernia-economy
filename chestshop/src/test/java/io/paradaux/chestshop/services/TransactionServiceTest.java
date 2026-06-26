@@ -1,4 +1,4 @@
-package io.paradaux.chestshop.listeners.posttransaction;
+package io.paradaux.chestshop.services;
 
 import io.paradaux.chestshop.configuration.Properties;
 import io.paradaux.chestshop.events.TransactionEvent;
@@ -22,14 +22,18 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * Verifies the item-side atomicity guarantees of {@link ItemManager} (ADT-4):
+ * Verifies the goods-side atomicity guarantees of {@link TransactionService} (ADT-4):
  * a fully-achievable move proceeds, an incomplete move reverts both inventories
- * without committing, and the money-leg compensation reverses goods in the
- * correct direction for both buy and sell. The underlying inventory mechanics
- * live in {@link InventoryUtil#transfer}, which is mocked here so the test
- * exercises the rollback wiring rather than Bukkit inventory internals.
+ * without committing, and the money-leg compensation reverses goods in the correct
+ * direction for both buy and sell. The underlying inventory mechanics live in
+ * {@link InventoryUtil#transfer}, mocked here so the test exercises the rollback
+ * wiring rather than Bukkit inventory internals.
+ *
+ * <p>That this logic — formerly split across the {@code ItemManager}/{@code
+ * EconomicModule} listeners — is now exercisable as plain method calls on a service
+ * is the point of the service migration.
  */
-class ItemManagerTest {
+class TransactionServiceTest {
 
     private boolean stackTo64;
 
@@ -57,7 +61,7 @@ class ItemManagerTest {
             util.when(() -> InventoryUtil.transfer(any(ItemStack.class), eq(source), eq(target)))
                     .thenReturn(0);
 
-            boolean moved = ItemManager.transferItems(source, target, items);
+            boolean moved = TransactionService.transferItems(source, target, items);
 
             assertThat(moved).isTrue();
         }
@@ -82,7 +86,7 @@ class ItemManagerTest {
             util.when(() -> InventoryUtil.transfer(any(ItemStack.class), eq(source), eq(target)))
                     .thenReturn(3);
 
-            boolean moved = ItemManager.transferItems(source, target, items);
+            boolean moved = TransactionService.transferItems(source, target, items);
 
             assertThat(moved).isFalse();
         }
@@ -111,7 +115,7 @@ class ItemManagerTest {
             util.when(() -> InventoryUtil.transfer(any(ItemStack.class), eq(clientInv), eq(ownerInv)))
                     .thenReturn(0);
 
-            ItemManager.reverseTransfer(event);
+            TransactionService.reverseTransfer(event);
 
             // A buy moved owner -> client, so the reversal must move client -> owner.
             util.verify(() -> InventoryUtil.transfer(any(ItemStack.class), eq(clientInv), eq(ownerInv)));
@@ -134,7 +138,7 @@ class ItemManagerTest {
             util.when(() -> InventoryUtil.transfer(any(ItemStack.class), eq(ownerInv), eq(clientInv)))
                     .thenReturn(0);
 
-            ItemManager.reverseTransfer(event);
+            TransactionService.reverseTransfer(event);
 
             // A sell moved client -> owner, so the reversal must move owner -> client.
             util.verify(() -> InventoryUtil.transfer(any(ItemStack.class), eq(ownerInv), eq(clientInv)));
