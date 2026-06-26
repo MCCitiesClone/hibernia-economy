@@ -3,19 +3,20 @@ package io.paradaux.chestshop.events;
 import io.paradaux.chestshop.database.Account;
 import org.bukkit.block.Sign;
 import org.bukkit.entity.Player;
-import org.bukkit.event.Cancellable;
-import org.bukkit.event.Event;
-import org.bukkit.event.HandlerList;
 
 import javax.annotation.Nullable;
 
 /**
- * Represents a state before shop is created
+ * The mutable carrier threaded through the shop-creation validation steps run by
+ * {@link io.paradaux.chestshop.services.ShopService#create}. Formerly a Bukkit event
+ * fired to a pipeline of priority-ordered listeners; those listeners are now invoked
+ * directly as ordered service steps, so this is a plain creation context/result —
+ * the validators read/mutate its {@link #outcome}, {@link #signLines} and
+ * {@link #ownerAccount}, and {@code ShopService} returns it for the caller to act on.
  *
  * @author Acrobot
  */
-public class PreShopCreationEvent extends Event implements Cancellable {
-    private static final HandlerList handlers = new HandlerList();
+public class PreShopCreationEvent {
 
     private Player creator;
     @Nullable private Account ownerAccount = null;
@@ -35,7 +36,6 @@ public class PreShopCreationEvent extends Event implements Cancellable {
      *
      * @return Is event cancelled?
      */
-    @Override
     public boolean isCancelled() {
         return outcome != CreationOutcome.SHOP_CREATED_SUCCESSFULLY;
     }
@@ -45,7 +45,6 @@ public class PreShopCreationEvent extends Event implements Cancellable {
      *
      * @param cancel Cancel the event?
      */
-    @Override
     public void setCancelled(boolean cancel) {
         if (cancel) {
             outcome = CreationOutcome.OTHER;
@@ -166,14 +165,6 @@ public class PreShopCreationEvent extends Event implements Cancellable {
      */
     public void setOwnerAccount(@Nullable Account ownerAccount) {
         this.ownerAccount = ownerAccount;
-    }
-
-    public HandlerList getHandlers() {
-        return handlers;
-    }
-
-    public static HandlerList getHandlerList() {
-        return handlers;
     }
 
     /**

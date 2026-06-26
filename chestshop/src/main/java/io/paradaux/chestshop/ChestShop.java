@@ -342,7 +342,6 @@ public class ChestShop extends JavaPlugin {
 
         registerEvent(new AccountListener());
 
-        registerPreShopCreationEvents();
         registerPreTransactionEvents();
         registerPostShopCreationEvents();
         registerPostTransactionEvents();
@@ -380,25 +379,7 @@ public class ChestShop extends JavaPlugin {
         registerEvent(new ShopRemovalLogger());
     }
 
-    private void registerPreShopCreationEvents() {
-        if (Properties.BLOCK_SHOPS_WITH_SELL_PRICE_HIGHER_THAN_BUY_PRICE) {
-            registerEvent(new PriceRatioChecker());
-        }
-
-        registerEvent(new ChestChecker());
-        registerEvent(new ItemChecker());
-        registerEvent(new MoneyChecker());
-        registerEvent(new NameChecker());
-        registerEvent(new io.paradaux.chestshop.listeners.preshopcreation.PermissionChecker());
-        registerEvent(new io.paradaux.chestshop.listeners.preshopcreation.ErrorMessageSender());
-        registerEvent(new PriceChecker());
-        registerEvent(new FreePriceChecker()); // DC: block free (b:0 / s:0) shops
-        registerEvent(new QuantityChecker());
-        registerEvent(new TerrainChecker());
-    }
-
     private void registerPostShopCreationEvents() {
-        registerEvent(new CreationFeeGetter());
         registerEvent(new MessageSender());
         registerEvent(new SignSticker());
         registerEvent(new ShopCreationLogger());

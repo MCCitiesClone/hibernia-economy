@@ -7,6 +7,19 @@ import io.paradaux.chestshop.configuration.Properties;
 import io.paradaux.chestshop.database.Account;
 import io.paradaux.chestshop.economy.Economy;
 import io.paradaux.chestshop.events.AccountQueryEvent;
+import io.paradaux.chestshop.events.PreShopCreationEvent;
+import io.paradaux.chestshop.listeners.preshopcreation.ChestChecker;
+import io.paradaux.chestshop.listeners.preshopcreation.CreationFeeGetter;
+import io.paradaux.chestshop.listeners.preshopcreation.ErrorMessageSender;
+import io.paradaux.chestshop.listeners.preshopcreation.FreePriceChecker;
+import io.paradaux.chestshop.listeners.preshopcreation.ItemChecker;
+import io.paradaux.chestshop.listeners.preshopcreation.MoneyChecker;
+import io.paradaux.chestshop.listeners.preshopcreation.NameChecker;
+import io.paradaux.chestshop.listeners.preshopcreation.PermissionChecker;
+import io.paradaux.chestshop.listeners.preshopcreation.PriceChecker;
+import io.paradaux.chestshop.listeners.preshopcreation.PriceRatioChecker;
+import io.paradaux.chestshop.listeners.preshopcreation.QuantityChecker;
+import io.paradaux.chestshop.listeners.preshopcreation.TerrainChecker;
 import io.paradaux.chestshop.signs.ChestShopSign;
 import org.bukkit.ChatColor;
 import org.bukkit.World;
@@ -37,6 +50,48 @@ import static io.paradaux.chestshop.signs.ChestShopSign.AUTOFILL_CODE;
  */
 @Singleton
 public class ShopService {
+
+    /**
+     * Run a shop-sign creation through the validation steps and return the result.
+     * The former {@code preshopcreation} listeners are invoked here in the exact
+     * priority + registration order they used to fire as events, over a plain
+     * {@link PreShopCreationEvent} carrier — replacing the internal event dispatch.
+     * The genuine integration events they fire (ItemParse, AccountQuery/Access,
+     * BuildPermission) still fire. The two former {@code ignoreCancelled=true} steps
+     * (the creation-fee charge and NameChecker's second pass) run only while the
+     * creation is still un-cancelled, matching the old behaviour.
+     */
+    public PreShopCreationEvent create(Player player, Sign sign, String[] signLines) {
+        PreShopCreationEvent ctx = new PreShopCreationEvent(player, sign, signLines);
+
+        // priority LOWEST
+        ItemChecker.onPreShopCreation(ctx);
+        PriceChecker.onPreShopCreation(ctx);
+        QuantityChecker.onPreShopCreation(ctx);
+        // priority LOW
+        ChestChecker.onPreShopCreation(ctx);
+        NameChecker.onPreShopCreation(ctx);
+        // priority NORMAL
+        MoneyChecker.onPreShopCreation(ctx);
+        FreePriceChecker.onPreShopCreation(ctx);
+        TerrainChecker.onPreShopCreation(ctx);
+        // priority HIGH
+        if (Properties.BLOCK_SHOPS_WITH_SELL_PRICE_HIGHER_THAN_BUY_PRICE) {
+            PriceRatioChecker.onPreShopCreation(ctx);
+        }
+        PermissionChecker.onPreShopCreation(ctx);
+        if (!ctx.isCancelled()) { // CreationFeeGetter ran @HIGH with ignoreCancelled=true
+            CreationFeeGetter.onShopCreation(ctx);
+        }
+        // priority HIGHEST — NameChecker's second pass (ignoreCancelled=true)
+        if (!ctx.isCancelled()) {
+            NameChecker.onPreShopCreationHighest(ctx);
+        }
+        // priority MONITOR
+        ErrorMessageSender.onPreShopCreation(ctx);
+
+        return ctx;
+    }
 
     /**
      * Charge the configured creation fee to {@code player} for a shop with the given
