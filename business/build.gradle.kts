@@ -17,7 +17,13 @@ java {
 }
 
 repositories {
-    mavenLocal()
+    // mavenLocal is opt-in (-PuseMavenLocal) so normal/CI builds resolve
+    // hibernia-framework only from the declared remotes — reproducible, never a
+    // stale local artifact. Pass the flag (added first) when iterating on the
+    // hibernia-framework submodule locally. (PAR-267)
+    if (providers.gradleProperty("useMavenLocal").isPresent) {
+        mavenLocal()
+    }
     mavenCentral()
     maven {
         name = "papermc"

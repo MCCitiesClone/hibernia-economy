@@ -18,10 +18,14 @@ java {
 }
 
 repositories {
-    // mavenLocal first so a locally-published hibernia-framework SNAPSHOT
-    // (or treasury-api during cross-project work) is picked up before the
-    // remote Reposilite copy. Harmless when nothing's published locally.
-    mavenLocal()
+    // mavenLocal is opt-in (-PuseMavenLocal) so normal/CI builds are
+    // reproducible — they resolve hibernia-framework only from the declared
+    // remotes, never from a stale/tampered local artifact. Devs iterating on the
+    // hibernia-framework submodule pass the flag to pick up a locally-published
+    // SNAPSHOT first (it's added first, so "local wins" when enabled). (PAR-267)
+    if (providers.gradleProperty("useMavenLocal").isPresent) {
+        mavenLocal()
+    }
     mavenCentral()
     maven {
         name = "papermc"
