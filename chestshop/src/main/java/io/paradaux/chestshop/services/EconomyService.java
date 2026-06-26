@@ -18,6 +18,7 @@ import io.paradaux.treasury.model.tax.TaxResult;
 import io.paradaux.treasury.utils.Idempotency;
 import org.bukkit.ChatColor;
 import org.bukkit.World;
+import org.bukkit.block.Sign;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
@@ -37,16 +38,13 @@ import java.util.logging.Level;
  * {@code TreasuryListener} — replacing the economy event bus with a
  * treasury-api-style service boundary.
  *
- * <p>The live {@link TreasuryApi} handle + the ChestShop SYSTEM account id are
- * {@linkplain #bind bound} once Treasury is resolved at enable (from
- * {@code TreasuryListener.prepareListener}); ChestShop requires Treasury, so by the
- * time any economy call runs they are set. The genuine cross-plugin event
- * integration points (AccountQuery/AccountAccess) stay as events.
- *
- * <p>The account-resolution helpers below are, for now, duplicated from
- * {@code TreasuryListener} (which still needs them for the not-yet-migrated
- * check/transfer handlers); they collapse into this single home when the transfer
- * leg moves here.
+ * <p>The live {@link TreasuryApi} (and optional {@link BusinessApi}) handle + the
+ * ChestShop SYSTEM account id are {@linkplain #bind bound} once Treasury is resolved
+ * at enable (from {@code TreasuryListener.prepareListener}); ChestShop requires
+ * Treasury, so by the time any economy call runs they are set. Account resolution,
+ * access checks, balances, settlement and legacy business-sign migration all live
+ * here now — the {@code Currency*}/{@code Account*} event bus and {@code TreasuryListener}'s
+ * handlers were collapsed into these direct calls.
  */
 @Singleton
 public class EconomyService {
@@ -450,6 +448,34 @@ public class EconomyService {
                     "Treasury: Could not check access for " + player.getName() + " on account " + account.getShortName(), e);
             return false;
         }
+    }
+
+    /**
+     * Lazily migrate a legacy business shop sign to the native account-id format.
+     * The old PlayerBusinesses chestshops addressed a firm by name ({@code b:<FirmName>});
+     * the native format is {@code B:<base36 account id>}. By the time a shop trades, the
+     * owner {@link Account} has been resolved and its short name is the canonical native
+     * token, so if the physical sign still shows the legacy text we rewrite the owner line
+     * in place. A no-op for shops already in the native form (or non-business owners).
+     * Runs as a MONITOR-equivalent post-transaction step (was
+     * {@code TreasuryListener.onTransactionMigrateSign}).
+     */
+    public void migrateLegacyBusinessSign(TransactionEvent event) {
+        Sign sign = event.getSign();
+        Account owner = event.getOwnerAccount();
+        if (sign == null || owner == null || owner.getUuid() == null || !isBusinessUuid(owner.getUuid())) {
+            return;
+        }
+
+        String canonical = owner.getShortName();
+        if (canonical == null || canonical.equals(ChestShopSign.getOwner(sign))) {
+            return;
+        }
+
+        sign.setLine(ChestShopSign.NAME_LINE, canonical);
+        sign.update(true);
+        ChestShop.getBukkitLogger().info("Migrated legacy business shop sign to " + canonical
+                + " at " + sign.getLocation());
     }
 
     private int resolveAccountId(UUID uuid) {

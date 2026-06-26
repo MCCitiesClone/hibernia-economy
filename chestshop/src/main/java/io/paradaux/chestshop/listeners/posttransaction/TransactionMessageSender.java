@@ -10,26 +10,22 @@ import io.paradaux.chestshop.utils.ItemUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.EventPriority;
-import org.bukkit.event.Listener;
 
 import java.math.BigDecimal;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * Sends the "you bought/sold" notifications after a trade settles. Runs at MONITOR
- * with {@code ignoreCancelled}, so it only fires once the money leg has committed
- * (the {@link io.paradaux.chestshop.services.TransactionService} cancels the
- * {@link TransactionEvent} if settlement fails) — it replaces the message half of
- * the old {@code CurrencyTransferEvent} fan-out.
+ * Sends the "you bought/sold" notifications after a trade settles. Invoked by
+ * {@link io.paradaux.chestshop.services.TransactionService#process} as a MONITOR-order
+ * step, only once the money leg has committed (a failed settlement cancels the
+ * {@link TransactionEvent} and the pipeline stops before this) — it replaces the
+ * message half of the old {@code CurrencyTransferEvent} fan-out.
  *
  * @author Acrobot
  */
-public class TransactionMessageSender implements Listener {
+public class TransactionMessageSender {
 
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public static void onTransaction(TransactionEvent event) {
         if (event.getTransactionType() == TransactionEvent.TransactionType.BUY) {
             sendBuyMessage(event);

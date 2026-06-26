@@ -15,7 +15,6 @@ import org.bukkit.block.Block;
 import org.bukkit.block.Container;
 import org.bukkit.block.Sign;
 import org.bukkit.event.EventHandler;
-import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryType;
@@ -35,7 +34,7 @@ import static io.paradaux.chestshop.signs.ChestShopSign.QUANTITY_LINE;
 public class StockCounterModule implements Listener {
     private static final String PRICE_LINE_WITH_COUNT = "Q %d : C %d";
 
-    @EventHandler(priority = EventPriority.HIGH)
+    // Invoked directly by ShopService#create (was a @HIGH PreShopCreationEvent listener).
     public static void onPreShopCreation(PreShopCreationEvent event) {
         int quantity;
         try {
@@ -99,7 +98,7 @@ public class StockCounterModule implements Listener {
         }
     }
 
-    @EventHandler(priority = EventPriority.HIGH)
+    // Invoked directly by TransactionService#process (was a @HIGH TransactionEvent listener).
     public static void onTransaction(final TransactionEvent event) {
         String quantityLine = ChestShopSign.getQuantityLine(event.getSign());
         if (!Properties.USE_STOCK_COUNTER) {

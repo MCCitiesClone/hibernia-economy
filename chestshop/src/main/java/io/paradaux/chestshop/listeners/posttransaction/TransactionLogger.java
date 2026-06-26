@@ -3,9 +3,6 @@ package io.paradaux.chestshop.listeners.posttransaction;
 import io.paradaux.chestshop.utils.LocationUtil;
 import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.events.TransactionEvent;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.EventPriority;
-import org.bukkit.event.Listener;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.Map;
@@ -15,13 +12,16 @@ import static io.paradaux.chestshop.utils.ItemUtil.getName;
 import static io.paradaux.chestshop.events.TransactionEvent.TransactionType.BUY;
 
 /**
+ * Writes a completed trade to the shop log. Formerly a {@code @MONITOR(ignoreCancelled=true)}
+ * {@link TransactionEvent} listener; now invoked directly by
+ * {@link io.paradaux.chestshop.services.TransactionService#process} as a MONITOR-order step.
+ *
  * @author Acrobot
  */
-public class TransactionLogger implements Listener {
+public class TransactionLogger {
     private static final String BUY_MESSAGE = "%1$s bought %2$s for %3$.2f from %4$s at %5$s";
     private static final String SELL_MESSAGE = "%1$s sold %2$s for %3$.2f to %4$s at %5$s";
 
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public static void onTransaction(final TransactionEvent event) {
         String template = (event.getTransactionType() == BUY ? BUY_MESSAGE : SELL_MESSAGE);
 

@@ -340,7 +340,6 @@ public class ChestShop extends JavaPlugin {
         registerEvent(new Dependencies());
 
         registerPostShopCreationEvents();
-        registerPostTransactionEvents();
         registerShopRemovalEvents();
 
         registerModules();
@@ -381,18 +380,8 @@ public class ChestShop extends JavaPlugin {
         registerEvent(new ShopCreationLogger());
     }
 
-    private void registerPostTransactionEvents() {
-        // Goods + money now run atomically in TransactionService via this one thin
-        // entrypoint (replacing the former ItemManager + EconomicModule listeners).
-        registerEvent(new TransactionExecutor());
-        registerEvent(new EmptyShopDeleter());
-        registerEvent(new TransactionLogger());
-        registerEvent(new TransactionMessageSender());
-    }
-
     private void registerModules() {
         registerEvent(new ItemAliasModule());
-        registerEvent(new MetricsModule());
         registerEvent(new StockCounterModule());
     }
 

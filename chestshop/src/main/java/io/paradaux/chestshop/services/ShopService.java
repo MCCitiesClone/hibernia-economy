@@ -19,6 +19,7 @@ import io.paradaux.chestshop.listeners.preshopcreation.PriceChecker;
 import io.paradaux.chestshop.listeners.preshopcreation.PriceRatioChecker;
 import io.paradaux.chestshop.listeners.preshopcreation.QuantityChecker;
 import io.paradaux.chestshop.listeners.preshopcreation.TerrainChecker;
+import io.paradaux.chestshop.listeners.modules.StockCounterModule;
 import io.paradaux.chestshop.signs.ChestShopSign;
 import org.bukkit.ChatColor;
 import org.bukkit.World;
@@ -82,6 +83,10 @@ public class ShopService {
         if (!ctx.isCancelled()) { // CreationFeeGetter ran @HIGH with ignoreCancelled=true
             CreationFeeGetter.onShopCreation(ctx);
         }
+        // StockCounterModule ran @HIGH after CreationFeeGetter with the default
+        // ignoreCancelled=false, so it fires regardless: it normalises the quantity
+        // line and seeds the stock counter onto the sign.
+        StockCounterModule.onPreShopCreation(ctx);
         // priority HIGHEST — NameChecker's second pass (ignoreCancelled=true)
         if (!ctx.isCancelled()) {
             NameChecker.onPreShopCreationHighest(ctx);

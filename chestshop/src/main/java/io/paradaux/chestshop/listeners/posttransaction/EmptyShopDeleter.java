@@ -10,18 +10,19 @@ import io.paradaux.chestshop.utils.uBlock;
 import org.bukkit.Material;
 import org.bukkit.block.Container;
 import org.bukkit.block.Sign;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.EventPriority;
-import org.bukkit.event.Listener;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
 /**
+ * Removes a shop whose container has run dry after a buy. Formerly a
+ * {@code @HIGHEST(ignoreCancelled=true)} {@link TransactionEvent} listener; now
+ * invoked directly by {@link io.paradaux.chestshop.services.TransactionService#process}
+ * at the equivalent point in the post-transaction order.
+ *
  * @author Acrobot
  */
-public class EmptyShopDeleter implements Listener {
+public class EmptyShopDeleter {
 
-    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public static void onTransaction(TransactionEvent event) {
         if (event.getTransactionType() != TransactionEvent.TransactionType.BUY) {
             return;

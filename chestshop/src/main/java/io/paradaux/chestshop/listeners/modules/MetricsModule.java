@@ -2,15 +2,17 @@ package io.paradaux.chestshop.listeners.modules;
 
 import io.paradaux.chestshop.utils.NumberUtil;
 import io.paradaux.chestshop.events.TransactionEvent;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.EventPriority;
-import org.bukkit.event.Listener;
 import org.bukkit.inventory.ItemStack;
 
 /**
+ * Rolling buy/sell transaction + item counters surfaced by the {@code /csmetrics}
+ * command and bStats. Formerly a {@code @MONITOR(ignoreCancelled=true)}
+ * {@link TransactionEvent} listener; {@link #onTransaction} is now invoked directly by
+ * {@link io.paradaux.chestshop.services.TransactionService#process}.
+ *
  * @author Acrobot
  */
-public class MetricsModule implements Listener {
+public class MetricsModule {
 
     private static final long RESET_MINUTES = 30;
 
@@ -26,7 +28,6 @@ public class MetricsModule implements Listener {
     private static long boughtItemsCurrent = 0;
     private static long soldItemsCurrent = 0;
 
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public static void onTransaction(final TransactionEvent event) {
         checkReset();
         switch (event.getTransactionType()) {

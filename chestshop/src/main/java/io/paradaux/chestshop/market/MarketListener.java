@@ -34,8 +34,8 @@ import java.util.UUID;
  */
 public class MarketListener implements Listener {
 
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-    public void onTransaction(TransactionEvent event) {
+    // Invoked directly by TransactionService#process (was a @MONITOR TransactionEvent listener).
+    public static void onTransaction(TransactionEvent event) {
         if (!MarketHook.enabled()) return;
         try {
             ItemStack[] stock = event.getStock();

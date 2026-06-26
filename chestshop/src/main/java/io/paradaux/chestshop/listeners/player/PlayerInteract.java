@@ -197,7 +197,7 @@ public class PlayerInteract implements Listener {
             return;
 
         TransactionEvent tEvent = new TransactionEvent(pEvent, sign);
-        Bukkit.getPluginManager().callEvent(tEvent);
+        ChestShop.transactions().process(tEvent);
     }
 
     private static PreTransactionEvent preparePreTransactionEvent(Sign sign, Player player, Action action) {

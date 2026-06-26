@@ -15,6 +15,13 @@ import io.paradaux.chestshop.listeners.pretransaction.PermissionChecker;
 import io.paradaux.chestshop.listeners.pretransaction.PriceValidator;
 import io.paradaux.chestshop.listeners.pretransaction.ShopValidator;
 import io.paradaux.chestshop.listeners.pretransaction.StockFittingChecker;
+import io.paradaux.chestshop.listeners.modules.MetricsModule;
+import io.paradaux.chestshop.listeners.modules.StockCounterModule;
+import io.paradaux.chestshop.listeners.posttransaction.EmptyShopDeleter;
+import io.paradaux.chestshop.listeners.posttransaction.TransactionLogger;
+import io.paradaux.chestshop.listeners.posttransaction.TransactionMessageSender;
+import io.paradaux.chestshop.market.MarketListener;
+import io.paradaux.chestshop.signs.RestrictedSign;
 import io.paradaux.chestshop.utils.ImplementationAdapter;
 import io.paradaux.chestshop.utils.InventoryUtil;
 import org.bukkit.block.BlockState;
@@ -63,6 +70,9 @@ public class TransactionService {
             PartialTransactionModule.onPreBuyTransaction(ctx);
             PartialTransactionModule.onPreSellTransaction(ctx);
         }
+        // RestrictedSign ran @LOW (after PartialTransactionModule); it self-guards on
+        // isCancelled and gates trade access to [restricted] shops.
+        RestrictedSign.onPreTransaction(ctx);
         // priority NORMAL
         if (!Properties.ALLOW_PARTIAL_TRANSACTIONS && !ctx.isCancelled()) {
             // AmountAndPriceChecker ran with ignoreCancelled=true
@@ -74,6 +84,43 @@ public class TransactionService {
         StockFittingChecker.onBuyCheck(ctx);
         // priority MONITOR
         ErrorMessageSender.onMessage(ctx);
+    }
+
+    /**
+     * Run the post-transaction pipeline for a validated trade, in the exact priority +
+     * registration order the former {@link TransactionEvent} listeners fired in —
+     * replacing the Bukkit event dispatch with ordered service calls:
+     * <ol>
+     *   <li>NORMAL — {@link #execute} the goods + money legs atomically (may cancel);</li>
+     *   <li>HIGH — {@code StockCounterModule} refreshes the sign counter (ran with the
+     *       default {@code ignoreCancelled=false}, so it fires even on a cancelled trade);</li>
+     *   <li>HIGHEST — {@code EmptyShopDeleter} removes a now-empty shop;</li>
+     *   <li>MONITOR — legacy business-sign migration, market sync, transaction log,
+     *       buyer/seller messages, metrics.</li>
+     * </ol>
+     * Everything from HIGHEST on ran {@code ignoreCancelled=true}, so a cancelled trade
+     * (failed goods or money leg) stops the pipeline after the stock counter.
+     */
+    public void process(TransactionEvent event) {
+        // NORMAL (ignoreCancelled=true, but this is the first reaction so the event is
+        // never already cancelled): atomic goods + money. May cancel on failure.
+        execute(event);
+
+        // HIGH (ignoreCancelled=false → runs regardless of cancellation).
+        StockCounterModule.onTransaction(event);
+
+        // HIGHEST + MONITOR all ran ignoreCancelled=true.
+        if (event.isCancelled()) {
+            return;
+        }
+        EmptyShopDeleter.onTransaction(event);
+
+        // MONITOR reactions, in registration order.
+        ChestShop.economy().migrateLegacyBusinessSign(event);
+        MarketListener.onTransaction(event);
+        TransactionLogger.onTransaction(event);
+        TransactionMessageSender.onTransaction(event);
+        MetricsModule.onTransaction(event);
     }
 
     /**
