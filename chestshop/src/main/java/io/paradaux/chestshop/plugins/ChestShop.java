@@ -25,7 +25,7 @@ public class ChestShop implements Listener {
         io.paradaux.chestshop.ChestShop.getPlugin().loadConfig();
     }
 
-    @EventHandler
+    // Invoked directly by ProtectionService (was a NORMAL ProtectionCheckEvent listener).
     public static void onProtectionCheck(ProtectionCheckEvent event) {
         if (event.getResult() == Event.Result.DENY || event.isBuiltInProtectionIgnored()) {
             return;

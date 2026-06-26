@@ -141,11 +141,11 @@ public class Dependencies implements Listener {
                 }
 
                 if (Properties.WORLDGUARD_USE_PROTECTION) {
-                    ChestShop.registerListener(new WorldGuardProtection(plugin));
+                    ChestShop.protection().setWorldGuardProtection(new WorldGuardProtection(plugin)::onProtectionCheck);
                 }
 
                 if (Properties.WORLDGUARD_INTEGRATION) {
-                    listener = new WorldGuardBuilding(plugin);
+                    ChestShop.protection().setWorldGuardBuilding(new WorldGuardBuilding(plugin)::canBuild);
                 }
 
                 break;
@@ -154,7 +154,7 @@ public class Dependencies implements Listener {
                 if (!Properties.GRIEFPREVENTION_INTEGRATION) {
                     return false;
                 }
-                listener = new GriefPrevenentionBuilding(plugin);
+                ChestShop.protection().setGriefPreventionBuilding(new GriefPrevenentionBuilding(plugin)::canBuild);
                 break;
 
             //Other plugins

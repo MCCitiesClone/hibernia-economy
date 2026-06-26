@@ -10,14 +10,18 @@ import com.sk89q.worldguard.protection.ApplicableRegionSet;
 import com.sk89q.worldguard.protection.flags.StateFlag;
 import com.sk89q.worldguard.protection.managers.RegionManager;
 import org.bukkit.Location;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.Listener;
 import org.bukkit.plugin.Plugin;
 
 /**
+ * WorldGuard region gating for shop creation. Constructed by {@code Dependencies} only
+ * when WorldGuard is hooked and {@code WORLDGUARD_INTEGRATION} is on, and registered with
+ * {@link io.paradaux.chestshop.services.ProtectionService} as a method reference (no
+ * longer a Bukkit {@code Listener}). The former {@code ignoreCancelled=true} "skip once
+ * disallowed" semantics are applied by the service.
+ *
  * @author Acrobot
  */
-public class WorldGuardBuilding implements Listener {
+public class WorldGuardBuilding {
     private WorldGuardPlugin worldGuard;
     private WorldGuardPlatform worldGuardPlatform;
 
@@ -26,7 +30,6 @@ public class WorldGuardBuilding implements Listener {
         this.worldGuardPlatform = WorldGuard.getInstance().getPlatform();
     }
 
-    @EventHandler(ignoreCancelled = true)
     public void canBuild(BuildPermissionEvent event) {
         ApplicableRegionSet regions = getApplicableRegions(event.getSign().getBlock().getLocation());
 

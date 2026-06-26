@@ -3,15 +3,18 @@ package io.paradaux.chestshop.events.protection;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
-import org.bukkit.event.HandlerList;
 
 /**
+ * Mutable carrier for a protection/access check, run by
+ * {@link io.paradaux.chestshop.services.ProtectionService}. The {@code result} starts at
+ * {@link Event.Result#DEFAULT} (allow) and handlers set {@link Event.Result#DENY}.
+ * Formerly a Bukkit event.
+ *
  * @author Acrobot
  */
-public class ProtectionCheckEvent extends Event {
-    private static final HandlerList handlers = new HandlerList();
+public class ProtectionCheckEvent {
 
-    private Result result = Result.DEFAULT;
+    private Event.Result result = Event.Result.DEFAULT;
     private boolean ignoreBuiltInProtection = false;
     private boolean checkManagement = true;
     private Block block;
@@ -43,11 +46,11 @@ public class ProtectionCheckEvent extends Event {
         return checkManagement;
     }
 
-    public Result getResult() {
+    public Event.Result getResult() {
         return result;
     }
 
-    public void setResult(Result result) {
+    public void setResult(Event.Result result) {
         this.result = result;
     }
 
@@ -57,13 +60,5 @@ public class ProtectionCheckEvent extends Event {
 
     public Block getBlock() {
         return block;
-    }
-
-    public HandlerList getHandlers() {
-        return handlers;
-    }
-
-    public static HandlerList getHandlerList() {
-        return handlers;
     }
 }

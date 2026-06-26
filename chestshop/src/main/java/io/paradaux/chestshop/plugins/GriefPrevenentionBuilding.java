@@ -2,21 +2,23 @@ package io.paradaux.chestshop.plugins;
 
 import io.paradaux.chestshop.events.protection.BuildPermissionEvent;
 import me.ryanhamshire.GriefPrevention.GriefPrevention;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.Listener;
 import org.bukkit.plugin.Plugin;
 
 /**
+ * GriefPrevention claim gating for shop creation. Constructed by {@code Dependencies} only
+ * when GriefPrevention is hooked and {@code GRIEFPREVENTION_INTEGRATION} is on, and
+ * registered with {@link io.paradaux.chestshop.services.ProtectionService} as a method
+ * reference (no longer a Bukkit {@code Listener}).
+ *
  * @author Acrobot
  */
-public class GriefPrevenentionBuilding implements Listener {
+public class GriefPrevenentionBuilding {
     private GriefPrevention griefPrevention;
 
     public GriefPrevenentionBuilding(Plugin plugin) {
         this.griefPrevention = (GriefPrevention) plugin;
     }
 
-    @EventHandler(ignoreCancelled = true)
     public void canBuild(BuildPermissionEvent event) {
         event.allow(griefPrevention.dataStore.getClaimAt(event.getSign(), false, null) != null);
     }

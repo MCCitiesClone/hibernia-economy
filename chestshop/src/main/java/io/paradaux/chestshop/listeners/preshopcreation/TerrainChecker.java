@@ -2,7 +2,6 @@ package io.paradaux.chestshop.listeners.preshopcreation;
 
 import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.events.PreShopCreationEvent;
-import io.paradaux.chestshop.events.protection.BuildPermissionEvent;
 import io.paradaux.chestshop.Security;
 import io.paradaux.chestshop.utils.uBlock;
 import org.bukkit.Location;
@@ -30,12 +29,8 @@ public class TerrainChecker implements Listener {
         Container connectedContainer = uBlock.findConnectedContainer(event.getSign().getBlock());
         Location containerLocation = (connectedContainer != null ? connectedContainer.getLocation() : null);
 
-        BuildPermissionEvent bEvent = new BuildPermissionEvent(player, containerLocation, event.getSign().getLocation());
-        ChestShop.callEvent(bEvent);
-
-        if (!bEvent.isAllowed()) {
+        if (!ChestShop.protection().canBuild(player, containerLocation, event.getSign().getLocation())) {
             event.setOutcome(NO_PERMISSION_FOR_TERRAIN);
         }
-
     }
 }

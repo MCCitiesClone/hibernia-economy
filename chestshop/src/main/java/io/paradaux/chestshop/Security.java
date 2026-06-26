@@ -3,8 +3,6 @@ package io.paradaux.chestshop;
 import io.paradaux.chestshop.utils.BlockUtil;
 import io.paradaux.chestshop.configuration.Properties;
 import io.paradaux.chestshop.database.Account;
-import io.paradaux.chestshop.events.protection.ProtectBlockEvent;
-import io.paradaux.chestshop.events.protection.ProtectionCheckEvent;
 import io.paradaux.chestshop.signs.ChestShopSign;
 import io.paradaux.chestshop.utils.uBlock;
 import org.bukkit.Bukkit;
@@ -12,7 +10,6 @@ import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.Sign;
 import org.bukkit.entity.Player;
-import org.bukkit.event.Event;
 
 import java.util.UUID;
 
@@ -34,9 +31,9 @@ public class Security {
     }
 
     public static boolean protect(Player player, Block block, UUID protectionOwner, Type type) {
-        ProtectBlockEvent event = ChestShop.callEvent(new ProtectBlockEvent(block, player, protectionOwner, type));
-
-        return event.isProtected();
+        // Block-level protection (LWC / LockettePro etc.) was removed (PAR-285), so no
+        // provider claims shop blocks — they are never independently protected.
+        return false;
     }
 
     public static boolean canAccess(Player player, Block block) {
@@ -44,15 +41,11 @@ public class Security {
     }
 
     public static boolean canAccess(Player player, Block block, boolean ignoreDefaultProtection) {
-        ProtectionCheckEvent event = ChestShop.callEvent(new ProtectionCheckEvent(block, player, ignoreDefaultProtection));
-
-        return event.getResult() != Event.Result.DENY;
+        return ChestShop.protection().canAccess(block, player, ignoreDefaultProtection);
     }
 
     public static boolean canView(Player player, Block block, boolean ignoreDefaultProtection) {
-        ProtectionCheckEvent event = ChestShop.callEvent(new ProtectionCheckEvent(block, player, ignoreDefaultProtection, false));
-
-        return event.getResult() != Event.Result.DENY;
+        return ChestShop.protection().canView(block, player, ignoreDefaultProtection);
     }
 
     public static boolean canPlaceSign(Player player, Sign sign) {

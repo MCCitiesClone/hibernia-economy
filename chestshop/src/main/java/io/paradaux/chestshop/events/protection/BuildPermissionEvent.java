@@ -2,17 +2,19 @@ package io.paradaux.chestshop.events.protection;
 
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
-import org.bukkit.event.Cancellable;
-import org.bukkit.event.Event;
-import org.bukkit.event.HandlerList;
 
 import javax.annotation.Nullable;
 
 /**
+ * Mutable carrier for whether a shop may be built at a location, run by
+ * {@link io.paradaux.chestshop.services.ProtectionService#canBuild}. Defaults to allowed;
+ * the WorldGuard/GriefPrevention checks may {@link #disallow}. Formerly a Bukkit event
+ * (whose {@code ignoreCancelled} "skip once disallowed" semantics the service now applies
+ * via {@link #isAllowed} guards).
+ *
  * @author Acrobot
  */
-public class BuildPermissionEvent extends Event implements Cancellable {
-    private static final HandlerList handlers = new HandlerList();
+public class BuildPermissionEvent {
 
     private Player player;
     private Location chest, sign;
@@ -51,23 +53,5 @@ public class BuildPermissionEvent extends Event implements Cancellable {
 
     public void disallow() {
         allowed = false;
-    }
-
-    public HandlerList getHandlers() {
-        return handlers;
-    }
-
-    public static HandlerList getHandlerList() {
-        return handlers;
-    }
-
-    @Override
-    public boolean isCancelled() {
-        return !isAllowed();
-    }
-
-    @Override
-    public void setCancelled(boolean cancel) {
-        allow(!cancel);
     }
 }
