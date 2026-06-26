@@ -71,14 +71,19 @@ INSERT INTO chestshop_sale (txn_id, occurred_at, direction, customer_uuid_bin, s
   (NULL, NOW(), 'SELL', UNHEX('0000000000000000000000000000CA01'), 3, 'BUSINESS', 1, UNHEX('0000000000000000000000000000A1CE'), 0, 'DIAMOND', 'DIAMOND', 'Diamond', 0, 5, 6.0000, 30.00),
   (NULL, NOW(), 'SELL', UNHEX('00000000000000000000000000000B0B'), 3, 'BUSINESS', 1, UNHEX('0000000000000000000000000000A1CE'), 0, 'IRON_INGOT', 'IRON_INGOT', 'Iron Ingot', 0, 20, 1.0000, 20.00);
 
--- Explorer RBAC groups: "Auditors" grants staff.audit and is LuckPerms-fed (node
--- 'doc'); Bob is a manual member. Used to assert findCapabilities + isStaff.
+-- Explorer RBAC groups: "Viewers" grants the read-only financial-oversight
+-- 'viewer' capability and is LuckPerms-fed (node 'doc'). Bob is a manual member;
+-- Carol is a 'luckperms' member, i.e. one the reconciliation cron synced from the
+-- node — so the seed exercises BOTH membership sources resolving to the same
+-- capability (findCapabilities + isStaff). The legacy 'staff.audit' alias is
+-- covered by the unit tests (normalizeCapability) rather than seeded here.
 INSERT INTO explorer_group (group_id, name, description, luckperms_node) VALUES
-  (1, 'Auditors', 'Staff who can audit any entity', 'doc');
+  (1, 'Viewers', 'Staff who can view any entity''s financials (read-only)', 'doc');
 INSERT INTO explorer_group_capability (group_id, capability) VALUES
-  (1, 'staff.audit');
+  (1, 'viewer');
 INSERT INTO explorer_group_member (group_id, player_uuid_bin, source) VALUES
-  (1, UNHEX('00000000000000000000000000000B0B'), 'manual');
+  (1, UNHEX('00000000000000000000000000000B0B'), 'manual'),
+  (1, UNHEX('0000000000000000000000000000CA01'), 'luckperms');
 
 -- Bedrock/Floodgate fixture (PAR-240): a Floodgate-shaped UUID with a
 -- '.'-prefixed name and a completed in-game explorer_identity link. Account #8

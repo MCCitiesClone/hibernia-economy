@@ -156,20 +156,28 @@ d('money flow counts only clean cross-type transfers', () => {
 });
 
 d('group capabilities', () => {
-  it('returns capabilities a player has via group membership', async () => {
-    // Bob is a member of the "Auditors" group (grants staff.audit).
-    expect(await findCapabilities(BOB)).toContain('staff.audit');
+  it('returns the viewer capability for a manual group member', async () => {
+    // Bob is a manual member of the "Viewers" group (grants viewer).
+    expect(await findCapabilities(BOB)).toContain('viewer');
+  });
+
+  it('returns the viewer capability for a LuckPerms-synced member (the recon-cron path)', async () => {
+    // Carol holds her membership via source='luckperms' — i.e. the reconciliation
+    // cron synced her from the group's node. The same capability must resolve, so
+    // a linked player gets the viewer role purely from their in-game group.
+    expect(await findCapabilities(CAROL)).toContain('viewer');
   });
 
   it('returns nothing for a player in no groups', async () => {
-    expect(await findCapabilities(CAROL)).toEqual([]);
+    // The government-account secretary has account_access but no explorer_group.
+    expect(await findCapabilities(SECRETARY)).toEqual([]);
   });
 });
 
 d('audit logging records privileged access', () => {
   it('persists an audit row that listAudit reads back', async () => {
     await audit({
-      viewer: { anon: false, keycloakSub: 'e2e-admin', minecraftUuid: ALICE, minecraftName: 'Alice', linked: true, role: 'admin', capabilities: ['admin', 'staff.audit', 'government'] },
+      viewer: { anon: false, keycloakSub: 'e2e-admin', minecraftUuid: ALICE, minecraftName: 'Alice', linked: true, role: 'admin', capabilities: ['admin', 'viewer', 'government'] },
       method: 'GET',
       path: '/transactions',
       targetType: 'global',
