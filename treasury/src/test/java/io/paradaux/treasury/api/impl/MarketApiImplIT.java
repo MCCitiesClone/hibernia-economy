@@ -47,6 +47,9 @@ class MarketApiImplIT extends IntegrationTestBase {
             st.execute("TRUNCATE TABLE chestshop_sale");
             st.execute("TRUNCATE TABLE chestshop_shop");
         }
+        // This IT inserts synthetic txn/account/firm ids, so drop the V20 FK
+        // enforcement the Flyway harness applied to these analytics tables.
+        dropChestShopMarketForeignKeys();
     }
 
     // ── recordSale ──────────────────────────────────────────────────────────────

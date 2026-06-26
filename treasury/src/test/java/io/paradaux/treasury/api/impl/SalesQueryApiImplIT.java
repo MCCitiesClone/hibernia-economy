@@ -40,6 +40,9 @@ class SalesQueryApiImplIT extends IntegrationTestBase {
     void seed() throws Exception {
         sales = injector.getInstance(SalesQueryApiImpl.class);
         market = injector.getInstance(MarketApiImpl.class);
+        // Seeds synthetic firm/account ids, so drop the V20 FK enforcement the
+        // Flyway harness applied to the ChestShop analytics tables.
+        dropChestShopMarketForeignKeys();
         exec("TRUNCATE TABLE chestshop_sale");
         exec("DELETE FROM economy_players");
 
