@@ -23,6 +23,29 @@ projects have no wrapper or settings of their own.
 
 On Windows use `.\gradlew.bat`.
 
+## Convention plugins (`build-logic/`)
+
+Shared plugin-build boilerplate lives in **`build-logic/`**, an included build wired
+in via `pluginManagement { includeBuild("build-logic") }` in the root
+`settings.gradle.kts`. It publishes two precompiled convention plugins that
+subprojects apply by id (no version):
+
+- **`io.paradaux.jvm-conventions`** — applied by all four Paper plugins
+  (treasury, business, treasury-api-plugin, chestshop): the Java toolchain (21)
+  and `JavaCompile` options (UTF-8, `--release 21`).
+- **`io.paradaux.paper-server-conventions`** — applied by the three shading
+  *server* plugins (treasury, business, treasury-api-plugin); applies
+  `jvm-conventions` transitively and adds the common repositories (with
+  `-PuseMavenLocal`-gated `mavenLocal`), `plugin.yml`/`messages` resource
+  expansion, the base test setup, the shaded-jar defaults (`archiveClassifier=""`,
+  `mergeServiceFiles`, `:jar` disabled), and the `copyPlugin` dev-server staging.
+
+Each project still owns what genuinely differs: its **shadow relocations**, its
+**dependencies**, and (treasury/business) its **jacoco coverage gate**. ChestShop
+applies only `jvm-conventions` and keeps its bespoke repos/shadow/resources —
+they diverge too far to share. `build-logic` compiles on the JDK 21 toolchain
+like everything else.
+
 ## Build the deployable artifacts
 
 | Artifact | Task | Output |

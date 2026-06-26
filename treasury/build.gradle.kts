@@ -1,49 +1,17 @@
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 
 plugins {
-    java
     jacoco
     id("com.gradleup.shadow")
     id("maven-publish")
+    id("io.paradaux.paper-server-conventions")
 }
 
 // group + version are set centrally by the root allprojects block (single
 // mono-repo version, 2.3.0-SNAPSHOT, overridable with -Pversion).
+// The JVM toolchain, repositories, resource expansion, base test setup, shaded-jar
+// defaults, and dev-server staging come from io.paradaux.paper-server-conventions.
 description = "Treasury"
-
-java {
-    toolchain {
-        languageVersion.set(JavaLanguageVersion.of(21))
-    }
-}
-
-repositories {
-    // mavenLocal is opt-in (-PuseMavenLocal) so normal/CI builds are
-    // reproducible — they resolve hibernia-framework only from the declared
-    // remotes, never from a stale/tampered local artifact. Devs iterating on the
-    // hibernia-framework submodule pass the flag to pick up a locally-published
-    // SNAPSHOT first (it's added first, so "local wins" when enabled). (PAR-267)
-    if (providers.gradleProperty("useMavenLocal").isPresent) {
-        mavenLocal()
-    }
-    mavenCentral()
-    maven {
-        name = "papermc"
-        url = uri("https://repo.papermc.io/repository/maven-public/")
-    }
-    maven("https://oss.sonatype.org/content/groups/public/")
-    maven("https://jitpack.io")
-    maven {
-        name = "ParadauxReleases"
-        url = uri("https://repo.paradaux.io/releases")
-        mavenContent { releasesOnly() }
-    }
-    maven {
-        name = "ParadauxSnapshots"
-        url = uri("https://repo.paradaux.io/snapshots")
-        mavenContent { snapshotsOnly() }
-    }
-}
 
 dependencies {
     // Paper API (provided by server)
@@ -135,38 +103,7 @@ tasks.named<Copy>("processTestResources") {
 }
 
 tasks {
-    // Mirror Maven default goal locally
-    defaultTasks("clean", "shadowJar")
-
-    // Keep resource filtering tight to avoid $ expansion issues in YAML like config.yml
-    processResources {
-        filteringCharset = "UTF-8"
-        // Capture at configuration time so the filesMatching action never touches
-        // `project` at execution time (config-cache safe; Gradle 10 forward-compat).
-        val expansions = mapOf("version" to project.version, "name" to project.name,
-                "description" to (project.description ?: ""))
-        filesMatching(listOf("**/*.properties", "plugin.yml", "paper-plugin.yml", "application*.yml")) {
-            // Expands ${...} from these project properties only in these files
-            expand(expansions)
-        }
-    }
-
-    withType<JavaCompile> {
-        options.encoding = "UTF-8"
-        options.release.set(21)
-    }
-
     test {
-        useJUnitPlatform()
-        // Tag-based filtering: gradle test -PskipIT skips DB-backed tests.
-        if (project.hasProperty("skipIT")) {
-            useJUnitPlatform { excludeTags("integration") }
-        }
-        testLogging {
-            events("failed", "skipped")
-            showStandardStreams = false
-            exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
-        }
         finalizedBy(jacocoTestReport)
     }
 
@@ -236,60 +173,19 @@ tasks {
         )
     }
 
-    // Shadow 9 writes shadowJar to build/libs/<name>.jar by default, and
-    // so does :jar. With both enabled :jar runs *after* :shadowJar and
-    // overwrites the fat jar with the thin one — produced a 158 KB
-    // dependency-less plugin that disabled itself on enable. Disable :jar
-    // so the shaded artifact stays put.
-    jar {
-        enabled = false
-    }
-
-    // Produce a single shaded jar without the "-all" classifier
+    // Project-specific shaded-lib relocations. archiveClassifier + mergeServiceFiles
+    // come from io.paradaux.paper-server-conventions.
     withType<ShadowJar> {
-        archiveClassifier.set("")
-        // relocate shaded libs
         relocate("com.google.inject", "io.paradaux.libs.guice")
         relocate("javax.inject", "io.paradaux.libs.javax")
         relocate("org.aopalliance", "io.paradaux.libs.aopalliance")
         relocate("io.jsonwebtoken", "io.paradaux.libs.jjwt")
         relocate("com.fasterxml.jackson", "io.paradaux.libs.jackson")
-        // some libs use META-INF/services (safe and cheap)
-        mergeServiceFiles()
     }
 }
 
 jacoco {
     toolVersion = libs.versions.jacoco.get()
-}
-
-val isCi = project.hasProperty("ci")
-
-// In-repo dev server staging dir (server/plugins at the repo root). A top-level
-// subproject is one level under the root, so it's "../server/plugins" — the old
-// "../../server/plugins" climbed one level too far and wrote outside the repo. (PAR-268)
-val pluginsDir = layout.projectDirectory.dir("../server/plugins")
-
-val copyPlugin = tasks.register<Copy>("copyPlugin") {
-    // :jar is disabled (see comment above) so we only depend on shadowJar.
-    val shadowJar = tasks.named<ShadowJar>("shadowJar")
-    dependsOn(shadowJar)
-    from(shadowJar.flatMap { it.archiveFile })
-    into(pluginsDir)
-    onlyIf { !isCi } // don’t run on CI
-    doFirst {
-        // Remove this plugin's previously-staged jars (any version) so stale
-        // copies don't pile up — the dev server would otherwise load two
-        // versions of the same plugin. Scoped to THIS artifact's base name + a
-        // version digit, so it never matches a sibling (treasury must not match
-        // treasury-api-plugin), a data folder, or another server jar. (PAR-268)
-        val re = Regex("^${Regex.escape(shadowJar.get().archiveBaseName.get())}-\\d.*\\.jar$")
-        pluginsDir.asFile.listFiles { f -> f.isFile && re.matches(f.name) }?.forEach { it.delete() }
-    }
-}
-
-tasks.named<ShadowJar>("shadowJar") {
-    finalizedBy(copyPlugin)
 }
 
 subprojects {

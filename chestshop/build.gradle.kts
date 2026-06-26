@@ -14,17 +14,13 @@ plugins {
     `java-library`
     jacoco
     id("com.gradleup.shadow")
+    id("io.paradaux.jvm-conventions")
 }
 
-java {
-    toolchain {
-        languageVersion.set(JavaLanguageVersion.of(21))
-    }
-}
-
-tasks.withType<JavaCompile>().configureEach {
-    options.encoding = "UTF-8"
-}
+// The Java toolchain (21) and JavaCompile encoding/release come from
+// io.paradaux.jvm-conventions. ChestShop keeps its own bespoke repositories,
+// shadow relocations, resource filtering, and build metadata below — they
+// diverge too far from the other plugins to share.
 
 repositories {
     // mavenLocal is opt-in (-PuseMavenLocal) so normal/CI builds resolve

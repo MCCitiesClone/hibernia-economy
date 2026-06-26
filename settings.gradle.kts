@@ -11,6 +11,14 @@
 //     artifacts (io.paradaux:*).
 // =============================================================================
 
+// build-logic is an included build that provides the io.paradaux.*-conventions
+// plugins (the shared plugin-build boilerplate). Including it under
+// pluginManagement makes those plugins applyable by id, without a version, in
+// any subproject's plugins { } block.
+pluginManagement {
+    includeBuild("build-logic")
+}
+
 rootProject.name = "hibernia-economy"
 
 include(":treasury")
