@@ -6,9 +6,6 @@ import io.paradaux.chestshop.database.Account;
 import io.paradaux.chestshop.events.AccountAccessEvent;
 import io.paradaux.chestshop.events.AccountQueryEvent;
 import io.paradaux.chestshop.events.economy.AccountCheckEvent;
-import io.paradaux.chestshop.events.economy.CurrencyAmountEvent;
-import io.paradaux.chestshop.events.economy.CurrencyCheckEvent;
-import io.paradaux.chestshop.events.economy.CurrencyHoldEvent;
 import io.paradaux.chestshop.events.economy.CurrencyTransferEvent;
 import io.paradaux.chestshop.events.TransactionEvent;
 import io.paradaux.chestshop.listeners.economy.EconomyAdapter;
@@ -200,45 +197,6 @@ public class TreasuryListener extends EconomyAdapter {
     }
 
     // --- Economy event handlers ---
-
-    @EventHandler
-    public void onAmountCheck(CurrencyAmountEvent event) {
-        if (event.wasHandled() || !event.getAmount().equals(BigDecimal.ZERO)) {
-            return;
-        }
-
-        try {
-            BigDecimal balance;
-            if (isBusinessUuid(event.getAccount())) {
-                int accountId = (int) event.getAccount().getLeastSignificantBits();
-                balance = treasury.getBalanceByAccountId(accountId);
-            } else {
-                Integer governmentAccountId = resolveGovernmentAccountId(event.getAccount());
-                balance = governmentAccountId != null
-                        ? treasury.getBalanceByAccountId(governmentAccountId)
-                        : treasury.getBalanceByOwnerUuid(event.getAccount());
-            }
-            event.setAmount(balance);
-            event.setHandled(true);
-        } catch (Exception e) {
-            ChestShop.getBukkitLogger().log(Level.WARNING, "Treasury: Could not get balance for " + event.getAccount(), e);
-        }
-    }
-
-    @EventHandler
-    public void onCurrencyCheck(CurrencyCheckEvent event) {
-        if (event.wasHandled() || event.hasEnough()) {
-            return;
-        }
-
-        try {
-            int accountId = resolveAccountId(event.getAccount());
-            event.hasEnough(treasury.hasFunds(accountId, event.getAmount()));
-            event.setHandled(true);
-        } catch (Exception e) {
-            ChestShop.getBukkitLogger().log(Level.WARNING, "Treasury: Could not check funds for " + event.getAccount(), e);
-        }
-    }
 
     @EventHandler
     public void onAccountCheck(AccountCheckEvent event) {
@@ -439,17 +397,6 @@ public class TreasuryListener extends EconomyAdapter {
             }
         }
         return ChestShopSign.getItem(txn.getSign());
-    }
-
-    @EventHandler
-    public void onCurrencyHoldCheck(CurrencyHoldEvent event) {
-        if (event.wasHandled() || event.getAccount() == null) {
-            return;
-        }
-
-        // Treasury manages overdraft internally; accounts can always hold currency
-        event.canHold(true);
-        event.setHandled(true);
     }
 
     // --- Account query/access handlers for business accounts ---

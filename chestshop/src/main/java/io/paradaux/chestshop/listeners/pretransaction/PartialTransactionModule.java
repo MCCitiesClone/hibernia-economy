@@ -5,9 +5,6 @@ import io.paradaux.chestshop.utils.MaterialUtil;
 import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.configuration.Properties;
 import io.paradaux.chestshop.economy.Economy;
-import io.paradaux.chestshop.events.economy.CurrencyAmountEvent;
-import io.paradaux.chestshop.events.economy.CurrencyCheckEvent;
-import io.paradaux.chestshop.events.economy.CurrencyHoldEvent;
 import io.paradaux.chestshop.events.PreTransactionEvent;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -49,15 +46,9 @@ public class PartialTransactionModule implements Listener {
 
         BigDecimal pricePerItem = event.getExactPrice().divide(BigDecimal.valueOf(itemCount), MathContext.DECIMAL128);
 
-        CurrencyAmountEvent currencyAmountEvent = new CurrencyAmountEvent(client);
-        ChestShop.callEvent(currencyAmountEvent);
+        BigDecimal walletMoney = ChestShop.economy().getBalance(client.getUniqueId());
 
-        BigDecimal walletMoney = currencyAmountEvent.getAmount();
-
-        CurrencyCheckEvent currencyCheckEvent = new CurrencyCheckEvent(event.getExactPrice(), client);
-        ChestShop.callEvent(currencyCheckEvent);
-
-        if (!currencyCheckEvent.hasEnough()) {
+        if (!ChestShop.economy().hasFunds(client.getUniqueId(), event.getExactPrice())) {
             int amountAffordable = getAmountOfAffordableItems(walletMoney, pricePerItem);
 
             if (amountAffordable < 1) {
@@ -114,10 +105,7 @@ public class PartialTransactionModule implements Listener {
 
         UUID seller = event.getOwnerAccount().getUuid();
 
-        CurrencyHoldEvent currencyHoldEvent = new CurrencyHoldEvent(event.getExactPrice(), seller, client.getWorld());
-        ChestShop.callEvent(currencyHoldEvent);
-
-        if (!currencyHoldEvent.canHold()) {
+        if (!ChestShop.economy().canHold(seller, event.getExactPrice())) {
             event.setCancelled(SHOP_DEPOSIT_FAILED);
         }
     }
@@ -140,14 +128,8 @@ public class PartialTransactionModule implements Listener {
 
 
         if (Economy.isOwnerEconomicallyActive(event.getOwnerInventory())) {
-            CurrencyCheckEvent currencyCheckEvent = new CurrencyCheckEvent(event.getExactPrice(), owner, client.getWorld());
-            ChestShop.callEvent(currencyCheckEvent);
-
-            if (!currencyCheckEvent.hasEnough()) {
-                CurrencyAmountEvent currencyAmountEvent = new CurrencyAmountEvent(owner, client.getWorld());
-                ChestShop.callEvent(currencyAmountEvent);
-
-                BigDecimal walletMoney = currencyAmountEvent.getAmount();
+            if (!ChestShop.economy().hasFunds(owner, event.getExactPrice())) {
+                BigDecimal walletMoney = ChestShop.economy().getBalance(owner);
                 int amountAffordable = getAmountOfAffordableItems(walletMoney, pricePerItem);
 
                 if (amountAffordable < 1) {
@@ -203,10 +185,7 @@ public class PartialTransactionModule implements Listener {
             event.setStock(itemsFit);
         }
 
-        CurrencyHoldEvent currencyHoldEvent = new CurrencyHoldEvent(event.getExactPrice(), client);
-        ChestShop.callEvent(currencyHoldEvent);
-
-        if (!currencyHoldEvent.canHold()) {
+        if (!ChestShop.economy().canHold(client.getUniqueId(), event.getExactPrice())) {
             event.setCancelled(CLIENT_DEPOSIT_FAILED);
         }
     }

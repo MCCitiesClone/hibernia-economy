@@ -2,7 +2,6 @@ package io.paradaux.chestshop.listeners.preshopcreation;
 
 import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.configuration.Properties;
-import io.paradaux.chestshop.events.economy.CurrencyCheckEvent;
 import io.paradaux.chestshop.events.PreShopCreationEvent;
 import io.paradaux.chestshop.Permission;
 import io.paradaux.chestshop.signs.ChestShopSign;
@@ -38,10 +37,7 @@ public class MoneyChecker implements Listener {
             return;
         }
 
-        CurrencyCheckEvent currencyCheckEvent = new CurrencyCheckEvent(shopCreationPrice, player);
-        ChestShop.callEvent(currencyCheckEvent);
-
-        if (!currencyCheckEvent.hasEnough()) {
+        if (!ChestShop.economy().hasFunds(player.getUniqueId(), shopCreationPrice)) {
             event.setOutcome(NOT_ENOUGH_MONEY);
         }
     }

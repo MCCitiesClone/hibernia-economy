@@ -1,9 +1,6 @@
 package io.paradaux.chestshop.listeners.economy;
 
 import io.paradaux.chestshop.events.economy.AccountCheckEvent;
-import io.paradaux.chestshop.events.economy.CurrencyAmountEvent;
-import io.paradaux.chestshop.events.economy.CurrencyCheckEvent;
-import io.paradaux.chestshop.events.economy.CurrencyHoldEvent;
 import io.paradaux.chestshop.events.economy.CurrencyTransferEvent;
 import org.bukkit.event.Listener;
 import org.jetbrains.annotations.Nullable;
@@ -13,15 +10,9 @@ public abstract class EconomyAdapter implements Listener {
     @Nullable
     public abstract ProviderInfo getProviderInfo();
 
-    public abstract void onAmountCheck(CurrencyAmountEvent event);
-
-    public abstract void onCurrencyCheck(CurrencyCheckEvent event);
-
     public abstract void onAccountCheck(AccountCheckEvent event);
 
     public abstract void onCurrencyTransfer(CurrencyTransferEvent event);
-
-    public abstract void onCurrencyHoldCheck(CurrencyHoldEvent event);
 
     public static class ProviderInfo {
         private final String name;

@@ -116,6 +116,55 @@ public class EconomyService {
     }
 
     /**
+     * Whether {@code account} can afford {@code amount}. An admin shop with no
+     * server-economy account is unlimited (was {@code CurrencyCheckEvent}).
+     */
+    public boolean hasFunds(UUID account, BigDecimal amount) {
+        UUID resolved = normaliseAdminTarget(account);
+        if (resolved == null) {
+            return true;
+        }
+        try {
+            return treasury.hasFunds(resolveAccountId(resolved), amount);
+        } catch (Exception e) {
+            ChestShop.getBukkitLogger().log(Level.WARNING, "Treasury: Could not check funds for " + resolved, e);
+            return false;
+        }
+    }
+
+    /**
+     * The balance of {@code account}. An admin shop with no server-economy account
+     * reports an unlimited balance (was {@code CurrencyAmountEvent}).
+     */
+    public BigDecimal getBalance(UUID account) {
+        UUID resolved = normaliseAdminTarget(account);
+        if (resolved == null) {
+            return BigDecimal.valueOf(Double.MAX_VALUE);
+        }
+        try {
+            if (isBusinessUuid(resolved)) {
+                return treasury.getBalanceByAccountId((int) resolved.getLeastSignificantBits());
+            }
+            Integer governmentAccountId = resolveGovernmentAccountId(resolved);
+            return governmentAccountId != null
+                    ? treasury.getBalanceByAccountId(governmentAccountId)
+                    : treasury.getBalanceByOwnerUuid(resolved);
+        } catch (Exception e) {
+            ChestShop.getBukkitLogger().log(Level.WARNING, "Treasury: Could not get balance for " + resolved, e);
+            return BigDecimal.ZERO;
+        }
+    }
+
+    /**
+     * Whether {@code account} can receive {@code amount}. Treasury accounts allow
+     * overdraft, so this is always true — the old {@code CurrencyHoldEvent} path was
+     * unconditionally permissive; kept as a named check for the call sites.
+     */
+    public boolean canHold(UUID account, BigDecimal amount) {
+        return true;
+    }
+
+    /**
      * Apply the admin-shop → server-economy redirect: a plain target is returned
      * unchanged; an admin-shop target becomes the server-economy account's UUID, or
      * {@code null} when no server-economy account is configured (the operation is then
