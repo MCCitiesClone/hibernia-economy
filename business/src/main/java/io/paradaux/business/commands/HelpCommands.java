@@ -1,6 +1,7 @@
 package io.paradaux.business.commands;
 
 import com.google.inject.Inject;
+import com.google.inject.Provider;
 import com.google.inject.Singleton;
 import io.paradaux.hibernia.framework.commander.CommandManager;
 import io.paradaux.hibernia.framework.commander.HelpGenerator;
@@ -27,10 +28,14 @@ public class HelpCommands implements CommandHandler {
     /** The canonical root the route index is keyed under (first @Command alias, lower-cased). */
     private static final String ROOT = "db";
 
-    private final CommandManager commandManager;
+    // Provider breaks the construction cycle: CommandManager injects the
+    // Set<CommandHandler> (which includes this class), so a direct CommandManager
+    // dependency is circular and Guice can't proxy the concrete class. Mirrors the
+    // Treasury commands' pattern. Resolved lazily at help-render time.
+    private final Provider<CommandManager> commandManager;
 
     @Inject
-    public HelpCommands(CommandManager commandManager) {
+    public HelpCommands(Provider<CommandManager> commandManager) {
         this.commandManager = commandManager;
     }
 
@@ -56,6 +61,6 @@ public class HelpCommands implements CommandHandler {
     }
 
     private void sendHelp(CommandSender sender, int page) {
-        sender.sendMessage(new HelpGenerator(commandManager).render(sender, ROOT, page));
+        sender.sendMessage(new HelpGenerator(commandManager.get()).render(sender, ROOT, page));
     }
 }

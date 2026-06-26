@@ -40,8 +40,16 @@ public class FirmChatService {
     /** player → the firm whose chat they're currently in. In-memory (cleared on leave). */
     private final Map<UUID, Integer> activeFirm = new ConcurrentHashMap<>();
 
-    private CarbonChat carbon;        // null when CarbonChat is absent
-    private FirmChatChannel channel;  // null when CarbonChat is absent
+    // Typed as Object — NOT CarbonChat / FirmChatChannel — on purpose. Guice scans
+    // this class's declared fields and methods at injector-build time; if any
+    // declared member referenced a net.draycia.carbon.* type, that reflection would
+    // throw NoClassDefFoundError when CarbonChat isn't installed, failing the whole
+    // injector before initialise() ever gets to soft-disable the feature. The actual
+    // CarbonChat / FirmChatChannel are stored here at runtime and only ever touched
+    // (via casts) inside the guarded method bodies below, which run only when Carbon
+    // is present. (Keeps the soft-dependency genuinely soft.)
+    private Object carbon;    // CarbonChat when present, else null
+    private Object channel;   // FirmChatChannel when present, else null
 
     @Inject
     public FirmChatService(FirmService firms, FirmStaffService staff, Business plugin) {
@@ -53,9 +61,11 @@ public class FirmChatService {
     /** Register the firm-chat channel with CarbonChat if present. Call on enable. */
     public void initialise() {
         try {
-            this.carbon = CarbonChatProvider.carbonChat();
-            this.channel = new FirmChatChannel(this);
-            carbon.channelRegistry().register(channel);
+            CarbonChat cc = CarbonChatProvider.carbonChat();
+            FirmChatChannel ch = new FirmChatChannel(this);
+            cc.channelRegistry().register(ch);
+            this.carbon = cc;
+            this.channel = ch;
             log.info("Registered the firm chat channel with CarbonChat.");
         } catch (Throwable t) {
             this.carbon = null;
@@ -118,7 +128,7 @@ public class FirmChatService {
         UUID uuid = player.getUniqueId();
         activeFirm.remove(uuid);
         if (available()) {
-            selectChannel(uuid, carbon.channelRegistry().defaultChannel());
+            selectChannel(uuid, ((CarbonChat) carbon).channelRegistry().defaultChannel());
         }
     }
 
@@ -132,9 +142,12 @@ public class FirmChatService {
         return firms.listOwnedOrMemberFirms(uuid).size() > 1;
     }
 
-    private void selectChannel(UUID uuid, ChatChannel target) {
+    // `target` is an Object (a ChatChannel at runtime) so this method's signature
+    // stays free of net.draycia.* — see the carbon/channel field note above.
+    private void selectChannel(UUID uuid, Object target) {
         // userManager().user(uuid) is async; selecting on completion is fine for a toggle.
-        carbon.userManager().user(uuid).thenAccept(cp -> cp.selectedChannel(target));
+        ((CarbonChat) carbon).userManager().user(uuid)
+                .thenAccept(cp -> cp.selectedChannel((ChatChannel) target));
     }
 
     /** The firm a player may chat in: an explicit firm they're a member of, or their sole firm. */
