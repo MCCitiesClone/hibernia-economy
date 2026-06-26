@@ -17,12 +17,13 @@ import java.util.UUID;
 /**
  * @author g--o
  */
-@Command({"csaccess"})
+@Command({"chestshop", "cs"})
 @io.paradaux.hibernia.framework.commander.annotations.Permission(Permission.Node.ACCESS_TOGGLE)
 public class AccessToggle implements CommandHandler {
     private static final Set<UUID> toggledPlayers = new HashSet<>();
 
-    @Route("")
+    @Route("access")
+    @io.paradaux.hibernia.framework.commander.annotations.Description("Toggle trading at shops you own or have access to")
     public void accessToggle(@Sender Player player) {
         if (setIgnoring(player, !isIgnoring(player))) {
             Messages.TOGGLE_ACCESS_OFF.sendWithPrefix(player);

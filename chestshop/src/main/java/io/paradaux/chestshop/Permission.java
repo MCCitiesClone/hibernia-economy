@@ -82,6 +82,12 @@ public enum Permission {
     }
 
     public static boolean has(CommandSender sender, String node) {
+        // An admin who ran /chestshop bypass to "play" forfeits the elevated staff
+        // nodes until they turn bypass back on, so every admin-gated path treats
+        // them as a normal player (AdminBypass).
+        if (sender instanceof Player player && AdminBypass.isDisabled(player) && AdminBypass.isGated(node)) {
+            return false;
+        }
         return sender.hasPermission(node) || sender.hasPermission(node.toLowerCase(Locale.ROOT));
     }
 

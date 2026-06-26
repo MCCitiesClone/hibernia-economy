@@ -8,6 +8,7 @@ import io.paradaux.chestshop.configuration.Messages;
 import io.paradaux.chestshop.events.ItemParseEvent;
 import io.paradaux.chestshop.utils.ItemUtil;
 import io.paradaux.hibernia.framework.commander.annotations.Command;
+import io.paradaux.hibernia.framework.commander.annotations.Description;
 import io.paradaux.hibernia.framework.commander.annotations.GreedyArg;
 import io.paradaux.hibernia.framework.commander.annotations.Route;
 import io.paradaux.hibernia.framework.commander.annotations.Sender;
@@ -23,11 +24,12 @@ import java.util.Set;
 /**
  * @author Acrobot
  */
-@Command({"csGive"})
+@Command({"chestshop", "cs"})
 @io.paradaux.hibernia.framework.commander.annotations.Permission(Permission.Node.ADMIN)
 public class Give implements CommandHandler {
 
-    @Route("<args>")
+    @Route("give <args>")
+    @Description("Give a player an item by its ChestShop item code")
     public void give(@Sender CommandSender sender,
                      @GreedyArg(value = "args", sanitize = false) String argLine) {
         // The greedy arg captures the whole tail; split it back into the token

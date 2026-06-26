@@ -122,6 +122,9 @@ public class Messages {
     public static Message TOGGLE_ACCESS_ON;
     public static Message TOGGLE_ACCESS_OFF;
 
+    public static Message BYPASS_ON;
+    public static Message BYPASS_OFF;
+
     public static Message ERROR_OCCURRED;
 
     /** Binds each static field to its {@code chestshop.<field>} key in messages.properties. */

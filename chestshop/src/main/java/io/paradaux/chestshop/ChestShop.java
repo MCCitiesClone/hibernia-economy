@@ -152,7 +152,8 @@ public class ChestShop extends JavaPlugin {
         io.paradaux.hibernia.framework.guice.HiberniaModule hibernia =
                 io.paradaux.hibernia.framework.guice.HiberniaModule.forPlugin(this)
                         .scanConfiguration("io.paradaux.chestshop.configuration")
-                        .handlers(ItemInfo.class, ShopInfo.class, Version.class,
+                        .handlers(io.paradaux.chestshop.commands.ChestShopCommand.class,
+                                ItemInfo.class, ShopInfo.class, Version.class,
                                 io.paradaux.chestshop.commands.Metrics.class, Give.class,
                                 Toggle.class, AccessToggle.class)
                         .build();

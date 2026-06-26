@@ -5,6 +5,7 @@ import io.paradaux.chestshop.configuration.Messages;
 import io.paradaux.chestshop.listeners.modules.MetricsModule;
 import io.paradaux.chestshop.players.NameManager;
 import io.paradaux.hibernia.framework.commander.annotations.Command;
+import io.paradaux.hibernia.framework.commander.annotations.Description;
 import io.paradaux.hibernia.framework.commander.annotations.Route;
 import io.paradaux.hibernia.framework.commander.annotations.Sender;
 import io.paradaux.hibernia.framework.commander.spi.CommandHandler;
@@ -13,11 +14,12 @@ import org.bukkit.command.CommandSender;
 /**
  * @author Acrobot
  */
-@Command({"csMetrics"})
+@Command({"chestshop", "cs"})
 @io.paradaux.hibernia.framework.commander.annotations.Permission(Permission.Node.ADMIN)
 public class Metrics implements CommandHandler {
 
-    @Route("")
+    @Route("metrics")
+    @Description("Show aggregate ChestShop transaction metrics")
     public void metrics(@Sender CommandSender sender) {
         Messages.METRICS.send(sender,
                 "accounts", String.valueOf(NameManager.getAccountCount()),

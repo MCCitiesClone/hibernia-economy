@@ -19,11 +19,12 @@ import java.util.logging.Level;
 /**
  * @author KingFaris10
  */
-@Command({"cstoggle"})
+@Command({"chestshop", "cs"})
 @io.paradaux.hibernia.framework.commander.annotations.Permission(Permission.Node.NOTIFY_TOGGLE)
 public class Toggle implements CommandHandler {
 
-    @Route("")
+    @Route("notify")
+    @io.paradaux.hibernia.framework.commander.annotations.Description("Toggle shop sale notifications on/off")
     public void toggle(@Sender Player player) {
         Account account = NameManager.getOrCreateAccount(player);
         account.setIgnoreMessages(!account.isIgnoringMessages());
