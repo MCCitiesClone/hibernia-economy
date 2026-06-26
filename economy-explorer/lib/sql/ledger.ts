@@ -108,12 +108,20 @@ export interface ExplorerFirmRow {
 export type SortColumn = 'balance' | 'name' | 'type' | 'created' | 'account_id';
 export type SortDir = 'ASC' | 'DESC';
 
+// Sort direction is the one fragment kysely can't parameterize, so it goes
+// through sql.raw. Callers already validate `dir` via a zod enum, but normalize
+// to a known-safe literal here too — the DAL boundary is the right place to make
+// injection impossible regardless of what a future caller passes.
+function rawDir(dir: SortDir) {
+  return sql.raw(dir === 'ASC' ? 'ASC' : 'DESC');
+}
+
 const ORDER_BY: Record<SortColumn, (dir: SortDir) => ReturnType<typeof sql>> = {
-  balance: (dir) => sql`ORDER BY abm.balance ${sql.raw(dir)}, a.account_id DESC`,
-  name: (dir) => sql`ORDER BY COALESCE(a.display_name, fp.current_name) ${sql.raw(dir)}, a.account_id DESC`,
-  type: (dir) => sql`ORDER BY a.account_type ${sql.raw(dir)}, a.account_id DESC`,
-  created: (dir) => sql`ORDER BY a.created_at ${sql.raw(dir)}, a.account_id DESC`,
-  account_id: (dir) => sql`ORDER BY a.account_id ${sql.raw(dir)}`,
+  balance: (dir) => sql`ORDER BY abm.balance ${rawDir(dir)}, a.account_id DESC`,
+  name: (dir) => sql`ORDER BY COALESCE(a.display_name, fp.current_name) ${rawDir(dir)}, a.account_id DESC`,
+  type: (dir) => sql`ORDER BY a.account_type ${rawDir(dir)}, a.account_id DESC`,
+  created: (dir) => sql`ORDER BY a.created_at ${rawDir(dir)}, a.account_id DESC`,
+  account_id: (dir) => sql`ORDER BY a.account_id ${rawDir(dir)}`,
 };
 
 // ── Accounts ──────────────────────────────────────────────────────────────
@@ -334,8 +342,8 @@ export async function listTransactions(args: {
 } & TxnFilters): Promise<ExplorerTxnRow[]> {
   const where = buildTxnsWhere(args);
   let order: ReturnType<typeof sql>;
-  if (args.sort === 'txnId') order = sql`ORDER BY lt.txn_id ${sql.raw(args.dir)}`;
-  else if (args.sort === 'settlement') order = sql`ORDER BY lt.settlement_time ${sql.raw(args.dir)}, lt.txn_id DESC`;
+  if (args.sort === 'txnId') order = sql`ORDER BY lt.txn_id ${rawDir(args.dir)}`;
+  else if (args.sort === 'settlement') order = sql`ORDER BY lt.settlement_time ${rawDir(args.dir)}, lt.txn_id DESC`;
   else order = sql`ORDER BY lt.settlement_time DESC, lt.txn_id DESC`;
 
   // posting_count via correlated subquery, not a join+GROUP BY over the whole
@@ -548,16 +556,16 @@ export async function listFirms(args: {
   let order: ReturnType<typeof sql>;
   switch (args.sort) {
     case 'name':
-      order = sql`ORDER BY f.display_name ${sql.raw(args.dir)}, f.firm_id DESC`;
+      order = sql`ORDER BY f.display_name ${rawDir(args.dir)}, f.firm_id DESC`;
       break;
     case 'employees':
-      order = sql`ORDER BY employee_count ${sql.raw(args.dir)}, total_balance DESC`;
+      order = sql`ORDER BY employee_count ${rawDir(args.dir)}, total_balance DESC`;
       break;
     case 'created':
-      order = sql`ORDER BY f.created_at ${sql.raw(args.dir)}, f.firm_id DESC`;
+      order = sql`ORDER BY f.created_at ${rawDir(args.dir)}, f.firm_id DESC`;
       break;
     default:
-      order = sql`ORDER BY total_balance ${sql.raw(args.dir)}, f.firm_id DESC`;
+      order = sql`ORDER BY total_balance ${rawDir(args.dir)}, f.firm_id DESC`;
   }
 
   const result = await sql<{
