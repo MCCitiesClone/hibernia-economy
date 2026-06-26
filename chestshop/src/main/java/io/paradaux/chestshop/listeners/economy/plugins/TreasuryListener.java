@@ -6,10 +6,8 @@ import io.paradaux.chestshop.database.Account;
 import io.paradaux.chestshop.events.AccountAccessEvent;
 import io.paradaux.chestshop.events.AccountQueryEvent;
 import io.paradaux.chestshop.events.economy.AccountCheckEvent;
-import io.paradaux.chestshop.events.economy.CurrencyTransferEvent;
 import io.paradaux.chestshop.events.TransactionEvent;
 import io.paradaux.chestshop.listeners.economy.EconomyAdapter;
-import io.paradaux.chestshop.listeners.economy.TaxModule;
 import io.paradaux.chestshop.Permission;
 import io.paradaux.chestshop.signs.ChestShopSign;
 import io.paradaux.chestshop.utils.ItemUtil;
@@ -100,10 +98,6 @@ public class TreasuryListener extends EconomyAdapter {
 
         ChestShop.getBukkitLogger().info("Treasury SYSTEM account initialized (ID: " + systemAccountId + ")");
 
-        // Hand the live ledger handle + SYSTEM account to the EconomyService —
-        // ChestShop's direct TreasuryApi boundary replacing the currency event bus.
-        ChestShop.economy().bind(treasury, systemAccountId);
-
         // Resolve TaxApi for sales-tax routing into Treasury's default tax
         // account (typically DCGovernment). Treasury exposes it as a separate
         // service so we don't need a second Bukkit lookup.
@@ -112,15 +106,12 @@ public class TreasuryListener extends EconomyAdapter {
             ChestShop.getBukkitLogger().warning(
                     "Treasury loaded but TaxApi unavailable — ChestShop sales tax will not be collected.");
         }
-
-        // The legacy TaxModule mutates CurrencyTransferEvent amounts and
-        // credits the tax into the configured server economy account.
-        // With Treasury wired in we route tax through TaxApi
-        // instead — debiting the seller and crediting the configured tax
-        // account. Disable the legacy path so it doesn't double-tax.
-        TaxModule.setHandledByTreasury(true);
         ChestShop.getBukkitLogger().info("Sales tax now routed via Treasury TaxApi → "
                 + (taxApi != null ? taxApi.getDefaultTaxAccountName() : "(disabled)"));
+
+        // Hand the live ledger handle + SYSTEM account + tax API to the EconomyService —
+        // ChestShop's direct TreasuryApi boundary that replaced the currency event bus.
+        ChestShop.economy().bind(treasury, systemAccountId, taxApi);
 
         // Optionally integrate with the Business plugin for CHESTSHOP permission checks
         BusinessApi businessApi = null;
@@ -218,185 +209,6 @@ public class TreasuryListener extends EconomyAdapter {
         } catch (Exception e) {
             ChestShop.getBukkitLogger().log(Level.WARNING, "Treasury: Could not check account for " + event.getAccount(), e);
         }
-    }
-
-    @EventHandler
-    public void onCurrencyTransfer(CurrencyTransferEvent event) {
-        if (event.wasHandled() || event.getTransactionEvent() == null || event.getTransactionEvent().isCancelled()) {
-            return;
-        }
-
-        String message = buildTransferMessage(event.getTransactionEvent());
-        BigDecimal amountSent = event.getAmountSent();
-        BigDecimal amountReceived = event.getAmountReceived();
-        boolean senderIsAdmin = ChestShop.accounts().isAdminShop(event.getSender());
-        boolean receiverIsAdmin = ChestShop.accounts().isAdminShop(event.getReceiver());
-
-        // Subtract from sender (unless admin shop)
-        if (!senderIsAdmin) {
-            try {
-                int senderAccountId = resolveAccountId(event.getSender());
-                UUID initiator = isBusinessUuid(event.getSender()) ? CHESTSHOP_SYSTEM_UUID : event.getSender();
-                byte[] dedupKey = Idempotency.sha256(
-                        "chestshop:transfer:sub:" + event.getSender() + ":" + amountSent + ":" + System.nanoTime()
-                );
-                TransferRequest request = new TransferRequest(
-                        senderAccountId, systemAccountId, amountSent,
-                        message, initiator, null, "ChestShop", dedupKey
-                );
-                treasury.transfer(request);
-            } catch (Exception e) {
-                ChestShop.getBukkitLogger().log(Level.WARNING,
-                        "Treasury: Could not subtract " + amountSent + " from " + event.getSender(), e);
-                return;
-            }
-        }
-
-        // Add to receiver (unless admin shop)
-        int receiverAccountId = -1;
-        if (!receiverIsAdmin) {
-            try {
-                receiverAccountId = resolveAccountId(event.getReceiver());
-                byte[] dedupKey = Idempotency.sha256(
-                        "chestshop:transfer:add:" + event.getReceiver() + ":" + amountReceived + ":" + System.nanoTime()
-                );
-                TransferRequest request = new TransferRequest(
-                        systemAccountId, receiverAccountId, amountReceived,
-                        message, CHESTSHOP_SYSTEM_UUID, null, "ChestShop", dedupKey
-                );
-                treasury.transfer(request);
-            } catch (Exception e) {
-                ChestShop.getBukkitLogger().log(Level.WARNING,
-                        "Treasury: Could not add " + amountReceived + " to " + event.getReceiver(), e);
-                // Rollback the sender's subtraction
-                if (!senderIsAdmin) {
-                    try {
-                        int senderAccountId = resolveAccountId(event.getSender());
-                        byte[] dedupKey = Idempotency.sha256(
-                                "chestshop:rollback:" + event.getSender() + ":" + amountSent + ":" + System.nanoTime()
-                        );
-                        TransferRequest rollback = new TransferRequest(
-                                systemAccountId, senderAccountId, amountSent,
-                                "ChestShop rollback", CHESTSHOP_SYSTEM_UUID, null, "ChestShop", dedupKey
-                        );
-                        treasury.transfer(rollback);
-                    } catch (Exception rollbackEx) {
-                        ChestShop.getBukkitLogger().log(Level.SEVERE,
-                                "Treasury: CRITICAL - Failed to rollback " + amountSent + " to " + event.getSender(), rollbackEx);
-                    }
-                }
-                return;
-            }
-        }
-
-        // Sales tax. Computed against the receiver-side amount, debited from
-        // the seller's account into Treasury's default tax account (typically
-        // DCGovernment) as a separate ledger entry. Skipped when:
-        //   - the receiver is an admin shop (no real account to debit)
-        //   - the rate is 0 (config-disabled)
-        //   - TaxApi was unavailable at startup
-        //   - the buyer holds the ChestShop.notax.sell permission
-        if (taxApi != null && !receiverIsAdmin && receiverAccountId > 0) {
-            BigDecimal rate = resolveTaxRate(event.getPartner());
-            Player initiatorPlayer = event.getInitiator();
-            if (rate.compareTo(BigDecimal.ZERO) > 0
-                    && (initiatorPlayer == null || !Permission.has(initiatorPlayer, Permission.NO_BUY_TAX))) {
-                try {
-                    UUID initiatorUuid = isBusinessUuid(event.getReceiver())
-                            ? CHESTSHOP_SYSTEM_UUID : event.getReceiver();
-                    byte[] dedupKey = Idempotency.sha256(
-                            "chestshop:tax:" + event.getReceiver() + ":" + amountReceived
-                                    + ":" + System.nanoTime()
-                    );
-                    TaxResult result = taxApi.collectRateTax(
-                            receiverAccountId,
-                            amountReceived,
-                            rate,
-                            "chestshop-sales-tax",
-                            "ChestShop sales tax (" + rate.movePointRight(2).stripTrailingZeros().toPlainString()
-                                    + "% of " + amountReceived + ") — " + message,
-                            initiatorUuid,
-                            "ChestShop",
-                            dedupKey);
-                    if (result instanceof TaxResult.Failed f) {
-                        ChestShop.getBukkitLogger().warning(
-                                "Treasury: sales-tax collection failed for accountId=" + receiverAccountId
-                                        + ": " + f.errorMessage());
-                    }
-                } catch (Exception e) {
-                    // Tax collection is best-effort — log and continue. The
-                    // primary transfer has already committed.
-                    ChestShop.getBukkitLogger().log(Level.WARNING,
-                            "Treasury: sales-tax collection threw for receiver " + event.getReceiver(), e);
-                }
-            }
-        }
-
-        event.setHandled(true);
-    }
-
-    /**
-     * Tax rate as a decimal fraction (e.g. {@code 0.05} for 5%). Mirrors the
-     * legacy TaxModule split: {@code SERVER_TAX_AMOUNT} for admin / server
-     * counterparties, {@code TAX_AMOUNT} for everyone else.
-     */
-    private static BigDecimal resolveTaxRate(@Nullable UUID partner) {
-        double pct = (partner != null
-                && (ChestShop.accounts().isAdminShop(partner) || ChestShop.accounts().isServerEconomyAccount(partner)))
-                ? Properties.SERVER_TAX_AMOUNT
-                : Properties.TAX_AMOUNT;
-        if (pct == 0) return BigDecimal.ZERO;
-        return BigDecimal.valueOf(pct)
-                .divide(BigDecimal.valueOf(100), 6, java.math.RoundingMode.HALF_UP);
-    }
-
-    private static final int MAX_MESSAGE_LENGTH = 250;
-
-    private static String buildTransferMessage(TransactionEvent txn) {
-        int totalItems = Arrays.stream(txn.getStock()).mapToInt(ItemStack::getAmount).sum();
-        // Name the traded item from the actual stack via ChestShop's event-backed
-        // ItemUtil, so the memo reflects custom items (e.g. Nexo, resolved through
-        // ItemStringQueryEvent) rather than only the raw sign-line text. Falls
-        // back to the sign's item line if the stack can't be coded.
-        String itemName = transferItemName(txn);
-        String ownerName = txn.getOwnerAccount().getName();
-        String clientName = txn.getClient().getName();
-        boolean isBuy = txn.getTransactionType() == TransactionEvent.TransactionType.BUY;
-
-        // "{client} bought x{qty} {item} from {owner}" or "{client} sold x{qty} {item} to {owner}"
-        String prefix = clientName + (isBuy ? " bought x" : " sold x") + totalItems + " ";
-        String suffix = (isBuy ? " from " : " to ") + ownerName;
-        int available = MAX_MESSAGE_LENGTH - prefix.length() - suffix.length();
-
-        if (available < 1) {
-            return (prefix + suffix).substring(0, MAX_MESSAGE_LENGTH);
-        }
-        if (itemName.length() > available) {
-            itemName = itemName.substring(0, available);
-        }
-        return prefix + itemName + suffix;
-    }
-
-    /**
-     * Canonical, custom-aware name for the traded item: ChestShop's event-backed
-     * {@link ItemUtil#getName(ItemStack, int)} (width 0 = untruncated) so a Nexo
-     * or other bridged item names itself through {@code ItemStringQueryEvent}.
-     * Falls back to the raw sign item line if the stack is missing or can't be
-     * coded, so behaviour is never worse than before.
-     */
-    private static String transferItemName(TransactionEvent txn) {
-        ItemStack[] stock = txn.getStock();
-        if (stock != null && stock.length > 0 && stock[0] != null) {
-            try {
-                String code = ItemUtil.getName(stock[0], 0);
-                if (code != null && !code.isBlank()) {
-                    return code;
-                }
-            } catch (RuntimeException ignored) {
-                // Code didn't round-trip — fall back to the sign line below.
-            }
-        }
-        return ChestShopSign.getItem(txn.getSign());
     }
 
     // --- Account query/access handlers for business accounts ---

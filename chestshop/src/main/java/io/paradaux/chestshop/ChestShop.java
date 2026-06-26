@@ -15,8 +15,6 @@ import io.paradaux.chestshop.listeners.block.breaking.ChestBreak;
 import io.paradaux.chestshop.listeners.block.breaking.SignBreak;
 import io.paradaux.chestshop.listeners.block.SignCreate;
 import io.paradaux.chestshop.listeners.economy.EconomyAdapter;
-import io.paradaux.chestshop.listeners.economy.ServerAccountCorrector;
-import io.paradaux.chestshop.listeners.economy.TaxModule;
 import io.paradaux.chestshop.listeners.GarbageTextListener;
 import io.paradaux.chestshop.listeners.item.ItemMoveListener;
 import io.paradaux.chestshop.listeners.item.ItemStringListener;
@@ -436,13 +434,6 @@ public class ChestShop extends JavaPlugin {
         registerEvent(new ItemAliasModule());
         registerEvent(new MetricsModule());
         registerEvent(new StockCounterModule());
-
-        registerEconomicalModules();
-    }
-
-    private void registerEconomicalModules() {
-        registerEvent(new ServerAccountCorrector());
-        registerEvent(new TaxModule());
     }
 
     private void registerFeatureListeners() {

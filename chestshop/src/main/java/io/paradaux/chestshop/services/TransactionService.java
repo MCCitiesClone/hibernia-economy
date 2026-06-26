@@ -4,7 +4,6 @@ import com.google.inject.Singleton;
 import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.configuration.Properties;
 import io.paradaux.chestshop.events.TransactionEvent;
-import io.paradaux.chestshop.events.economy.CurrencyTransferEvent;
 import io.paradaux.chestshop.utils.ImplementationAdapter;
 import io.paradaux.chestshop.utils.InventoryUtil;
 import org.bukkit.block.BlockState;
@@ -24,11 +23,10 @@ import static io.paradaux.chestshop.events.TransactionEvent.TransactionType.BUY;
  * the atomicity guarantee ADT-4 was about, now readable and unit-testable as a
  * single method.
  *
- * <p>The money itself still flows through {@link CurrencyTransferEvent} — that event
- * is a genuine integration point (Treasury settles it, the tax + message modules
- * react to it), so this service fires it rather than swallowing it. Downstream
- * post-transaction reactions (empty-shop cleanup, messages, logging) remain their
- * own listeners for now; collapsing those is a later phase.
+ * <p>The money leg settles directly through {@link ChestShop#economy()} (a single
+ * buyer→seller {@code TreasuryApi} transfer); the goods are reversed if it fails, so
+ * the trade is all-or-nothing. Downstream post-transaction reactions (empty-shop
+ * cleanup, messages, logging) remain their own listeners for now.
  */
 @Singleton
 public class TransactionService {
@@ -50,17 +48,11 @@ public class TransactionService {
             return;
         }
 
-        // Money leg (was EconomicModule @HIGH): settle via CurrencyTransferEvent.
-        CurrencyTransferEvent currency = new CurrencyTransferEvent(
-                event.getExactPrice(),
-                event.getClient(),
-                event.getOwnerAccount().getUuid(),
-                buy ? CurrencyTransferEvent.Direction.PARTNER : CurrencyTransferEvent.Direction.INITIATOR,
-                event);
-        ChestShop.callEvent(currency);
-
-        if (!currency.wasHandled()) {
-            // The goods already moved but nothing settled the money — put the goods
+        // Money leg: settle directly through the EconomyService (a direct buyer→seller
+        // TreasuryApi transfer), replacing the old CurrencyTransferEvent fan-out.
+        if (!ChestShop.economy().settle(event.getExactPrice(), event.getClient(),
+                event.getOwnerAccount().getUuid(), buy, event)) {
+            // The goods already moved but the money didn't settle — put the goods
             // back and cancel, keeping the trade atomic.
             reverseTransfer(event);
             event.setCancelled(true);
