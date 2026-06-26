@@ -2,9 +2,7 @@ package io.paradaux.chestshop.economy;
 
 import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.configuration.Properties;
-import io.paradaux.chestshop.events.economy.CurrencyAddEvent;
 import io.paradaux.chestshop.events.economy.CurrencyCheckEvent;
-import io.paradaux.chestshop.events.economy.CurrencySubtractEvent;
 import io.paradaux.chestshop.signs.ChestShopSign;
 import org.bukkit.World;
 import org.bukkit.inventory.Inventory;
@@ -29,28 +27,6 @@ public class Economy {
 
     public static boolean isOwnerEconomicallyActive(Inventory inventory) {
         return !ChestShopSign.isAdminShop(inventory) || ChestShop.accounts().getServerEconomyAccount() != null;
-    }
-
-    /**
-     * @deprecated Directly call the {@link CurrencyAddEvent}
-     */
-    @Deprecated
-    public static boolean add(UUID name, World world, double amount) {
-        CurrencyAddEvent event = new CurrencyAddEvent(BigDecimal.valueOf(amount), name, world);
-        ChestShop.callEvent(event);
-
-        return event.wasHandled();
-    }
-
-    /**
-     * @deprecated Directly call the {@link CurrencySubtractEvent}
-     */
-    @Deprecated
-    public static boolean subtract(UUID name, World world, double amount) {
-        CurrencySubtractEvent event = new CurrencySubtractEvent(BigDecimal.valueOf(amount), name, world);
-        ChestShop.callEvent(event);
-
-        return event.wasHandled();
     }
 
     /**

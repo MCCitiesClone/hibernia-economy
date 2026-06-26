@@ -2,7 +2,6 @@ package io.paradaux.chestshop.listeners.economy;
 
 import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.configuration.Properties;
-import io.paradaux.chestshop.events.economy.CurrencyAddEvent;
 import io.paradaux.chestshop.events.economy.CurrencyTransferEvent;
 import io.paradaux.chestshop.Permission;
 import io.paradaux.chestshop.ChestShop;
@@ -56,8 +55,8 @@ public class TaxModule implements Listener {
         }
         if (handledByTreasury) {
             // Treasury's TreasuryListener will collect tax via TaxApi after
-            // the receiver credit. Don't mutate amounts or fire a duplicate
-            // CurrencyAddEvent.
+            // the receiver credit. Don't mutate amounts or double-credit the
+            // server account here.
             return;
         }
 
@@ -72,10 +71,10 @@ public class TaxModule implements Listener {
                 BigDecimal taxedAmount = event.getAmountReceived().subtract(tax);
                 event.setAmountReceived(taxedAmount);
                 if (ChestShop.accounts().getServerEconomyAccount() != null) {
-                    ChestShop.callEvent(new CurrencyAddEvent(
-                            tax,
+                    ChestShop.economy().deposit(
                             ChestShop.accounts().getServerEconomyAccount().getUuid(),
-                            event.getWorld()));
+                            tax,
+                            event.getWorld());
                 }
                 ChestShop.getShopLogger().info(String.format(TAX_RECEIVED_MESSAGE, taxAmount, tax, taxedAmount));
             }

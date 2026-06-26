@@ -1,17 +1,12 @@
 package io.paradaux.chestshop.listeners.economy;
 
-import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.events.economy.AccountCheckEvent;
-import io.paradaux.chestshop.events.economy.CurrencyAddEvent;
 import io.paradaux.chestshop.events.economy.CurrencyAmountEvent;
 import io.paradaux.chestshop.events.economy.CurrencyCheckEvent;
 import io.paradaux.chestshop.events.economy.CurrencyHoldEvent;
-import io.paradaux.chestshop.events.economy.CurrencySubtractEvent;
 import io.paradaux.chestshop.events.economy.CurrencyTransferEvent;
 import org.bukkit.event.Listener;
 import org.jetbrains.annotations.Nullable;
-
-import java.math.BigDecimal;
 
 public abstract class EconomyAdapter implements Listener {
 
@@ -24,55 +19,9 @@ public abstract class EconomyAdapter implements Listener {
 
     public abstract void onAccountCheck(AccountCheckEvent event);
 
-    public abstract void onCurrencyAdd(CurrencyAddEvent event);
-
-    public abstract void onCurrencySubtraction(CurrencySubtractEvent event);
-
     public abstract void onCurrencyTransfer(CurrencyTransferEvent event);
 
     public abstract void onCurrencyHoldCheck(CurrencyHoldEvent event);
-
-    /**
-     * Convenience method to process transfers by first subtracting and then adding
-     *
-     * @param event The CurrencyTransferEvent to process
-     */
-    protected void processTransfer(CurrencyTransferEvent event) {
-        if (event.wasHandled() || event.getTransactionEvent() == null || event.getTransactionEvent().isCancelled()) {
-            return;
-        }
-
-        BigDecimal amountSent = event.getAmountSent();
-        CurrencySubtractEvent currencySubtractEvent = new CurrencySubtractEvent(amountSent, event.getSender(), event.getWorld());
-        if (!ChestShop.accounts().isAdminShop(event.getSender())) {
-            ChestShop.callEvent(currencySubtractEvent);
-        } else {
-            currencySubtractEvent.setHandled(true);
-        }
-
-        if (!currencySubtractEvent.wasHandled()) {
-            return;
-        }
-
-        BigDecimal amountReceived = event.getAmountReceived().subtract(amountSent.subtract(currencySubtractEvent.getAmount()));
-        CurrencyAddEvent currencyAddEvent = new CurrencyAddEvent(amountReceived, event.getReceiver(), event.getWorld());
-        if (!ChestShop.accounts().isAdminShop(event.getReceiver())) {
-            ChestShop.callEvent(currencyAddEvent);
-        } else {
-            currencyAddEvent.setHandled(true);
-        }
-
-        if (currencyAddEvent.wasHandled()) {
-            event.setHandled(true);
-        } else {
-            CurrencyAddEvent currencyResetEvent = new CurrencyAddEvent(
-                    currencySubtractEvent.getAmount(),
-                    event.getSender(),
-                    event.getWorld()
-            );
-            ChestShop.callEvent(currencyResetEvent);
-        }
-    }
 
     public static class ProviderInfo {
         private final String name;

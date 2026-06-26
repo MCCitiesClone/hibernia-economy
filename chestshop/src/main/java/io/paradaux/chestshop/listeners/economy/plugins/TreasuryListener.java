@@ -6,11 +6,9 @@ import io.paradaux.chestshop.database.Account;
 import io.paradaux.chestshop.events.AccountAccessEvent;
 import io.paradaux.chestshop.events.AccountQueryEvent;
 import io.paradaux.chestshop.events.economy.AccountCheckEvent;
-import io.paradaux.chestshop.events.economy.CurrencyAddEvent;
 import io.paradaux.chestshop.events.economy.CurrencyAmountEvent;
 import io.paradaux.chestshop.events.economy.CurrencyCheckEvent;
 import io.paradaux.chestshop.events.economy.CurrencyHoldEvent;
-import io.paradaux.chestshop.events.economy.CurrencySubtractEvent;
 import io.paradaux.chestshop.events.economy.CurrencyTransferEvent;
 import io.paradaux.chestshop.events.TransactionEvent;
 import io.paradaux.chestshop.listeners.economy.EconomyAdapter;
@@ -84,10 +82,6 @@ public class TreasuryListener extends EconomyAdapter {
 
         TreasuryApi treasury = rsp.getProvider();
 
-        // Hand the live ledger handle to the EconomyService — ChestShop's direct
-        // TreasuryApi boundary that's replacing the internal currency event bus.
-        ChestShop.economy().bind(treasury);
-
         // Find or create the ChestShop SYSTEM account for intermediary transfers
         int systemAccountId;
         try {
@@ -109,6 +103,10 @@ public class TreasuryListener extends EconomyAdapter {
 
         ChestShop.getBukkitLogger().info("Treasury SYSTEM account initialized (ID: " + systemAccountId + ")");
 
+        // Hand the live ledger handle + SYSTEM account to the EconomyService —
+        // ChestShop's direct TreasuryApi boundary replacing the currency event bus.
+        ChestShop.economy().bind(treasury, systemAccountId);
+
         // Resolve TaxApi for sales-tax routing into Treasury's default tax
         // account (typically DCGovernment). Treasury exposes it as a separate
         // service so we don't need a second Bukkit lookup.
@@ -119,8 +117,8 @@ public class TreasuryListener extends EconomyAdapter {
         }
 
         // The legacy TaxModule mutates CurrencyTransferEvent amounts and
-        // fires its own CurrencyAddEvent into the configured server economy
-        // account. With Treasury wired in we route tax through TaxApi
+        // credits the tax into the configured server economy account.
+        // With Treasury wired in we route tax through TaxApi
         // instead — debiting the seller and crediting the configured tax
         // account. Disable the legacy path so it doesn't double-tax.
         TaxModule.setHandledByTreasury(true);
@@ -261,68 +259,6 @@ public class TreasuryListener extends EconomyAdapter {
             event.setHandled(true);
         } catch (Exception e) {
             ChestShop.getBukkitLogger().log(Level.WARNING, "Treasury: Could not check account for " + event.getAccount(), e);
-        }
-    }
-
-    @EventHandler
-    public void onCurrencyAdd(CurrencyAddEvent event) {
-        if (event.wasHandled()) {
-            return;
-        }
-
-        try {
-            int targetAccountId = resolveAccountId(event.getTarget());
-            byte[] dedupKey = Idempotency.sha256(
-                    "chestshop:add:" + event.getTarget() + ":" + event.getAmount() + ":" + System.nanoTime()
-            );
-
-            TransferRequest request = new TransferRequest(
-                    systemAccountId,
-                    targetAccountId,
-                    event.getAmount(),
-                    "ChestShop deposit",
-                    CHESTSHOP_SYSTEM_UUID,
-                    null,
-                    "ChestShop",
-                    dedupKey
-            );
-            treasury.transfer(request);
-            event.setHandled(true);
-        } catch (Exception e) {
-            ChestShop.getBukkitLogger().log(Level.WARNING, "Treasury: Could not add " + event.getAmount() + " to " + event.getTarget(), e);
-        }
-    }
-
-    @EventHandler
-    public void onCurrencySubtraction(CurrencySubtractEvent event) {
-        if (event.wasHandled()) {
-            return;
-        }
-
-        try {
-            int targetAccountId = resolveAccountId(event.getTarget());
-            byte[] dedupKey = Idempotency.sha256(
-                    "chestshop:sub:" + event.getTarget() + ":" + event.getAmount() + ":" + System.nanoTime()
-            );
-
-            // Use the target's UUID as the initiator for personal accounts,
-            // since the account owner is the one authorizing the withdrawal.
-            UUID initiator = isBusinessUuid(event.getTarget()) ? CHESTSHOP_SYSTEM_UUID : event.getTarget();
-
-            TransferRequest request = new TransferRequest(
-                    targetAccountId,
-                    systemAccountId,
-                    event.getAmount(),
-                    "ChestShop withdrawal",
-                    initiator,
-                    null,
-                    "ChestShop",
-                    dedupKey
-            );
-            treasury.transfer(request);
-            event.setHandled(true);
-        } catch (Exception e) {
-            ChestShop.getBukkitLogger().log(Level.WARNING, "Treasury: Could not subtract " + event.getAmount() + " from " + event.getTarget(), e);
         }
     }
 

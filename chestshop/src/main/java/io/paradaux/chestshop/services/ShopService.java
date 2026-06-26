@@ -7,8 +7,6 @@ import io.paradaux.chestshop.configuration.Properties;
 import io.paradaux.chestshop.database.Account;
 import io.paradaux.chestshop.economy.Economy;
 import io.paradaux.chestshop.events.AccountQueryEvent;
-import io.paradaux.chestshop.events.economy.CurrencyAddEvent;
-import io.paradaux.chestshop.events.economy.CurrencySubtractEvent;
 import io.paradaux.chestshop.signs.ChestShopSign;
 import org.bukkit.ChatColor;
 import org.bukkit.World;
@@ -55,9 +53,7 @@ public class ShopService {
             return true;
         }
 
-        CurrencySubtractEvent subtraction = new CurrencySubtractEvent(price, player);
-        ChestShop.callEvent(subtraction);
-        if (!subtraction.wasHandled()) {
+        if (!ChestShop.economy().withdraw(player.getUniqueId(), price, player.getWorld())) {
             return false;
         }
 
@@ -90,8 +86,7 @@ public class ShopService {
             return;
         }
 
-        CurrencyAddEvent add = new CurrencyAddEvent(refund, account.getUuid(), sign.getWorld());
-        ChestShop.callEvent(add);
+        ChestShop.economy().deposit(account.getUuid(), refund, sign.getWorld());
 
         debitServerEconomy(refund, sign.getWorld());
         ChestShop.message().send(destroyer, "chestshop.SHOP_REFUNDED", "amount", Economy.formatBalance(refund));
@@ -101,7 +96,7 @@ public class ShopService {
     private void creditServerEconomy(BigDecimal amount, World world) {
         Account serverAccount = ChestShop.accounts().getServerEconomyAccount();
         if (serverAccount != null) {
-            ChestShop.callEvent(new CurrencyAddEvent(amount, serverAccount.getUuid(), world));
+            ChestShop.economy().deposit(serverAccount.getUuid(), amount, world);
         }
     }
 
@@ -109,7 +104,7 @@ public class ShopService {
     private void debitServerEconomy(BigDecimal amount, World world) {
         Account serverAccount = ChestShop.accounts().getServerEconomyAccount();
         if (serverAccount != null) {
-            ChestShop.callEvent(new CurrencySubtractEvent(amount, serverAccount.getUuid(), world));
+            ChestShop.economy().withdraw(serverAccount.getUuid(), amount, world);
         }
     }
 }
