@@ -31,6 +31,11 @@ public final class DataSourceProvider {
         cfg.setPoolName("Treasury-Hikari");
         cfg.setDriverClassName("org.mariadb.jdbc.Driver");
         cfg.setAutoCommit(false); // Let MyBatis/transactions manage commits
+        // With autoCommit=false a connection that escapes its transaction without a
+        // commit/rollback (e.g. blocking I/O inside @Transactional) is pinned out of
+        // the pool with an open transaction. Warn-log any connection held longer than
+        // 30s so such leaks surface instead of silently exhausting the pool (ADT-55).
+        cfg.setLeakDetectionThreshold(30_000L);
         this.ds = new HikariDataSource(cfg);
     }
 

@@ -849,6 +849,14 @@ public class GovCommand implements CommandHandler {
             toDisplayName = businessAccount.getDisplayName();
         }
 
+        // Reject a payout that resolves to the source account itself up front, with a
+        // clear message — the ledger now rejects a same-account transfer outright
+        // (ADT-33), so without this guard it would surface as an uncaught error (ADT-55).
+        if (from.getAccountId() == toAccountId) {
+            message.send(sender, "treasury.gov.account.transfer.same-account", "name", toDisplayName);
+            return;
+        }
+
         String memo = reason != null
                 ? "Gov payout: " + reason
                 : "Gov payout from " + from.getDisplayName() + " to " + toDisplayName;

@@ -67,8 +67,15 @@ public class EcoCommand implements CommandHandler {
         }
 
         UUID adminUuid = sender instanceof Player p ? p.getUniqueId() : TreasuryConstants.VIRTUAL_TREASURY_INITIATOR;
-        ledgerService.adminGive(target.getUniqueId(), normalized,
-                "Admin give by " + sender.getName(), adminUuid);
+        try {
+            ledgerService.adminGive(target.getUniqueId(), normalized,
+                    "Admin give by " + sender.getName(), adminUuid);
+        } catch (IllegalStateException | IllegalArgumentException e) {
+            // Mirror /eco take's defensive handling: surface a clean message instead
+            // of leaking a raw ledger exception if the give can't be applied (ADT-55).
+            message.send(sender, "treasury.general.invalid-amount");
+            return;
+        }
 
         String formattedAmount = accountService.formatAmount(normalized);
         message.send(sender, "treasury.eco.give.success",
