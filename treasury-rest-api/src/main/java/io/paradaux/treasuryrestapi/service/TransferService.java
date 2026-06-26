@@ -238,7 +238,7 @@ public class TransferService {
             if (sourceBalance.getBalance().subtract(amount).compareTo(creditLimit.negate()) < 0) {
                 log.warn("Transfer rejected: insufficient funds on accountId={} (balance={}, amount={}, creditLimit={})",
                         fromAccountId, sourceBalance.getBalance(), amount, creditLimit);
-                throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "INSUFFICIENT_FUNDS",
+                throw new ApiException(HttpStatus.UNPROCESSABLE_CONTENT, "INSUFFICIENT_FUNDS",
                         "Source account has insufficient funds.");
             }
         }
@@ -313,7 +313,7 @@ public class TransferService {
                     "Firm '" + request.toFirm() + "' not found.");
         }
         if (firm.getDefaultAccountId() == null) {
-            throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "NO_DEFAULT_ACCOUNT",
+            throw new ApiException(HttpStatus.UNPROCESSABLE_CONTENT, "NO_DEFAULT_ACCOUNT",
                     "Firm '" + request.toFirm() + "' has no default account configured.");
         }
 

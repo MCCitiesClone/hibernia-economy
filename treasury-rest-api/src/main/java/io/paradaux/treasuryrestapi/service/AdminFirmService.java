@@ -92,7 +92,7 @@ public class AdminFirmService {
 
             if (balance.signum() > 0) {
                 if (proprietorPersonal == null) {
-                    throw new ApiException(HttpStatus.UNPROCESSABLE_ENTITY, "PROPRIETOR_NO_PERSONAL_ACCOUNT",
+                    throw new ApiException(HttpStatus.UNPROCESSABLE_CONTENT, "PROPRIETOR_NO_PERSONAL_ACCOUNT",
                             "Firm account " + accountId + " has a positive balance but the proprietor has no "
                                     + "personal account to receive it.");
                 }

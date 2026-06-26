@@ -38,17 +38,23 @@ dependencies {
     implementation("org.mybatis.spring.boot:mybatis-spring-boot-starter:4.0.1")
 
     // Swagger / OpenAPI
-    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.1")
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.3")
 
     // Rate limiting — Bucket4j core + Caffeine (in-memory) and Lettuce
     // (Redis). Caffeine is the default; Redis kicks in when the
     // rate-limit.redis-host property is set (see RateLimitConfig).
-    implementation("com.bucket4j:bucket4j_jdk17-core:8.14.0")
-    implementation("com.bucket4j:bucket4j_jdk17-caffeine:8.14.0")
-    implementation("com.bucket4j:bucket4j_jdk17-redis-common:8.14.0")
-    implementation("com.bucket4j:bucket4j_jdk17-lettuce:8.14.0")
-    implementation("io.lettuce:lettuce-core:6.4.0.RELEASE")
-    implementation("com.github.ben-manes.caffeine:caffeine:3.1.8")
+    implementation("com.bucket4j:bucket4j_jdk17-core:8.19.0")
+    implementation("com.bucket4j:bucket4j_jdk17-caffeine:8.19.0")
+    implementation("com.bucket4j:bucket4j_jdk17-redis-common:8.19.0")
+    implementation("com.bucket4j:bucket4j_jdk17-lettuce:8.19.0")
+    // Lettuce and Caffeine versions are both left to the Spring Boot BOM
+    // (lettuce 7.x, caffeine 3.2.x). bucket4j_jdk17-lettuce declares lettuce 6.x
+    // as a `provided` compile floor, but every lettuce symbol it actually calls
+    // (RedisClient.connect, StatefulRedisConnection.async, RedisAsyncCommands
+    // eval/del/get, ScriptOutputType, RedisException, RedisFuture) is unchanged
+    // in lettuce 7 — verified by bytecode linkage — so the BOM version is safe.
+    implementation("io.lettuce:lettuce-core")
+    implementation("com.github.ben-manes.caffeine:caffeine")
 
     // JWT
     implementation(libs.jjwt.api)
