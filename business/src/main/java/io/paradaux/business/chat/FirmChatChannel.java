@@ -64,7 +64,11 @@ public class FirmChatChannel implements ChatChannel {
 
     @Override
     public String quickPrefix() {
-        return ""; // no quick-prefix; entered via /firm chat, kept cheap in Carbon's per-message loop
+        // MUST be null, not "" — Carbon's channelForMessage skips null-prefix channels, but a
+        // non-null "" matches every message via startsWith("") and then strips it with
+        // replaceText(matchLiteral("")), blanking the body. Firm chat is entered via /firm chat,
+        // so it has no quick-prefix at all. (PAR-20)
+        return null;
     }
 
     @Override
