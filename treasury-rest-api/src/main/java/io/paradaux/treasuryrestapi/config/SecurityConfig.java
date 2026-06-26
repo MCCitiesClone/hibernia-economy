@@ -41,7 +41,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/chestshop/**").permitAll()
                         .requestMatchers("/api/v1/transfers/**", "/api/v1/auth/**",
                                 "/api/v1/accounts/**", "/api/v1/firms/**",
-                                "/api/v1/webhooks/**").authenticated()
+                                "/api/v1/webhooks/**", "/api/v1/admin/**").authenticated()
                         .anyRequest().permitAll())
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
                 .httpBasic(AbstractHttpConfigurer::disable)
