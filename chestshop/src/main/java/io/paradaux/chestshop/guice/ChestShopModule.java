@@ -2,8 +2,11 @@ package io.paradaux.chestshop.guice;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Singleton;
+import io.paradaux.chestshop.dao.AccountRepository;
 import io.paradaux.chestshop.dao.ItemCodeRepository;
+import io.paradaux.chestshop.dao.impl.SqliteAccountRepository;
 import io.paradaux.chestshop.dao.impl.SqliteItemCodeRepository;
+import io.paradaux.chestshop.services.AccountService;
 import io.paradaux.chestshop.services.ItemCodeService;
 import io.paradaux.chestshop.services.TransactionService;
 
@@ -22,5 +25,8 @@ public class ChestShopModule extends AbstractModule {
         bind(ItemCodeRepository.class).to(SqliteItemCodeRepository.class).in(Singleton.class);
         bind(ItemCodeService.class).in(Singleton.class);
         bind(TransactionService.class).in(Singleton.class);
+
+        bind(AccountRepository.class).to(SqliteAccountRepository.class).in(Singleton.class);
+        bind(AccountService.class).in(Singleton.class);
     }
 }
