@@ -109,6 +109,8 @@ public class ChestShop extends JavaPlugin {
 
     private static Metrics bStats;
 
+    private static io.paradaux.hibernia.framework.i18n.Message message;
+
     private static File dataFolder;
     private static ItemDatabase itemDatabase;
 
@@ -159,6 +161,7 @@ public class ChestShop extends JavaPlugin {
         this.injector = com.google.inject.Guice.createInjector(hibernia);
         this.configurationLoader = injector.getInstance(
                 io.paradaux.hibernia.framework.configurator.ConfigurationLoader.class);
+        message = injector.getInstance(io.paradaux.hibernia.framework.i18n.Message.class);
 
         injector.getInstance(io.paradaux.hibernia.framework.commander.CommandManager.class).registerAll();
 
@@ -594,6 +597,11 @@ public class ChestShop extends JavaPlugin {
 
     public static Metrics getMetrics() {
         return bStats;
+    }
+
+    /** The framework i18n bean backing the {@link Messages} catalogue. */
+    public static io.paradaux.hibernia.framework.i18n.Message message() {
+        return message;
     }
 
     public static void registerListener(Listener listener) {

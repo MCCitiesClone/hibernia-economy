@@ -1,8 +1,8 @@
 package io.paradaux.chestshop.events;
 
 import io.paradaux.chestshop.configuration.Messages;
-import de.themoep.minedown.adventure.MineDown;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.command.CommandSender;
 import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
@@ -109,11 +109,13 @@ public class ItemInfoEvent extends Event {
 
         @Override
         public Component getComponent(CommandSender sender, boolean prefixSuffix, Map<String, String> replacementMap, String... replacements) {
+            // Raw item-info lines (lore/enchantments/potions) carry §-section legacy
+            // colour codes (ChatColor.*), so deserialize them natively instead of MineDown.
+            Component parsed = LegacyComponentSerializer.legacySection().deserialize(message);
             if (prefixSuffix) {
-                return Messages.prefix.getComponent(sender, false, replacementMap, replacements)
-                        .append(MineDown.parse(message));
+                return Messages.prefix.getComponent(sender, false, replacementMap, replacements).append(parsed);
             }
-            return MineDown.parse(message);
+            return parsed;
         }
     }
 }

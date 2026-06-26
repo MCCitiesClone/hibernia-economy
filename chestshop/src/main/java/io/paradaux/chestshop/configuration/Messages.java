@@ -1,22 +1,28 @@
 package io.paradaux.chestshop.configuration;
 
-import io.paradaux.chestshop.configuration.Configuration;
 import io.paradaux.chestshop.ChestShop;
-import de.themoep.minedown.adventure.MineDown;
-import de.themoep.utils.lang.bukkit.BukkitLanguageConfig;
-import de.themoep.utils.lang.bukkit.LanguageManager;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.command.CommandSender;
 
-import java.io.File;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.logging.Level;
 
 /**
+ * ChestShop's message catalogue. Each constant is a thin handle to a key in
+ * {@code messages.properties}, rendered through the HiberniaFramework
+ * {@link io.paradaux.hibernia.framework.i18n.Message} bean (MiniMessage formatting,
+ * {@code {placeholder}} substitution) — the same i18n stack Treasury/Business use.
+ *
+ * <p>This replaced the former de.themoep MineDown + LanguageManager pipeline: the
+ * fork doesn't need multi-language support, and removing MineDown removes a whole
+ * class of Adventure-version incompatibility bugs (a MineDown internal type
+ * implemented a now-sealed Adventure interface). The per-language {@code lang.*.yml}
+ * files are gone; English text lives in {@code messages.properties}.
+ *
  * @author Acrobot
  */
 public class Messages {
@@ -122,57 +128,28 @@ public class Messages {
 
     public static Message ERROR_OCCURRED;
 
-    @Deprecated
-    public static String prefix(String message) {
-        return Configuration.getColoured(prefix.getLang(null) + message);
-    }
-
-    @Deprecated
-    public static String replace(String message, String... replacements) {
-        for (int i = 0; i + 1 < replacements.length; i+=2) {
-            message = message.replace("%" + replacements[i], replacements[i+1]);
-        }
-        return Configuration.getColoured(message);
-    }
-
-    private static LanguageManager manager;
-
+    /** Binds each static field to its {@code chestshop.<field>} key in messages.properties. */
     public static void load() {
         for (Field field : Messages.class.getFields()) {
-            if (!Modifier.isStatic(field.getModifiers())) {
+            if (!Modifier.isStatic(field.getModifiers()) || field.getType() != Message.class) {
                 continue;
             }
             try {
-                field.set(null, new Message(field.getName()));
+                field.set(null, new Message("chestshop." + field.getName()));
             } catch (IllegalAccessException e) {
                 ChestShop.getBukkitLogger().log(Level.SEVERE, "Error while setting Message " + field.getName() + "!", e);
             }
         }
-        manager = new LanguageManager(ChestShop.getPlugin(), Properties.DEFAULT_LANGUAGE);
-
-        if (manager.getDefaultConfig() == null) {
-            manager.setDefaultLocale("en");
-            ChestShop.getBukkitLogger().log(Level.WARNING, "There is no language file for your DEFAULT_LANGUAGE config setting of '" + Properties.DEFAULT_LANGUAGE + "' in your languages folder! Using default English as default until you have created one or changed the config option to another, existing language file.");
-        }
-
-        // Legacy locale.yml file
-        File legacyFile = new File(ChestShop.getPlugin().getDataFolder(), "local.yml");
-        if (legacyFile.exists()) {
-            ChestShop.getBukkitLogger().log(Level.INFO, "Found legacy local.yml. Loading it as 'legacy' language and using that for all messages.");
-            ChestShop.getBukkitLogger().log(Level.INFO, "As long as the legacy file is used automatic language switching based on the client settings will not be supported!");
-            ChestShop.getBukkitLogger().log(Level.INFO, "Import it into the corresponding language file and remove/rename the file if you don't want it anymore!");
-            manager.addConfig(new BukkitLanguageConfig(ChestShop.getPlugin(), "", legacyFile, "legacy", false));
-            manager.setDefaultLocale("legacy");
-            Properties.USE_CLIENT_LOCALE = false;
-        }
-
-        if (!Properties.USE_CLIENT_LOCALE) {
-            manager.setProvider(sender -> null);
-        }
     }
 
+    /**
+     * A handle to one {@code messages.properties} key. Rendered through the
+     * framework {@code Message} bean ({@link ChestShop#message()}); placeholder
+     * values are passed straight through (a {@link net.kyori.adventure.text.ComponentLike}
+     * value — e.g. a formatted item name — renders inline).
+     */
     public static class Message {
-        private String key;
+        private final String key;
 
         public Message(String key) {
             this.key = key;
@@ -183,11 +160,11 @@ public class Messages {
         }
 
         public void sendWithPrefix(CommandSender sender, Map<String, String> replacements) {
-            sender.sendMessage(getComponent(sender, true, replacements));
+            sendWithPrefix(sender, replacements, new String[0]);
         }
 
         public void sendWithPrefix(CommandSender sender, String... replacements) {
-            sender.sendMessage(getComponent(sender, true, Collections.emptyMap(), replacements));
+            sendWithPrefix(sender, Collections.emptyMap(), replacements);
         }
 
         public void send(CommandSender sender, String... replacements) {
@@ -195,36 +172,31 @@ public class Messages {
         }
 
         public void send(CommandSender sender, Map<String, String> replacements) {
-            sender.sendMessage(getComponent(sender, false, replacements));
+            sender.sendMessage(getComponent(sender, false, replacements, new String[0]));
         }
 
         public Component getComponent(CommandSender sender, boolean prefixSuffix, Map<String, String> replacementMap, String... replacements) {
-            MineDown mineDown = new MineDown("%prefix" + getLang(sender));
-            mineDown.placeholderSuffix("");
-            if (prefixSuffix) {
-                mineDown.replace("prefix", MineDown.parse(prefix.getLang(sender)));
-            } else {
-                mineDown.replace("prefix", "");
+            return ChestShop.message().component(key, values(prefixSuffix, replacementMap, replacements));
+        }
+
+        /**
+         * Collects placeholder values, honouring {@code prefixSuffix}: every template
+         * begins with {@code {prefix}} (resolved from {@code placeholder.prefix}); when
+         * the prefix is not wanted it is overridden to empty. Caller values are passed
+         * as-is so a {@code ComponentLike} (item/player name) renders inline.
+         */
+        public static Map<String, Object> values(boolean prefixSuffix, Map<String, ?> replacementMap, String... replacements) {
+            Map<String, Object> values = new LinkedHashMap<>();
+            if (!prefixSuffix) {
+                values.put("prefix", "");
             }
-            mineDown.replace(replacementMap);
-            mineDown.replace(replacements);
-            return mineDown.toComponent();
-        }
-
-        private String getLang(CommandSender sender) {
-            return manager.getConfig(sender).get(key);
-        }
-
-        public String getTextWithPrefix(CommandSender sender, Map<String, String> replacementMap, String... replacements) {
-            return LegacyComponentSerializer.legacySection().serialize(getComponent(sender, true, replacementMap, replacements));
-        }
-
-        public String getTextWithPrefix(CommandSender sender, String... replacements) {
-            return getTextWithPrefix(sender, Collections.emptyMap(), replacements);
-        }
-
-        public String getTextWithPrefix(CommandSender sender, Map<String, String> replacements) {
-            return getTextWithPrefix(sender, replacements, new String[0]);
+            if (replacementMap != null) {
+                values.putAll(replacementMap);
+            }
+            for (int i = 0; i + 1 < replacements.length; i += 2) {
+                values.put(replacements[i], replacements[i + 1]);
+            }
+            return values;
         }
 
         public String getKey() {

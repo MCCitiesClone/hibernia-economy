@@ -7,7 +7,6 @@ import io.paradaux.chestshop.configuration.Properties;
 import io.paradaux.chestshop.events.MaterialParseEvent;
 import io.paradaux.chestshop.utils.ItemUtil;
 import de.themoep.ShowItem.api.ShowItem;
-import de.themoep.minedown.adventure.Replacer;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.serializer.gson.GsonComponentSerializer;
@@ -677,13 +676,12 @@ public class MaterialUtil {
                 }
             }
 
-            Map<String, String> newMap = new LinkedHashMap<>(replacementMap);
-            newMap.put("material", "item");
-            newMap.remove("item");
-            Component component = new Replacer()
-                    .placeholderSuffix("")
-                    .replace("item",itemComponent.build())
-                    .replaceIn(message.getComponent(player, showPrefix, newMap, replacements));
+            // Render through the framework Message with the built item icon passed as
+            // the {item} placeholder value: a ComponentLike renders inline, so the
+            // item (with its hover) is embedded without MineDown's Replacer.
+            Map<String, Object> values = Messages.Message.values(showPrefix, replacementMap, replacements);
+            values.put("item", itemComponent.build());
+            Component component = ChestShop.message().component(message.getKey(), values);
             if (player != null) {
                 player.sendMessage(component);
                 return true;
