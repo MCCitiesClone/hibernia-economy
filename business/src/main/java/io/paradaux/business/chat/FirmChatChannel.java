@@ -51,7 +51,7 @@ public class FirmChatChannel implements ChatChannel {
 
             @Override
             public ChannelPermissionResult hearingPermitted(CarbonPlayer player) {
-                return service.activeFirm(player.uuid()).isPresent() || service.isSpy(player.uuid())
+                return service.activeFirm(player.uuid()).isPresent() || service.isAnySpy(player.uuid())
                         ? ChannelPermissionResult.allowed()
                         : ChannelPermissionResult.denied(Component.empty());
             }
@@ -88,7 +88,7 @@ public class FirmChatChannel implements ChatChannel {
         // spy who's also tuned into this firm — get the normal view.
         boolean participant = recipientUuid != null && senderFirm != null
                 && senderFirm.equals(service.activeFirm(recipientUuid).orElse(null));
-        if (!participant && recipientUuid != null && service.isSpy(recipientUuid)) {
+        if (!participant && recipientUuid != null && service.isSpyingOn(recipientUuid, senderFirm)) {
             String firmName = service.firmName(senderFirm);
             return Component.text("[Firm Spy] ", NamedTextColor.GRAY)
                     .append(Component.text(firmName == null ? "?" : firmName, NamedTextColor.AQUA))

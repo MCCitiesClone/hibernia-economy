@@ -44,11 +44,17 @@ public class FirmChatService {
     private final Map<UUID, Integer> activeFirm = new ConcurrentHashMap<>();
 
     /**
-     * Chat moderators with social spy on (PAR-20). A spy receives every firm's chat
-     * without being an employee/proprietor and without an active firm of their own —
-     * a {@code /socialspy}-style moderation view. In-memory, per session.
+     * Chat moderators spying on <em>all</em> firm chat (PAR-20). A spy receives a
+     * firm's chat without being an employee/proprietor and without an active firm of
+     * their own — a {@code /socialspy}-style moderation view. In-memory, per session.
      */
-    private final Set<UUID> socialSpies = ConcurrentHashMap.newKeySet();
+    private final Set<UUID> globalSpies = ConcurrentHashMap.newKeySet();
+
+    /**
+     * Chat moderators spying on <em>specific</em> firms: player → the firm ids they
+     * watch. Independent of {@link #globalSpies}. In-memory, per session.
+     */
+    private final Map<UUID, Set<Integer>> firmSpies = new ConcurrentHashMap<>();
 
     // Typed as Object — NOT CarbonChat / FirmChatChannel — on purpose. Guice scans
     // this class's declared fields and methods at injector-build time; if any
@@ -112,31 +118,63 @@ public class FirmChatService {
                 out.put(employee.getUniqueId(), employee);
             }
         }
-        // Chat moderators with social spy on receive every firm's chat (PAR-20).
-        for (UUID spy : socialSpies) {
-            if (out.containsKey(spy)) {
-                continue;
-            }
-            Player p = Bukkit.getPlayer(spy);
-            if (p != null) {
-                out.put(spy, p);
+        // Chat moderators spying on this firm — globally, or this firm specifically (PAR-20).
+        for (UUID spy : globalSpies) {
+            addOnline(out, spy);
+        }
+        for (Map.Entry<UUID, Set<Integer>> e : firmSpies.entrySet()) {
+            if (e.getValue().contains(firmId)) {
+                addOnline(out, e.getKey());
             }
         }
         return new ArrayList<>(out.values());
     }
 
-    /** Toggle social spy for a chat moderator. Returns the new state (true = now spying). */
-    public boolean toggleSpy(UUID uuid) {
-        if (socialSpies.add(uuid)) {
+    /** Add an online player to the recipient map (no-op if offline or already present). */
+    private void addOnline(Map<UUID, Audience> out, UUID uuid) {
+        if (out.containsKey(uuid)) {
+            return;
+        }
+        Player p = Bukkit.getPlayer(uuid);
+        if (p != null) {
+            out.put(uuid, p);
+        }
+    }
+
+    /** Toggle spying on ALL firm chat. Returns the new state (true = now spying). */
+    public boolean toggleGlobalSpy(UUID uuid) {
+        if (globalSpies.add(uuid)) {
             return true;
         }
-        socialSpies.remove(uuid);
+        globalSpies.remove(uuid);
         return false;
     }
 
-    /** Whether the player is currently spying on all firm chat. */
-    public boolean isSpy(UUID uuid) {
-        return socialSpies.contains(uuid);
+    /** Toggle spying on a specific firm's chat. Returns the new state (true = now spying). */
+    public boolean toggleFirmSpy(UUID uuid, int firmId) {
+        Set<Integer> watched = firmSpies.computeIfAbsent(uuid, k -> ConcurrentHashMap.newKeySet());
+        boolean nowOn = watched.add(firmId);
+        if (!nowOn) {
+            watched.remove(firmId);
+        }
+        if (watched.isEmpty()) {
+            firmSpies.remove(uuid, watched);
+        }
+        return nowOn;
+    }
+
+    /** Whether the player is spying on the given firm (globally or that firm specifically). */
+    public boolean isSpyingOn(UUID uuid, Integer firmId) {
+        if (globalSpies.contains(uuid)) {
+            return true;
+        }
+        Set<Integer> watched = firmSpies.get(uuid);
+        return firmId != null && watched != null && watched.contains(firmId);
+    }
+
+    /** Whether the player is spying on anything (used to gate hearing on the channel). */
+    public boolean isAnySpy(UUID uuid) {
+        return globalSpies.contains(uuid) || firmSpies.containsKey(uuid);
     }
 
     /** Display name of a firm by id, for the spy-view prefix (null if unknown/disbanded). */
@@ -179,7 +217,8 @@ public class FirmChatService {
     /** Drop a player's state (e.g. on quit). */
     public void forget(UUID uuid) {
         activeFirm.remove(uuid);
-        socialSpies.remove(uuid);
+        globalSpies.remove(uuid);
+        firmSpies.remove(uuid);
     }
 
     /** Whether the player belongs to more than one firm (so /firm chat needs an explicit firm). */

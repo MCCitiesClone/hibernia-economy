@@ -52,19 +52,6 @@ public class ChatCommands implements CommandHandler {
         message.send(sender, "business.chat.left");
     }
 
-    @Route("chat spy")
-    @Permission("business.chat.spy")
-    @Async
-    @Description("Toggle firm-chat social spy (moderators) — see all firm chat")
-    public void chatSpy(@Sender Player sender) {
-        if (!firmChat.available()) {
-            message.send(sender, "business.chat.unavailable");
-            return;
-        }
-        boolean on = firmChat.toggleSpy(sender.getUniqueId());
-        message.send(sender, on ? "business.chat.spy-on" : "business.chat.spy-off");
-    }
-
     @Route("chat <firm>")
     @Permission("business.chat")
     @Async

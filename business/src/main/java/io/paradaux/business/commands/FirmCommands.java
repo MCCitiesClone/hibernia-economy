@@ -13,6 +13,7 @@ import io.paradaux.hibernia.framework.i18n.Message;
 import io.paradaux.business.model.Firm;
 import io.paradaux.business.model.FirmPlayer;
 import io.paradaux.business.model.RolePermission;
+import io.paradaux.business.chat.FirmChatService;
 import io.paradaux.business.services.FirmDisbandConfirmationService;
 import io.paradaux.business.services.FirmPlayerService;
 import io.paradaux.business.services.FirmService;
@@ -37,17 +38,19 @@ public class FirmCommands implements CommandHandler {
     private final FirmService firms;
     private final FirmTransactionService transactions;
     private final FirmDisbandConfirmationService disbandConfirmations;
+    private final FirmChatService firmChat;
     private final Message message;
 
     @Inject
     public FirmCommands(FirmPlayerService players, FirmStaffService staff, FirmService firms,
                         FirmTransactionService transactions, FirmDisbandConfirmationService disbandConfirmations,
-                        Message message) {
+                        FirmChatService firmChat, Message message) {
         this.players = players;
         this.staff = staff;
         this.firms = firms;
         this.transactions = transactions;
         this.disbandConfirmations = disbandConfirmations;
+        this.firmChat = firmChat;
         this.message = message;
     }
 
@@ -345,6 +348,38 @@ public class FirmCommands implements CommandHandler {
         firms.adminSetProprietor(firm, target.getUniqueId());
         String targetName = target.getName() != null ? target.getName() : target.getUniqueId().toString();
         message.send(sender, "business.firm.admin.proprietor.success", "firm", f.getDisplayName(), "player", targetName);
+    }
+
+    @Route("admin chatspy")
+    @Permission("business.admin.chatspy")
+    @Async
+    @Description("Toggle social spy on ALL firm chat (staff/DOC override)")
+    public void adminChatSpyAll(@Sender Player sender) {
+        if (!firmChat.available()) {
+            message.send(sender, "business.chat.unavailable");
+            return;
+        }
+        boolean on = firmChat.toggleGlobalSpy(sender.getUniqueId());
+        message.send(sender, on ? "business.chat.spy.all-on" : "business.chat.spy.all-off");
+    }
+
+    @Route("admin chatspy <firm>")
+    @Permission("business.admin.chatspy")
+    @Async
+    @Description("Toggle social spy on one firm's chat (staff/DOC override)")
+    public void adminChatSpyFirm(@Sender Player sender, @Arg("firm") OnlineFirmName firmRef) {
+        if (!firmChat.available()) {
+            message.send(sender, "business.chat.unavailable");
+            return;
+        }
+        String firm = firmRef.value();
+        Firm f = firms.getFirmByNameOrId(firm);
+        if (f == null) {
+            message.send(sender, "business.firm.not-found", "firm", firm);
+            return;
+        }
+        boolean on = firmChat.toggleFirmSpy(sender.getUniqueId(), f.getFirmId());
+        message.send(sender, on ? "business.chat.spy.firm-on" : "business.chat.spy.firm-off", "firm", f.getDisplayName());
     }
 
     private void sendFirms(@Sender Player sender, List<Firm> list) {

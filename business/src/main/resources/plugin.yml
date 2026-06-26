@@ -25,6 +25,9 @@ permissions:
     business.admin.proprietor:
         description: Reassign any firm's proprietor (staff/DOC override).
         default: op
+    business.admin.chatspy:
+        description: Social-spy on firm chat — all firms or a specific one (staff/DOC override).
+        default: op
     business.admin.reload:
         description: Reload the Business plugin configuration.
         default: op
@@ -78,9 +81,6 @@ permissions:
     business.chat:
         description: Use the employee-only firm chat channel.
         default: true
-    business.chat.spy:
-        description: See all firm chat as a moderator (social spy).
-        default: op
     business.tax.info:
         description: View a firm's tax status.
         default: true
