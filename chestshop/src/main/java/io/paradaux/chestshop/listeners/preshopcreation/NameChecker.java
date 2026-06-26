@@ -7,7 +7,6 @@ import io.paradaux.chestshop.events.AccountQueryEvent;
 import io.paradaux.chestshop.events.PreShopCreationEvent;
 import io.paradaux.chestshop.Permission;
 import io.paradaux.chestshop.signs.ChestShopSign;
-import io.paradaux.chestshop.players.NameManager;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -56,8 +55,8 @@ public class NameChecker implements Listener {
         if (account == null || !account.getShortName().equalsIgnoreCase(name)) {
             account = null;
             try {
-                if (name.isEmpty() || !NameManager.canUseName(player, OTHER_NAME_CREATE, name)) {
-                    account = NameManager.getOrCreateAccount(player);
+                if (name.isEmpty() || !ChestShop.accounts().canUseName(player, OTHER_NAME_CREATE, name)) {
+                    account = ChestShop.accounts().getOrCreateAccount(player);
                 } else {
                     AccountQueryEvent accountQueryEvent = new AccountQueryEvent(name);
                     ChestShop.callEvent(accountQueryEvent);
@@ -66,9 +65,9 @@ public class NameChecker implements Listener {
                         Player otherPlayer = ChestShop.getBukkitServer().getPlayer(name);
                         try {
                             if (otherPlayer != null) {
-                                account = NameManager.getOrCreateAccount(otherPlayer);
+                                account = ChestShop.accounts().getOrCreateAccount(otherPlayer);
                             } else {
-                                account = NameManager.getOrCreateAccount(ChestShop.getBukkitServer().getOfflinePlayer(name));
+                                account = ChestShop.accounts().getOrCreateAccount(ChestShop.getBukkitServer().getOfflinePlayer(name));
                             }
                         } catch (IllegalArgumentException e) {
                             event.getPlayer().sendMessage(e.getMessage());

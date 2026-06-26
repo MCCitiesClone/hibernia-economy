@@ -7,7 +7,7 @@ description: A chest shop for economy plugins.
 softdepend: [Treasury, Business, LWC, LockettePro, BlockLocker, WorldGuard, GriefPrevention, RedProtect, Heroes, ShowItem, ItemBridge, AuthMe]
 api-version: '1.13'
 # Not Folia-ready: scheduling uses a plain ExecutorService and synchronous
-# callEvent, and shared statics (NameManager caches, MetricsModule counters)
+# callEvent, and shared singleton state (AccountService caches, MetricsModule counters)
 # are not synchronised across region threads. Do not advertise Folia support
 # until those are ported/audited (ADT-43).
 folia-supported: false

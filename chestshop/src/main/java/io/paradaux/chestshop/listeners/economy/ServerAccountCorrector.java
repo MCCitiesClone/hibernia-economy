@@ -2,7 +2,7 @@ package io.paradaux.chestshop.listeners.economy;
 
 import io.paradaux.chestshop.database.Account;
 import io.paradaux.chestshop.events.economy.*;
-import io.paradaux.chestshop.players.NameManager;
+import io.paradaux.chestshop.ChestShop;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -19,11 +19,11 @@ public class ServerAccountCorrector implements Listener {
     public static void onCurrencyAdd(CurrencyAddEvent event) {
         UUID target = event.getTarget();
 
-        if (!NameManager.isAdminShop(target) || NameManager.isServerEconomyAccount(target)) {
+        if (!ChestShop.accounts().isAdminShop(target) || ChestShop.accounts().isServerEconomyAccount(target)) {
             return;
         }
 
-        Account account = NameManager.getServerEconomyAccount();
+        Account account = ChestShop.accounts().getServerEconomyAccount();
         target = account != null ? account.getUuid() : null;
 
         if (target == null) {
@@ -38,11 +38,11 @@ public class ServerAccountCorrector implements Listener {
     public static void onCurrencySubtract(CurrencySubtractEvent event) {
         UUID target = event.getTarget();
 
-        if (!NameManager.isAdminShop(target) || NameManager.isServerEconomyAccount(target)) {
+        if (!ChestShop.accounts().isAdminShop(target) || ChestShop.accounts().isServerEconomyAccount(target)) {
             return;
         }
 
-        Account account = NameManager.getServerEconomyAccount();
+        Account account = ChestShop.accounts().getServerEconomyAccount();
         target = account != null ? account.getUuid() : null;
 
         if (target == null) {
@@ -57,11 +57,11 @@ public class ServerAccountCorrector implements Listener {
     public static void onCurrencyTransfer(CurrencyTransferEvent event) {
         UUID partner = event.getPartner();
 
-        if (!NameManager.isAdminShop(partner) || NameManager.isServerEconomyAccount(partner)) {
+        if (!ChestShop.accounts().isAdminShop(partner) || ChestShop.accounts().isServerEconomyAccount(partner)) {
             return;
         }
 
-        Account account = NameManager.getServerEconomyAccount();
+        Account account = ChestShop.accounts().getServerEconomyAccount();
         partner = account != null ? account.getUuid() : null;
 
         if (partner == null) {
@@ -75,11 +75,11 @@ public class ServerAccountCorrector implements Listener {
     public static void onCurrencyCheck(CurrencyCheckEvent event) {
         UUID target = event.getAccount();
 
-        if (!NameManager.isAdminShop(target) || NameManager.isServerEconomyAccount(target)) {
+        if (!ChestShop.accounts().isAdminShop(target) || ChestShop.accounts().isServerEconomyAccount(target)) {
             return;
         }
 
-        Account account = NameManager.getServerEconomyAccount();
+        Account account = ChestShop.accounts().getServerEconomyAccount();
         target = account != null ? account.getUuid() : null;
 
         if (target == null) {
@@ -94,11 +94,11 @@ public class ServerAccountCorrector implements Listener {
     public static void onCurrencyHoldCheck(CurrencyHoldEvent event) {
         UUID target = event.getAccount();
 
-        if (!NameManager.isAdminShop(target) || NameManager.isServerEconomyAccount(target)) {
+        if (!ChestShop.accounts().isAdminShop(target) || ChestShop.accounts().isServerEconomyAccount(target)) {
             return;
         }
 
-        Account account = NameManager.getServerEconomyAccount();
+        Account account = ChestShop.accounts().getServerEconomyAccount();
         target = account != null ? account.getUuid() : null;
 
         if (target == null) {
@@ -113,11 +113,11 @@ public class ServerAccountCorrector implements Listener {
     public static void onBalanceCheck(CurrencyAmountEvent event) {
         UUID target = event.getAccount();
 
-        if (!NameManager.isAdminShop(target) || NameManager.isServerEconomyAccount(target)) {
+        if (!ChestShop.accounts().isAdminShop(target) || ChestShop.accounts().isServerEconomyAccount(target)) {
             return;
         }
 
-        Account account = NameManager.getServerEconomyAccount();
+        Account account = ChestShop.accounts().getServerEconomyAccount();
         target = account != null ? account.getUuid() : null;
 
         if (target == null) {

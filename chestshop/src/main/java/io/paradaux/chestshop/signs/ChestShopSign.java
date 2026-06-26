@@ -12,7 +12,6 @@ import io.paradaux.chestshop.events.AccountAccessEvent;
 import io.paradaux.chestshop.events.AccountQueryEvent;
 import io.paradaux.chestshop.events.SignValidationEvent;
 import io.paradaux.chestshop.Permission;
-import io.paradaux.chestshop.players.NameManager;
 import io.paradaux.chestshop.utils.uBlock;
 import org.bukkit.Bukkit;
 import org.bukkit.block.Block;
@@ -177,7 +176,7 @@ public class ChestShopSign {
         String name = getOwner(sign);
         if (name == null || name.isEmpty()) return true;
 
-        return NameManager.canUseName(player, base, name);
+        return ChestShop.accounts().canUseName(player, base, name);
     }
 
     public static boolean isOwner(Player player, Sign sign) {

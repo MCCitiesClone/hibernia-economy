@@ -34,9 +34,9 @@ import java.util.logging.Level;
  *
  * <p>This is the service half of the {@code NameManager} split: the old static
  * God-class mixed raw ORMlite/SQLite access, caching, and these business rules in one
- * place. The DB access now lives behind the repository, leaving this a service that
- * {@link io.paradaux.chestshop.players.NameManager} (a thin listener + legacy static
- * facade) and the rest of the plugin reach through {@link ChestShop#accounts()}.
+ * place. The DB access now lives behind the repository, leaving this a service the
+ * thin {@link io.paradaux.chestshop.listeners.account.AccountListener} and the rest of
+ * the plugin reach through {@link ChestShop#accounts()}.
  */
 @Singleton
 public class AccountService {
@@ -174,7 +174,7 @@ public class AccountService {
         return account;
     }
 
-    /** Resolve an {@link AccountQueryEvent} (entrypoint: {@code NameManager.onAccountQuery}). */
+    /** Resolve an {@link AccountQueryEvent} (entrypoint: {@code AccountListener.onAccountQuery}). */
     public void onAccountQuery(AccountQueryEvent event) {
         if (event.getAccount() == null) {
             event.setAccount(getLastAccountFromName(event.getName(), event.searchOfflinePlayers()));
@@ -314,7 +314,7 @@ public class AccountService {
         return event.canAccess();
     }
 
-    /** Default access rule (entrypoint: {@code NameManager.onAccountAccessCheck}): the player owns the account. */
+    /** Default access rule (entrypoint: {@code AccountListener.onAccountAccessCheck}): the player owns the account. */
     public void onAccountAccessCheck(AccountAccessEvent event) {
         if (!event.canAccess()) {
             event.setAccess(event.getPlayer().getUniqueId().equals(event.getAccount().getUuid()));

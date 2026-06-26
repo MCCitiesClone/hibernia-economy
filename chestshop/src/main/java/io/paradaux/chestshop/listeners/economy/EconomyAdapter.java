@@ -9,7 +9,6 @@ import io.paradaux.chestshop.events.economy.CurrencyFormatEvent;
 import io.paradaux.chestshop.events.economy.CurrencyHoldEvent;
 import io.paradaux.chestshop.events.economy.CurrencySubtractEvent;
 import io.paradaux.chestshop.events.economy.CurrencyTransferEvent;
-import io.paradaux.chestshop.players.NameManager;
 import org.bukkit.event.Listener;
 import org.jetbrains.annotations.Nullable;
 
@@ -48,7 +47,7 @@ public abstract class EconomyAdapter implements Listener {
 
         BigDecimal amountSent = event.getAmountSent();
         CurrencySubtractEvent currencySubtractEvent = new CurrencySubtractEvent(amountSent, event.getSender(), event.getWorld());
-        if (!NameManager.isAdminShop(event.getSender())) {
+        if (!ChestShop.accounts().isAdminShop(event.getSender())) {
             ChestShop.callEvent(currencySubtractEvent);
         } else {
             currencySubtractEvent.setHandled(true);
@@ -60,7 +59,7 @@ public abstract class EconomyAdapter implements Listener {
 
         BigDecimal amountReceived = event.getAmountReceived().subtract(amountSent.subtract(currencySubtractEvent.getAmount()));
         CurrencyAddEvent currencyAddEvent = new CurrencyAddEvent(amountReceived, event.getReceiver(), event.getWorld());
-        if (!NameManager.isAdminShop(event.getReceiver())) {
+        if (!ChestShop.accounts().isAdminShop(event.getReceiver())) {
             ChestShop.callEvent(currencyAddEvent);
         } else {
             currencyAddEvent.setHandled(true);

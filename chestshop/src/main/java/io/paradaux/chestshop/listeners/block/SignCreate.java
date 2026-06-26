@@ -9,7 +9,6 @@ import io.paradaux.chestshop.events.ShopCreatedEvent;
 import io.paradaux.chestshop.events.SignValidationEvent;
 import io.paradaux.chestshop.listeners.block.breaking.SignBreak;
 import io.paradaux.chestshop.signs.ChestShopSign;
-import io.paradaux.chestshop.players.NameManager;
 import io.paradaux.chestshop.utils.uBlock;
 import org.bukkit.block.Block;
 import org.bukkit.block.Sign;
@@ -42,7 +41,7 @@ public class SignCreate implements Listener {
             return;
         }
 
-        if (ChestShopSign.isValid(event.getLines()) && !NameManager.canUseName(event.getPlayer(), OTHER_NAME_DESTROY, ChestShopSign.getOwner(event.getLines()))) {
+        if (ChestShopSign.isValid(event.getLines()) && !ChestShop.accounts().canUseName(event.getPlayer(), OTHER_NAME_DESTROY, ChestShopSign.getOwner(event.getLines()))) {
             event.setCancelled(true);
             sign.update();
             ChestShop.logDebug("Shop sign creation at " + sign.getLocation() + " by " + event.getPlayer().getName() + " was cancelled as they weren't able to create a shop for the account '" + ChestShopSign.getOwner(event.getLines()) + "'");

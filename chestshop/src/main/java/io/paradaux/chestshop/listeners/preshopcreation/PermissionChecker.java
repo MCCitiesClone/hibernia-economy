@@ -5,7 +5,7 @@ import io.paradaux.chestshop.events.ItemParseEvent;
 import io.paradaux.chestshop.events.PreShopCreationEvent;
 import io.paradaux.chestshop.Permission;
 import io.paradaux.chestshop.signs.ChestShopSign;
-import io.paradaux.chestshop.players.NameManager;
+import io.paradaux.chestshop.ChestShop;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -29,7 +29,7 @@ public class PermissionChecker implements Listener {
         Player player = event.getPlayer();
 
         if (event.getOwnerAccount() != null
-                && !NameManager.canUseName(player, OTHER_NAME_CREATE, event.getOwnerAccount().getShortName())) {
+                && !ChestShop.accounts().canUseName(player, OTHER_NAME_CREATE, event.getOwnerAccount().getShortName())) {
             event.setSignLine(NAME_LINE, "");
             event.setOutcome(NO_PERMISSION);
             return;

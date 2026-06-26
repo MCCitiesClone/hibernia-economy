@@ -5,7 +5,7 @@ import io.paradaux.chestshop.configuration.Properties;
 import io.paradaux.chestshop.events.economy.CurrencyAddEvent;
 import io.paradaux.chestshop.events.economy.CurrencyTransferEvent;
 import io.paradaux.chestshop.Permission;
-import io.paradaux.chestshop.players.NameManager;
+import io.paradaux.chestshop.ChestShop;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -35,7 +35,7 @@ public class TaxModule implements Listener {
     }
 
     private static double getTax(UUID partner) {
-        double taxAmount = NameManager.isAdminShop(partner) || NameManager.isServerEconomyAccount(partner)
+        double taxAmount = ChestShop.accounts().isAdminShop(partner) || ChestShop.accounts().isServerEconomyAccount(partner)
                 ? Properties.SERVER_TAX_AMOUNT : Properties.TAX_AMOUNT;
 
         if (taxAmount == 0) {
@@ -67,14 +67,14 @@ public class TaxModule implements Listener {
         }
 
         if (!Permission.has(event.getInitiator(), event.getDirection() == CurrencyTransferEvent.Direction.PARTNER ? Permission.NO_BUY_TAX : Permission.NO_SELL_TAX)) {
-            if (!NameManager.isServerEconomyAccount(event.getReceiver())) {
+            if (!ChestShop.accounts().isServerEconomyAccount(event.getReceiver())) {
                 BigDecimal tax = getTaxAmount(event.getAmountReceived(), taxAmount);
                 BigDecimal taxedAmount = event.getAmountReceived().subtract(tax);
                 event.setAmountReceived(taxedAmount);
-                if (NameManager.getServerEconomyAccount() != null) {
+                if (ChestShop.accounts().getServerEconomyAccount() != null) {
                     ChestShop.callEvent(new CurrencyAddEvent(
                             tax,
-                            NameManager.getServerEconomyAccount().getUuid(),
+                            ChestShop.accounts().getServerEconomyAccount().getUuid(),
                             event.getWorld()));
                 }
                 ChestShop.getShopLogger().info(String.format(TAX_RECEIVED_MESSAGE, taxAmount, tax, taxedAmount));

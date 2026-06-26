@@ -3,7 +3,6 @@ package io.paradaux.chestshop.commands;
 import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.Permission;
 import io.paradaux.chestshop.database.Account;
-import io.paradaux.chestshop.players.NameManager;
 import io.paradaux.hibernia.framework.commander.annotations.Command;
 import io.paradaux.hibernia.framework.commander.annotations.Route;
 import io.paradaux.hibernia.framework.commander.annotations.Sender;
@@ -25,7 +24,7 @@ public class Toggle implements CommandHandler {
     @Route("notify")
     @io.paradaux.hibernia.framework.commander.annotations.Description("Toggle shop sale notifications on/off")
     public void toggle(@Sender Player player) {
-        Account account = NameManager.getOrCreateAccount(player);
+        Account account = ChestShop.accounts().getOrCreateAccount(player);
         account.setIgnoreMessages(!account.isIgnoringMessages());
 
         if (account.isIgnoringMessages()) {
@@ -35,7 +34,7 @@ public class Toggle implements CommandHandler {
         }
 
         try {
-            NameManager.storeAccount(account);
+            ChestShop.accounts().storeAccount(account);
         } catch (Exception e) {
             ChestShop.getBukkitLogger().log(Level.WARNING, "Error while updating account " + account + ":", e);
             ChestShop.message().send(player, "chestshop.ERROR_OCCURRED", "error", "Unable to store account data.");
@@ -43,11 +42,11 @@ public class Toggle implements CommandHandler {
     }
 
     public static boolean isIgnoring(OfflinePlayer player) {
-        return player != null && NameManager.getOrCreateAccount(player).isIgnoringMessages();
+        return player != null && ChestShop.accounts().getOrCreateAccount(player).isIgnoringMessages();
     }
 
     public static boolean isIgnoring(UUID playerId) {
-        Account account = NameManager.getAccount(playerId);
+        Account account = ChestShop.accounts().getAccount(playerId);
         return account != null && account.isIgnoringMessages();
     }
 

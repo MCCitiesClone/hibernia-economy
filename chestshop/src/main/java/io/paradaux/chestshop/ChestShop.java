@@ -42,7 +42,7 @@ import io.paradaux.chestshop.listeners.shopremoval.ShopRemovalLogger;
 import io.paradaux.chestshop.logging.FileFormatter;
 import io.paradaux.chestshop.services.ItemCodeService;
 import io.paradaux.chestshop.signs.RestrictedSign;
-import io.paradaux.chestshop.players.NameManager;
+import io.paradaux.chestshop.listeners.account.AccountListener;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.ByteArrayDataOutput;
@@ -195,7 +195,7 @@ public class ChestShop extends JavaPlugin {
         configurationLoader.reload();
         Properties.applyFrom(configurationLoader.getComponent(ChestShopConfiguration.class));
 
-        NameManager.load();
+        accounts().load();
 
         if (handler != null) {
             shopLogger.removeHandler(handler);
@@ -341,7 +341,7 @@ public class ChestShop extends JavaPlugin {
 
         registerEvent(new Dependencies());
 
-        registerEvent(new NameManager());
+        registerEvent(new AccountListener());
 
         registerPreShopCreationEvents();
         registerPreTransactionEvents();
@@ -486,7 +486,7 @@ public class ChestShop extends JavaPlugin {
         bStats.addCustomChart(createStaticDrilldownStat("versionJavaMc", javaVersion, serverVersion));
         bStats.addCustomChart(createStaticDrilldownStat("versionMcJava", serverVersion, javaVersion));
 
-        bStats.addCustomChart(new SingleLineChart("shopAccounts", NameManager::getAccountCount));
+        bStats.addCustomChart(new SingleLineChart("shopAccounts", () -> accounts().getAccountCount()));
         bStats.addCustomChart(new MultiLineChart("transactionCount", () -> ImmutableMap.of(
                 "total", MetricsModule.getTotalTransactions(),
                 "buy", MetricsModule.getBuyTransactions(),

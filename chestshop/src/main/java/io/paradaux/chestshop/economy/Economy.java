@@ -7,7 +7,6 @@ import io.paradaux.chestshop.events.economy.CurrencyCheckEvent;
 import io.paradaux.chestshop.events.economy.CurrencyFormatEvent;
 import io.paradaux.chestshop.events.economy.CurrencySubtractEvent;
 import io.paradaux.chestshop.signs.ChestShopSign;
-import io.paradaux.chestshop.players.NameManager;
 import org.bukkit.World;
 import org.bukkit.inventory.Inventory;
 
@@ -22,7 +21,7 @@ public class Economy {
     /**
      * Get the name of the server conomy account
      * @return The username of te server economy account
-     * @deprecated Use {@link NameManager#getServerEconomyAccount()} or {@link Properties#SERVER_ECONOMY_ACCOUNT}
+     * @deprecated Use {@link io.paradaux.chestshop.services.AccountService#getServerEconomyAccount()} or {@link Properties#SERVER_ECONOMY_ACCOUNT}
      */
     @Deprecated
     public static String getServerAccountName() {
@@ -30,7 +29,7 @@ public class Economy {
     }
 
     public static boolean isOwnerEconomicallyActive(Inventory inventory) {
-        return !ChestShopSign.isAdminShop(inventory) || NameManager.getServerEconomyAccount() != null;
+        return !ChestShopSign.isAdminShop(inventory) || ChestShop.accounts().getServerEconomyAccount() != null;
     }
 
     /**

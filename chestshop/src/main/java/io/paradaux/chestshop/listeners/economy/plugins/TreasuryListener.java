@@ -19,7 +19,6 @@ import io.paradaux.chestshop.listeners.economy.TaxModule;
 import io.paradaux.chestshop.Permission;
 import io.paradaux.chestshop.signs.ChestShopSign;
 import io.paradaux.chestshop.utils.ItemUtil;
-import io.paradaux.chestshop.players.NameManager;
 import io.paradaux.business.api.BusinessApi;
 import io.paradaux.business.model.RolePermission;
 import io.paradaux.treasury.api.TaxApi;
@@ -348,8 +347,8 @@ public class TreasuryListener extends EconomyAdapter {
         String message = buildTransferMessage(event.getTransactionEvent());
         BigDecimal amountSent = event.getAmountSent();
         BigDecimal amountReceived = event.getAmountReceived();
-        boolean senderIsAdmin = NameManager.isAdminShop(event.getSender());
-        boolean receiverIsAdmin = NameManager.isAdminShop(event.getReceiver());
+        boolean senderIsAdmin = ChestShop.accounts().isAdminShop(event.getSender());
+        boolean receiverIsAdmin = ChestShop.accounts().isAdminShop(event.getReceiver());
 
         // Subtract from sender (unless admin shop)
         if (!senderIsAdmin) {
@@ -461,7 +460,7 @@ public class TreasuryListener extends EconomyAdapter {
      */
     private static BigDecimal resolveTaxRate(@Nullable UUID partner) {
         double pct = (partner != null
-                && (NameManager.isAdminShop(partner) || NameManager.isServerEconomyAccount(partner)))
+                && (ChestShop.accounts().isAdminShop(partner) || ChestShop.accounts().isServerEconomyAccount(partner)))
                 ? Properties.SERVER_TAX_AMOUNT
                 : Properties.TAX_AMOUNT;
         if (pct == 0) return BigDecimal.ZERO;

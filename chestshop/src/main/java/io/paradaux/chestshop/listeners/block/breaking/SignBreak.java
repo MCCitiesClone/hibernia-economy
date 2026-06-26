@@ -6,7 +6,6 @@ import io.paradaux.chestshop.configuration.Properties;
 import io.paradaux.chestshop.events.ShopDestroyedEvent;
 import io.paradaux.chestshop.listeners.block.breaking.attached.PhysicsBreak;
 import io.paradaux.chestshop.signs.ChestShopSign;
-import io.paradaux.chestshop.players.NameManager;
 import io.paradaux.chestshop.utils.uBlock;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -163,7 +162,7 @@ public class SignBreak implements Listener {
     }
 
     private static boolean canDestroyShop(Player player, String name) {
-        return player != null && NameManager.canUseName(player, OTHER_NAME_DESTROY, name);
+        return player != null && ChestShop.accounts().canUseName(player, OTHER_NAME_DESTROY, name);
     }
 
     public static void sendShopDestroyedEvent(Sign sign, Player player) {
