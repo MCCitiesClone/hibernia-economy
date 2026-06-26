@@ -7,6 +7,8 @@ import io.paradaux.chestshop.configuration.Properties;
 import io.paradaux.chestshop.database.Account;
 import io.paradaux.chestshop.economy.Economy;
 import io.paradaux.chestshop.events.PreShopCreationEvent;
+import io.paradaux.chestshop.events.ShopCreatedEvent;
+import io.paradaux.chestshop.events.ShopDestroyedEvent;
 import io.paradaux.chestshop.listeners.preshopcreation.ChestChecker;
 import io.paradaux.chestshop.listeners.preshopcreation.CreationFeeGetter;
 import io.paradaux.chestshop.listeners.preshopcreation.ErrorMessageSender;
@@ -20,6 +22,11 @@ import io.paradaux.chestshop.listeners.preshopcreation.PriceRatioChecker;
 import io.paradaux.chestshop.listeners.preshopcreation.QuantityChecker;
 import io.paradaux.chestshop.listeners.preshopcreation.TerrainChecker;
 import io.paradaux.chestshop.listeners.modules.StockCounterModule;
+import io.paradaux.chestshop.listeners.postshopcreation.MessageSender;
+import io.paradaux.chestshop.listeners.postshopcreation.ShopCreationLogger;
+import io.paradaux.chestshop.listeners.postshopcreation.SignSticker;
+import io.paradaux.chestshop.listeners.shopremoval.ShopRemovalLogger;
+import io.paradaux.chestshop.market.MarketListener;
 import io.paradaux.chestshop.signs.ChestShopSign;
 import org.bukkit.ChatColor;
 import org.bukkit.World;
@@ -95,6 +102,32 @@ public class ShopService {
         ErrorMessageSender.onPreShopCreation(ctx);
 
         return ctx;
+    }
+
+    /**
+     * Run the post-creation reactions for a freshly-created shop, in the exact priority
+     * + registration order the former {@link ShopCreatedEvent} listeners fired in
+     * (replacing the Bukkit event dispatch): NORMAL {@code SignSticker} sticks the sign
+     * to its chest, then MONITOR {@code MessageSender} notifies the creator,
+     * {@code ShopCreationLogger} logs it, and {@code MarketListener} upserts the shop in
+     * the market registry.
+     */
+    public void onCreated(ShopCreatedEvent event) {
+        SignSticker.onShopCreation(event);
+        MessageSender.onShopCreation(event);
+        ShopCreationLogger.onShopCreation(event);
+        MarketListener.onShopCreated(event);
+    }
+
+    /**
+     * Run the post-removal reactions for a removed shop, in the former {@link ShopDestroyedEvent}
+     * listener order (all MONITOR): issue the removal refund, log the removal, then mark
+     * the shop inactive in the market registry.
+     */
+    public void onDestroyed(ShopDestroyedEvent event) {
+        refundOnRemoval(event.getDestroyer(), event.getSign());
+        ShopRemovalLogger.onShopRemoval(event);
+        MarketListener.onShopDestroyed(event);
     }
 
     /**

@@ -80,6 +80,6 @@ public class SignCreate implements Listener {
         }
 
         ShopCreatedEvent postEvent = new ShopCreatedEvent(preEvent.getPlayer(), preEvent.getSign(), uBlock.findConnectedContainer(preEvent.getSign()), preEvent.getSignLines(), preEvent.getOwnerAccount());
-        ChestShop.callEvent(postEvent);
+        ChestShop.shops().onCreated(postEvent);
     }
 }

@@ -4,17 +4,17 @@ import io.paradaux.chestshop.utils.LocationUtil;
 import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.events.ShopCreatedEvent;
 import io.paradaux.chestshop.signs.ChestShopSign;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.EventPriority;
-import org.bukkit.event.Listener;
 
 /**
+ * Writes a shop-creation line to the shop log. Invoked directly by
+ * {@link io.paradaux.chestshop.services.ShopService#onCreated} (was a @MONITOR
+ * ShopCreatedEvent listener).
+ *
  * @author Acrobot
  */
-public class ShopCreationLogger implements Listener {
+public class ShopCreationLogger {
     private static final String CREATION_MESSAGE = "%1$s created %2$s - %3$s - %4$s - at %5$s";
 
-    @EventHandler(priority = EventPriority.MONITOR)
     public static void onShopCreation(final ShopCreatedEvent event) {
         ChestShop.runInAsyncThread(() -> {
             String creator = event.getPlayer().getName();

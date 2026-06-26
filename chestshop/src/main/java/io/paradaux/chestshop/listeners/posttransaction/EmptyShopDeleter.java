@@ -47,7 +47,7 @@ public class EmptyShopDeleter {
         Container connectedContainer = uBlock.findConnectedContainer(sign);
 
         ShopDestroyedEvent destroyedEvent = new ShopDestroyedEvent(null, event.getSign(), connectedContainer);
-        ChestShop.callEvent(destroyedEvent);
+        ChestShop.shops().onDestroyed(destroyedEvent);
 
         Material signType = sign.getType();
         sign.getBlock().setType(Material.AIR);

@@ -10,15 +10,16 @@ import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.data.type.Sign;
 import org.bukkit.block.data.type.WallSign;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.Listener;
 
 /**
+ * Sticks a freshly-created shop sign onto its chest. Invoked directly by
+ * {@link io.paradaux.chestshop.services.ShopService#onCreated} (was a @NORMAL
+ * ShopCreatedEvent listener).
+ *
  * @author Acrobot
  */
-public class SignSticker implements Listener {
+public class SignSticker {
 
-    @EventHandler
     public static void onShopCreation(ShopCreatedEvent event) {
         if (!Properties.STICK_SIGNS_TO_CHESTS) {
             return;

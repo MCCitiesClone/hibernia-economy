@@ -26,16 +26,11 @@ import io.paradaux.chestshop.listeners.ShopInfoListener;
 import io.paradaux.chestshop.listeners.SignParseListener;
 import io.paradaux.chestshop.listeners.player.*;
 import io.paradaux.chestshop.listeners.preshopcreation.CreationFeeGetter;
-import io.paradaux.chestshop.listeners.postshopcreation.MessageSender;
-import io.paradaux.chestshop.listeners.postshopcreation.ShopCreationLogger;
-import io.paradaux.chestshop.listeners.postshopcreation.SignSticker;
 import io.paradaux.chestshop.listeners.posttransaction.*;
 import io.paradaux.chestshop.listeners.preshopcreation.*;
 import io.paradaux.chestshop.listeners.pretransaction.*;
 import io.paradaux.chestshop.listeners.pretransaction.ErrorMessageSender;
 import io.paradaux.chestshop.listeners.pretransaction.PermissionChecker;
-import io.paradaux.chestshop.listeners.shopremoval.ShopRefundListener;
-import io.paradaux.chestshop.listeners.shopremoval.ShopRemovalLogger;
 import io.paradaux.chestshop.logging.FileFormatter;
 import io.paradaux.chestshop.services.ItemCodeService;
 import io.paradaux.chestshop.signs.RestrictedSign;
@@ -339,9 +334,6 @@ public class ChestShop extends JavaPlugin {
 
         registerEvent(new Dependencies());
 
-        registerPostShopCreationEvents();
-        registerShopRemovalEvents();
-
         registerModules();
 
         registerEvent(new SignBreak());
@@ -367,17 +359,6 @@ public class ChestShop extends JavaPlugin {
         if (!Properties.TURN_OFF_HOPPER_PROTECTION || Properties.USE_STOCK_COUNTER) {
             registerEvent(new ItemMoveListener());
         }
-    }
-
-    private void registerShopRemovalEvents() {
-        registerEvent(new ShopRefundListener());
-        registerEvent(new ShopRemovalLogger());
-    }
-
-    private void registerPostShopCreationEvents() {
-        registerEvent(new MessageSender());
-        registerEvent(new SignSticker());
-        registerEvent(new ShopCreationLogger());
     }
 
     private void registerModules() {

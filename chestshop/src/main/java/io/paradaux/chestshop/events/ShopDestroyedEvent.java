@@ -4,18 +4,18 @@ import org.bukkit.block.Chest;
 import org.bukkit.block.Container;
 import org.bukkit.block.Sign;
 import org.bukkit.entity.Player;
-import org.bukkit.event.Event;
-import org.bukkit.event.HandlerList;
 
 import javax.annotation.Nullable;
 
 /**
- * Represents a state after shop destruction
+ * The carrier for a removed shop, passed to the post-removal reactions run by
+ * {@link io.paradaux.chestshop.services.ShopService#onDestroyed}. Formerly a Bukkit
+ * event; those reactions (issue the removal refund, log, market deactivation) are now
+ * invoked directly as ordered service steps.
  *
  * @author Acrobot
  */
-public class ShopDestroyedEvent extends Event {
-    private static final HandlerList handlers = new HandlerList();
+public class ShopDestroyedEvent {
 
     private final Player destroyer;
 
@@ -60,14 +60,5 @@ public class ShopDestroyedEvent extends Event {
      */
     public Sign getSign() {
         return sign;
-    }
-
-    public static HandlerList getHandlerList() {
-        return handlers;
-    }
-
-    @Override
-    public HandlerList getHandlers() {
-        return handlers;
     }
 }

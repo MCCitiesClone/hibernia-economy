@@ -5,18 +5,18 @@ import org.bukkit.block.Chest;
 import org.bukkit.block.Container;
 import org.bukkit.block.Sign;
 import org.bukkit.entity.Player;
-import org.bukkit.event.Event;
-import org.bukkit.event.HandlerList;
 
 import javax.annotation.Nullable;
 
 /**
- * Represents a state after shop creation
+ * The carrier for a freshly-created shop, passed to the post-creation reactions run
+ * by {@link io.paradaux.chestshop.services.ShopService#onCreated}. Formerly a Bukkit
+ * event; those reactions (stick the sign to the chest, message the creator, log,
+ * market sync) are now invoked directly as ordered service steps.
  *
  * @author Acrobot
  */
-public class ShopCreatedEvent extends Event {
-    private static final HandlerList handlers = new HandlerList();
+public class ShopCreatedEvent {
 
     private final Player creator;
 
@@ -114,13 +114,5 @@ public class ShopCreatedEvent extends Event {
      */
     public boolean createdByOwner() {
         return ownerAccount == null || ownerAccount.getUuid().equals(creator.getUniqueId());
-    }
-
-    public HandlerList getHandlers() {
-        return handlers;
-    }
-
-    public static HandlerList getHandlerList() {
-        return handlers;
     }
 }

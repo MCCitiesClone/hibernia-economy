@@ -23,14 +23,19 @@ import java.util.UUID;
 
 /**
  * Keeps the ChestShop sales tracker + live shop registry up to date:
- *  - {@link TransactionEvent}: record the trade + upsert the shop (lazy-registers
+ *  - {@link #onTransaction}: record the trade + upsert the shop (lazy-registers
  *    pre-existing shops on first activity and refreshes post-trade stock).
- *  - {@link ShopCreatedEvent}: register/refresh the shop.
- *  - {@link ShopDestroyedEvent}: mark it inactive.
- *  - {@link InventoryCloseEvent}: a manual restock — recount stock for the
+ *  - {@link #onShopCreated}: register/refresh the shop.
+ *  - {@link #onShopDestroyed}: mark it inactive.
+ *  - {@link #onInventoryClose}: a manual restock — recount stock for the
  *    connected shop signs (mirrors ChestShop's own sign-counter refresh).
  *
- * All handlers are MONITOR + fully guarded: analytics must never disrupt a trade.
+ * <p>The first three are invoked directly by {@code TransactionService}/{@code ShopService}
+ * at the MONITOR point of their pipelines (they were {@code TransactionEvent}/
+ * {@code ShopCreatedEvent}/{@code ShopDestroyedEvent} listeners before those events were
+ * collapsed); {@link #onInventoryClose} is the only remaining Bukkit handler, which is why
+ * this is still a registered {@link Listener}. All are fully guarded: analytics must never
+ * disrupt a trade.
  */
 public class MarketListener implements Listener {
 
@@ -58,8 +63,8 @@ public class MarketListener implements Listener {
         }
     }
 
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-    public void onShopCreated(ShopCreatedEvent event) {
+    // Invoked directly by ShopService#onCreated (was a @MONITOR ShopCreatedEvent listener).
+    public static void onShopCreated(ShopCreatedEvent event) {
         if (!MarketHook.enabled()) return;
         try {
             Sign sign = event.getSign();
@@ -76,8 +81,8 @@ public class MarketListener implements Listener {
         }
     }
 
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-    public void onShopDestroyed(ShopDestroyedEvent event) {
+    // Invoked directly by ShopService#onDestroyed (was a @MONITOR ShopDestroyedEvent listener).
+    public static void onShopDestroyed(ShopDestroyedEvent event) {
         if (!MarketHook.enabled()) return;
         try {
             Location l = event.getSign().getLocation();

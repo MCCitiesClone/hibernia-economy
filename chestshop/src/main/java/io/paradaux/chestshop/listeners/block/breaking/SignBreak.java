@@ -13,7 +13,6 @@ import org.bukkit.block.BlockFace;
 import org.bukkit.block.Container;
 import org.bukkit.block.Sign;
 import org.bukkit.entity.Player;
-import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -168,8 +167,7 @@ public class SignBreak implements Listener {
     public static void sendShopDestroyedEvent(Sign sign, Player player) {
         Container connectedContainer = uBlock.findConnectedContainer(sign.getBlock());
 
-        Event event = new ShopDestroyedEvent(player, sign, connectedContainer);
-        ChestShop.callEvent(event);
+        ChestShop.shops().onDestroyed(new ShopDestroyedEvent(player, sign, connectedContainer));
     }
 
     private static List<Sign> getAttachedSigns(Block block) {
