@@ -265,12 +265,27 @@ jacoco {
 
 val isCi = project.hasProperty("ci")
 
+// In-repo dev server staging dir (server/plugins at the repo root). A top-level
+// subproject is one level under the root, so it's "../server/plugins" — the old
+// "../../server/plugins" climbed one level too far and wrote outside the repo. (PAR-268)
+val pluginsDir = layout.projectDirectory.dir("../server/plugins")
+
 val copyPlugin = tasks.register<Copy>("copyPlugin") {
     // :jar is disabled (see comment above) so we only depend on shadowJar.
-    dependsOn(tasks.named("shadowJar"))
-    from(tasks.named<ShadowJar>("shadowJar").flatMap { it.archiveFile })
-    into(layout.projectDirectory.dir("../../server/plugins"))
+    val shadowJar = tasks.named<ShadowJar>("shadowJar")
+    dependsOn(shadowJar)
+    from(shadowJar.flatMap { it.archiveFile })
+    into(pluginsDir)
     onlyIf { !isCi } // don’t run on CI
+    doFirst {
+        // Remove this plugin's previously-staged jars (any version) so stale
+        // copies don't pile up — the dev server would otherwise load two
+        // versions of the same plugin. Scoped to THIS artifact's base name + a
+        // version digit, so it never matches a sibling (treasury must not match
+        // treasury-api-plugin), a data folder, or another server jar. (PAR-268)
+        val re = Regex("^${Regex.escape(shadowJar.get().archiveBaseName.get())}-\\d.*\\.jar$")
+        pluginsDir.asFile.listFiles { f -> f.isFile && re.matches(f.name) }?.forEach { it.delete() }
+    }
 }
 
 tasks.named<ShadowJar>("shadowJar") {
