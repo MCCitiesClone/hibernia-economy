@@ -35,7 +35,6 @@ public enum Permission {
     GROUP("ChestShop.group."),
 
     NOFEE("ChestShop.nofee"),
-    DISCOUNT("ChestShop.discount."),
     NO_BUY_TAX("ChestShop.notax.buy"),
     NO_SELL_TAX("ChestShop.notax.sell"),
 

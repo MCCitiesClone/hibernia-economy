@@ -23,7 +23,7 @@ import static io.paradaux.chestshop.events.TransactionEvent.TransactionType.SELL
  *
  * <p>Runs at {@link EventPriority#NORMAL} — after the LOWEST/LOW listeners that
  * may still cancel or reprice the trade ({@code AuthMe}, {@code RestrictedSign},
- * {@code DiscountModule}, …) and <b>before</b> the money leg
+ * …) and <b>before</b> the money leg
  * ({@link EconomicModule}, now {@link EventPriority#HIGH}). This makes the trade
  * atomic (ADT-4): the items move first and, if the move cannot complete in full,
  * both inventories are reverted and the transaction is cancelled before any

@@ -29,8 +29,6 @@ import io.paradaux.chestshop.listeners.modules.MetricsModule;
 import io.paradaux.chestshop.listeners.modules.StockCounterModule;
 import io.paradaux.chestshop.listeners.ShopInfoListener;
 import io.paradaux.chestshop.listeners.SignParseListener;
-import io.paradaux.chestshop.listeners.modules.DiscountModule;
-import io.paradaux.chestshop.listeners.modules.PriceRestrictionModule;
 import io.paradaux.chestshop.listeners.player.*;
 import io.paradaux.chestshop.listeners.preshopcreation.CreationFeeGetter;
 import io.paradaux.chestshop.listeners.postshopcreation.MessageSender;
@@ -428,9 +426,7 @@ public class ChestShop extends JavaPlugin {
 
     private void registerModules() {
         registerEvent(new ItemAliasModule());
-        registerEvent(new DiscountModule());
         registerEvent(new MetricsModule());
-        registerEvent(new PriceRestrictionModule());
         registerEvent(new StockCounterModule());
 
         registerEconomicalModules();

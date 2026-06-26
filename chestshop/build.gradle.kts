@@ -1,5 +1,3 @@
-import java.time.OffsetDateTime
-import java.time.format.DateTimeFormatter
 
 // =============================================================================
 // ChestShop — a single Paper plugin module, compiled against the Paper 1.21.11
@@ -45,17 +43,9 @@ repositories {
     maven("https://repo.paradaux.io/releases")
     maven("https://repo.paradaux.io/snapshots")
 }
-
-// --- Build metadata (replaces the static/dynamic_build_number Maven profiles).
-// Jenkins/CI sets BUILD_NUMBER; otherwise it's a "manual" build stamped with a
-// timestamp. Folded in from the former aggregator project.
-val ciBuildNumber: String? = System.getenv("BUILD_NUMBER")
-val buildType: String = if (ciBuildNumber != null) "jenkins" else "manual"
-val buildTimestamp: String = OffsetDateTime.now().format(DateTimeFormatter.ISO_INSTANT)
-val buildDescription: String =
-    if (ciBuildNumber != null) "(build $ciBuildNumber)" else "(compiled at $buildTimestamp)"
-// Full version string substituted into plugin.yml (was ${bukkit.plugin.version}).
-val bukkitPluginVersion = "$version $buildDescription"
+// plugin.yml's ${bukkit.plugin.version} token resolves to the plain monorepo
+// version. (The old Jenkins/manual build-number + timestamp suffix was removed.)
+val pluginVersion = project.version.toString()
 
 // Compiled against the Paper API (a superset of spigot-api) so the folded-in
 // version adapters' Paper-only snapshot API (BlockDestroyEvent, getState(boolean),
@@ -164,15 +154,14 @@ dependencies {
     testImplementation(libs.assertj.core)
 }
 
-// plugin.yml carries ${bukkit.plugin.version}; the old Maven build expanded it
-// at assemble-time. Do it here so the shaded jar ends up with the resolved
+// plugin.yml carries ${bukkit.plugin.version}; substitute the plain project
 // version. Literal token replace (not Groovy expand) to avoid touching the
-// MiniMessage/section-sign content in the language files.
+// MiniMessage content in messages.properties.
 tasks.processResources {
     filteringCharset = "UTF-8"
-    inputs.property("bukkitPluginVersion", bukkitPluginVersion)
+    inputs.property("pluginVersion", pluginVersion)
     filesMatching("plugin.yml") {
-        filter { line -> line.replace("\${bukkit.plugin.version}", bukkitPluginVersion) }
+        filter { line -> line.replace("\${bukkit.plugin.version}", pluginVersion) }
     }
     // LICENSE shipped at the jar root.
     from(projectDir) { include("LICENSE") }
@@ -245,12 +234,8 @@ tasks.shadowJar {
     from(projectDir) { include("README.md", "SECURITY.md") }
 
     manifest {
-        attributes(
-            "Distribution-Type" to buildType,
-            "Built-At" to buildTimestamp,
-            "Build-Jdk" to System.getProperty("java.runtime.version"),
-            "paperweight-mappings-namespace" to "mojang",
-        )
+        // Tells Paper the plugin is compiled against Mojang mappings (required).
+        attributes("paperweight-mappings-namespace" to "mojang")
     }
 }
 

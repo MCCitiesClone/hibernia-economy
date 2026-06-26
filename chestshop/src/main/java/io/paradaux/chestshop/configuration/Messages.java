@@ -90,10 +90,6 @@ public class Messages {
     public static Message CANNOT_CHANGE_SIGN_BACKSIDE;
 
     public static Message SELL_PRICE_HIGHER_THAN_BUY_PRICE;
-    public static Message SELL_PRICE_ABOVE_MAX;
-    public static Message SELL_PRICE_BELOW_MIN;
-    public static Message BUY_PRICE_ABOVE_MAX;
-    public static Message BUY_PRICE_BELOW_MIN;
 
     public static Message CLICK_TO_AUTOFILL_ITEM;
     public static Message NO_ITEM_IN_HAND;
