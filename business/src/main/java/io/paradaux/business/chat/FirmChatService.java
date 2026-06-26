@@ -10,12 +10,15 @@ import net.draycia.carbon.api.CarbonChat;
 import net.draycia.carbon.api.CarbonChatProvider;
 import net.draycia.carbon.api.channels.ChatChannel;
 import net.kyori.adventure.audience.Audience;
+import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
@@ -39,6 +42,13 @@ public class FirmChatService {
 
     /** player → the firm whose chat they're currently in. In-memory (cleared on leave). */
     private final Map<UUID, Integer> activeFirm = new ConcurrentHashMap<>();
+
+    /**
+     * Chat moderators with social spy on (PAR-20). A spy receives every firm's chat
+     * without being an employee/proprietor and without an active firm of their own —
+     * a {@code /socialspy}-style moderation view. In-memory, per session.
+     */
+    private final Set<UUID> socialSpies = ConcurrentHashMap.newKeySet();
 
     // Typed as Object — NOT CarbonChat / FirmChatChannel — on purpose. Guice scans
     // this class's declared fields and methods at injector-build time; if any
@@ -95,13 +105,47 @@ public class FirmChatService {
         if (firmId == null) {
             return List.of();
         }
-        List<Audience> out = new ArrayList<>();
+        // Keyed by UUID so a spy who is also a tuned-in member isn't added twice.
+        Map<UUID, Audience> out = new LinkedHashMap<>();
         for (Player employee : staff.getOnlineEmployees(String.valueOf(firmId))) {
             if (firmId.equals(activeFirm.get(employee.getUniqueId()))) {
-                out.add(employee);
+                out.put(employee.getUniqueId(), employee);
             }
         }
-        return out;
+        // Chat moderators with social spy on receive every firm's chat (PAR-20).
+        for (UUID spy : socialSpies) {
+            if (out.containsKey(spy)) {
+                continue;
+            }
+            Player p = Bukkit.getPlayer(spy);
+            if (p != null) {
+                out.put(spy, p);
+            }
+        }
+        return new ArrayList<>(out.values());
+    }
+
+    /** Toggle social spy for a chat moderator. Returns the new state (true = now spying). */
+    public boolean toggleSpy(UUID uuid) {
+        if (socialSpies.add(uuid)) {
+            return true;
+        }
+        socialSpies.remove(uuid);
+        return false;
+    }
+
+    /** Whether the player is currently spying on all firm chat. */
+    public boolean isSpy(UUID uuid) {
+        return socialSpies.contains(uuid);
+    }
+
+    /** Display name of a firm by id, for the spy-view prefix (null if unknown/disbanded). */
+    public String firmName(Integer firmId) {
+        if (firmId == null) {
+            return null;
+        }
+        Firm firm = firms.getFirmByNameOrId(String.valueOf(firmId));
+        return firm == null ? null : firm.getDisplayName();
     }
 
     /**
@@ -135,6 +179,7 @@ public class FirmChatService {
     /** Drop a player's state (e.g. on quit). */
     public void forget(UUID uuid) {
         activeFirm.remove(uuid);
+        socialSpies.remove(uuid);
     }
 
     /** Whether the player belongs to more than one firm (so /firm chat needs an explicit firm). */
