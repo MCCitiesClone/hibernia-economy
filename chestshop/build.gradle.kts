@@ -3,7 +3,7 @@ import java.time.format.DateTimeFormatter
 
 // =============================================================================
 // ChestShop — a single Paper plugin module, compiled against the Paper 1.21.11
-// API and shaded straight to ChestShop.jar. The former per-server-version
+// API and shaded straight to chestshop-<version>.jar. The former per-server-version
 // adapter modules + the assemble module (and the old `:chestshop:plugin`
 // nesting) were folded into this one module once the core adopted a single
 // modern baseline (PAR-258). group + version are inherited from the root
@@ -138,7 +138,7 @@ dependencies {
     implementation(libs.guice)
     implementation(libs.reflections)
 
-    // --- bundled libraries (relocated + shaded into ChestShop.jar below).
+    // --- bundled libraries (relocated + shaded into the plugin jar below).
     // `api` (rather than implementation) is harmless now that everything is one
     // module; kept so they stay on the runtime classpath that shadowJar bundles.
     api("com.j256.ormlite:ormlite-jdbc:6.1")
@@ -209,18 +209,19 @@ tasks.jacocoTestReport {
 tasks.test { finalizedBy(tasks.jacocoTestReport) }
 
 // =====================================================================
-// Shaded ChestShop.jar (formerly produced by the separate :assemble module).
+// Shaded chestshop-<version>.jar (formerly produced by the separate :assemble module).
 // =====================================================================
 
 // Shadow 9 + plain :jar both target build/libs/<name>.jar; disable :jar so the
-// shaded ChestShop.jar survives (see workspace CLAUDE.md rule 8).
+// shaded plugin jar survives (see workspace CLAUDE.md rule 8).
 tasks.jar { enabled = false }
 
 tasks.shadowJar {
-    // -> build/libs/ChestShop.jar (no version/classifier).
-    archiveBaseName.set("ChestShop")
+    // -> build/libs/chestshop-<version>.jar, standardised with the other plugins:
+    // base name defaults to the project name ("chestshop") and version to the
+    // pinned monorepo version from the root allprojects block (2.3.0-SNAPSHOT or
+    // -Pversion). Only the "-all" classifier is dropped. (PAR-274)
     archiveClassifier.set("")
-    archiveVersion.set("")
 
     // Bundle every runtime (api/implementation) dependency. The server API and
     // the soft-depend plugin APIs are compileOnly, so they never reach the

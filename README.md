@@ -94,7 +94,7 @@ hibernia-economy/
 ├── treasury-api-plugin/       # JWT API-key issuer
 ├── treasury-rest-api/         # Spring Boot REST service (Dockerized)
 ├── economy-flyway/            # the shared database schema (Flyway migrations)
-├── chestshop/                 #   plugin/  (sign shops; shades to ChestShop.jar)
+├── chestshop/                 #   plugin/  (sign shops; shades to chestshop-<version>.jar)
 ├── economy-explorer/          # Next.js explorer + /docs user guide (npm, not Gradle)
 └── .github/workflows/         # CI for every component (build, test, publish, deploy)
 ```
@@ -159,7 +159,7 @@ Everything is one Gradle build, so you can build any artifact from the repo root
 ./gradlew :business:shadowJar
 ./gradlew :treasury-api-plugin:shadowJar
 
-# ChestShop  ->  chestshop/build/libs/ChestShop.jar
+# ChestShop  ->  chestshop/build/libs/chestshop-<version>.jar
 ./gradlew :chestshop:shadowJar
 
 # REST API (Spring Boot)  ->  treasury-rest-api/build/libs/

@@ -31,7 +31,7 @@ include(":treasury-api-plugin")
 include(":treasury-rest-api")
 include(":economy-flyway")
 
-// ChestShop: a single plugin module that shades straight to ChestShop.jar. The
+// ChestShop: a single plugin module that shades straight to chestshop-<version>.jar. The
 // old per-server-version adapter modules, the assemble module, and the former
 // `:chestshop:plugin` nesting were folded into this one module when the core
 // moved to a single modern (1.21.11) baseline.
