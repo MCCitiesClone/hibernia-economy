@@ -52,7 +52,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.io.ByteArrayDataOutput;
 import com.google.common.io.ByteStreams;
 
-import net.kyori.adventure.platform.bukkit.BukkitAudiences;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.gson.GsonComponentSerializer;
 import net.md_5.bungee.api.chat.BaseComponent;
@@ -110,8 +109,6 @@ public class ChestShop extends JavaPlugin {
 
     private static Metrics bStats;
 
-    private static BukkitAudiences audiences;
-
     private static File dataFolder;
     private static ItemDatabase itemDatabase;
 
@@ -140,7 +137,6 @@ public class ChestShop extends JavaPlugin {
     @Override
     public void onEnable() {
         bStats = new Metrics(this, 1109);
-        audiences = BukkitAudiences.create(this);
         turnOffDatabaseLogging();
         if (!handleMigrations()) {
             return;
@@ -598,10 +594,6 @@ public class ChestShop extends JavaPlugin {
 
     public static Metrics getMetrics() {
         return bStats;
-    }
-
-    public static BukkitAudiences getAudiences() {
-        return audiences;
     }
 
     public static void registerListener(Listener listener) {

@@ -88,6 +88,9 @@ dependencies {
     compileOnly(libs.paper.api)
     compileOnly("org.apache.logging.log4j:log4j-core:2.17.2")
     compileOnly("com.google.code.findbugs:jsr305:3.0.2")
+    // Adventure is provided by Paper at runtime; compile against it (not bundled).
+    // ChestShop only touches GsonComponentSerializer + Component directly.
+    compileOnly("net.kyori:adventure-text-serializer-gson:4.21.0")
 
     // Lombok — @Getter on the framework @ConfigurationComponent (matches treasury/business).
     compileOnly(libs.lombok)
@@ -142,11 +145,15 @@ dependencies {
     // `api` (rather than implementation) is harmless now that everything is one
     // module; kept so they stay on the runtime classpath that shadowJar bundles.
     api("com.j256.ormlite:ormlite-jdbc:6.1")
-    api("de.themoep.utils:lang-bukkit:1.3-SNAPSHOT")
-    api("de.themoep:minedown-adventure:1.7.2-SNAPSHOT")
-    api("net.kyori:adventure-platform-bukkit:4.4.1-SNAPSHOT")
-    api("net.kyori:adventure-text-serializer-gson:4.21.0") {
-        exclude(group = "com.google.code.gson")
+    // MineDown is bundled + relocated (Libs.MineDown). Adventure itself is NOT
+    // bundled — it's provided natively by Paper (net.kyori, unrelocated), exactly
+    // like treasury/business. Excluding net.kyori here keeps MineDown's transitive
+    // adventure out of the shade so it can't collide with the server's own copy.
+    api("de.themoep.utils:lang-bukkit:1.3-SNAPSHOT") {
+        exclude(group = "net.kyori")
+    }
+    api("de.themoep:minedown-adventure:1.7.2-SNAPSHOT") {
+        exclude(group = "net.kyori")
     }
     api("org.bstats:bstats-bukkit:3.0.1")
     api("javax.persistence:persistence-api:1.0")
@@ -230,9 +237,12 @@ tasks.shadowJar {
     // in a whitelist is fragile; this mirrors treasury/business.)
 
     // Relocate shaded libraries so they don't clash with the server or other plugins.
+    // net.kyori (adventure) is deliberately NOT relocated and NOT bundled — Paper
+    // provides it natively, like treasury/business. Relocating + bundling it caused
+    // an internally-inconsistent adventure copy (missing DialogLike/MiniMessage)
+    // that failed at enable.
     relocate("de.themoep.utils.lang", "io.paradaux.chestshop.Libs.Lang")
     relocate("de.themoep.minedown.adventure", "io.paradaux.chestshop.Libs.MineDown")
-    relocate("net.kyori", "io.paradaux.chestshop.Libs.Kyori")
     relocate("org.bstats", "io.paradaux.chestshop.Metrics.BStats")
     relocate("com.j256.ormlite", "io.paradaux.chestshop.Libs.ORMlite")
     relocate("javax.persistence", "io.paradaux.chestshop.Libs.javax.persistence")

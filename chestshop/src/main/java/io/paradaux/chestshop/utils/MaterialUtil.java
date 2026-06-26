@@ -685,7 +685,7 @@ public class MaterialUtil {
                     .replace("item",itemComponent.build())
                     .replaceIn(message.getComponent(player, showPrefix, newMap, replacements));
             if (player != null) {
-                ChestShop.getAudiences().player(player).sendMessage(component);
+                player.sendMessage(component);
                 return true;
             } else if (playerName != null) {
                 ChestShop.sendBungeeMessage(playerName, component);

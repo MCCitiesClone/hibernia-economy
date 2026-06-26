@@ -6,9 +6,7 @@ import de.themoep.minedown.adventure.MineDown;
 import de.themoep.utils.lang.bukkit.BukkitLanguageConfig;
 import de.themoep.utils.lang.bukkit.LanguageManager;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.serializer.bungeecord.BungeeComponentSerializer;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
-import net.md_5.bungee.api.chat.BaseComponent;
 import org.bukkit.command.CommandSender;
 
 import java.io.File;
@@ -181,28 +179,23 @@ public class Messages {
         }
 
         public void sendWithPrefix(CommandSender sender, Map<String, String> replacementMap, String... replacements) {
-            ChestShop.getAudiences().sender(sender).sendMessage(getComponent(sender, true, replacementMap, replacements));
+            sender.sendMessage(getComponent(sender, true, replacementMap, replacements));
         }
 
         public void sendWithPrefix(CommandSender sender, Map<String, String> replacements) {
-            ChestShop.getAudiences().sender(sender).sendMessage(getComponent(sender, true, replacements));
+            sender.sendMessage(getComponent(sender, true, replacements));
         }
 
         public void sendWithPrefix(CommandSender sender, String... replacements) {
-            ChestShop.getAudiences().sender(sender).sendMessage(getComponent(sender, true, Collections.emptyMap(), replacements));
+            sender.sendMessage(getComponent(sender, true, Collections.emptyMap(), replacements));
         }
 
         public void send(CommandSender sender, String... replacements) {
-            ChestShop.getAudiences().sender(sender).sendMessage(getComponent(sender, false, Collections.emptyMap(), replacements));
+            sender.sendMessage(getComponent(sender, false, Collections.emptyMap(), replacements));
         }
 
         public void send(CommandSender sender, Map<String, String> replacements) {
-            ChestShop.getAudiences().sender(sender).sendMessage(getComponent(sender, false, replacements));
-        }
-
-        @Deprecated
-        public BaseComponent[] getComponents(CommandSender sender, boolean prefixSuffix, Map<String, String> replacementMap, String... replacements) {
-            return BungeeComponentSerializer.get().serialize(getComponent(sender, prefixSuffix, replacementMap, replacements));
+            sender.sendMessage(getComponent(sender, false, replacements));
         }
 
         public Component getComponent(CommandSender sender, boolean prefixSuffix, Map<String, String> replacementMap, String... replacements) {
