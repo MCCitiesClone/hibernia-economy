@@ -45,6 +45,15 @@ public interface EconomyPlayerMapper {
     @Select("SELECT last_login_epoch FROM economy_players WHERE player_uuid_bin = #{playerUuid}")
     Long findLastLogin(@Param("playerUuid") UUID playerUuid);
 
+    /**
+     * Locking variant of {@link #findLastLogin}: takes a row lock so the
+     * read-previous-then-write-new sequence in {@code recordLogin} is serialised at
+     * the database level — correct across multiple writer processes, not just within
+     * one JVM monitor (ADT-9).
+     */
+    @Select("SELECT last_login_epoch FROM economy_players WHERE player_uuid_bin = #{playerUuid} FOR UPDATE")
+    Long findLastLoginForUpdate(@Param("playerUuid") UUID playerUuid);
+
     /** Resolves a current name (case-insensitive) to a UUID, or {@code null} if unknown. */
     @Select("SELECT player_uuid_bin FROM economy_players WHERE name_lower = LOWER(#{name})")
     UUID findUuidByName(@Param("name") String name);
