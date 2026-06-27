@@ -13,7 +13,8 @@
     "test:integration": "vitest run test/integration",
     "test:watch": "vitest",
     "coverage": "vitest run --coverage",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "db:codegen": "kysely-codegen --dialect mysql --out-file lib/db.generated.ts --camel-case"
   },
   "dependencies": {
     "@grafana/faro-web-sdk": "^2.7.1",
@@ -48,6 +49,7 @@
     "@vitest/coverage-v8": "^2.1.8",
     "eslint": "^8.57.1",
     "eslint-config-next": "^15.1.0",
+    "kysely-codegen": "^0.20.0",
     "tsx": "^4.19.0",
     "typescript": "^5.7.0",
     "vite-tsconfig-paths": "^5.1.4",
