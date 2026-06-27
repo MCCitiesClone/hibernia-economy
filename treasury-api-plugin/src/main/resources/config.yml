@@ -11,6 +11,11 @@ database:
   password: password
 
 api:
+  # Prefer random key material over a passphrase: set this to "base64:<value>"
+  # where <value> is `openssl rand -base64 48`. Must be byte-identical to the
+  # treasury-rest-api JWT_SECRET. Rotating it invalidates all live API tokens
+  # (users reissue in-game). A plain passphrase still works via a legacy SHA-256
+  # KDF but logs a warning — rotate to base64 key material. (ADT-23)
   jwt-secret: change-me-please-use-a-long-random-secret-key
 
 # Keycloak Admin API for the in-game account-linking flow (/treasuryapi ui link).
