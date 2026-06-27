@@ -6,8 +6,6 @@ import org.bukkit.ChatColor;
 import org.bukkit.Color;
 import org.bukkit.NamespacedKey;
 import org.bukkit.enchantments.Enchantment;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.Listener;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.BookMeta;
 import org.bukkit.inventory.meta.EnchantmentStorageMeta;
@@ -32,9 +30,8 @@ import static io.paradaux.chestshop.utils.StringUtil.capitalizeFirstLetter;
 /**
  * @author Acrobot
  */
-public class ItemInfoListener implements Listener {
+public class ItemInfoListener {
 
-    @EventHandler
     public static void addRepairCost(ItemInfoEvent event) {
         if (event.getItem().hasItemMeta()) {
             ItemMeta meta = event.getItem().getItemMeta();
@@ -44,7 +41,6 @@ public class ItemInfoListener implements Listener {
         }
     }
 
-    @EventHandler
     public static void addEnchantment(ItemInfoEvent event) {
         ItemStack item = event.getItem();
 
@@ -66,7 +62,6 @@ public class ItemInfoListener implements Listener {
         event.addRawMessage("iteminfo_enchantments", String.join("\n", lines));
     }
 
-    @EventHandler
     public static void addLeatherColor(ItemInfoEvent event) {
         if (event.getItem().hasItemMeta()) {
             ItemMeta meta = event.getItem().getItemMeta();
@@ -82,7 +77,6 @@ public class ItemInfoListener implements Listener {
         }
     }
 
-    @EventHandler
     public static void addRecipes(ItemInfoEvent event) {
         if (event.getItem().hasItemMeta()) {
             ItemMeta meta = event.getItem().getItemMeta();
@@ -95,7 +89,6 @@ public class ItemInfoListener implements Listener {
         }
     }
 
-    @EventHandler
     public static void addTropicalFishInfo(ItemInfoEvent event) {
         if (event.getItem().hasItemMeta()) {
             ItemMeta meta = event.getItem().getItemMeta();
@@ -109,7 +102,6 @@ public class ItemInfoListener implements Listener {
         }
     }
 
-    @EventHandler
     public static void addMapInfo(ItemInfoEvent event) {
         if (event.getItem().hasItemMeta()) {
             ItemMeta meta = event.getItem().getItemMeta();
@@ -132,7 +124,6 @@ public class ItemInfoListener implements Listener {
         }
     }
 
-    @EventHandler
     public static void addPotionInfo(ItemInfoEvent event) {
         ItemStack item = event.getItem();
         if (!item.hasItemMeta()) {
@@ -164,7 +155,6 @@ public class ItemInfoListener implements Listener {
         event.addRawMessage("iteminfo_potion", message.toString());
     }
 
-    @EventHandler
     public static void addBookInfo(ItemInfoEvent event) {
         if (!event.getItem().hasItemMeta()) {
             return;
@@ -185,7 +175,6 @@ public class ItemInfoListener implements Listener {
         }
     }
 
-    @EventHandler
     public static void addLoreInfo(ItemInfoEvent event) {
         if (event.getItem().hasItemMeta()) {
             ItemMeta meta = event.getItem().getItemMeta();

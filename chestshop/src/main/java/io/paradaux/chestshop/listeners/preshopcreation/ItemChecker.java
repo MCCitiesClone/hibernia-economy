@@ -11,9 +11,6 @@ import io.paradaux.chestshop.utils.uBlock;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.block.Container;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.EventPriority;
-import org.bukkit.event.Listener;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.regex.Matcher;
@@ -27,9 +24,8 @@ import static io.paradaux.chestshop.signs.ChestShopSign.AUTOFILL_CODE;
 /**
  * @author Acrobot
  */
-public class ItemChecker implements Listener {
+public class ItemChecker {
 
-    @EventHandler(priority = EventPriority.LOWEST)
     public static void onPreShopCreation(PreShopCreationEvent event) {
         String itemCode = ChestShopSign.getItem(event.getSignLines());
 

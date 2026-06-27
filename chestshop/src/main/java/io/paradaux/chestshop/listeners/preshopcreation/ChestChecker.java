@@ -7,9 +7,6 @@ import io.paradaux.chestshop.signs.ChestShopSign;
 import io.paradaux.chestshop.utils.uBlock;
 import org.bukkit.block.Container;
 import org.bukkit.entity.Player;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.EventPriority;
-import org.bukkit.event.Listener;
 
 import static io.paradaux.chestshop.events.PreShopCreationEvent.CreationOutcome.NO_CHEST;
 import static io.paradaux.chestshop.events.PreShopCreationEvent.CreationOutcome.NO_PERMISSION_FOR_CHEST;
@@ -18,9 +15,8 @@ import static io.paradaux.chestshop.Permission.ADMIN;
 /**
  * @author Acrobot
  */
-public class ChestChecker implements Listener {
+public class ChestChecker {
 
-    @EventHandler(priority = EventPriority.LOW)
     public static void onPreShopCreation(PreShopCreationEvent event) {
         String nameLine = ChestShopSign.getOwner(event.getSignLines());
 

@@ -7,9 +7,6 @@ import io.paradaux.chestshop.configuration.Properties;
 import io.paradaux.chestshop.economy.Economy;
 import io.paradaux.chestshop.events.PreTransactionEvent;
 import org.bukkit.entity.Player;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.EventPriority;
-import org.bukkit.event.Listener;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
@@ -29,9 +26,8 @@ import static io.paradaux.chestshop.events.TransactionEvent.TransactionType.SELL
 /**
  * @author Acrobot
  */
-public class PartialTransactionModule implements Listener {
+public class PartialTransactionModule {
 
-    @EventHandler(priority = EventPriority.LOW)
     public static void onPreBuyTransaction(PreTransactionEvent event) {
         if (event.isCancelled() || event.getTransactionType() != BUY) {
             return;
@@ -110,7 +106,6 @@ public class PartialTransactionModule implements Listener {
         }
     }
 
-    @EventHandler(priority = EventPriority.LOW)
     public static void onPreSellTransaction(PreTransactionEvent event) {
         if (event.isCancelled() || event.getTransactionType() != SELL) {
             return;

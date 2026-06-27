@@ -2,17 +2,13 @@ package io.paradaux.chestshop.listeners.pretransaction;
 
 import io.paradaux.chestshop.events.PreTransactionEvent;
 import io.paradaux.chestshop.signs.ChestShopSign;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.EventPriority;
-import org.bukkit.event.Listener;
 
 import static io.paradaux.chestshop.events.PreTransactionEvent.TransactionOutcome.INVALID_SHOP;
 
 /**
  * @author Acrobot
  */
-public class ShopValidator implements Listener {
-    @EventHandler(priority = EventPriority.LOWEST)
+public class ShopValidator {
     public static void onCheck(PreTransactionEvent event) {
         if (event.isCancelled()) {
             return;

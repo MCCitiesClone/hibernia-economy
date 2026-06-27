@@ -7,17 +7,14 @@ import io.paradaux.chestshop.utils.uBlock;
 import org.bukkit.Location;
 import org.bukkit.block.Container;
 import org.bukkit.entity.Player;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.Listener;
 
 import static io.paradaux.chestshop.events.PreShopCreationEvent.CreationOutcome.NO_PERMISSION_FOR_TERRAIN;
 
 /**
  * @author Acrobot
  */
-public class TerrainChecker implements Listener {
+public class TerrainChecker {
 
-    @EventHandler
     public static void onPreShopCreation(PreShopCreationEvent event) {
         Player player = event.getPlayer();
 

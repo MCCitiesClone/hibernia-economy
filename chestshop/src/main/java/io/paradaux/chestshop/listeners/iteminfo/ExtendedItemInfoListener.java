@@ -5,9 +5,6 @@ import io.paradaux.chestshop.commands.ItemInfo;
 import io.paradaux.chestshop.events.ItemInfoEvent;
 import net.kyori.adventure.text.Component;
 import org.bukkit.ChatColor;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.EventPriority;
-import org.bukkit.event.Listener;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ArmorMeta;
 import org.bukkit.inventory.meta.AxolotlBucketMeta;
@@ -33,9 +30,8 @@ import static io.paradaux.chestshop.utils.StringUtil.capitalizeFirstLetter;
  *
  * @author Acrobot
  */
-public class ExtendedItemInfoListener implements Listener {
+public class ExtendedItemInfoListener {
 
-    @EventHandler(priority = EventPriority.HIGH)
     public static void addMapInfo(ItemInfoEvent event) {
         if (event.getItem().hasItemMeta()) {
             ItemMeta meta = event.getItem().getItemMeta();
@@ -104,7 +100,6 @@ public class ExtendedItemInfoListener implements Listener {
         }
     }
 
-    @EventHandler(priority = EventPriority.HIGH)
     public static void addPotionInfo(ItemInfoEvent event) {
         ItemStack item = event.getItem();
         if (!item.hasItemMeta()) {

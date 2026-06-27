@@ -5,8 +5,6 @@ import io.paradaux.chestshop.events.TransactionEvent;
 import io.paradaux.chestshop.Permission;
 import io.paradaux.chestshop.signs.ChestShopSign;
 import org.bukkit.entity.Player;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.Listener;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.Locale;
@@ -17,8 +15,7 @@ import static io.paradaux.chestshop.events.TransactionEvent.TransactionType.BUY;
 /**
  * @author Acrobot
  */
-public class PermissionChecker implements Listener {
-    @EventHandler
+public class PermissionChecker {
     public static void onPermissionCheck(PreTransactionEvent event) {
         if (event.isCancelled()) {
             return;

@@ -6,8 +6,6 @@ import io.paradaux.chestshop.events.PreShopCreationEvent;
 import io.paradaux.chestshop.Permission;
 import io.paradaux.chestshop.signs.ChestShopSign;
 import org.bukkit.entity.Player;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.Listener;
 
 import java.math.BigDecimal;
 
@@ -17,9 +15,8 @@ import static io.paradaux.chestshop.Permission.NOFEE;
 /**
  * @author Acrobot
  */
-public class MoneyChecker implements Listener {
+public class MoneyChecker {
 
-    @EventHandler
     public static void onPreShopCreation(PreShopCreationEvent event) {
         BigDecimal shopCreationPrice = Properties.SHOP_CREATION_PRICE;
 

@@ -14,8 +14,6 @@ import io.paradaux.chestshop.utils.uBlock;
 import com.google.common.collect.ImmutableMap;
 import net.kyori.adventure.text.Component;
 import org.bukkit.block.Container;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.Listener;
 import org.bukkit.inventory.ItemStack;
 
 import java.math.BigDecimal;
@@ -24,9 +22,8 @@ import java.util.Map;
 /**
  * @author Acrobot
  */
-public class ShopInfoListener implements Listener {
+public class ShopInfoListener {
 
-    @EventHandler(ignoreCancelled = true)
     public static void showShopInfo(ShopInfoEvent event) {
         if (ChestShopSign.isValid(event.getSign())) {
             String nameLine = ChestShopSign.getOwner(event.getSign());

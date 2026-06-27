@@ -6,9 +6,6 @@ import io.paradaux.chestshop.events.PreTransactionEvent;
 import io.paradaux.chestshop.listeners.block.breaking.SignBreak;
 import io.paradaux.chestshop.signs.ChestShopSign;
 import org.bukkit.block.Sign;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.EventPriority;
-import org.bukkit.event.Listener;
 
 import java.math.BigDecimal;
 
@@ -26,9 +23,8 @@ import static io.paradaux.chestshop.events.PreTransactionEvent.TransactionOutcom
  * <p>Disabled when {@link Properties#ALLOW_FREE_SHOPS} is set — if free shops are
  * permitted, existing ones must be left alone too (PAR-88).
  */
-public class FreeShopBreaker implements Listener {
+public class FreeShopBreaker {
 
-    @EventHandler(priority = EventPriority.LOWEST)
     public static void onPreTransaction(PreTransactionEvent event) {
         if (Properties.ALLOW_FREE_SHOPS) {
             return;

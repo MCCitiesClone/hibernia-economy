@@ -4,9 +4,6 @@ import io.paradaux.chestshop.utils.PriceUtil;
 import io.paradaux.chestshop.configuration.Properties;
 import io.paradaux.chestshop.events.PreShopCreationEvent;
 import io.paradaux.chestshop.signs.ChestShopSign;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.EventPriority;
-import org.bukkit.event.Listener;
 
 import java.util.Locale;
 
@@ -17,9 +14,8 @@ import static io.paradaux.chestshop.signs.ChestShopSign.PRICE_LINE;
 /**
  * @author Acrobot
  */
-public class PriceChecker implements Listener {
+public class PriceChecker {
 
-    @EventHandler(priority = EventPriority.LOWEST)
     public static void onPreShopCreation(PreShopCreationEvent event) {
         String line = ChestShopSign.getPrice(event.getSignLines()).toUpperCase(Locale.ROOT);
         if (Properties.PRICE_PRECISION <= 0) {

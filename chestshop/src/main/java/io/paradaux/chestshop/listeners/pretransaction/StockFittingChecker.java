@@ -3,8 +3,6 @@ package io.paradaux.chestshop.listeners.pretransaction;
 import io.paradaux.chestshop.utils.InventoryUtil;
 import io.paradaux.chestshop.database.Item;
 import io.paradaux.chestshop.events.PreTransactionEvent;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.Listener;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
@@ -16,8 +14,7 @@ import static io.paradaux.chestshop.events.TransactionEvent.TransactionType.SELL
 /**
  * @author Acrobot
  */
-public class StockFittingChecker implements Listener {
-    @EventHandler
+public class StockFittingChecker {
     public static void onSellCheck(PreTransactionEvent event) {
         if (event.isCancelled() || event.getTransactionType() != SELL) {
             return;
@@ -31,7 +28,6 @@ public class StockFittingChecker implements Listener {
         }
     }
 
-    @EventHandler
     public static void onBuyCheck(PreTransactionEvent event) {
         if (event.isCancelled() || event.getTransactionType() != BUY) {
             return;

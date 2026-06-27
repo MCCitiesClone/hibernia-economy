@@ -2,9 +2,6 @@ package io.paradaux.chestshop.listeners.pretransaction;
 
 import io.paradaux.chestshop.events.PreTransactionEvent;
 import io.paradaux.chestshop.events.TransactionEvent;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.EventPriority;
-import org.bukkit.event.Listener;
 
 import java.math.BigDecimal;
 
@@ -16,8 +13,7 @@ import static io.paradaux.chestshop.events.TransactionEvent.TransactionType.BUY;
 /**
  * @author Acrobot
  */
-public class PriceValidator implements Listener {
-    @EventHandler(priority = EventPriority.LOWEST)
+public class PriceValidator {
     public static void onPriceCheck(PreTransactionEvent event) {
         if (event.isCancelled()) {
             return;

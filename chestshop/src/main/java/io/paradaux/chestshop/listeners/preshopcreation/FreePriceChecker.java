@@ -4,9 +4,6 @@ import io.paradaux.chestshop.utils.PriceUtil;
 import io.paradaux.chestshop.configuration.Properties;
 import io.paradaux.chestshop.events.PreShopCreationEvent;
 import io.paradaux.chestshop.signs.ChestShopSign;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.EventPriority;
-import org.bukkit.event.Listener;
 
 import java.math.BigDecimal;
 
@@ -23,9 +20,8 @@ import static io.paradaux.chestshop.events.PreShopCreationEvent.CreationOutcome.
  * <p>Disabled when {@link Properties#ALLOW_FREE_SHOPS} is set, letting operators
  * opt into free shops (PAR-88).
  */
-public class FreePriceChecker implements Listener {
+public class FreePriceChecker {
 
-    @EventHandler(priority = EventPriority.NORMAL)
     public static void onPreShopCreation(PreShopCreationEvent event) {
         if (Properties.ALLOW_FREE_SHOPS) {
             return;

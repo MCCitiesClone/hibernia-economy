@@ -2,16 +2,12 @@ package io.paradaux.chestshop.listeners.preshopcreation;
 
 import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.events.PreShopCreationEvent;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.EventPriority;
-import org.bukkit.event.Listener;
 
 /**
  * @author Acrobot
  */
-public class ErrorMessageSender implements Listener {
+public class ErrorMessageSender {
 
-    @EventHandler(priority = EventPriority.MONITOR)
     public static void onPreShopCreation(PreShopCreationEvent event) {
         if (!event.isCancelled()) {
             return;

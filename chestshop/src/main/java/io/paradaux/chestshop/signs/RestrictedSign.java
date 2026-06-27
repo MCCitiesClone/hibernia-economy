@@ -68,7 +68,6 @@ public class RestrictedSign implements Listener {
         }
     }
 
-    @EventHandler(priority = EventPriority.LOW)
     public static void onPreTransaction(PreTransactionEvent event) {
         if (event.isCancelled()) {
             return;

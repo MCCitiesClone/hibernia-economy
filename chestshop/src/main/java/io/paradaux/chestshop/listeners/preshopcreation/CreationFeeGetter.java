@@ -2,9 +2,6 @@ package io.paradaux.chestshop.listeners.preshopcreation;
 
 import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.events.PreShopCreationEvent;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.EventPriority;
-import org.bukkit.event.Listener;
 
 /**
  * Thin entrypoint: charges the shop-creation fee through
@@ -13,9 +10,8 @@ import org.bukkit.event.Listener;
  *
  * @author Acrobot
  */
-public class CreationFeeGetter implements Listener {
+public class CreationFeeGetter {
 
-    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public static void onShopCreation(PreShopCreationEvent event) {
         if (!ChestShop.shops().chargeCreationFee(event.getPlayer(), event.getSignLines())) {
             event.setOutcome(PreShopCreationEvent.CreationOutcome.NOT_ENOUGH_MONEY);

@@ -7,8 +7,6 @@ import io.paradaux.chestshop.signs.ChestShopSign;
 import io.paradaux.chestshop.ChestShop;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.Listener;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.Locale;
@@ -16,14 +14,12 @@ import java.util.Locale;
 import static io.paradaux.chestshop.events.PreShopCreationEvent.CreationOutcome.NO_PERMISSION;
 import static io.paradaux.chestshop.Permission.*;
 import static io.paradaux.chestshop.signs.ChestShopSign.NAME_LINE;
-import static org.bukkit.event.EventPriority.HIGH;
 
 /**
  * @author Acrobot
  */
-public class PermissionChecker implements Listener {
+public class PermissionChecker {
 
-    @EventHandler(priority = HIGH)
     public static void onPreShopCreation(PreShopCreationEvent event) {
         Player player = event.getPlayer();
 

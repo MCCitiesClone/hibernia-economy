@@ -14,9 +14,6 @@ import com.google.common.collect.Table;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.EventPriority;
-import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.ItemStack;
 
@@ -26,18 +23,16 @@ import java.util.UUID;
 /**
  * @author Acrobot
  */
-public class ErrorMessageSender implements Listener {
+public class ErrorMessageSender {
 
     private static Table<UUID, String, Long> notificationCooldowns = HashBasedTable.create();
 
-    @EventHandler(priority = EventPriority.MONITOR)
     public static void onQuit(PlayerQuitEvent event) {
         if (Properties.NOTIFICATION_MESSAGE_COOLDOWN > 0) {
             notificationCooldowns.rowMap().remove(event.getPlayer().getUniqueId());
         }
     }
 
-    @EventHandler(priority = EventPriority.MONITOR)
     public static void onMessage(PreTransactionEvent event) {
         if (!event.isCancelled()) {
             return;

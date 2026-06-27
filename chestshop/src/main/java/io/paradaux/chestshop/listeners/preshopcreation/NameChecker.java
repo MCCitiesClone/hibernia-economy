@@ -7,9 +7,6 @@ import io.paradaux.chestshop.Permission;
 import io.paradaux.chestshop.signs.ChestShopSign;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.EventPriority;
-import org.bukkit.event.Listener;
 
 import java.util.logging.Level;
 
@@ -20,9 +17,8 @@ import static io.paradaux.chestshop.events.PreShopCreationEvent.CreationOutcome.
 /**
  * @author Acrobot
  */
-public class NameChecker implements Listener {
+public class NameChecker {
 
-    @EventHandler(priority = EventPriority.LOW)
     public static void onPreShopCreation(PreShopCreationEvent event) {
         handleEvent(event);
     }
@@ -32,7 +28,6 @@ public class NameChecker implements Listener {
      * that was already issued during the LOW-priority pass (e.g. no CHESTSHOP permission,
      * business account not found, Treasury not loaded).
      */
-    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public static void onPreShopCreationHighest(PreShopCreationEvent event) {
         handleEvent(event);
     }
