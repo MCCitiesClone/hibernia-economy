@@ -10,7 +10,6 @@ public interface ApiKeyService {
     ApiKey issueBusinessKey(int firmId, UUID ownerUuid);
     ApiKey reissueKey(int keyId);
     void revokeKey(int keyId);
-    String exportToken(int keyId);
 
     /** Looks up a single key by id, or {@code null} if none exists. */
     ApiKey getKey(int keyId);

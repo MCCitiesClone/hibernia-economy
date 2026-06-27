@@ -281,7 +281,7 @@ class JwtTokenVerifierTest {
         return new ApiKeyMapper() {
             @Override public ApiKey findByKeyId(long keyId) { return byKeyId.apply(keyId); }
             @Override public ApiKey findByKeyIdForUpdate(long keyId) { throw new UnsupportedOperationException(); }
-            @Override public int rotateKey(long keyId, String jwtId, String token,
+            @Override public int rotateKey(long keyId, String jwtId,
                                            java.time.LocalDateTime issuedAt, java.time.LocalDateTime expiresAt) {
                 throw new UnsupportedOperationException();
             }

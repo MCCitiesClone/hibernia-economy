@@ -62,15 +62,6 @@ public class TreasuryAPICommand implements CommandHandler {
         personalHandler.doList(sender);
     }
 
-    @Route("personal export <keyId>")
-    @Permission("treasuryapi.personal.export")
-    @Async
-    @Description("Export a personal API key token to a shareable URL")
-    public void personalExport(@Sender Player sender,
-                               @Arg("keyId") int keyId) {
-        personalHandler.doExport(sender, keyId);
-    }
-
     @Route("personal reissue <keyId>")
     @Permission("treasuryapi.personal.reissue")
     @Async
@@ -114,15 +105,6 @@ public class TreasuryAPICommand implements CommandHandler {
     @Description("List business API keys for firms you are employed at")
     public void businessListAccess(@Sender Player sender) {
         businessHandler.doListAccess(sender);
-    }
-
-    @Route("business export <keyId>")
-    @Permission("treasuryapi.business.export")
-    @Async
-    @Description("Export a business API key token to a shareable URL")
-    public void businessExport(@Sender Player sender,
-                               @Arg("keyId") int keyId) {
-        businessHandler.doExport(sender, keyId);
     }
 
     @Route("business reissue <keyId>")

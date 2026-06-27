@@ -11,11 +11,6 @@ import org.mybatis.guice.transactional.Transactional;
 
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
-import java.io.IOException;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -65,16 +60,13 @@ public class ApiKeyServiceImpl implements ApiKeyService {
         key.setIssuedAt(issuedAt);
         key.setExpiresAt(expiresAt);
 
-        // Insert with placeholder token to obtain the generated keyId
-        key.setToken("");
+        // Insert (no token column) to obtain the generated keyId.
         apiKeyMapper.insert(key);
 
-        // Build the real JWT now that we have the keyId
+        // Build the real JWT now that we have the keyId. It is set on the returned
+        // object for one-time display to the issuer and is NEVER persisted (ADT-6).
         String token = buildJwt(key.getKeyId(), jwtId, keyType, accountId, firmId, ownerUuid, issuedAt, expiresAt);
         key.setToken(token);
-
-        // Update the row with the real token
-        apiKeyMapper.reissue(key.getKeyId(), jwtId, token, issuedAt, expiresAt);
 
         return key;
     }
@@ -94,10 +86,10 @@ public class ApiKeyServiceImpl implements ApiKeyService {
                 existing.getAccountId(), existing.getFirmId(),
                 existing.getOwnerUuid(), issuedAt, expiresAt);
 
-        apiKeyMapper.reissue(keyId, newJwtId, token, issuedAt, expiresAt);
+        apiKeyMapper.reissue(keyId, newJwtId, issuedAt, expiresAt);
 
         existing.setJwtId(newJwtId);
-        existing.setToken(token);
+        existing.setToken(token); // one-time display only; not persisted (ADT-6)
         existing.setIssuedAt(issuedAt);
         existing.setExpiresAt(expiresAt);
         existing.setRevoked(false);
@@ -108,15 +100,6 @@ public class ApiKeyServiceImpl implements ApiKeyService {
     @Transactional
     public void revokeKey(int keyId) {
         apiKeyMapper.revoke(keyId);
-    }
-
-    @Override
-    public String exportToken(int keyId) {
-        ApiKey key = apiKeyMapper.findById(keyId);
-        if (key == null) {
-            throw new IllegalArgumentException("API key not found: " + keyId);
-        }
-        return uploadToBytebin(key.getToken());
     }
 
     @Override
@@ -132,49 +115,6 @@ public class ApiKeyServiceImpl implements ApiKeyService {
     @Override
     public List<ApiKey> listBusinessKeysAccessibleByEmployee(UUID employeeUuid) {
         return apiKeyMapper.findBusinessAccessibleByEmployee(employeeUuid);
-    }
-
-    private String uploadToBytebin(String token) {
-        try {
-            // Mirror Treasury's BytebinServiceImpl: gzip body, Bytebin-Max-Reads: 1
-            // so the share link self-destructs after a single open. Without
-            // gzip + the max-reads header the bytebin instance at
-            // pastes.paradaux.io rejects the upload with a 4xx.
-            byte[] compressed = gzip(token.getBytes(StandardCharsets.UTF_8));
-            HttpClient client = HttpClient.newHttpClient();
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(apiConfig.getBytebinPostUrl()))
-                    .header("Content-Type", "text/plain")
-                    .header("Content-Encoding", "gzip")
-                    .header("User-Agent", "TreasuryAPI-Plugin/1.0")
-                    .header("Bytebin-Max-Reads", "1")
-                    .POST(HttpRequest.BodyPublishers.ofByteArray(compressed))
-                    .build();
-
-            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-            if (response.statusCode() < 200 || response.statusCode() >= 300) {
-                throw new IllegalStateException("Bytebin upload failed with status " + response.statusCode());
-            }
-
-            String body = response.body();
-            int keyStart = body.indexOf("\"key\"");
-            if (keyStart == -1) {
-                throw new IllegalStateException("Bytebin response did not contain a key");
-            }
-            int valueStart = body.indexOf('"', body.indexOf(':', keyStart) + 1) + 1;
-            int valueEnd = body.indexOf('"', valueStart);
-            return apiConfig.getBytebinBaseUrl() + body.substring(valueStart, valueEnd);
-        } catch (IOException | InterruptedException e) {
-            throw new IllegalStateException("Failed to upload token to bytebin", e);
-        }
-    }
-
-    private static byte[] gzip(byte[] data) throws IOException {
-        java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
-        try (java.util.zip.GZIPOutputStream gzip = new java.util.zip.GZIPOutputStream(baos)) {
-            gzip.write(data);
-        }
-        return baos.toByteArray();
     }
 
     private String buildJwt(int keyId, String jwtId, String keyType,

@@ -60,22 +60,6 @@ public class PersonalKeyHandler {
         }
     }
 
-    public void doExport(Player sender, int keyId) {
-        ApiKey key = apiKeyService.getKey(keyId);
-        if (key == null || !"PERSONAL".equals(key.getKeyType())) {
-            message.send(sender, "treasuryapi.personal.export.not-found");
-            return;
-        }
-        if (!key.getOwnerUuid().equals(sender.getUniqueId())) {
-            message.send(sender, "treasuryapi.personal.export.no-access");
-            return;
-        }
-        String url = apiKeyService.exportToken(keyId);
-        message.send(sender, "treasuryapi.personal.export.success",
-                "keyId", String.valueOf(keyId),
-                "url", url);
-    }
-
     public void doReissue(Player sender, int keyId) {
         ApiKey key = apiKeyService.getKey(keyId);
         if (key == null || !"PERSONAL".equals(key.getKeyType())) {
