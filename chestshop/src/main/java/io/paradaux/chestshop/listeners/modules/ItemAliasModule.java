@@ -2,15 +2,12 @@ package io.paradaux.chestshop.listeners.modules;
 
 import io.paradaux.chestshop.utils.MaterialUtil;
 import io.paradaux.chestshop.ChestShop;
-import io.paradaux.chestshop.events.ChestShopReloadEvent;
 import io.paradaux.chestshop.events.ItemParseEvent;
 import io.paradaux.chestshop.events.ItemStringQueryEvent;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.google.inject.Singleton;
 import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.Listener;
 
 import java.io.File;
 import java.io.IOException;
@@ -24,12 +21,12 @@ import static io.paradaux.chestshop.utils.StringUtil.getMinecraftStringWidth;
  * Owns the configurable item-code ↔ alias mapping (itemAliases.yml). The
  * {@link #onItemParse}/{@link #onItemStringQuery} resolvers are invoked directly by
  * {@link io.paradaux.chestshop.services.ItemService} (was a LOW/HIGH listener on the
- * item events); this stays a registered {@link Listener} only for {@link #onReload}.
+ * item events), and {@link #reload} is called on {@code /chestshop reload}.
  *
  * @author Acrobot
  */
 @Singleton
-public class ItemAliasModule implements Listener {
+public class ItemAliasModule {
     private YamlConfiguration configuration;
     /**
      * Map ChestShop item code -> alias
@@ -71,8 +68,8 @@ public class ItemAliasModule implements Listener {
         }
     }
 
-    @EventHandler
-    public void onReload(ChestShopReloadEvent event) {
+    /** Reload the alias map from disk (was the ChestShopReloadEvent handler). */
+    public void reload() {
         load();
     }
 

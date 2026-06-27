@@ -4,8 +4,6 @@ import io.paradaux.chestshop.ChestShop;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.command.CommandSender;
-import org.bukkit.event.Event;
-import org.bukkit.event.HandlerList;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.Collection;
@@ -13,17 +11,17 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * Represents an {@code /iteminfo} call. Handlers contribute info lines, which are
- * accumulated as pre-rendered (prefix-less) {@link Component}s keyed by a stable
- * string so duplicates collapse and order is preserved; the caller sends them in
- * order. Lines come either from a {@code messages.properties} key (rendered through
- * the framework {@link io.paradaux.hibernia.framework.i18n.Message}) or as a raw
- * component / legacy-section string.
+ * Carrier for an {@code /iteminfo} call, accumulated by
+ * {@link io.paradaux.chestshop.services.InfoService#collectItemInfo}. Contributor steps add
+ * info lines, kept as pre-rendered (prefix-less) {@link Component}s keyed by a stable string
+ * so duplicates collapse and order is preserved; the caller sends them in order. Lines come
+ * either from a {@code messages.properties} key (rendered through the framework
+ * {@link io.paradaux.hibernia.framework.i18n.Message}) or as a raw component / legacy-section
+ * string. Formerly a Bukkit event.
  *
  * @author Acrobot
  */
-public class ItemInfoEvent extends Event {
-    private static final HandlerList handlers = new HandlerList();
+public class ItemInfoEvent {
 
     private final CommandSender sender;
     private final ItemStack item;
@@ -78,13 +76,5 @@ public class ItemInfoEvent extends Event {
 
     private static Component render(String key, String... args) {
         return ChestShop.message().component(key, ChestShop.values(false, null, args));
-    }
-
-    public HandlerList getHandlers() {
-        return handlers;
-    }
-
-    public static HandlerList getHandlerList() {
-        return handlers;
     }
 }

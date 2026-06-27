@@ -2,7 +2,6 @@ package io.paradaux.chestshop.commands;
 
 import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.Permission;
-import io.paradaux.chestshop.events.ShopInfoEvent;
 import io.paradaux.chestshop.signs.ChestShopSign;
 import io.paradaux.chestshop.utils.uBlock;
 import io.paradaux.hibernia.framework.commander.annotations.Command;
@@ -35,8 +34,7 @@ public class ShopInfo implements CommandHandler {
                 }
 
                 if (sign != null) {
-                    ShopInfoEvent event = new ShopInfoEvent((Player) sender, sign);
-                    ChestShop.callEvent(event);
+                    ChestShop.info().showShopInfo((Player) sender, sign);
                 } else {
                     ChestShop.message().send(sender, "chestshop.NO_SHOP_FOUND");
                 }

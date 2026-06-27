@@ -6,7 +6,6 @@ import io.paradaux.chestshop.configuration.Properties;
 import io.paradaux.chestshop.economy.AdminInventory;
 import io.paradaux.chestshop.database.Account;
 import io.paradaux.chestshop.events.PreTransactionEvent;
-import io.paradaux.chestshop.events.ShopInfoEvent;
 import io.paradaux.chestshop.events.TransactionEvent;
 import io.paradaux.chestshop.Permission;
 import io.paradaux.chestshop.Security;
@@ -75,7 +74,7 @@ public class PlayerInteract implements Listener {
 
                 if (!Security.canView(player, block, Properties.TURN_OFF_DEFAULT_PROTECTION_WHEN_PROTECTED_EXTERNALLY)) {
                     if (Permission.has(player, Permission.SHOPINFO)) {
-                        ChestShop.callEvent(new ShopInfoEvent(player, sign));
+                        ChestShop.info().showShopInfo(player, sign);
                         event.setCancelled(true);
                     } else if (!Properties.TURN_OFF_DEFAULT_PROTECTION_WHEN_PROTECTED_EXTERNALLY) {
                         ChestShop.message().send(player, "chestshop.ACCESS_DENIED", "prefix", "");

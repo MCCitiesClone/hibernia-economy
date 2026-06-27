@@ -2,7 +2,6 @@ package io.paradaux.chestshop.commands;
 
 import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.Permission;
-import io.paradaux.chestshop.events.ChestShopReloadEvent;
 import io.paradaux.hibernia.framework.commander.annotations.Command;
 import io.paradaux.hibernia.framework.commander.annotations.Description;
 import io.paradaux.hibernia.framework.commander.annotations.Route;
@@ -27,7 +26,10 @@ public class Version implements CommandHandler {
     @Route("reload")
     @Description("Reload the ChestShop configuration")
     public void reload(@Sender CommandSender sender) {
-        ChestShop.callEvent(new ChestShopReloadEvent(sender));
+        // Was the ChestShopReloadEvent fan-out: reload config (plugins/ChestShop) and the
+        // item aliases (ItemAliasModule). Both run directly now.
+        ChestShop.getPlugin().loadConfig();
+        ChestShop.items().reloadAliases();
         sender.sendMessage(ChatColor.DARK_GREEN + "The config was reloaded.");
     }
 }

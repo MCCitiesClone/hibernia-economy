@@ -62,7 +62,7 @@ public class ItemInfo implements CommandHandler {
             return;
         }
 
-        ItemInfoEvent event = ChestShop.callEvent(new ItemInfoEvent(sender, item));
+        ItemInfoEvent event = ChestShop.info().collectItemInfo(sender, item);
         for (Map.Entry<String, Component> entry : event.getMessages()) {
             sender.sendMessage(entry.getValue());
         }

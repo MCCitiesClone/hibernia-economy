@@ -2,7 +2,6 @@ package io.paradaux.chestshop.listeners.player;
 
 import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.configuration.Properties;
-import io.paradaux.chestshop.events.ShopInfoEvent;
 import io.paradaux.chestshop.Permission;
 import io.paradaux.chestshop.Security;
 import io.paradaux.chestshop.signs.ChestShopSign;
@@ -75,7 +74,7 @@ public class PlayerInventory implements Listener {
                 for (Block container : containers) {
                     Sign sign = uBlock.getConnectedSign(container);
                     if (sign != null) {
-                        ChestShop.callEvent(new ShopInfoEvent((Player) event.getPlayer(), sign));
+                        ChestShop.info().showShopInfo((Player) event.getPlayer(), sign);
                     }
                 }
             } else {

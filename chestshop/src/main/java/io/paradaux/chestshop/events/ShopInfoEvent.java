@@ -1,23 +1,18 @@
 package io.paradaux.chestshop.events;
 
 import org.bukkit.block.Sign;
-import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
-import org.bukkit.event.Cancellable;
-import org.bukkit.event.Event;
-import org.bukkit.event.HandlerList;
 
 /**
- * Represents a /shopinfo call or middle click on a sign
+ * Carrier for a {@code /shopinfo} call or middle click on a sign, passed to
+ * {@link io.paradaux.chestshop.services.InfoService#showShopInfo}. Formerly a Bukkit event.
  *
  * @author Phoenix616
  */
-public class ShopInfoEvent extends Event implements Cancellable {
-    private static final HandlerList handlers = new HandlerList();
+public class ShopInfoEvent {
 
     private Player sender;
     private Sign sign;
-    private boolean cancelled = false;
 
     public ShopInfoEvent(Player sender, Sign sign) {
         this.sender = sender;
@@ -36,23 +31,5 @@ public class ShopInfoEvent extends Event implements Cancellable {
      */
     public Sign getSign() {
         return sign;
-    }
-
-    public HandlerList getHandlers() {
-        return handlers;
-    }
-
-    public static HandlerList getHandlerList() {
-        return handlers;
-    }
-
-    @Override
-    public boolean isCancelled() {
-        return cancelled;
-    }
-
-    @Override
-    public void setCancelled(boolean cancel) {
-        cancelled = cancel;
     }
 }

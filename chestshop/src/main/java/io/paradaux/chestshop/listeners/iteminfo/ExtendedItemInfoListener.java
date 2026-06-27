@@ -58,15 +58,14 @@ public class ExtendedItemInfoListener implements Listener {
         }
     }
 
-    @EventHandler
-    public void addCrossBowInfo(ItemInfoEvent event) {
+    public static void addCrossBowInfo(ItemInfoEvent event) {
         if (event.getItem().hasItemMeta()) {
             ItemMeta meta = event.getItem().getItemMeta();
             if (meta instanceof CrossbowMeta && ((CrossbowMeta) meta).hasChargedProjectiles()) {
                 event.addMessage("chestshop.iteminfo_crossbow_projectiles");
                 for (ItemStack chargedProjectile : ((CrossbowMeta) meta).getChargedProjectiles()) {
                     ItemInfo.sendItemName(event.getSender(), chargedProjectile, "chestshop.iteminfo_crossbow_projectile");
-                    ItemInfoEvent projectileEvent = ChestShop.callEvent(new ItemInfoEvent(event.getSender(), chargedProjectile));
+                    ItemInfoEvent projectileEvent = ChestShop.info().collectItemInfo(event.getSender(), chargedProjectile);
                     for (Map.Entry<String, Component> entry : projectileEvent.getMessages()) {
                         event.addRawMessage("crossbow_projectile_" + chargedProjectile.hashCode() + "_" + entry.getKey(), entry.getValue());
                     }
@@ -76,8 +75,7 @@ public class ExtendedItemInfoListener implements Listener {
         }
     }
 
-    @EventHandler
-    public void addAxolotlInfo(ItemInfoEvent event) {
+    public static void addAxolotlInfo(ItemInfoEvent event) {
         if (event.getItem().hasItemMeta()) {
             ItemMeta meta = event.getItem().getItemMeta();
             if (meta instanceof AxolotlBucketMeta) {
@@ -86,8 +84,7 @@ public class ExtendedItemInfoListener implements Listener {
         }
     }
 
-    @EventHandler
-    public void addBundleInfo(ItemInfoEvent event) {
+    public static void addBundleInfo(ItemInfoEvent event) {
         if (event.getItem().hasItemMeta()) {
             ItemMeta meta = event.getItem().getItemMeta();
             if (meta instanceof BundleMeta) {
@@ -96,8 +93,7 @@ public class ExtendedItemInfoListener implements Listener {
         }
     }
 
-    @EventHandler
-    public void addArmorInfo(ItemInfoEvent event) {
+    public static void addArmorInfo(ItemInfoEvent event) {
         if (event.getItem().hasItemMeta()) {
             ItemMeta meta = event.getItem().getItemMeta();
             if (meta instanceof ArmorMeta && ((ArmorMeta) meta).hasTrim()) {

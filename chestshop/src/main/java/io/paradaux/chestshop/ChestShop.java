@@ -17,11 +17,9 @@ import io.paradaux.chestshop.listeners.block.SignCreate;
 import io.paradaux.chestshop.listeners.economy.EconomyAdapter;
 import io.paradaux.chestshop.listeners.GarbageTextListener;
 import io.paradaux.chestshop.listeners.item.ItemMoveListener;
-import io.paradaux.chestshop.listeners.ItemInfoListener;
 import io.paradaux.chestshop.listeners.modules.ItemAliasModule;
 import io.paradaux.chestshop.listeners.modules.MetricsModule;
 import io.paradaux.chestshop.listeners.modules.StockCounterModule;
-import io.paradaux.chestshop.listeners.ShopInfoListener;
 import io.paradaux.chestshop.listeners.player.*;
 import io.paradaux.chestshop.listeners.preshopcreation.CreationFeeGetter;
 import io.paradaux.chestshop.listeners.posttransaction.*;
@@ -104,6 +102,7 @@ public class ChestShop extends JavaPlugin {
     private static io.paradaux.chestshop.services.ShopService shops;
     private static io.paradaux.chestshop.services.EconomyService economy;
     private static io.paradaux.chestshop.services.ProtectionService protection;
+    private static io.paradaux.chestshop.services.InfoService info;
 
     private static Logger logger;
     private static Logger shopLogger;
@@ -163,6 +162,7 @@ public class ChestShop extends JavaPlugin {
         shops = injector.getInstance(io.paradaux.chestshop.services.ShopService.class);
         economy = injector.getInstance(io.paradaux.chestshop.services.EconomyService.class);
         protection = injector.getInstance(io.paradaux.chestshop.services.ProtectionService.class);
+        info = injector.getInstance(io.paradaux.chestshop.services.InfoService.class);
 
         injector.getInstance(io.paradaux.hibernia.framework.commander.CommandManager.class).registerAll();
 
@@ -332,8 +332,6 @@ public class ChestShop extends JavaPlugin {
 
     //////////////////    REGISTER EVENTS, SCHEDULER & STATS    ///////////////////////////
     private void registerEvents() {
-        registerEvent(new io.paradaux.chestshop.plugins.ChestShop()); //Chest protection
-
         registerEvent(new Dependencies());
 
         registerModules();
@@ -350,8 +348,6 @@ public class ChestShop extends JavaPlugin {
         registerEvent(new PlayerInventory());
         registerEvent(new PlayerTeleport());
 
-        registerEvent(new ItemInfoListener());
-        registerEvent(new ShopInfoListener());
         registerEvent(new GarbageTextListener());
 
         registerEvent(new RestrictedSign());
@@ -362,10 +358,6 @@ public class ChestShop extends JavaPlugin {
     }
 
     private void registerModules() {
-        // The item-alias resolvers are now invoked directly by ItemService; this
-        // registration is for its ChestShopReloadEvent handler only, so it must be the
-        // same singleton ItemService holds.
-        registerEvent(injector.getInstance(io.paradaux.chestshop.listeners.modules.ItemAliasModule.class));
         registerEvent(new StockCounterModule());
     }
 
@@ -375,7 +367,6 @@ public class ChestShop extends JavaPlugin {
         // aliasing (formerly Spigot_1_15_2) is folded into Dependencies.onEnable.
         registerEvent(new io.paradaux.chestshop.listeners.block.breaking.PaperBlockDestroyListener());
         registerEvent(new io.paradaux.chestshop.listeners.block.SignBacksideProtector());
-        registerEvent(new io.paradaux.chestshop.listeners.iteminfo.ExtendedItemInfoListener());
     }
 
     private void registerPluginMessagingChannels() {
@@ -514,6 +505,11 @@ public class ChestShop extends JavaPlugin {
     /** The protection service (shop/chest access + build checks, incl. WorldGuard/GriefPrevention). */
     public static io.paradaux.chestshop.services.ProtectionService protection() {
         return protection;
+    }
+
+    /** The info service (read-only /shopinfo and /iteminfo output). */
+    public static io.paradaux.chestshop.services.InfoService info() {
+        return info;
     }
 
     public static File getFolder() {

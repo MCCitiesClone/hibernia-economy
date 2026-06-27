@@ -47,6 +47,11 @@ public class ItemService {
         this.itemBridgeEnabled = true;
     }
 
+    /** Reload the configurable item aliases from disk (on {@code /chestshop reload}). */
+    public void reloadAliases() {
+        aliases.reload();
+    }
+
     /** Parse a sign item string into an {@link ItemStack} (ItemBridge / alias / vanilla material), or {@code null}. */
     public ItemStack parse(String itemString) {
         ItemParseEvent event = new ItemParseEvent(itemString);
