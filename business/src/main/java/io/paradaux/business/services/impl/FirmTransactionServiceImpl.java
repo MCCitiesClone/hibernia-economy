@@ -16,9 +16,13 @@ import io.paradaux.treasury.model.economy.TransactionEntry;
 import io.paradaux.treasury.model.economy.TransferRequest;
 
 import io.paradaux.business.model.FirmAccount;
+import io.paradaux.business.model.FirmBalanceEntry;
 
 import java.math.BigDecimal;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Singleton
@@ -186,6 +190,51 @@ public class FirmTransactionServiceImpl implements FirmTransactionService {
     @Override
     public String getFormattedAggregateBalance(Integer firmId) {
         return treasury.formatAmount(getAggregateBalance(firmId));
+    }
+
+    @Override
+    public Page<FirmBalanceEntry> getFirmBalanceTop(int page, int pageSize) {
+        if (page < 1) page = 1;
+        if (pageSize < 1) pageSize = 10;
+
+        List<Firm> activeFirms = firms.listAllActiveFirms();
+
+        // Pull every live firm→account link once and batch-read all balances in a
+        // single Treasury round-trip, then fold them into a per-firm total in
+        // memory. Summing per firm would be N+1 IPC calls; this is one call.
+        List<FirmAccount> links = firmAccounts.listActiveAccountLinks();
+        List<Integer> accountIds = links.stream().map(FirmAccount::getAccountId).toList();
+        Map<Integer, BigDecimal> balances = treasury.getBalancesByIds(accountIds);
+
+        Map<Integer, BigDecimal> totals = new HashMap<>();
+        for (FirmAccount link : links) {
+            BigDecimal bal = balances.getOrDefault(link.getAccountId(), BigDecimal.ZERO);
+            totals.merge(link.getFirmId(), bal, BigDecimal::add);
+        }
+
+        // Every active firm appears, even one whose accounts net to zero (or that
+        // somehow has no live account), ranked highest-balance first with the name
+        // as a stable tiebreak.
+        List<FirmBalanceEntry> ranked = activeFirms.stream()
+                .map(f -> new FirmBalanceEntry(f.getFirmId(), f.getDisplayName(),
+                        totals.getOrDefault(f.getFirmId(), BigDecimal.ZERO)))
+                .sorted(Comparator.comparing(FirmBalanceEntry::balance).reversed()
+                        .thenComparing(FirmBalanceEntry::displayName,
+                                Comparator.nullsLast(Comparator.naturalOrder())))
+                .toList();
+
+        int totalCount = ranked.size();
+        int offset = (page - 1) * pageSize;
+        if (offset >= totalCount) {
+            return new Page<>(List.of(), totalCount, offset, pageSize);
+        }
+        int end = Math.min(offset + pageSize, totalCount);
+        return new Page<>(List.copyOf(ranked.subList(offset, end)), totalCount, offset, pageSize);
+    }
+
+    @Override
+    public String formatAmount(BigDecimal amount) {
+        return treasury.formatAmount(amount);
     }
 
     @Override

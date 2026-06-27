@@ -11,7 +11,9 @@ import io.paradaux.hibernia.framework.i18n.Message;
 // server thread doesn't block on JDBC/IPC.
 
 import io.paradaux.business.model.Firm;
+import io.paradaux.business.model.FirmBalanceEntry;
 import io.paradaux.business.model.FirmPlayer;
+import io.paradaux.treasury.model.Page;
 import io.paradaux.business.model.RolePermission;
 import io.paradaux.business.chat.FirmChatService;
 import io.paradaux.business.services.FirmDisbandConfirmationService;
@@ -175,6 +177,45 @@ public class FirmCommands implements CommandHandler {
 
         message.send(sender, "business.firm.list.all.header", "page", page);
         sendFirms(sender, list);
+    }
+
+    @Route("baltop")
+    @Permission("business.baltop")
+    @Async
+    @Description("Top firms by collective account balance")
+    public void baltop(@Sender Player sender) {
+        baltop(sender, 1);
+    }
+
+    @Route("baltop <page>")
+    @Permission("business.baltop")
+    @Async
+    @Description("Page through the top firms by collective account balance")
+    public void baltop(@Sender Player sender, @Arg("page") Integer page) {
+        if (page == null || page < 1) page = 1;
+        int pageSize = FIRM_PAGE_SIZE;
+
+        Page<FirmBalanceEntry> result = transactions.getFirmBalanceTop(page, pageSize);
+
+        if (result.items().isEmpty()) {
+            message.send(sender, "business.firm.baltop.empty");
+            return;
+        }
+
+        message.send(sender, "business.firm.baltop.header",
+                "page", result.pageNumber(), "pages", result.totalPages());
+
+        for (int i = 0; i < result.items().size(); i++) {
+            FirmBalanceEntry entry = result.items().get(i);
+            message.send(sender, "business.firm.baltop.entry",
+                    "rank", result.offset() + i + 1,
+                    "firm", entry.displayName(),
+                    "balance", transactions.formatAmount(entry.balance()));
+        }
+
+        if (result.hasMore()) {
+            message.send(sender, "business.firm.baltop.footer", "next", page + 1);
+        }
     }
 
     @Route("info <firm>")

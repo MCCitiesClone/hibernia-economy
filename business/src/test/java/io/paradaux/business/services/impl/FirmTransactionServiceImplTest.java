@@ -401,6 +401,105 @@ class FirmTransactionServiceImplTest {
         assertThat(p.items()).isEmpty();
     }
 
+    // ---------- firm balance leaderboard (/firm baltop) ----------
+
+    @Test
+    void getFirmBalanceTop_ranksFirmsByCollectiveBalanceDescending() {
+        when(firms.listAllActiveFirms()).thenReturn(List.of(
+                namedFirm(1, 10, "Acme"),
+                namedFirm(2, 20, "Globex")));
+        // Acme owns accounts 10 (+ a second account 11); Globex owns 20.
+        when(firmAccounts.listActiveAccountLinks()).thenReturn(List.of(
+                new FirmAccount(1, 10, null),
+                new FirmAccount(1, 11, null),
+                new FirmAccount(2, 20, null)));
+        when(treasury.getBalancesByIds(List.of(10, 11, 20))).thenReturn(Map.of(
+                10, new BigDecimal("100"), 11, new BigDecimal("50"), 20, new BigDecimal("200")));
+
+        Page<io.paradaux.business.model.FirmBalanceEntry> page = svc.getFirmBalanceTop(1, 10);
+
+        assertThat(page.totalCount()).isEqualTo(2);
+        // Globex (200) outranks Acme (100+50=150) despite being created later.
+        assertThat(page.items()).extracting(e -> e.displayName()).containsExactly("Globex", "Acme");
+        assertThat(page.items().get(0).balance()).isEqualByComparingTo("200");
+        assertThat(page.items().get(1).balance()).isEqualByComparingTo("150");
+    }
+
+    @Test
+    void getFirmBalanceTop_includesFirmWithNoAccountsAtZero() {
+        when(firms.listAllActiveFirms()).thenReturn(List.of(
+                namedFirm(1, 10, "Acme"),
+                namedFirm(2, null, "Empty")));
+        when(firmAccounts.listActiveAccountLinks()).thenReturn(List.of(new FirmAccount(1, 10, null)));
+        when(treasury.getBalancesByIds(List.of(10))).thenReturn(Map.of(10, new BigDecimal("5")));
+
+        Page<io.paradaux.business.model.FirmBalanceEntry> page = svc.getFirmBalanceTop(1, 10);
+
+        assertThat(page.items()).extracting(e -> e.displayName()).containsExactly("Acme", "Empty");
+        assertThat(page.items().get(1).balance()).isEqualByComparingTo("0");
+    }
+
+    @Test
+    void getFirmBalanceTop_missingBalanceRowCountsAsZero() {
+        when(firms.listAllActiveFirms()).thenReturn(List.of(namedFirm(1, 10, "Acme")));
+        when(firmAccounts.listActiveAccountLinks()).thenReturn(List.of(
+                new FirmAccount(1, 10, null), new FirmAccount(1, 11, null)));
+        // Account 11 has no materialized balance row → treated as zero, not an NPE.
+        when(treasury.getBalancesByIds(List.of(10, 11))).thenReturn(Map.of(10, new BigDecimal("7")));
+
+        Page<io.paradaux.business.model.FirmBalanceEntry> page = svc.getFirmBalanceTop(1, 10);
+        assertThat(page.items().get(0).balance()).isEqualByComparingTo("7");
+    }
+
+    @Test
+    void getFirmBalanceTop_paginatesAndClampsBelowOne() {
+        // Three firms, page size 2 → page 2 holds the third. page/pageSize < 1 clamp to 1/10.
+        when(firms.listAllActiveFirms()).thenReturn(List.of(
+                namedFirm(1, 10, "A"), namedFirm(2, 20, "B"), namedFirm(3, 30, "C")));
+        when(firmAccounts.listActiveAccountLinks()).thenReturn(List.of(
+                new FirmAccount(1, 10, null), new FirmAccount(2, 20, null), new FirmAccount(3, 30, null)));
+        when(treasury.getBalancesByIds(List.of(10, 20, 30))).thenReturn(Map.of(
+                10, new BigDecimal("30"), 20, new BigDecimal("20"), 30, new BigDecimal("10")));
+
+        Page<io.paradaux.business.model.FirmBalanceEntry> p2 = svc.getFirmBalanceTop(2, 2);
+        assertThat(p2.totalCount()).isEqualTo(3);
+        assertThat(p2.offset()).isEqualTo(2);
+        assertThat(p2.items()).extracting(e -> e.displayName()).containsExactly("C");
+        assertThat(p2.hasMore()).isFalse();
+
+        // page 0 / size 0 → clamps to page 1, size 10: all three, highest first.
+        Page<io.paradaux.business.model.FirmBalanceEntry> clamped = svc.getFirmBalanceTop(0, 0);
+        assertThat(clamped.items()).extracting(e -> e.displayName()).containsExactly("A", "B", "C");
+    }
+
+    @Test
+    void getFirmBalanceTop_offsetPastEndReturnsEmptyPageWithTotal() {
+        when(firms.listAllActiveFirms()).thenReturn(List.of(namedFirm(1, 10, "Acme")));
+        when(firmAccounts.listActiveAccountLinks()).thenReturn(List.of(new FirmAccount(1, 10, null)));
+        when(treasury.getBalancesByIds(List.of(10))).thenReturn(Map.of(10, new BigDecimal("5")));
+
+        Page<io.paradaux.business.model.FirmBalanceEntry> page = svc.getFirmBalanceTop(5, 10);
+        assertThat(page.items()).isEmpty();
+        assertThat(page.totalCount()).isEqualTo(1);
+    }
+
+    @Test
+    void getFirmBalanceTop_noFirmsReturnsEmptyPage() {
+        when(firms.listAllActiveFirms()).thenReturn(List.of());
+        when(firmAccounts.listActiveAccountLinks()).thenReturn(List.of());
+        when(treasury.getBalancesByIds(List.of())).thenReturn(Map.of());
+
+        Page<io.paradaux.business.model.FirmBalanceEntry> page = svc.getFirmBalanceTop(1, 10);
+        assertThat(page.items()).isEmpty();
+        assertThat(page.totalCount()).isZero();
+    }
+
+    @Test
+    void formatAmount_delegatesToTreasury() {
+        when(treasury.formatAmount(new BigDecimal("12.50"))).thenReturn("$12.50");
+        assertThat(svc.formatAmount(new BigDecimal("12.50"))).isEqualTo("$12.50");
+    }
+
     private TransactionEntry txn(long id, Instant when) {
         TransactionEntry e = new TransactionEntry();
         e.setPostingId(id);

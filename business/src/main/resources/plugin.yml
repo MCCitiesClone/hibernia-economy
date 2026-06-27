@@ -60,6 +60,9 @@ permissions:
     business.list:
         description: List your firms.
         default: true
+    business.baltop:
+        description: View the leaderboard of firms by collective account balance.
+        default: true
     business.list.other:
         description: List another player's firms.
         default: true
