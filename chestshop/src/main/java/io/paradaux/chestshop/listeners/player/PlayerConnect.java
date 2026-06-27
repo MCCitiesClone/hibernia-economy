@@ -4,8 +4,10 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 
 import io.paradaux.chestshop.ChestShop;
+import io.paradaux.chestshop.listeners.pretransaction.ErrorMessageSender;
 import io.paradaux.chestshop.players.PlayerDTO;
 
 /**
@@ -26,5 +28,13 @@ public class PlayerConnect implements Listener {
                 ChestShop.accounts().storeUsername(playerDTO);
             }
         });
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public static void onPlayerQuit(final PlayerQuitEvent event) {
+        // Drop the player's notification-cooldown rows. This was ErrorMessageSender's own
+        // PlayerQuitEvent handler, orphaned when the pre-transaction listeners were
+        // collapsed into TransactionService; re-homed here so the table still clears.
+        ErrorMessageSender.onQuit(event);
     }
 }
