@@ -10,7 +10,13 @@ on:
       - '.github/workflows/treasury-rest-api-docker.yml'
 
 jobs:
+  # Gate the image on the real test suite (ADT-19): the money service must not
+  # build+push without its *IT suite passing. Reuses treasury-rest-api-test.yml.
+  test:
+    uses: ./.github/workflows/treasury-rest-api-test.yml
+
   build-and-push:
+    needs: test
     runs-on: ubuntu-latest
 
     steps:

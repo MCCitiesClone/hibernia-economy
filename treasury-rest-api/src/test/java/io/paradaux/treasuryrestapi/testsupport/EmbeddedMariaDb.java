@@ -23,6 +23,8 @@ public final class EmbeddedMariaDb {
 
     private static final String DB_NAME = "treasury_rest_test";
     private static volatile String jdbcUrl;
+    private static String username = "root";
+    private static String password = "";
     private static DB db;
 
     private EmbeddedMariaDb() {}
@@ -30,25 +32,43 @@ public final class EmbeddedMariaDb {
     public static synchronized void ensureStarted() {
         if (jdbcUrl != null) return;
         try {
-            DBConfigurationBuilder cfg = DBConfigurationBuilder.newBuilder();
-            cfg.setPort(0); // free port
-            db = DB.newEmbeddedDB(cfg.build());
-            db.start();
-            db.createDB(DB_NAME);
-            jdbcUrl = cfg.getURL(DB_NAME);
+            // CI points us at a real MariaDB service: MariaDB4j's bundled server
+            // binary needs system libs the GitHub runner image doesn't ship, so
+            // when TREASURY_REST_TEST_JDBC_URL is set we use that DB and skip the
+            // embedded server (see .github/workflows/treasury-rest-api-test.yml).
+            String envUrl = System.getenv("TREASURY_REST_TEST_JDBC_URL");
+            if (envUrl != null && !envUrl.isBlank()) {
+                username = envOrDefault("TREASURY_REST_TEST_DB_USER", "root");
+                password = envOrDefault("TREASURY_REST_TEST_DB_PASS", "");
+                jdbcUrl = envUrl;
+            } else {
+                DBConfigurationBuilder cfg = DBConfigurationBuilder.newBuilder();
+                cfg.setPort(0); // free port
+                db = DB.newEmbeddedDB(cfg.build());
+                db.start();
+                db.createDB(DB_NAME);
+                jdbcUrl = cfg.getURL(DB_NAME);
+                username = "root";
+                password = "";
+            }
             applySchema();
         } catch (Exception e) {
             throw new IllegalStateException("Failed to start embedded MariaDB", e);
         }
     }
 
+    private static String envOrDefault(String key, String def) {
+        String v = System.getenv(key);
+        return (v != null && !v.isBlank()) ? v : def;
+    }
+
     public static String jdbcUrl() { ensureStarted(); return jdbcUrl; }
-    public static String username() { return "root"; }
-    public static String password() { return ""; }
+    public static String username() { ensureStarted(); return username; }
+    public static String password() { ensureStarted(); return password; }
 
     public static Connection connect() throws Exception {
         ensureStarted();
-        return DriverManager.getConnection(jdbcUrl, "root", "");
+        return DriverManager.getConnection(jdbcUrl, username, password);
     }
 
     /** Truncate the tables between tests for isolation. */
@@ -78,7 +98,15 @@ public final class EmbeddedMariaDb {
 
     private static void applySchema() throws Exception {
         try (Connection c = connect(); Statement st = c.createStatement()) {
-            for (String ddl : DDL) st.execute(ddl);
+            for (String ddl : DDL) {
+                try {
+                    st.execute(ddl);
+                } catch (java.sql.SQLException e) {
+                    // Tolerate a pre-seeded DB (e.g. a CI MariaDB service reused
+                    // across forked test JVMs); truncateAll() handles isolation.
+                    if (!e.getMessage().toLowerCase().contains("already exists")) throw e;
+                }
+            }
         }
     }
 
