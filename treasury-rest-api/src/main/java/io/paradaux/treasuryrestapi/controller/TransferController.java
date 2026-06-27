@@ -57,7 +57,7 @@ public class TransferController {
      * The source account is always the {@code acc} claim — callers cannot specify an arbitrary source.
      */
     @PostMapping
-    @RateLimit(personalPerMinute = 30, businessPerMinute = 120)
+    @RateLimit(personalPerMinute = 30, businessPerMinute = 120, failClosed = true)
     public ResponseEntity<TransferResponse> transfer(
             @AuthenticationPrincipal VerifiedToken verified,
             @Valid @RequestBody TransferRequest request,
@@ -84,7 +84,7 @@ public class TransferController {
      * Accepts the same {@code Idempotency-Key} header as the standard transfer endpoint.
      */
     @PostMapping("/to-firm")
-    @RateLimit(personalPerMinute = 30, businessPerMinute = 120)
+    @RateLimit(personalPerMinute = 30, businessPerMinute = 120, failClosed = true)
     public ResponseEntity<TransferResponse> transferToFirm(
             @AuthenticationPrincipal VerifiedToken verified,
             @Valid @RequestBody FirmTransferRequest request,
@@ -113,7 +113,7 @@ public class TransferController {
      * semantics as the standard transfer endpoint.
      */
     @PostMapping("/to-player")
-    @RateLimit(personalPerMinute = 30, businessPerMinute = 120)
+    @RateLimit(personalPerMinute = 30, businessPerMinute = 120, failClosed = true)
     public ResponseEntity<TransferResponse> transferToPlayer(
             @AuthenticationPrincipal VerifiedToken verified,
             @Valid @RequestBody PlayerTransferRequest request,

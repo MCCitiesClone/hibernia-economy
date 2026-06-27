@@ -43,4 +43,19 @@ public @interface RateLimit {
      * abuse; pick a value that comfortably exceeds a human's interactive pace.
      */
     int anonymousPerMinute() default 0;
+
+    /**
+     * Behaviour when the rate-limit backend (Redis) itself errors and the limit
+     * cannot be checked.
+     *
+     * <p>Default {@code false} = <em>fail open</em>: a backend blip lets the
+     * request through rather than 503'ing the API — correct for public reads,
+     * where availability beats throttling.
+     *
+     * <p>Set {@code true} = <em>fail closed</em> on money-mutating endpoints
+     * (e.g. {@code POST /transfers}): if the limiter can't be consulted the
+     * request is rejected with {@code 503}, so an attacker who can stress Redis
+     * cannot also strip the throttle off the transfer path.
+     */
+    boolean failClosed() default false;
 }

@@ -41,8 +41,10 @@ import java.util.UUID;
  * <p>Every throttled and allowed request is counted into Micrometer
  * ({@code treasury_api_key_requests_total}) for the admin dashboard / Grafana.
  *
- * <p>Fails OPEN: if the rate-limit backend (Redis) errors, the request is
- * allowed rather than 500'd, so a Redis blip can't take the API down.
+ * <p>Backend-error behaviour is per-endpoint (see {@link RateLimit#failClosed()}):
+ * public reads <em>fail open</em> (a Redis blip can't take the API down), while
+ * money-mutating endpoints <em>fail closed</em> with {@code 503} so stressing the
+ * limiter backend can't strip the throttle off the transfer path.
  *
  * <p>Endpoints without {@code @RateLimit}, or anonymous traffic on an endpoint
  * whose {@code anonymousPerMinute} is left at the default {@code 0}, are not
@@ -86,6 +88,7 @@ public class RateLimitInterceptor implements HandlerInterceptor {
 
     private boolean throttleAuthenticated(HttpServletResponse response, RateLimit ann,
                                           String routeKey, VerifiedToken token) throws Exception {
+        boolean failClosed = ann.failClosed();
         UUID issuer = token.ownerUuid();
         String issuerKey = issuer != null ? issuer.toString() : ("key:" + token.keyId());
 
@@ -98,7 +101,7 @@ public class RateLimitInterceptor implements HandlerInterceptor {
 
         // Limit is part of the key so a multiplier change re-buckets immediately.
         String bucketKey = issuerKey + ":" + routeKey + ":" + limit;
-        return consume(response, routeKey, bucketKey, limit, token, issuerKey);
+        return consume(response, routeKey, bucketKey, limit, token, issuerKey, failClosed);
     }
 
     private boolean throttleAnonymous(HttpServletRequest request, HttpServletResponse response,
@@ -108,7 +111,7 @@ public class RateLimitInterceptor implements HandlerInterceptor {
         String issuerKey = "anon:" + ip;
         // Limit is part of the key for the same reason as the authenticated path.
         String bucketKey = issuerKey + ":" + routeKey + ":" + limit;
-        return consume(response, routeKey, bucketKey, limit, null, issuerKey);
+        return consume(response, routeKey, bucketKey, limit, null, issuerKey, ann.failClosed());
     }
 
     /**
@@ -118,13 +121,23 @@ public class RateLimitInterceptor implements HandlerInterceptor {
      */
     private boolean consume(HttpServletResponse response, String routeKey,
                             String bucketKey, int limit,
-                            VerifiedToken token, String issuerKey) throws Exception {
+                            VerifiedToken token, String issuerKey, boolean failClosed) throws Exception {
         ConsumptionProbe probe;
         try {
             Bucket bucket = bucketProvider.bucketFor(bucketKey, limit);
             probe = bucket.tryConsumeAndReturnRemaining(1);
         } catch (RuntimeException e) {
-            // Fail open: a Redis/backend error must not take down the API.
+            if (failClosed) {
+                // A money-mutating endpoint whose limit can't be checked is
+                // rejected, not waved through — stressing Redis must not strip
+                // the throttle off the transfer path.
+                log.warn("Rate-limit backend error on {} — failing CLOSED (request rejected): {}",
+                        routeKey, e.toString());
+                count(token, issuerKey, "backend_error");
+                writeBackendUnavailable(response);
+                return false;
+            }
+            // Fail open: a Redis/backend error must not take down public reads.
             log.warn("Rate-limit backend error on {} — failing open (request allowed): {}",
                     routeKey, e.toString());
             count(token, issuerKey, "allowed");
@@ -158,6 +171,18 @@ public class RateLimitInterceptor implements HandlerInterceptor {
         return false;
     }
 
+    /** 503 written when a fail-closed endpoint can't reach the rate-limit backend. */
+    private void writeBackendUnavailable(HttpServletResponse response) throws Exception {
+        response.setStatus(HttpStatus.SERVICE_UNAVAILABLE.value());
+        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+        response.setCharacterEncoding("UTF-8");
+        response.setHeader("Retry-After", "5");
+        objectMapper.writeValue(response.getWriter(), new ErrorResponse(
+                "RATE_LIMIT_BACKEND_UNAVAILABLE",
+                "Rate limiting is temporarily unavailable; this request was rejected as a "
+                        + "safety measure. Retry shortly."));
+    }
+
     private void count(VerifiedToken token, String issuerKey, String outcome) {
         try {
             metrics.counter(METRIC,
@@ -173,14 +198,24 @@ public class RateLimitInterceptor implements HandlerInterceptor {
     }
 
     /**
-     * First hop of {@code X-Forwarded-For}, falling back to the socket remote
-     * address. Spring's {@code server.forward-headers-strategy=framework} (set in
-     * prod/uat) makes XFF the canonical client identity when behind the cluster
-     * ingress.
+     * The resolved client IP for anonymous bucketing — {@code getRemoteAddr()},
+     * never a hand-parsed {@code X-Forwarded-For} first hop.
+     *
+     * <p>Reading the leftmost XFF entry directly (the previous behaviour) trusted
+     * an attacker-controlled header: any client could send a random XFF per request
+     * and land in a fresh bucket every time, defeating the anonymous throttle
+     * (ADT-15). {@code getRemoteAddr()} is the value the servlet container resolved,
+     * so the trust decision lives in one place — the forwarded-headers handling —
+     * rather than being re-derived (unconditionally) here.
+     *
+     * <p><strong>For this to be spoof-proof, the edge must be configured to resolve
+     * the client IP against a trusted-proxy allowlist</strong> (Tomcat
+     * {@code RemoteIpValve} internal-proxies under {@code forward-headers-strategy:
+     * native}, and/or the ingress overwriting client-supplied XFF). Under the
+     * current {@code framework} strategy this returns the XFF-derived address as-is,
+     * so the allowlist must be enforced at the ingress. See ADT-15.
      */
     private static String clientIp(HttpServletRequest request) {
-        String xff = request.getHeader("X-Forwarded-For");
-        if (xff != null && !xff.isBlank()) return xff.split(",")[0].trim();
         return request.getRemoteAddr();
     }
 }
