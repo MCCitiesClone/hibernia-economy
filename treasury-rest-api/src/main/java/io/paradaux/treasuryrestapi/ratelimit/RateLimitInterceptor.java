@@ -198,24 +198,31 @@ public class RateLimitInterceptor implements HandlerInterceptor {
     }
 
     /**
-     * The resolved client IP for anonymous bucketing — {@code getRemoteAddr()},
-     * never a hand-parsed {@code X-Forwarded-For} first hop.
+     * The trusted client IP for anonymous bucketing (ADT-15).
      *
-     * <p>Reading the leftmost XFF entry directly (the previous behaviour) trusted
-     * an attacker-controlled header: any client could send a random XFF per request
-     * and land in a fresh bucket every time, defeating the anonymous throttle
-     * (ADT-15). {@code getRemoteAddr()} is the value the servlet container resolved,
-     * so the trust decision lives in one place — the forwarded-headers handling —
-     * rather than being re-derived (unconditionally) here.
+     * <p>Prefers {@code X-Envoy-External-Address}. The cluster's Cilium gateway runs
+     * Envoy with {@code use_remote_address: true} (verified in the live
+     * {@code cilium-gateway-paradaux} CiliumEnvoyConfig), so Envoy resolves the client
+     * from the real downstream TCP connection — hostNetwork, direct client connections,
+     * no LB in front — and writes it to this header, <em>overwriting</em> any value a
+     * client sends. It is therefore unforgeable.
      *
-     * <p><strong>For this to be spoof-proof, the edge must be configured to resolve
-     * the client IP against a trusted-proxy allowlist</strong> (Tomcat
-     * {@code RemoteIpValve} internal-proxies under {@code forward-headers-strategy:
-     * native}, and/or the ingress overwriting client-supplied XFF). Under the
-     * current {@code framework} strategy this returns the XFF-derived address as-is,
-     * so the allowlist must be enforced at the ingress. See ADT-15.
+     * <p>We must <strong>not</strong> trust {@code X-Forwarded-For} / {@code getRemoteAddr()}
+     * here: the gateway is configured with the default {@code xff_num_trusted_hops: 0}
+     * and {@code skip_xff_append: false}, so it <em>appends</em> the real client to XFF
+     * without stripping client-supplied entries — and under {@code
+     * forward-headers-strategy: framework} the app reads the leftmost (client-controlled)
+     * XFF entry. Keying the anon bucket on that let an attacker rotate XFF for a fresh
+     * bucket per request.
+     *
+     * <p>Falls back to {@code getRemoteAddr()} when the header is absent (local/dev, or
+     * in-cluster traffic that didn't traverse the gateway).
      */
     private static String clientIp(HttpServletRequest request) {
+        String envoyClient = request.getHeader("X-Envoy-External-Address");
+        if (envoyClient != null && !envoyClient.isBlank()) {
+            return envoyClient.trim();
+        }
         return request.getRemoteAddr();
     }
 }

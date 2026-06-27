@@ -88,6 +88,29 @@ class RateLimitInterceptorTest {
         assertFalse(captured[0].contains("1.2.3.4"), "bucket key must NOT use the spoofable XFF header");
     }
 
+    /** ADT-15: the unforgeable gateway-set X-Envoy-External-Address wins over a spoofed XFF. */
+    @Test
+    void anonymousBucketKeyedByEnvoyExternalAddress_overSpoofedForwardedFor() throws Exception {
+        SecurityContextHolder.clearContext();
+        String[] captured = new String[1];
+        CaffeineBucketProvider real = new CaffeineBucketProvider();
+        BucketProvider capturing = (key, cap) -> {
+            captured[0] = key;
+            return real.bucketFor(key, cap);
+        };
+        RateLimitInterceptor interceptor = new RateLimitInterceptor(capturing, objectMapper, overrides, metrics);
+
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setRemoteAddr("10.0.0.9");
+        request.addHeader("X-Forwarded-For", "1.2.3.4");          // attacker spoof
+        request.addHeader("X-Envoy-External-Address", "203.0.113.7"); // gateway-resolved, unforgeable
+        boolean allowed = interceptor.preHandle(request, new MockHttpServletResponse(), handler("anon"));
+
+        assertTrue(allowed);
+        assertTrue(captured[0].contains("203.0.113.7"), "must key on the Envoy-resolved client address");
+        assertFalse(captured[0].contains("1.2.3.4"), "must ignore the spoofable XFF header");
+    }
+
     // --- helpers ------------------------------------------------------------
 
     private static void authenticate() {
