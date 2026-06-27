@@ -352,4 +352,13 @@ CREATE TABLE `explorer_group_member` (
   KEY `idx_group_member_player` (`player_uuid_bin`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- ADT-13 single-source read-access views (mirror V22__account_read_access_views.sql).
+CREATE OR REPLACE VIEW `account_read_access_api` AS
+  SELECT account_id, subject_uuid_bin FROM account_access
+   WHERE level IN ('MEMBER','AUTHORIZER') AND removed_at IS NULL;
+
+CREATE OR REPLACE VIEW `account_read_access_web` AS
+  SELECT account_id, subject_uuid_bin FROM account_access
+   WHERE level IN ('VIEWER','MEMBER','AUTHORIZER') AND removed_at IS NULL;
+
 SET FOREIGN_KEY_CHECKS=1;

@@ -273,5 +273,15 @@ public final class EmbeddedMariaDb {
               KEY idx_access_active (account_id, removed_at)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
             """,
+            // ADT-13 single-source read-access view (mirrors V22). isMember reads this
+            // rather than account_access directly. Only the API view is needed here;
+            // the explorer's more-permissive web view lives in its own test schema.
+            """
+            CREATE VIEW account_read_access_api AS
+            SELECT account_id, subject_uuid_bin
+              FROM account_access
+             WHERE level IN ('MEMBER','AUTHORIZER')
+               AND removed_at IS NULL
+            """,
     };
 }

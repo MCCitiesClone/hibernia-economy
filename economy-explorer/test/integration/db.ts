@@ -21,6 +21,13 @@ export async function resetDb(): Promise<void> {
   });
   try {
     await conn.query('SET FOREIGN_KEY_CHECKS=0');
+    // Drop views first — DROP TABLE can't remove them (ADT-13 added the
+    // account_read_access_* views), and they'd otherwise show up in SHOW TABLES.
+    const [views] = await conn.query<mysql.RowDataPacket[]>(
+      'SELECT table_name AS n FROM information_schema.views WHERE table_schema = DATABASE()');
+    for (const v of views) {
+      await conn.query('DROP VIEW IF EXISTS `' + (v as Record<string, string>).n + '`');
+    }
     const [tables] = await conn.query<mysql.RowDataPacket[]>('SHOW TABLES');
     const col = tables.length ? Object.keys(tables[0])[0] : null;
     for (const row of tables) {

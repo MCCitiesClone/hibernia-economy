@@ -244,4 +244,12 @@ d('government account viewer access (PAR-237)', () => {
   it('denies a player with no member/authorizer/viewer row', async () => {
     expect(await canReadAccount(5, DAVE)).toBe(false);
   });
+
+  // ADT-13: the "my accounts" list must agree with canReadAccount. Previously it
+  // filtered MEMBER/AUTHORIZER, so a viewer could open the account page but the
+  // account never showed in their own list. Both now share account_read_access_web.
+  it('lists the viewer-granted department account under "my accounts" (ADT-13)', async () => {
+    const ids = (await findAccountsForPlayer(SECRETARY)).map((a) => a.account_id);
+    expect(ids).toContain(5);
+  });
 });
