@@ -102,3 +102,36 @@ export const archiveAccount = (accountId: number) =>
   call<AccountResult>(`/api/v1/admin/accounts/${accountId}/archive`, 'POST');
 export const unarchiveAccount = (accountId: number) =>
   call<AccountResult>(`/api/v1/admin/accounts/${accountId}/unarchive`, 'POST');
+
+/** Like {@link call} but for 204 No Content responses (no body to parse). */
+async function callVoid(path: string, method: string, body?: unknown): Promise<void> {
+  if (!BASE || !TOKEN) {
+    throw new Error('Treasury admin API is not configured (TREASURY_API_BASE_URL / TREASURY_ADMIN_TOKEN).');
+  }
+  const res = await fetch(`${BASE}${path}`, {
+    method,
+    headers: { authorization: `Bearer ${TOKEN}`, 'content-type': 'application/json' },
+    body: body !== undefined ? JSON.stringify(body) : undefined,
+    cache: 'no-store',
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    let message = text;
+    try {
+      const parsed = JSON.parse(text);
+      if (parsed && typeof parsed.message === 'string') message = parsed.message;
+      else if (parsed && typeof parsed.error === 'string') message = parsed.error;
+    } catch {
+      /* not JSON — keep raw text */
+    }
+    throw new Error(message || `Treasury API request failed (${res.status}).`);
+  }
+}
+
+/** Set a per-issuer rate-limit multiplier override (admin). */
+export const setRateLimitOverride = (ownerUuid: string, multiplier: string, note: string | null) =>
+  callVoid(`/api/v1/admin/rate-limit-overrides/${ownerUuid}`, 'PUT', { multiplier, note });
+
+/** Clear a per-issuer rate-limit multiplier override (admin). */
+export const clearRateLimitOverride = (ownerUuid: string) =>
+  callVoid(`/api/v1/admin/rate-limit-overrides/${ownerUuid}`, 'DELETE');

@@ -7,10 +7,7 @@ import {
   findApiKeyForRotate,
   rotateApiKeyRow,
 } from '@/lib/sql/apiKey';
-import {
-  upsertRateLimitOverride,
-  deleteRateLimitOverride,
-} from '@/lib/sql/rateLimitOverride';
+import { setRateLimitOverride, clearRateLimitOverride } from '@/lib/treasury';
 import { signApiKeyJwt, jwtSigningConfigured } from '@/lib/jwt';
 import { ForbiddenError } from '@/lib/errors';
 import { auditView } from '@/lib/audit';
@@ -195,15 +192,11 @@ export async function setRateLimitAction(args: {
   requireAdmin(viewer);
   try {
     const mult = clamp(args.multiplier, 0.1, 1000);
+    // Route the write through the REST admin API (ADT-14) — kysely stays read-only.
     if (mult === 1 && (!args.note || !args.note.trim())) {
-      await deleteRateLimitOverride(args.ownerUuid);
+      await clearRateLimitOverride(args.ownerUuid);
     } else {
-      await upsertRateLimitOverride({
-        ownerUuid: args.ownerUuid,
-        multiplier: mult.toFixed(2),
-        note: args.note?.trim() || null,
-        updatedBy: viewer.minecraftUuid,
-      });
+      await setRateLimitOverride(args.ownerUuid, mult.toFixed(2), args.note?.trim() || null);
     }
     await auditView(viewer, { method: 'POST', path: '/admin/api-keys/rate-limit', targetType: 'player', targetId: args.ownerUuid });
     revalidatePath('/admin/api-keys');
