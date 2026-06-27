@@ -77,9 +77,13 @@ public class KeycloakAdminClient {
 
     private String serviceAccountToken() throws Exception {
         String tokenUrl = cfg.getBaseUrl() + "/realms/" + cfg.getRealm() + "/protocol/openid-connect/token";
+        // Env var takes precedence so the service-account secret can be injected
+        // rather than committed in plaintext config.yml (ADT-38).
+        String clientSecret = System.getenv("TREASURYAPI_KEYCLOAK_CLIENT_SECRET");
+        if (clientSecret == null || clientSecret.isBlank()) clientSecret = cfg.getClientSecret();
         String form = "grant_type=client_credentials"
                 + "&client_id=" + enc(cfg.getClientId())
-                + "&client_secret=" + enc(cfg.getClientSecret());
+                + "&client_secret=" + enc(clientSecret);
         HttpResponse<String> res = http.send(
                 HttpRequest.newBuilder(URI.create(tokenUrl))
                         .timeout(Duration.ofSeconds(15))

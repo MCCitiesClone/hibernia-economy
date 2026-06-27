@@ -52,11 +52,25 @@ public final class DatabaseModule extends AbstractModule {
     @Provides
     @Singleton
     DataSource provideDataSource() {
-        String host = databaseConfig.getHost();
-        int port = Integer.parseInt(databaseConfig.getPort());
-        String db = databaseConfig.getDatabase();
-        String user = databaseConfig.getUsername();
-        String pass = databaseConfig.getPassword();
+        // Env vars take precedence over config.yml so secrets can be injected
+        // (k8s secret / chmod-ed env) rather than committed in plaintext (ADT-38).
+        String host = env("TREASURYAPI_DB_HOST", databaseConfig.getHost());
+        int port = Integer.parseInt(env("TREASURYAPI_DB_PORT", databaseConfig.getPort()));
+        String db = env("TREASURYAPI_DB_NAME", databaseConfig.getDatabase());
+        String user = env("TREASURYAPI_DB_USERNAME", databaseConfig.getUsername());
+        String pass = env("TREASURYAPI_DB_PASSWORD", databaseConfig.getPassword());
+        // Fail fast instead of silently shipping the documented default password.
+        if ("password".equals(pass)) {
+            throw new IllegalStateException(
+                    "Refusing to start: the database password is still the insecure default. "
+                    + "Set database.password in config.yml or the TREASURYAPI_DB_PASSWORD env var.");
+        }
         return new DataSourceProvider(host, port, db, user, pass).get();
+    }
+
+    /** Prefer a non-blank environment variable over the config value (secret injection). */
+    private static String env(String key, String fallback) {
+        String v = System.getenv(key);
+        return (v != null && !v.isBlank()) ? v : fallback;
     }
 }

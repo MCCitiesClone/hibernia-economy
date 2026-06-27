@@ -7,6 +7,7 @@ import io.paradaux.treasuryapi.TreasuryAPI;
 import io.paradaux.treasuryapi.mappers.ExplorerUiMapper;
 import io.paradaux.treasuryapi.services.KeycloakAdminClient;
 import org.bukkit.Bukkit;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
@@ -65,15 +66,27 @@ public class UiAccessHandler {
         }
     }
 
+    @SuppressWarnings("deprecation") // offline-safe name→profile; blocking call runs on an async command thread
     public void doUserAdd(CommandSender sender, String role, String playerName) {
         String r = role.toLowerCase(Locale.ROOT);
         if (!VALID_ROLES.contains(r)) {
             message.send(sender, "treasuryapi.ui.user.invalid-role", "role", role);
             return;
         }
-        UUID target = resolveUuid(playerName);
+        // A privileged role grant must target a real player. getOfflinePlayer(name)
+        // fabricates a deterministic offline UUID for any string, so a typo would
+        // otherwise write a role row keyed to a UUID nobody owns (ADT-38).
+        OfflinePlayer target = Bukkit.getOfflinePlayer(playerName);
+        if (!target.hasPlayedBefore() && !target.isOnline()) {
+            message.send(sender, "treasuryapi.ui.user.unknown-player", "player", playerName);
+            return;
+        }
+        UUID targetUuid = target.getUniqueId();
         UUID by = (sender instanceof Player p) ? p.getUniqueId() : null;
-        mapper.addRole(target, r, by);
+        mapper.addRole(targetUuid, r, by);
+        // Audit trail: privileged role grants are security-relevant.
+        plugin.getLogger().info("UI role grant: '" + r + "' -> " + playerName + " (" + targetUuid
+                + ") by " + (by != null ? by.toString() : "CONSOLE"));
         message.send(sender, "treasuryapi.ui.user.added", "role", r, "player", playerName);
     }
 

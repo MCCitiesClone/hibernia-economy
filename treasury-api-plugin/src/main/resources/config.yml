@@ -1,3 +1,8 @@
+# Secrets (database.password, keycloak.client-secret) can be supplied via env
+# vars instead of plaintext here — env takes precedence: TREASURYAPI_DB_HOST,
+# _DB_PORT, _DB_NAME, _DB_USERNAME, _DB_PASSWORD, _KEYCLOAK_CLIENT_SECRET. If you
+# keep them in this file, chmod 600 it. The plugin refuses to start while the DB
+# password is the default 'password'.
 database:
   host: localhost
   port: 3306
