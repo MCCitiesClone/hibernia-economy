@@ -285,6 +285,7 @@ class JwtTokenVerifierTest {
                                            java.time.LocalDateTime issuedAt, java.time.LocalDateTime expiresAt) {
                 throw new UnsupportedOperationException();
             }
+            @Override public int revoke(long keyId) { throw new UnsupportedOperationException(); }
         };
     }
 

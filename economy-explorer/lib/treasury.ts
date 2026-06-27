@@ -135,3 +135,11 @@ export const setRateLimitOverride = (ownerUuid: string, multiplier: string, note
 /** Clear a per-issuer rate-limit multiplier override (admin). */
 export const clearRateLimitOverride = (ownerUuid: string) =>
   callVoid(`/api/v1/admin/rate-limit-overrides/${ownerUuid}`, 'DELETE');
+
+/** Revoke an API key (admin). */
+export const revokeApiKey = (keyId: number) =>
+  callVoid(`/api/v1/admin/api-keys/${keyId}/revoke`, 'POST');
+
+/** Force-rotate an API key (admin) — invalidates the current token; owner reissues in-game. */
+export const rotateApiKey = (keyId: number) =>
+  call<{ expiresAt: string }>(`/api/v1/admin/api-keys/${keyId}/rotate`, 'POST');

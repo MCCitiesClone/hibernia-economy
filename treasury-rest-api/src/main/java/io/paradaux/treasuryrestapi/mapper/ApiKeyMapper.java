@@ -47,4 +47,8 @@ public interface ApiKeyMapper {
                   @Param("jwtId") String jwtId,
                   @Param("issuedAt") LocalDateTime issuedAt,
                   @Param("expiresAt") LocalDateTime expiresAt);
+
+    /** Revoke a key (ADT-14: replaces the explorer's direct UPDATE). Idempotent. */
+    @Update("UPDATE api_keys SET revoked = 1 WHERE key_id = #{keyId}")
+    int revoke(@Param("keyId") long keyId);
 }
