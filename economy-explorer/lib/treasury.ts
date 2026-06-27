@@ -143,3 +143,28 @@ export const revokeApiKey = (keyId: number) =>
 /** Force-rotate an API key (admin) — invalidates the current token; owner reissues in-game. */
 export const rotateApiKey = (keyId: number) =>
   call<{ expiresAt: string }>(`/api/v1/admin/api-keys/${keyId}/rotate`, 'POST');
+
+// ── Webhook subscriptions (ADT-14). The optional ownerUuid scopes a mutation to
+//    that owner's row (player self-service) vs. by-id (fleet admin). ──
+const ownerQ = (ownerUuid?: string) => (ownerUuid ? `?ownerUuid=${ownerUuid}` : '');
+
+export const createWebhook = (body: {
+  ownerUuid: string;
+  keyType: 'PERSONAL' | 'BUSINESS' | 'GOVERNMENT';
+  accountId: number | null;
+  firmId: number | null;
+  targetUrl: string;
+  secret: string;
+}) => call<{ subscriptionId: number }>(`/api/v1/admin/webhooks`, 'POST', body);
+
+export const setWebhookActive = (id: number, active: boolean, ownerUuid?: string) =>
+  call<{ affected: number }>(`/api/v1/admin/webhooks/${id}/active${ownerQ(ownerUuid)}`, 'PATCH', { active });
+
+export const setWebhookUrl = (id: number, targetUrl: string, ownerUuid?: string) =>
+  call<{ affected: number }>(`/api/v1/admin/webhooks/${id}/url${ownerQ(ownerUuid)}`, 'PATCH', { targetUrl });
+
+export const setWebhookSecret = (id: number, secret: string, ownerUuid?: string) =>
+  call<{ affected: number }>(`/api/v1/admin/webhooks/${id}/secret${ownerQ(ownerUuid)}`, 'PATCH', { secret });
+
+export const deleteWebhook = (id: number, ownerUuid?: string) =>
+  call<{ affected: number }>(`/api/v1/admin/webhooks/${id}${ownerQ(ownerUuid)}`, 'DELETE');
