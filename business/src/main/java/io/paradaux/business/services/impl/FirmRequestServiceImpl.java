@@ -130,15 +130,24 @@ public class FirmRequestServiceImpl implements FirmRequestService {
         }
         UUID inviter = UUID.fromString(inviterStr);
 
+        // The offer is contingent on the inviter still holding hiring authority
+        // (ADT-70): re-check that the inviter still has ADMIN — the same permission
+        // offerEmployment required. An admin who was demoted, removed, or left the
+        // firm after sending the invite can no longer hire, so the offer is no
+        // longer valid. We leave the row pending (don't reject) so it becomes
+        // acceptable again if a valid admin's authority is restored, or expires.
+        if (!staff.hasPermission(firm.getFirmId(), inviter, RolePermission.ADMIN)) {
+            throw new BadCommandException(
+                    "This offer is no longer valid — the person who invited you no longer has "
+                    + "permission to hire for this firm.");
+        }
+
         // Flip status
         int updated = requests.acceptInvite(firm.getFirmId(), playerId.toString());
         if (updated != 1) {
             throw new InternalException("Failed to accept invite after lock.");
         }
 
-
-        // Hire WITHOUT re-checking inviter's permissions — the invite row
-        // itself is the artifact of the INVITE-time permission check.
         staff.hireEmployeeFromInvite(firm.getFirmId(), playerId, inviter);
     }
 

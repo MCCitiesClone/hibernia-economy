@@ -231,6 +231,7 @@ class FirmRequestServiceImplTest {
         when(firms.getFirmByNameOrId("Acme")).thenReturn(firm());
         when(requests.hasPendingJobOffer(1, target.toString())).thenReturn(true);
         when(requests.lockPendingInviter(1, target.toString())).thenReturn(actor.toString());
+        when(staff.hasPermission(1, actor, RolePermission.ADMIN)).thenReturn(true);
         when(requests.acceptInvite(1, target.toString())).thenReturn(0);
         assertThatThrownBy(() -> svc.acceptEmploymentOffer("Acme", target, target))
                 .isInstanceOf(InternalException.class);
@@ -242,12 +243,27 @@ class FirmRequestServiceImplTest {
         when(firms.getFirmByNameOrId("Acme")).thenReturn(firm());
         when(requests.hasPendingJobOffer(1, target.toString())).thenReturn(true);
         when(requests.lockPendingInviter(1, target.toString())).thenReturn(actor.toString());
+        when(staff.hasPermission(1, actor, RolePermission.ADMIN)).thenReturn(true);
         when(requests.acceptInvite(1, target.toString())).thenReturn(1);
 
         svc.acceptEmploymentOffer("Acme", target, target);
-        // The invite-acceptance path goes through hireEmployeeFromInvite, which
-        // skips the ADMIN check on the inviter — see FirmStaffService Javadoc.
         verify(staff).hireEmployeeFromInvite(1, target, actor);
+    }
+
+    @Test
+    void acceptEmploymentOffer_inviterLostPermission_voidsOffer() {
+        // ADT-70: the inviter was demoted/removed after sending the invite, so it
+        // can no longer be accepted — and nothing is hired.
+        when(firms.getFirmByNameOrId("Acme")).thenReturn(firm());
+        when(requests.hasPendingJobOffer(1, target.toString())).thenReturn(true);
+        when(requests.lockPendingInviter(1, target.toString())).thenReturn(actor.toString());
+        when(staff.hasPermission(1, actor, RolePermission.ADMIN)).thenReturn(false);
+
+        assertThatThrownBy(() -> svc.acceptEmploymentOffer("Acme", target, target))
+                .isInstanceOf(BadCommandException.class)
+                .hasMessageContaining("no longer");
+        verify(requests, never()).acceptInvite(anyInt(), any());
+        verify(staff, never()).hireEmployeeFromInvite(anyInt(), any(), any());
     }
 
     @Test
