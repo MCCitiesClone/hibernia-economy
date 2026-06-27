@@ -7,7 +7,6 @@ import com.google.inject.Singleton;
 import com.google.inject.name.Names;
 import io.paradaux.business.guice.providers.DataSourceProvider;
 import io.paradaux.business.mappers.FirmAccountsMapper;
-import io.paradaux.business.mappers.FirmAdminMapper;
 import io.paradaux.business.mappers.FirmMapper;
 import io.paradaux.business.mappers.FirmPlayerMapper;
 import io.paradaux.business.mappers.FirmPropertyMapper;
@@ -47,7 +46,6 @@ public final class DatabaseModule extends AbstractModule {
                 addMapperClass(FirmRoleMapper.class);
                 addMapperClass(FirmStaffMapper.class);
                 addMapperClass(FirmPlayerMapper.class);
-                addMapperClass(FirmAdminMapper.class);
                 addMapperClass(FirmPropertyMapper.class);
 
                 // MyBatis settings (sane defaults)

@@ -12,6 +12,7 @@ import io.paradaux.business.services.FirmAccountService;
 import io.paradaux.business.services.FirmNotificationService;
 import io.paradaux.business.services.FirmService;
 import io.paradaux.business.services.FirmStaffService;
+import io.paradaux.business.services.FirmPlayerService;
 import io.paradaux.business.services.FirmTransactionService;
 import io.paradaux.business.utils.resolvers.FirmName;
 import io.paradaux.business.utils.resolvers.OnlineFirmName;
@@ -20,7 +21,6 @@ import io.paradaux.treasury.model.Page;
 import io.paradaux.treasury.model.economy.Account;
 import io.paradaux.treasury.model.economy.AccountMember;
 import io.paradaux.treasury.model.economy.TransactionEntry;
-import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
 import java.math.BigDecimal;
@@ -43,11 +43,12 @@ public class AccountCommands implements CommandHandler {
     private final TreasuryApi treasury;
     private final Message message;
     private final FirmNotificationService notifications;
+    private final FirmPlayerService firmPlayers;
 
     @Inject
     public AccountCommands(FirmAccountService accounts, FirmService firms, FirmStaffService staff,
                            FirmTransactionService audit, TreasuryApi treasury, Message message,
-                           FirmNotificationService notifications) {
+                           FirmNotificationService notifications, FirmPlayerService firmPlayers) {
         this.accounts = accounts;
         this.firms = firms;
         this.staff = staff;
@@ -55,6 +56,20 @@ public class AccountCommands implements CommandHandler {
         this.treasury = treasury;
         this.message = message;
         this.notifications = notifications;
+        this.firmPlayers = firmPlayers;
+    }
+
+    /**
+     * Resolve a player's display name from the DB-backed FirmPlayer cache rather
+     * than {@code Bukkit.getOfflinePlayer(uuid).getName()}, which blocks on the
+     * Mojang API / usercache off the main thread and can return null (ADT-70).
+     * Falls back to the raw UUID if the player isn't in the cache.
+     */
+    private String resolveName(java.util.UUID uuid) {
+        return firmPlayers.findByUuid(uuid)
+                .map(FirmPlayer::getCurrentName)
+                .filter(n -> n != null && !n.isBlank())
+                .orElse(uuid.toString());
     }
 
     @Route("account create <firm> <name>")
@@ -265,7 +280,7 @@ public class AccountCommands implements CommandHandler {
                 "count", members.size());
 
         for (AccountMember member : members) {
-            String playerName = Bukkit.getOfflinePlayer(member.getMemberUuid()).getName();
+            String playerName = resolveName(member.getMemberUuid());
             message.send(sender, "business.account.members.entry",
                     "player", playerName,
                     "uuid", member.getMemberUuid());
@@ -299,7 +314,7 @@ public class AccountCommands implements CommandHandler {
                 "count", authorizers.size());
 
         for (AccountMember authorizer : authorizers) {
-            String playerName = Bukkit.getOfflinePlayer(authorizer.getMemberUuid()).getName();
+            String playerName = resolveName(authorizer.getMemberUuid());
             message.send(sender, "business.account.authorizers.entry",
                     "player", playerName,
                     "uuid", authorizer.getMemberUuid());
