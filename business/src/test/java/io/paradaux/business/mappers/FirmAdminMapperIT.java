@@ -21,7 +21,7 @@ class FirmAdminMapperIT extends IntegrationTestBase {
     }
 
     @Test
-    void deleteAllFirms_removesEveryFirmOwnedByPlayer() {
+    void archiveAllFirms_softArchivesEveryFirmOwnedByPlayer() {
         UUID owner = UUID.randomUUID();
         Firm a = newFirm("A", owner); firms.createFirm(a);
         Firm b = newFirm("B", owner); firms.createFirm(b);
@@ -29,11 +29,13 @@ class FirmAdminMapperIT extends IntegrationTestBase {
         UUID otherOwner = UUID.randomUUID();
         Firm c = newFirm("C", otherOwner); firms.createFirm(c);
 
-        admin.deleteAllFirms(owner.toString());
+        int archived = admin.archiveAllFirms(owner.toString());
 
-        assertThat(firms.getFirmById(a.getFirmId())).isNull();
-        assertThat(firms.getFirmById(b.getFirmId())).isNull();
-        assertThat(firms.getFirmById(c.getFirmId())).isNotNull();
+        assertThat(archived).isEqualTo(2);
+        // Soft-archived, not deleted — the rows survive (audit) and read back archived.
+        assertThat(firms.getFirmById(a.getFirmId()).getArchived()).isTrue();
+        assertThat(firms.getFirmById(b.getFirmId()).getArchived()).isTrue();
+        assertThat(firms.getFirmById(c.getFirmId()).getArchived()).isFalse();
     }
 
     private Firm newFirm(String name, UUID owner) {
