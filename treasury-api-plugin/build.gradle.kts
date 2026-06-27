@@ -12,6 +12,8 @@ plugins {
 description = "TreasuryAPI"
 
 dependencies {
+    implementation(project(":common"))
+
     // Paper API (provided by server)
     compileOnly(libs.paper.api)
 

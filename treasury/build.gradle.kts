@@ -31,6 +31,7 @@ dependencies {
 
     // Treasury API submodule
     implementation(project(":treasury:treasury-api"))
+    implementation(project(":common"))
 
     // Hibernia Framework
     implementation(libs.hibernia.framework)

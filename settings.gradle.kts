@@ -21,6 +21,8 @@ pluginManagement {
 
 rootProject.name = "hibernia-economy"
 
+include(":common")
+
 include(":treasury")
 include(":treasury:treasury-api")
 

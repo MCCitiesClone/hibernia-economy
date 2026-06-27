@@ -3,6 +3,7 @@ package io.paradaux.treasuryapi.services.impl;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import io.jsonwebtoken.Jwts;
+import io.paradaux.common.JwtKeys;
 import io.paradaux.treasuryapi.mappers.ApiKeyMapper;
 import io.paradaux.treasuryapi.model.config.ApiConfiguration;
 import io.paradaux.treasuryapi.model.economy.ApiKey;
@@ -10,10 +11,6 @@ import io.paradaux.treasuryapi.services.ApiKeyService;
 import org.mybatis.guice.transactional.Transactional;
 
 import javax.crypto.SecretKey;
-import javax.crypto.spec.SecretKeySpec;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
@@ -120,7 +117,7 @@ public class ApiKeyServiceImpl implements ApiKeyService {
     private String buildJwt(int keyId, String jwtId, String keyType,
                              Integer accountId, Integer firmId, UUID ownerUuid,
                              Instant issuedAt, Instant expiresAt) {
-        SecretKey key = deriveKey(apiConfig.getJwtSecret());
+        SecretKey key = JwtKeys.deriveHmacKey(apiConfig.getJwtSecret());
         var builder = Jwts.builder()
                 .header().add("kid", String.valueOf(keyId)).and()
                 .subject(ownerUuid.toString())
@@ -135,13 +132,4 @@ public class ApiKeyServiceImpl implements ApiKeyService {
         return builder.signWith(key, Jwts.SIG.HS256).compact();
     }
 
-    private SecretKey deriveKey(String secret) {
-        try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] keyBytes = digest.digest(secret.getBytes(StandardCharsets.UTF_8));
-            return new SecretKeySpec(keyBytes, "HmacSHA256");
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException("SHA-256 not available", e);
-        }
-    }
 }
