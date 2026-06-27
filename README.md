@@ -55,9 +55,14 @@ each other's database.
    HTTP clients ─▶ treasury-rest-api ────▶│  shared MariaDB                  │
                    (keys via              │  schema owned by economy-flyway  │
                     treasury-api-plugin)  └──────────────────────────────────┘
-                                                              │ (read-only)
+                                                              │ reads economy data*
    browsers ─────▶ economy-explorer (Next.js) ───────────────┘
 ```
+
+> \* The explorer never writes the ledger/balances/accounts, but it is not
+> strictly read-only over the whole DB — it writes a few control tables
+> (webhooks, key revocation, rate-limit overrides) directly today. See
+> [`wiki/architecture.md`](wiki/architecture.md#the-read-side).
 
 The public APIs live in dedicated `*-api` subprojects (`treasury-api`,
 `business-api`) so downstream code depends on a stable surface, not the plugin
