@@ -16,7 +16,12 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Don't publish an API jar that doesn't pass its tests (ADT-52).
+  test:
+    uses: ./.github/workflows/business-test.yml
+
   publish:
+    needs: test
     runs-on: ubuntu-latest
 
     steps:

@@ -11,6 +11,7 @@ on:
     paths:
       - 'treasury/**'
       - '.github/workflows/treasury-test.yml'
+  workflow_call:        # reused as a gate by treasury-publish-api.yml (ADT-52)
   workflow_dispatch:
 
 permissions:

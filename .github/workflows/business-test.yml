@@ -11,6 +11,7 @@ on:
     paths:
       - 'business/**'
       - '.github/workflows/business-test.yml'
+  workflow_call:        # reused as a gate by business-publish-api.yml (ADT-52)
   workflow_dispatch:
 
 permissions:
