@@ -47,6 +47,7 @@ public class KeycloakAdminClient {
 
         HttpResponse<String> get = http.send(
                 HttpRequest.newBuilder(URI.create(userUrl))
+                        .timeout(Duration.ofSeconds(15))
                         .header("Authorization", "Bearer " + token)
                         .GET().build(),
                 HttpResponse.BodyHandlers.ofString());
@@ -63,6 +64,7 @@ public class KeycloakAdminClient {
 
         HttpResponse<String> put = http.send(
                 HttpRequest.newBuilder(URI.create(userUrl))
+                        .timeout(Duration.ofSeconds(15))
                         .header("Authorization", "Bearer " + token)
                         .header("Content-Type", "application/json")
                         .PUT(HttpRequest.BodyPublishers.ofString(user.toString()))
@@ -80,6 +82,7 @@ public class KeycloakAdminClient {
                 + "&client_secret=" + enc(cfg.getClientSecret());
         HttpResponse<String> res = http.send(
                 HttpRequest.newBuilder(URI.create(tokenUrl))
+                        .timeout(Duration.ofSeconds(15))
                         .header("Content-Type", "application/x-www-form-urlencoded")
                         .POST(HttpRequest.BodyPublishers.ofString(form))
                         .build(),

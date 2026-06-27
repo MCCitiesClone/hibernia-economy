@@ -8,6 +8,7 @@ import io.paradaux.treasuryapi.model.SyncedGroup;
 import net.luckperms.api.LuckPerms;
 import net.luckperms.api.model.group.Group;
 import net.luckperms.api.model.group.GroupManager;
+import net.luckperms.api.model.user.User;
 import net.luckperms.api.node.Node;
 import net.luckperms.api.node.matcher.NodeMatcher;
 import net.luckperms.api.node.types.InheritanceNode;
@@ -102,17 +103,31 @@ public class GroupReconciliationTask extends BukkitRunnable {
      * synced group — used by the on-demand self-sync command so a player's freshly
      * granted in-game ranks reflect in the explorer immediately instead of waiting for
      * the cron tick. Touches only this player's luckperms rows; manual grants and other
-     * players are untouched. Carries the same empty-result guard as the cron (an empty
-     * resolve for a group is treated as transient and never prunes the player).
+     * players are untouched.
+     *
+     * <p>Loads the one player's LuckPerms user a single time and tests each group's
+     * node against their resolved permission data (ADT-39) — rather than running a
+     * full storage {@code searchAll} per group to materialise every member and then
+     * checking {@code contains(playerId)}. A failed user load is treated as transient
+     * and never prunes the player.
      */
     public void reconcilePlayer(UUID playerId) {
+        User user;
+        try {
+            user = luckPerms.getUserManager().loadUser(playerId).get(15, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            log.warning("Self-sync: failed to load LuckPerms user " + playerId
+                    + " — skipping (treated as transient): " + e.getMessage());
+            return;
+        }
+        if (user == null) return;
+        var permData = user.getCachedData().getPermissionData(QueryOptions.nonContextual());
+
         for (SyncedGroup group : mapper.listSyncedGroups()) {
             try {
-                Set<UUID> members = resolveMembers(group.getLuckpermsNode());
-                if (members.isEmpty()) {
-                    continue; // degraded/empty result — don't revoke on a transient miss
-                }
-                boolean shouldBeMember = members.contains(playerId);
+                // checkPermission on the canonical node key resolves both direct and
+                // inherited (group) grants — equivalent to membership of resolveMembers().
+                boolean shouldBeMember = permData.checkPermission(nodeKey(group.getLuckpermsNode())).asBoolean();
                 boolean isMember = mapper.listLuckpermsMemberUuids(group.getGroupId()).contains(playerId);
                 if (shouldBeMember && !isMember) {
                     mapper.addLuckpermsMember(group.getGroupId(), playerId);

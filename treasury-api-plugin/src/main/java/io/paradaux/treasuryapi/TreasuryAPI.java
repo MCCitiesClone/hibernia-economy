@@ -107,8 +107,12 @@ public final class TreasuryAPI extends JavaPlugin {
         getServer().getServicesManager().unregisterAll(this);
 
         try {
-            javax.sql.DataSource ds = injector.getInstance(javax.sql.DataSource.class);
-            if (ds instanceof com.zaxxer.hikari.HikariDataSource hikari) hikari.close();
+            // injector is null if onEnable aborted before building it (ADT-39) —
+            // guard so disable during a failed startup doesn't NPE over the error.
+            if (injector != null) {
+                javax.sql.DataSource ds = injector.getInstance(javax.sql.DataSource.class);
+                if (ds instanceof com.zaxxer.hikari.HikariDataSource hikari) hikari.close();
+            }
         } catch (Exception ignored) { }
         injector = null;
     }
