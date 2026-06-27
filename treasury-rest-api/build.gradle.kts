@@ -1,5 +1,6 @@
 plugins {
     java
+    jacoco
     id("org.springframework.boot")
     id("io.spring.dependency-management")
 }
@@ -78,4 +79,32 @@ dependencies {
 
 tasks.withType<Test> {
     useJUnitPlatform()
+}
+
+// ADT-50: the money service had no coverage gate. Report on every test run and
+// enforce a regression floor wired into `check`. The floor is a ratchet set just
+// below current coverage — raise it as coverage improves, never let it slip.
+tasks.jacocoTestReport {
+    dependsOn(tasks.test)
+    reports {
+        xml.required.set(true)
+        html.required.set(true)
+    }
+}
+
+tasks.jacocoTestCoverageVerification {
+    dependsOn(tasks.test)
+    violationRules {
+        rule {
+            limit {
+                counter = "LINE"
+                value = "COVEREDRATIO"
+                minimum = "0.55".toBigDecimal()
+            }
+        }
+    }
+}
+
+tasks.check {
+    dependsOn(tasks.jacocoTestReport, tasks.jacocoTestCoverageVerification)
 }

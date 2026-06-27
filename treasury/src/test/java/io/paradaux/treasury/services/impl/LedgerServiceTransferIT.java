@@ -519,6 +519,52 @@ class LedgerServiceTransferIT extends IntegrationTestBase {
                 .hasMessageContaining("not permitted");
     }
 
+    // ---------- concurrency: deadlock-safe lock ordering ----------
+
+    @Test
+    void concurrentSwappedTransfers_neverDeadlock_andConserveMoney() throws Exception {
+        // Transfers lock both balance rows FOR UPDATE in ascending account-id order,
+        // so A→B and B→A can't form a lock cycle. Hammer both directions at once and
+        // assert zero transient failures + money conserved (ADT-50).
+        Account a = createPersonalAccount(10_000);
+        Account b = createPersonalAccount(10_000);
+
+        int perDirection = 40;
+        java.util.List<java.util.concurrent.Callable<Void>> tasks = new java.util.ArrayList<>();
+        for (int i = 0; i < perDirection; i++) {
+            tasks.add(() -> { transferOne(a, b); return null; });
+            tasks.add(() -> { transferOne(b, a); return null; });
+        }
+
+        java.util.concurrent.ExecutorService pool = java.util.concurrent.Executors.newFixedThreadPool(6);
+        java.util.List<Throwable> errors = new java.util.concurrent.CopyOnWriteArrayList<>();
+        try {
+            for (java.util.concurrent.Future<Void> f : pool.invokeAll(tasks)) {
+                try {
+                    f.get();
+                } catch (java.util.concurrent.ExecutionException e) {
+                    errors.add(e.getCause());
+                }
+            }
+        } finally {
+            pool.shutdownNow();
+        }
+
+        assertThat(errors).as("no transient deadlock/failure under swapped-direction load").isEmpty();
+        // Equal traffic each way nets to zero; money is conserved regardless.
+        assertThat(balanceOf(a)).isEqualByComparingTo("10000.00");
+        assertThat(balanceOf(b)).isEqualByComparingTo("10000.00");
+        assertThat(balanceOf(a).add(balanceOf(b))).isEqualByComparingTo("20000.00");
+    }
+
+    private void transferOne(Account from, Account to) {
+        ledgerService.transfer(new TransferRequest(
+                from.getAccountId(), to.getAccountId(),
+                new BigDecimal("1.00"), "concurrency test",
+                TreasuryConstants.VIRTUAL_TREASURY_INITIATOR, null,
+                TreasuryConstants.TREASURY_PLUGIN_NAME, null));
+    }
+
     // ---------- helpers ----------
 
     private BigDecimal balanceOf(Account a) {
