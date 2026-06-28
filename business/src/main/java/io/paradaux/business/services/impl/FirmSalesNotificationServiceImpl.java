@@ -99,7 +99,7 @@ public class FirmSalesNotificationServiceImpl implements FirmSalesNotificationSe
     }
 
     private void send(int firmId, FirmBuffer buf) {
-        Firm firm = firms.getAnyFirmByNameOrId(String.valueOf(firmId));
+        Firm firm = firms.getAnyFirmById(firmId);
         String firmName = firm != null ? firm.getDisplayName() : ("Firm #" + firmId);
 
         // Snapshot the buffer atomically (same monitor as add()) so building the

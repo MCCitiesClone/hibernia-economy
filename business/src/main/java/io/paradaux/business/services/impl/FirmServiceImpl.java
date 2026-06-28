@@ -96,7 +96,12 @@ public class FirmServiceImpl implements FirmService {
 
         // Validation checks, name uniqueness / ownership limit
         if (firms.getFirmsByNameCount(name) > 0) {
-            throw new ExceedsLimitException("Firm with name '" + name + "' already exists");
+            // Counts archived firms too: disband keeps the firm's display_name and the
+            // uq_firm_display_name UNIQUE, so a name stays reserved and can't be reused.
+            // Word the message accordingly rather than implying only an active firm
+            // collides (ADT-97).
+            throw new ExceedsLimitException(
+                    "The name '" + name + "' is already taken (names stay reserved, even after a firm is disbanded)");
         }
 
         if (firmConfig.hasOwnedFirmLimit()
@@ -425,6 +430,13 @@ public class FirmServiceImpl implements FirmService {
         // resolving on command/action paths.
         Firm firm = firms.getFirmById(firmId);
         return (firm == null || Boolean.TRUE.equals(firm.getArchived())) ? null : firm;
+    }
+
+    @Override
+    @Nullable
+    public Firm getAnyFirmById(int firmId) {
+        // Archived-inclusive: the raw mapper returns disbanded firms too (ADT-96).
+        return firms.getFirmById(firmId);
     }
 
     @Override

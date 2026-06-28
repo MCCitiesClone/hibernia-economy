@@ -182,7 +182,7 @@ public class FirmChatService {
         if (firmId == null) {
             return null;
         }
-        Firm firm = firms.getFirmByNameOrId(String.valueOf(firmId));
+        Firm firm = firms.getFirmById(firmId);
         return firm == null ? null : firm.getDisplayName();
     }
 

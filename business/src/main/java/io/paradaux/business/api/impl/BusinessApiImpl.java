@@ -119,7 +119,7 @@ public class BusinessApiImpl implements BusinessApi {
         public Firm getFirmByAccountId(int accountId) {
             Integer firmId = accounts.getFirmIdByAccountId(accountId);
             if (firmId == null) return null;
-            return service.getAnyFirmByNameOrId(String.valueOf(firmId));
+            return service.getAnyFirmById(firmId);
         }
 
         @Override

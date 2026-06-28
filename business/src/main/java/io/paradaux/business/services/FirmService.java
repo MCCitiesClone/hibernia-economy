@@ -66,6 +66,14 @@ public interface FirmService {
     /** Resolves a firm by name or id <em>including archived</em> ones (readers / idempotency checks). */
     Firm getAnyFirmByNameOrId(String nameOrId);
 
+    /**
+     * Archived-inclusive counterpart of {@link #getFirmById(int)} (ADT-96). Prefer
+     * this over {@code getAnyFirmByNameOrId(String.valueOf(id))} on paths that
+     * already hold the id — same int→String→int round-trip avoidance as
+     * {@link #getFirmById(int)}, but for readers that must still see disbanded firms.
+     */
+    Firm getAnyFirmById(int firmId);
+
     List<Firm> listAllActiveFirms();
 
 }

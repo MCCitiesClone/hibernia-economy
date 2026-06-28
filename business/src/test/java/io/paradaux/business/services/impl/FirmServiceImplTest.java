@@ -520,6 +520,16 @@ class FirmServiceImplTest {
     }
 
     @Test
+    void getAnyFirmById_returnsArchivedFirmDirectlyWithoutStringRoundTrip() {
+        Firm archived = new Firm();
+        archived.setFirmId(7);
+        archived.setArchived(true);
+        when(firms.getFirmById(7)).thenReturn(archived);
+        // Archived-inclusive by-id reader (ADT-96): no int→String→int detour.
+        assertThat(svc.getAnyFirmById(7)).isSameAs(archived);
+    }
+
+    @Test
     void listAllFirms_clampsPageAndSize() {
         when(firms.listAllFiltered(25, 0, false)).thenReturn(List.of());
         svc.listAllFirms(0, 0); // both invalid → page=1, size=25
