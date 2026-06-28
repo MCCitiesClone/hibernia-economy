@@ -8,9 +8,12 @@ import java.util.UUID;
 
 /**
  * Read query over {@code chestshop_sale} for the in-game sales commands
- * (PAR-176). Exactly one owner scope is normally set ({@link #firmId},
- * {@link #ownerUuid} or {@link #accountId}); the rest are optional filters. A
- * null filter means "no constraint". Build with {@link SalesQuery#builder()}.
+ * (PAR-176). <strong>Exactly one</strong> owner scope must be set ({@link #firmId},
+ * {@link #ownerUuid} or {@link #accountId}) — the API rejects a query with none
+ * (would expose server-wide sales) or with more than one (the scopes are distinct
+ * granularities and would AND to an empty result). The remaining fields are
+ * optional filters; a null filter means "no constraint". Build with
+ * {@link SalesQuery#builder()}.
  */
 @Getter
 @Builder

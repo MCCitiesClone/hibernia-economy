@@ -129,6 +129,16 @@ class SalesQueryApiImplIT extends IntegrationTestBase {
         assertThatThrownBy(() -> sales.summarize(noScope, 5)).isInstanceOf(IllegalArgumentException.class);
     }
 
+    @Test
+    void multiScopeQuery_isRejected() {
+        // Exactly one owner scope: setting two (here firmId + ownerUuid) is a caller
+        // bug that would AND to an empty result, so it's refused up front (ADT-90).
+        SalesQuery twoScopes = SalesQuery.builder().firmId(FIRM).ownerUuid(UUID.randomUUID()).windowDays(30).build();
+        assertThatThrownBy(() -> sales.listSales(twoScopes)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> sales.countSales(twoScopes)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> sales.summarize(twoScopes, 5)).isInstanceOf(IllegalArgumentException.class);
+    }
+
     // ── helpers ───────────────────────────────────────────────────────────────
 
     private static SalesQuery.SalesQueryBuilder firmQuery() {

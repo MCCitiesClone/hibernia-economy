@@ -59,13 +59,24 @@ public class SalesQueryApiImpl implements SalesQueryApi {
 
     /**
      * Sales are a private, owner-scoped read (per-customer drilldown is sensitive).
-     * Refuse a query with no owner scope so an unscoped call can never return
-     * server-wide sales — the contract is enforced here, not left to callers.
+     * Enforce the SalesQuery contract of <em>exactly one</em> owner scope, here
+     * rather than leaving it to callers: refuse a query with no scope (which would
+     * otherwise return server-wide sales) and refuse one with more than one scope.
+     * The owner scopes are different granularities denormalised on the row, so two
+     * at once AND together into a near-always-empty result — a silent caller bug
+     * (ADT-90). The three scopes the row carries are firmId / ownerUuid / accountId.
      */
     private static void requireOwnerScope(SalesQuery query) {
-        if (query.getFirmId() == null && query.getOwnerUuid() == null && query.getAccountId() == null) {
+        int scopes = (query.getFirmId() != null ? 1 : 0)
+                + (query.getOwnerUuid() != null ? 1 : 0)
+                + (query.getAccountId() != null ? 1 : 0);
+        if (scopes == 0) {
             throw new IllegalArgumentException(
                     "SalesQuery requires an owner scope (firmId, ownerUuid or accountId)");
+        }
+        if (scopes > 1) {
+            throw new IllegalArgumentException(
+                    "SalesQuery accepts exactly one owner scope (firmId, ownerUuid or accountId), not several");
         }
     }
 
