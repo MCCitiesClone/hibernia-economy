@@ -301,6 +301,13 @@ public class FirmServiceImpl implements FirmService {
         if (!canAdministerFirm(firm.getFirmId(), actorId)) {
             throw new NoPermissionException("You don't have permission to manage this firm.");
         }
+        // Validate server-side too (ADT discord-url-unvalidated-to-ui): this value is
+        // read directly from the DB and rendered by the explorer + /firm info, so an
+        // unvalidated string (javascript: URL, MiniMessage/HTML) would be a stored
+        // injection vector. A blank value clears the link.
+        if (url != null && !url.isBlank() && !url.matches("https://discord\\.gg/[A-Za-z0-9]{2,32}")) {
+            throw new BadCommandException("Invalid Discord invite URL — must be https://discord.gg/<code>.");
+        }
         Firm updatedFirm = new Firm();
         updatedFirm.setFirmId(firm.getFirmId());
         updatedFirm.setDiscordUrl(url);

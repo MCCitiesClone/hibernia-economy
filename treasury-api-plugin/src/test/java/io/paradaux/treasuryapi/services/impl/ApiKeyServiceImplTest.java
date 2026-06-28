@@ -3,16 +3,16 @@ package io.paradaux.treasuryapi.services.impl;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
 import io.jsonwebtoken.Jwts;
+import io.paradaux.common.JwtKeys;
 import io.paradaux.treasuryapi.mappers.ApiKeyMapper;
 import io.paradaux.treasuryapi.model.config.ApiConfiguration;
 import io.paradaux.treasuryapi.model.economy.ApiKey;
 import org.junit.jupiter.api.Test;
 
 import javax.crypto.SecretKey;
-import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
 import java.time.Instant;
+import java.util.Base64;
 import java.util.List;
 import java.util.UUID;
 
@@ -123,13 +123,25 @@ class ApiKeyServiceImplTest {
         };
     }
 
-    /** Mirrors ApiKeyServiceImpl.deriveKey — SHA-256(secret) as the HMAC key. */
+    @Test
+    void mintWithBase64Secret_verifiesUnderTheSharedDerivation() {
+        // The production-recommended secret format is base64:<random>; exercise it
+        // through the real JwtKeys derivation (ADT test-bypasses-jwtkeys-derivation)
+        // so a regression in the base64 path can't pass while breaking minted tokens.
+        String base64Secret = "base64:" + Base64.getEncoder()
+                .encodeToString("0123456789abcdef0123456789abcdef".getBytes(StandardCharsets.UTF_8)); // 32 bytes
+        ApiConfiguration base64Config = new ApiConfiguration() {
+            @Override public String getJwtSecret() { return base64Secret; }
+        };
+        ApiKey key = new ApiKeyServiceImpl(mapper(11), base64Config).issuePersonalKey(4, UUID.randomUUID());
+        Claims claims = Jwts.parser().verifyWith(deriveKey(base64Secret)).build()
+                .parseSignedClaims(key.getToken()).getPayload();
+        assertEquals("PERSONAL", claims.get("type", String.class));
+        assertEquals(4, claims.get("acc", Integer.class));
+    }
+
+    /** The real production derivation — both mint (here) and the REST verifier use io.paradaux.common.JwtKeys. */
     private static SecretKey deriveKey(String secret) {
-        try {
-            byte[] bytes = MessageDigest.getInstance("SHA-256").digest(secret.getBytes(StandardCharsets.UTF_8));
-            return new SecretKeySpec(bytes, "HmacSHA256");
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        return JwtKeys.deriveHmacKey(secret);
     }
 }

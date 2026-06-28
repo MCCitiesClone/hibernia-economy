@@ -281,7 +281,10 @@ public class FirmCommands implements CommandHandler {
             return;
         }
 
-        if (!url.matches("https?://discord\\.gg/\\S+")) {
+        // Strict invite charset (ADT discord-url-minimessage-injection): the old
+        // \S+ permitted '<','>','&', letting a MiniMessage payload ride in the public
+        // /firm info card. Require https + the real discord.gg code charset.
+        if (!url.matches("https://discord\\.gg/[A-Za-z0-9]{2,32}")) {
             message.send(sender, "business.firm.attribute.set.discord.invalid");
             return;
         }
@@ -361,7 +364,10 @@ public class FirmCommands implements CommandHandler {
             message.send(sender, "business.firm.not-found", "firm", firm);
             return;
         }
-        if (!url.matches("https?://discord\\.gg/\\S+")) {
+        // Strict invite charset (ADT discord-url-minimessage-injection): the old
+        // \S+ permitted '<','>','&', letting a MiniMessage payload ride in the public
+        // /firm info card. Require https + the real discord.gg code charset.
+        if (!url.matches("https://discord\\.gg/[A-Za-z0-9]{2,32}")) {
             message.send(sender, "business.firm.attribute.set.discord.invalid");
             return;
         }

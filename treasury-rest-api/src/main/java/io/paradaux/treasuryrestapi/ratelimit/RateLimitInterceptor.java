@@ -184,10 +184,16 @@ public class RateLimitInterceptor implements HandlerInterceptor {
     }
 
     private void count(VerifiedToken token, String issuerKey, String outcome) {
+        // ADT (metric-cardinality-anon-ip): never put the raw client IP into a metric
+        // label. Anonymous traffic from rotating IPs would otherwise create unbounded
+        // time series (heap + scrape-cost growth). Anonymous calls share one
+        // "anonymous" label; the per-IP bucket key used for actual throttling keeps
+        // the IP and is unaffected.
+        String issuerLabel = token != null ? issuerKey : "anonymous";
         try {
             metrics.counter(METRIC,
                     "key_id", token != null ? Long.toString(token.keyId()) : "0",
-                    "issuer", issuerKey,
+                    "issuer", issuerLabel,
                     "key_type", token != null
                             ? (token.keyType() != null ? token.keyType() : "unknown")
                             : "ANONYMOUS",

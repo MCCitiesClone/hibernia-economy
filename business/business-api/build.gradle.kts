@@ -40,6 +40,9 @@ dependencies {
     compileOnly(libs.lombok)
     annotationProcessor(libs.lombok)
 
+    // @Nullable on the published API surface (ADT firmplayer-null-uuid-contract-break).
+    compileOnly(libs.jetbrains.annotations)
+
     testImplementation(platform(libs.junit.bom))
     testImplementation(libs.junit.jupiter)
     testRuntimeOnly(libs.junit.platform.launcher)

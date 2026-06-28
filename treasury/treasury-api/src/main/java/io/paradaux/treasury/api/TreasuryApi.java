@@ -42,10 +42,24 @@ public interface TreasuryApi {
     List<Account> getAccountsByOwner(UUID ownerUuid);
     List<Account> getAccountsByTypeAndOwner(AccountType accountType, UUID ownerUuid);
 
-    /** @deprecated Use {@link #getAccountsByTypeAndOwner(AccountType, UUID)} instead. */
+    /**
+     * @deprecated Use {@link #getAccountsByTypeAndOwner(AccountType, UUID)} instead.
+     * @throws IllegalArgumentException if {@code accountType} is null or not a known
+     *         {@link AccountType} (ADT deprecated-overload-npe — previously an
+     *         unguarded {@code valueOf} surfaced a raw NPE / enum error).
+     */
     @Deprecated
     default List<Account> getAccountsByTypeAndOwner(String accountType, UUID ownerUuid) {
-        return getAccountsByTypeAndOwner(AccountType.valueOf(accountType.toUpperCase()), ownerUuid);
+        if (accountType == null) {
+            throw new IllegalArgumentException("accountType must not be null");
+        }
+        final AccountType type;
+        try {
+            type = AccountType.valueOf(accountType.toUpperCase(java.util.Locale.ROOT));
+        } catch (IllegalArgumentException unknown) {
+            throw new IllegalArgumentException("Unknown account type: " + accountType);
+        }
+        return getAccountsByTypeAndOwner(type, ownerUuid);
     }
     List<Account> getAccountsByMember(UUID memberUuid);
 
