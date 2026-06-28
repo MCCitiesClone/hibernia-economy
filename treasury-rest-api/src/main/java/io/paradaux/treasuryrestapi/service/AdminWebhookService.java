@@ -1,6 +1,7 @@
 package io.paradaux.treasuryrestapi.service;
 
 import io.paradaux.treasuryrestapi.dto.WebhookCreateRequest;
+import io.paradaux.treasuryrestapi.exception.ApiException;
 import io.paradaux.treasuryrestapi.mapper.WebhookSubscriptionMapper;
 import io.paradaux.treasuryrestapi.model.WebhookSubscription;
 import io.paradaux.treasuryrestapi.security.AdminScope;
@@ -8,6 +9,7 @@ import io.paradaux.treasuryrestapi.security.VerifiedToken;
 import io.paradaux.treasuryrestapi.util.SsrfValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,6 +31,11 @@ public class AdminWebhookService {
 
     private static final Logger log = LoggerFactory.getLogger(AdminWebhookService.class);
 
+    // webhook_subscription.secret is CHAR(64) (the hex HMAC key). Validate length
+    // up front so an over-long value returns a clean 400 rather than a driver-level
+    // data-truncation error surfaced as a 500 (ADT-118).
+    private static final int MAX_SECRET_LENGTH = 64;
+
     private final WebhookSubscriptionMapper mapper;
 
     public AdminWebhookService(WebhookSubscriptionMapper mapper) {
@@ -39,6 +46,7 @@ public class AdminWebhookService {
     public long create(VerifiedToken verified, WebhookCreateRequest req) {
         AdminScope.require(verified);
         SsrfValidator.validate(req.targetUrl()); // https, public address, standard port
+        validateSecret(req.secret());
         WebhookSubscription sub = new WebhookSubscription();
         sub.setApiKeyId(null); // owner-scoped (explorer-managed), not key-scoped
         sub.setOwnerUuid(req.ownerUuid());
@@ -66,7 +74,15 @@ public class AdminWebhookService {
 
     public int setSecret(VerifiedToken verified, long id, UUID ownerUuid, String secret) {
         AdminScope.require(verified);
+        validateSecret(secret);
         return mapper.setSecretScoped(id, ownerUuid, secret);
+    }
+
+    private static void validateSecret(String secret) {
+        if (secret != null && secret.length() > MAX_SECRET_LENGTH) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "INVALID_BODY",
+                    "Field 'secret' must be at most " + MAX_SECRET_LENGTH + " characters.");
+        }
     }
 
     public int delete(VerifiedToken verified, long id, UUID ownerUuid) {

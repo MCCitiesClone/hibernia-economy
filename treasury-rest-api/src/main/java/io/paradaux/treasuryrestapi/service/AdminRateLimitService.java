@@ -34,6 +34,11 @@ public class AdminRateLimitService {
         if (multiplier == null || multiplier.signum() <= 0) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "INVALID_BODY", "Field 'multiplier' must be > 0.");
         }
+        // api_rate_limit_override.note is VARCHAR(255): bound it up front so an
+        // over-long note returns a clean 400 rather than a driver 500 (ADT-118).
+        if (note != null && note.length() > 255) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "INVALID_BODY", "Field 'note' must be at most 255 characters.");
+        }
         overrides.set(ownerUuid, multiplier, note, verified.ownerUuid());
         log.info("Admin set rate-limit override for owner={} multiplier={} by keyId={}",
                 ownerUuid, multiplier, verified.keyId());

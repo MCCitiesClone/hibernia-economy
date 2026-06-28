@@ -5,11 +5,13 @@ on:
     branches: [ main, develop ]
     paths:
       - 'business/**'
+      - 'treasury/treasury-api/**'   # ADT-170: depends on project(":treasury:treasury-api")
       - '.github/workflows/business-test.yml'
   pull_request:
     branches: [ main, develop ]
     paths:
       - 'business/**'
+      - 'treasury/treasury-api/**'   # ADT-170: depends on project(":treasury:treasury-api")
       - '.github/workflows/business-test.yml'
   workflow_call:        # reused as a gate by business-publish-api.yml (ADT-52)
   workflow_dispatch:
@@ -54,7 +56,7 @@ jobs:
           java-version: '21'
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v3
+        uses: gradle/actions/setup-gradle@v4
 
       - name: Make Gradle wrapper executable
         run: chmod +x ./gradlew

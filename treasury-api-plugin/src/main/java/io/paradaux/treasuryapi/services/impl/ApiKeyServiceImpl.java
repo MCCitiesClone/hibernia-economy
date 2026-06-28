@@ -75,6 +75,14 @@ public class ApiKeyServiceImpl implements ApiKeyService {
         if (existing == null) {
             throw new IllegalArgumentException("API key not found: " + keyId);
         }
+        // Revocation is terminal (ADT-110): a revoked key must not be resurrected
+        // by reissuing it. Reject early so the caller gets a clear error and we
+        // never mint a fresh token for a credential that was deliberately killed
+        // (e.g. after a leak). Issue a new key instead.
+        if (existing.isRevoked()) {
+            throw new IllegalStateException(
+                    "API key " + keyId + " is revoked; revocation is terminal — issue a new key instead.");
+        }
 
         String newJwtId = UUID.randomUUID().toString();
         Instant issuedAt = Instant.now();
@@ -83,13 +91,19 @@ public class ApiKeyServiceImpl implements ApiKeyService {
                 existing.getAccountId(), existing.getFirmId(),
                 existing.getOwnerUuid(), issuedAt, expiresAt);
 
-        apiKeyMapper.reissue(keyId, newJwtId, issuedAt, expiresAt);
+        // The mapper's UPDATE is guarded by `AND revoked = 0`, so a key revoked
+        // between the read above and this write affects 0 rows — treat that as a
+        // terminal-state rejection rather than silently building an unusable token.
+        int updated = apiKeyMapper.reissue(keyId, newJwtId, issuedAt, expiresAt);
+        if (updated == 0) {
+            throw new IllegalStateException(
+                    "API key " + keyId + " is revoked; revocation is terminal — issue a new key instead.");
+        }
 
         existing.setJwtId(newJwtId);
         existing.setToken(token); // one-time display only; not persisted (ADT-6)
         existing.setIssuedAt(issuedAt);
         existing.setExpiresAt(expiresAt);
-        existing.setRevoked(false);
         return existing;
     }
 

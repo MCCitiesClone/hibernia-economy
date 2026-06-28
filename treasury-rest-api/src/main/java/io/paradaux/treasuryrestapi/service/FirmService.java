@@ -58,7 +58,8 @@ public class FirmService {
                 firm.getHqRegion(),
                 firm.getDefaultAccountId(),
                 firm.isArchived(),
-                firm.getCreatedAt().toInstant(ZoneOffset.UTC)
+                // ADT-119: null-guard rather than NPE into a 500 if created_at is ever null.
+                firm.getCreatedAt() != null ? firm.getCreatedAt().toInstant(ZoneOffset.UTC) : null
         );
     }
 
@@ -218,7 +219,8 @@ public class FirmService {
                 e.getPlayerUuid().toString(),
                 e.getPlayerName(),
                 e.getRoleName(),
-                e.getJoinedAt().toInstant(ZoneOffset.UTC)
+                // ADT-119: null-guard rather than NPE into a 500 if joined_at is ever null.
+                e.getJoinedAt() != null ? e.getJoinedAt().toInstant(ZoneOffset.UTC) : null
         );
     }
 

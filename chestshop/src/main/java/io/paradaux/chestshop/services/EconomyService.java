@@ -229,21 +229,22 @@ public class EconomyService {
 
         String memo = buildTransferMessage(txn);
 
+        UUID tradeId = txn.getTradeId();
         int receiverAccountId = -1;
         try {
             if (!senderIsAdmin && !receiverIsAdmin) {
                 // Direct buyer → seller transfer — atomic, no SYSTEM hop, no rollback.
                 int senderAccountId = resolveAccountId(sender);
                 receiverAccountId = resolveAccountId(receiver);
-                transfer(senderAccountId, receiverAccountId, amount, memo, transferInitiator(sender), sender, receiver);
+                transfer(senderAccountId, receiverAccountId, amount, memo, transferInitiator(sender), tradeId);
             } else if (receiverIsAdmin && !senderIsAdmin) {
                 // Paying into an admin shop with no server account → money sink (→ SYSTEM).
                 int senderAccountId = resolveAccountId(sender);
-                transfer(senderAccountId, systemAccountId, amount, memo, transferInitiator(sender), sender, receiver);
+                transfer(senderAccountId, systemAccountId, amount, memo, transferInitiator(sender), tradeId);
             } else if (senderIsAdmin && !receiverIsAdmin) {
                 // An admin shop with no server account pays out → money source (SYSTEM →).
                 receiverAccountId = resolveAccountId(receiver);
-                transfer(systemAccountId, receiverAccountId, amount, memo, CHESTSHOP_SYSTEM_UUID, sender, receiver);
+                transfer(systemAccountId, receiverAccountId, amount, memo, CHESTSHOP_SYSTEM_UUID, tradeId);
             }
             // both admin → no real accounts, nothing moves
         } catch (Exception e) {
@@ -254,13 +255,16 @@ public class EconomyService {
 
         // Sales tax — best-effort; the primary transfer has already committed.
         if (taxApi != null && !receiverIsAdmin && receiverAccountId > 0) {
-            collectSalesTax(receiverAccountId, receiver, amount, resolvedPartner, initiator, memo);
+            collectSalesTax(receiverAccountId, receiver, amount, resolvedPartner, initiator, memo, tradeId);
         }
         return true;
     }
 
-    private void transfer(int from, int to, BigDecimal amount, String memo, UUID initiator, UUID a, UUID b) {
-        byte[] dedupKey = Idempotency.sha256("chestshop:settle:" + a + ":" + b + ":" + amount + ":" + System.nanoTime());
+    private void transfer(int from, int to, BigDecimal amount, String memo, UUID initiator, UUID tradeId) {
+        // ADT-129: deterministic dedup key anchored on the per-trade nonce, so a
+        // double-fired settle of the same trade is collapsed by the ledger's UNIQUE
+        // constraint instead of being recorded as a second money movement.
+        byte[] dedupKey = Idempotency.sha256("chestshop:settle:" + tradeId);
         treasury.transfer(new TransferRequest(from, to, amount, memo, initiator, null, "ChestShop", dedupKey));
     }
 
@@ -269,7 +273,7 @@ public class EconomyService {
         return isBusinessUuid(sender) ? CHESTSHOP_SYSTEM_UUID : sender;
     }
 
-    private void collectSalesTax(int receiverAccountId, UUID receiver, BigDecimal amount, UUID partner, Player initiator, String memo) {
+    private void collectSalesTax(int receiverAccountId, UUID receiver, BigDecimal amount, UUID partner, Player initiator, String memo, UUID tradeId) {
         BigDecimal rate = resolveTaxRate(partner);
         if (rate.compareTo(BigDecimal.ZERO) <= 0) {
             return;
@@ -279,7 +283,10 @@ public class EconomyService {
         }
         try {
             UUID initiatorUuid = isBusinessUuid(receiver) ? CHESTSHOP_SYSTEM_UUID : receiver;
-            byte[] dedupKey = Idempotency.sha256("chestshop:tax:" + receiver + ":" + amount + ":" + System.nanoTime());
+            // ADT-129: deterministic, anchored on the per-trade nonce (distinct
+            // prefix from the transfer leg so the trade's two money movements don't
+            // collide while a replay of the same trade still dedups).
+            byte[] dedupKey = Idempotency.sha256("chestshop:tax:" + tradeId);
             TaxResult result = taxApi.collectRateTax(
                     receiverAccountId, amount, rate, "chestshop-sales-tax",
                     "ChestShop sales tax (" + rate.movePointRight(2).stripTrailingZeros().toPlainString()

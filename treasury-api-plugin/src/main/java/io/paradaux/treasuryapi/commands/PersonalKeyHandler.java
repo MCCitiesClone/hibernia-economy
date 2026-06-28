@@ -70,6 +70,13 @@ public class PersonalKeyHandler {
             message.send(sender, "treasuryapi.personal.reissue.no-access");
             return;
         }
+        // Revocation is terminal (ADT-110); the service rejects reissue of a
+        // revoked key. Pre-check so the owner gets a clear message rather than an
+        // error from the thrown IllegalStateException.
+        if (key.isRevoked()) {
+            message.send(sender, "treasuryapi.personal.reissue.revoked");
+            return;
+        }
         ApiKey updated = apiKeyService.reissueKey(keyId);
         message.send(sender, "treasuryapi.personal.reissue.success",
                 "keyId", String.valueOf(updated.getKeyId()),

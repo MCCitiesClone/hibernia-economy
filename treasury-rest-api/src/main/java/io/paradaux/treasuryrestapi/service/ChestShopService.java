@@ -94,7 +94,10 @@ public class ChestShopService {
         return new ChestShopItemsResponse(page, totalPages(totalItems, safeLimit), totalItems, items);
     }
 
-    @Cacheable(cacheNames = "chestshopItemDetail", key = "#itemKey + ':' + #days")
+    // ADT-50: normalise the cache key the same way the method normalises its query
+    // input (validateRequired trims), so 'diamond' / ' diamond' / 'diamond ' share
+    // one cache entry instead of three that all resolve to the same trimmed query.
+    @Cacheable(cacheNames = "chestshopItemDetail", key = "(#itemKey == null ? '' : #itemKey.trim()) + ':' + #days")
     public ChestShopItemDetailResponse getItem(String itemKey, int days) {
         String safeItemKey = validateRequired(itemKey, MAX_ITEM_KEY_LENGTH, "itemKey");
         int safeDays = validateDays(days);

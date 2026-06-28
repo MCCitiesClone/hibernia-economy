@@ -38,13 +38,18 @@ public interface ApiKeyMapper {
     })
     ApiKey findById(@Param("keyId") int keyId);
 
+    // `AND revoked = 0` is the SQL-level guard that "revoked stays revoked": a
+    // revoked key must not be resurrected by reissuing it (ADT-110). The 0-rows
+    // result is treated as a terminal-state rejection by the service. Mirrors the
+    // treasury-rest-api ApiKeyMapper.rotateKey guard so both writers to api_keys
+    // agree on the revoke invariant.
     @Update("""
             UPDATE api_keys
                SET jwt_id     = #{jwtId},
                    issued_at  = #{issuedAt},
-                   expires_at = #{expiresAt},
-                   revoked    = 0
+                   expires_at = #{expiresAt}
              WHERE key_id = #{keyId}
+               AND revoked = 0
             """)
     int reissue(@Param("keyId") int keyId,
                 @Param("jwtId") String jwtId,

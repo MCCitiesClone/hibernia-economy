@@ -86,6 +86,43 @@ class ApiKeyServiceImplTest {
                         .build().parseSignedClaims(key.getToken()));
     }
 
+    @Test
+    void reissueKey_rejectsRevokedKey_revocationIsTerminal() {
+        // ADT-110: a deliberately-revoked credential must not be resurrected by reissue.
+        ApiKey revoked = new ApiKey();
+        revoked.setKeyId(5);
+        revoked.setKeyType("PERSONAL");
+        revoked.setOwnerUuid(UUID.randomUUID());
+        revoked.setRevoked(true);
+        assertThrows(IllegalStateException.class,
+                () -> new ApiKeyServiceImpl(mapperReturning(revoked, 1), config).reissueKey(5));
+    }
+
+    @Test
+    void reissueKey_rejectsWhenUpdateAffectsNoRows_revokedBetweenReadAndWrite() {
+        // The mapper's `AND revoked = 0` guard yields 0 rows if the key was revoked
+        // after the read; the service must reject rather than mint an unusable token.
+        ApiKey active = new ApiKey();
+        active.setKeyId(6);
+        active.setKeyType("PERSONAL");
+        active.setOwnerUuid(UUID.randomUUID());
+        active.setRevoked(false);
+        assertThrows(IllegalStateException.class,
+                () -> new ApiKeyServiceImpl(mapperReturning(active, 0), config).reissueKey(6));
+    }
+
+    /** In-memory mapper whose findById returns {@code found} and reissue affects {@code rows}. */
+    private static ApiKeyMapper mapperReturning(ApiKey found, int rows) {
+        return new ApiKeyMapper() {
+            @Override public void insert(ApiKey k) {}
+            @Override public ApiKey findById(int keyId) { return found; }
+            @Override public int reissue(int keyId, String jwtId, Instant issuedAt, Instant expiresAt) { return rows; }
+            @Override public int revoke(int keyId) { return 1; }
+            @Override public List<ApiKey> findByOwnerAndType(UUID ownerUuid, String keyType) { return List.of(); }
+            @Override public List<ApiKey> findBusinessAccessibleByEmployee(UUID playerUuid) { return List.of(); }
+        };
+    }
+
     /** Mirrors ApiKeyServiceImpl.deriveKey — SHA-256(secret) as the HMAC key. */
     private static SecretKey deriveKey(String secret) {
         try {

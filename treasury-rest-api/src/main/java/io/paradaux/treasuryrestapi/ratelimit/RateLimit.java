@@ -36,7 +36,11 @@ public @interface RateLimit {
 
     /**
      * Sustained requests per minute for unauthenticated callers, bucketed by
-     * client IP (X-Forwarded-For first hop, falling back to remote address).
+     * client IP. The IP is taken from the trusted gateway's
+     * {@code X-Envoy-External-Address} header, falling back to the socket remote
+     * address; the client-controlled {@code X-Forwarded-For} is deliberately NOT
+     * trusted (its leftmost hop is spoofable, which would let a caller mint a
+     * fresh bucket per request — ADT-15). See {@code RateLimitInterceptor.clientIp}.
      * Default {@code 0} means anonymous traffic is not throttled and is allowed
      * straight through — keep the existing behaviour on endpoints that already
      * require auth. Set this on intentionally-public endpoints to cap scraper

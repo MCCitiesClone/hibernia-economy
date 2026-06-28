@@ -9,6 +9,7 @@ on:
     branches: [ main, develop ]
     paths:
       - 'treasury-rest-api/**'
+      - 'common/**'                # ADT-170: implementation(project(":common"))
       - 'economy-flyway/**'
       - '.github/workflows/treasury-rest-api-test.yml'
   workflow_call:

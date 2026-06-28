@@ -91,6 +91,15 @@ public final class Treasury extends JavaPlugin {
                     "DatabaseConfiguration not found. Check @ConfigurationComponent and package scan.");
         }
 
+        // Fail fast instead of silently booting against the shared money DB with the
+        // documented default password — the guard treasury-api-plugin already has,
+        // back-ported here so all writers to the shared DB behave the same (ADT-187).
+        if ("password".equals(dbCfg.getPassword())) {
+            throw new IllegalStateException(
+                    "Refusing to start: the database password is still the insecure default. "
+                    + "Set database.password in config.yml.");
+        }
+
         // 2) Build the Guice injector. VaultModule is only installed when Vault
         //    is on the classpath, so VaultEconomyAdapter is bound conditionally.
         DataSource dataSource = new DataSourceProvider(

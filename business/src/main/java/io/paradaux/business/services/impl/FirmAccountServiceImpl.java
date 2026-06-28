@@ -294,6 +294,9 @@ public class FirmAccountServiceImpl implements FirmAccountService {
     public void removeMemberFromAccount(Integer firmId, Integer accountId, UUID memberUuid, UUID actorId) {
         validateAccountAccess(firmId, accountId, actorId);
         Firm firm = firms.getFirmById(firmId);
+        if (firm == null) { // ADT-95: firm could vanish between the access check and this re-fetch
+            throw new BadCommandException("Firm not found");
+        }
 
         if (firm.getProprietorUuid().equals(memberUuid.toString())) {
             throw new BadCommandException("Cannot remove the proprietor from account membership");
@@ -316,6 +319,9 @@ public class FirmAccountServiceImpl implements FirmAccountService {
     public void removeAuthorizerFromAccount(Integer firmId, Integer accountId, UUID authorizerUuid, UUID actorId) {
         validateAccountAccess(firmId, accountId, actorId);
         Firm firm = firms.getFirmById(firmId);
+        if (firm == null) { // ADT-95: firm could vanish between the access check and this re-fetch
+            throw new BadCommandException("Firm not found");
+        }
 
         if (firm.getProprietorUuid().equals(authorizerUuid.toString())) {
             throw new BadCommandException("Cannot remove the proprietor from account authorization");

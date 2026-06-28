@@ -167,27 +167,31 @@ public class WebhookDispatcherService {
             return;
         }
 
-        // Discord webhooks understand only their own embed shape and ignore our
-        // signature/event headers, so we render a rich embed and skip the HMAC
-        // (the body isn't our documented event — there's nothing to verify).
-        boolean discord = DiscordWebhook.isDiscordWebhook(uri);
-        byte[] body = discord
-                ? objectMapper.writeValueAsBytes(DiscordWebhook.toPayload(d))
-                : objectMapper.writeValueAsBytes(toEvent(d));
-
-        HttpRequest.Builder builder = HttpRequest.newBuilder(uri)
-                .timeout(Duration.ofMillis(httpTimeoutMs))
-                .header("Content-Type", "application/json")
-                .header("User-Agent", "Treasury-Webhook/1.0")
-                .POST(HttpRequest.BodyPublishers.ofByteArray(body));
-        if (!discord) {
-            builder.header("X-Treasury-Event", "transaction")
-                    .header("X-Treasury-Delivery", Long.toString(d.getDeliveryId()))
-                    .header("X-Treasury-Signature", HmacSha256.sign(d.getSecret(), body));
-        }
-        HttpRequest req = builder.build();
-
+        // Build the body+request and send inside one try so a serialization failure
+        // for THIS delivery is accounted for (onFailure) and the rest of the tick's
+        // batch still runs — previously a writeValueAsBytes throw escaped the loop
+        // and silently skipped every later due delivery in the same tick (ADT-117).
         try {
+            // Discord webhooks understand only their own embed shape and ignore our
+            // signature/event headers, so we render a rich embed and skip the HMAC
+            // (the body isn't our documented event — there's nothing to verify).
+            boolean discord = DiscordWebhook.isDiscordWebhook(uri);
+            byte[] body = discord
+                    ? objectMapper.writeValueAsBytes(DiscordWebhook.toPayload(d))
+                    : objectMapper.writeValueAsBytes(toEvent(d));
+
+            HttpRequest.Builder builder = HttpRequest.newBuilder(uri)
+                    .timeout(Duration.ofMillis(httpTimeoutMs))
+                    .header("Content-Type", "application/json")
+                    .header("User-Agent", "Treasury-Webhook/1.0")
+                    .POST(HttpRequest.BodyPublishers.ofByteArray(body));
+            if (!discord) {
+                builder.header("X-Treasury-Event", "transaction")
+                        .header("X-Treasury-Delivery", Long.toString(d.getDeliveryId()))
+                        .header("X-Treasury-Signature", HmacSha256.sign(d.getSecret(), body));
+            }
+            HttpRequest req = builder.build();
+
             HttpResponse<Void> resp = httpClient.send(req, HttpResponse.BodyHandlers.discarding());
             int sc = resp.statusCode();
             if (sc >= 200 && sc < 300) {

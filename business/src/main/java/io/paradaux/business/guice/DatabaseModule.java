@@ -64,6 +64,14 @@ public final class DatabaseModule extends AbstractModule {
         String db = databaseConfig.getDatabase();
         String user = databaseConfig.getUsername();
         String pass = databaseConfig.getPassword();
+        // Fail fast instead of silently booting against the shared money DB with the
+        // documented default password — the guard treasury-api-plugin already has,
+        // back-ported here so all writers to the shared DB behave the same (ADT-187).
+        if ("password".equals(pass)) {
+            throw new IllegalStateException(
+                    "Refusing to start: the database password is still the insecure default. "
+                    + "Set database.password in config.yml.");
+        }
         return new DataSourceProvider(host, port, db, user, pass).get();
     }
 }

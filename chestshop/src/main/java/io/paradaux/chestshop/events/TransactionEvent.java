@@ -9,6 +9,7 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
 import java.math.BigDecimal;
+import java.util.UUID;
 
 /**
  * The mutable carrier for a completed shop trade, threaded through the
@@ -35,6 +36,15 @@ public class TransactionEvent {
     private final BigDecimal exactPrice;
 
     private final Sign sign;
+
+    // A per-trade nonce, generated once when this trade context is created and
+    // stable for the life of the object. Used to derive deterministic Treasury
+    // idempotency (dedup) keys for the money legs (ADT-129): a re-processing of
+    // the SAME trade reuses this id so the ledger's UNIQUE dedup constraint
+    // collapses it, while two distinct trades — even with identical buyer/price —
+    // get different ids and are settled independently. (nanoTime, the previous
+    // anchor, was unique on every call and so could never dedup a double-fire.)
+    private final UUID tradeId = UUID.randomUUID();
 
     private boolean cancelled = false;
 
@@ -74,6 +84,14 @@ public class TransactionEvent {
     @Deprecated
     public TransactionEvent(TransactionType type, Inventory ownerInventory, Inventory clientInventory, Player client, Account ownerAccount, ItemStack[] stock, double price, Sign sign) {
         this(type, ownerInventory, clientInventory, client, ownerAccount, stock, BigDecimal.valueOf(price), sign);
+    }
+
+    /**
+     * @return a stable per-trade nonce used to derive deterministic Treasury
+     *         idempotency keys for this trade's money legs (ADT-129)
+     */
+    public UUID getTradeId() {
+        return tradeId;
     }
 
     /**

@@ -16,6 +16,11 @@ public class Base62 {
      * @return Encoded number
      */
     public static String encode(int number) {
+        if (number < 0) {
+            // ADT-137: previously the while-loop below silently produced an empty
+            // string for negatives (only ==0 was special-cased). Fail loudly instead.
+            throw new IllegalArgumentException("Cannot Base62-encode a negative number: " + number);
+        }
         if (number == 0) {
             return ALPHABET.substring(0, 1);
         }
@@ -40,13 +45,18 @@ public class Base62 {
      * @return Decoded code
      */
     public static int decode(String code) {
+        // ADT-137: integer Horner's method instead of accumulating
+        // indexOf * Math.pow(BASE, power) — Math.pow returns a double, so for codes
+        // of ~6+ chars the term exceeded 2^53/int range and the result was silently
+        // wrong (precision loss then narrowing), mis-resolving account/item ids.
         int number = 0;
-
         for (int i = 0; i < code.length(); i++) {
-            int power = code.length() - (i + 1);
-            number += ALPHABET.indexOf(code.charAt(i)) * Math.pow(BASE, power);
+            int digit = ALPHABET.indexOf(code.charAt(i));
+            if (digit < 0) {
+                throw new IllegalArgumentException("Invalid Base62 character '" + code.charAt(i) + "' in: " + code);
+            }
+            number = number * BASE + digit;
         }
-
         return number;
     }
 

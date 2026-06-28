@@ -23,6 +23,13 @@ public final class UuidBin {
 
     public static UUID fromBytes(byte[] bytes) {
         if (bytes == null) return null;
+        // ADT-147: a non-16-byte buffer previously either threw an opaque
+        // BufferUnderflowException (too short) or silently dropped trailing bytes
+        // (too long), yielding a wrong-but-plausible UUID. Fail loudly instead.
+        if (bytes.length != 16) {
+            throw new IllegalArgumentException(
+                    "UUID BINARY value must be exactly 16 bytes, got " + bytes.length);
+        }
         ByteBuffer bb = ByteBuffer.wrap(bytes);
         return new UUID(bb.getLong(), bb.getLong());
     }

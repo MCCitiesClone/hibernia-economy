@@ -96,8 +96,15 @@ public class BusinessKeyHandler {
             message.send(sender, "treasuryapi.business.reissue.not-found");
             return;
         }
-        if (!key.getOwnerUuid().equals(sender.getUniqueId())) {
+        if (!canManage(key, sender)) {
             message.send(sender, "treasuryapi.business.reissue.no-access");
+            return;
+        }
+        // Revocation is terminal (ADT-110); the service rejects reissue of a
+        // revoked key. Pre-check so the proprietor gets a clear message rather
+        // than an error from the thrown IllegalStateException.
+        if (key.isRevoked()) {
+            message.send(sender, "treasuryapi.business.reissue.revoked");
             return;
         }
         ApiKey updated = apiKeyService.reissueKey(keyId);
@@ -112,12 +119,21 @@ public class BusinessKeyHandler {
             message.send(sender, "treasuryapi.business.revoke.not-found");
             return;
         }
-        if (!key.getOwnerUuid().equals(sender.getUniqueId())) {
+        if (!canManage(key, sender)) {
             message.send(sender, "treasuryapi.business.revoke.no-access");
             return;
         }
         apiKeyService.revokeKey(keyId);
         message.send(sender, "treasuryapi.business.revoke.success",
                 "keyId", String.valueOf(keyId));
+    }
+
+    // ADT-111: a BUSINESS key is firm-scoped, so reissue/revoke must be gated on
+    // CURRENT proprietorship of the key's firm — not on the individual who happened
+    // to issue it. Otherwise, once the issuing proprietor leaves or transfers the
+    // firm, no current proprietor can rotate or revoke the firm's own credential.
+    private boolean canManage(ApiKey key, Player sender) {
+        return key.getFirmId() != null
+                && businessApi.firms().isProprietor(key.getFirmId(), sender.getUniqueId());
     }
 }

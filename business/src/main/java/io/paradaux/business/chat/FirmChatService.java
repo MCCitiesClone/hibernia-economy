@@ -241,7 +241,10 @@ public class FirmChatService {
             return null;
         }
         if (firmId != null) {
-            return mine.stream().filter(f -> f.getFirmId() == firmId).findFirst().orElse(null);
+            // ADT-100: value equality, not Integer reference identity — boxed
+            // Integers above the JVM cache (>127) are not == even when equal, which
+            // silently broke explicit /firm chat selection for firm ids over 127.
+            return mine.stream().filter(f -> firmId.equals(f.getFirmId())).findFirst().orElse(null);
         }
         return mine.size() == 1 ? mine.get(0) : null; // ambiguous when in multiple firms
     }
