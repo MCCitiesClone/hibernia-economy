@@ -3,6 +3,7 @@ import { revalidatePath } from 'next/cache';
 import { randomBytes } from 'node:crypto';
 import { getViewer, type Viewer } from '@/lib/auth/viewer';
 import { ForbiddenError } from '@/lib/errors';
+import { requireAdmin } from '@/lib/auth/requireAdmin';
 import { auditView } from '@/lib/audit';
 import { assertPublicHttpsUrl } from '@/lib/util/ssrf';
 import { findAccountsForPlayer } from '@/lib/sql/me';
@@ -145,12 +146,6 @@ export async function deleteWebhookAction(id: number): Promise<WebhookActionResu
 }
 
 // ── Admin (fleet-wide management, not owner-scoped) ──────────────────────────
-
-function requireAdmin(viewer: Viewer): asserts viewer is Extract<Viewer, { anon: false }> {
-  if (viewer.anon || viewer.role !== 'admin') {
-    throw new ForbiddenError('Admin only.');
-  }
-}
 
 /** webhook_subscription.key_type is enum(PERSONAL,BUSINESS,GOVERNMENT); SYSTEM/unknown
  *  fall back to PERSONAL since the dispatcher matches by account_id, not key_type. */

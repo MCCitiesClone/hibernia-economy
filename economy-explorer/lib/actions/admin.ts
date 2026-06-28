@@ -1,13 +1,12 @@
 'use server';
 import { revalidatePath } from 'next/cache';
-import { getViewer, type Viewer } from '@/lib/auth/viewer';
+import { getViewer } from '@/lib/auth/viewer';
 import {
   setRateLimitOverride,
   clearRateLimitOverride,
   revokeApiKey,
   rotateApiKey,
 } from '@/lib/treasury';
-import { ForbiddenError } from '@/lib/errors';
 import { auditView } from '@/lib/audit';
 import {
   createGroup,
@@ -19,12 +18,7 @@ import {
   resolvePlayerUuid,
 } from '@/lib/services/group';
 import { isCapability } from '@/lib/auth/capabilities';
-
-function requireAdmin(viewer: Viewer): asserts viewer is Extract<Viewer, { anon: false }> {
-  if (viewer.anon || viewer.role !== 'admin') {
-    throw new ForbiddenError('Admin only.');
-  }
-}
+import { requireAdmin } from '@/lib/auth/requireAdmin';
 
 // ---- Group RBAC management -------------------------------------------------
 
