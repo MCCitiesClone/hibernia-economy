@@ -133,21 +133,21 @@ public class RateLimitInterceptor implements HandlerInterceptor {
                 // the throttle off the transfer path.
                 log.warn("Rate-limit backend error on {} — failing CLOSED (request rejected): {}",
                         routeKey, e.toString());
-                count(token, issuerKey, "backend_error");
+                count(token, "backend_error");
                 writeBackendUnavailable(response);
                 return false;
             }
             // Fail open: a Redis/backend error must not take down public reads.
             log.warn("Rate-limit backend error on {} — failing open (request allowed): {}",
                     routeKey, e.toString());
-            count(token, issuerKey, "allowed");
+            count(token, "allowed");
             return true;
         }
 
         if (probe.isConsumed()) {
             response.setHeader("X-RateLimit-Limit", Integer.toString(limit));
             response.setHeader("X-RateLimit-Remaining", Long.toString(probe.getRemainingTokens()));
-            count(token, issuerKey, "allowed");
+            count(token, "allowed");
             return true;
         }
 
@@ -156,7 +156,7 @@ public class RateLimitInterceptor implements HandlerInterceptor {
                 issuerKey, routeKey,
                 token != null ? token.keyType() : "ANONYMOUS",
                 limit, retryAfterSeconds);
-        count(token, issuerKey, "throttled");
+        count(token, "throttled");
 
         response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
@@ -183,17 +183,19 @@ public class RateLimitInterceptor implements HandlerInterceptor {
                         + "safety measure. Retry shortly."));
     }
 
-    private void count(VerifiedToken token, String issuerKey, String outcome) {
-        // ADT (metric-cardinality-anon-ip): never put the raw client IP into a metric
-        // label. Anonymous traffic from rotating IPs would otherwise create unbounded
-        // time series (heap + scrape-cost growth). Anonymous calls share one
-        // "anonymous" label; the per-IP bucket key used for actual throttling keeps
-        // the IP and is unaffected.
-        String issuerLabel = token != null ? issuerKey : "anonymous";
+    private void count(VerifiedToken token, String outcome) {
+        // Only LOW-cardinality, non-identifying labels go on the metric (ADT-122/123):
+        //   - key_id / issuer-UUID are deliberately NOT labels. They grow one series
+        //     per API key / per human issuer (high cardinality → heap + scrape cost),
+        //     and the Prometheus actuator endpoint is permitAll, so exposing them
+        //     would leak which keys/issuers are active and their request volumes to
+        //     anyone who can scrape it. Per-issuer/route detail already lives in the
+        //     structured throttle log line for debugging.
+        //   - the raw client IP is likewise never a label (rotating anon IPs are
+        //     unbounded); anonymous traffic collapses to key_type=ANONYMOUS.
+        // The per-key/per-IP bucket KEY used for actual throttling is unaffected.
         try {
             metrics.counter(METRIC,
-                    "key_id", token != null ? Long.toString(token.keyId()) : "0",
-                    "issuer", issuerLabel,
                     "key_type", token != null
                             ? (token.keyType() != null ? token.keyType() : "unknown")
                             : "ANONYMOUS",
