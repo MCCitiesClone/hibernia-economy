@@ -72,6 +72,13 @@ public class BusinessApiImpl implements BusinessApi {
         }
 
         @Override
+        public Firm getFirmById(int firmId) {
+            // Typed path: resolve straight by id (archived-inclusive, matching getFirm)
+            // instead of the int→String→int round-trip the default would do (ADT-108/96).
+            return service.getAnyFirmById(firmId);
+        }
+
+        @Override
         public List<Firm> listFirms(int page, int pageSize) {
             return service.listAllFirms(page, pageSize);
         }
