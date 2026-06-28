@@ -255,7 +255,9 @@ public class EconomyService {
 
         // Sales tax — best-effort; the primary transfer has already committed.
         if (taxApi != null && !receiverIsAdmin && receiverAccountId > 0) {
-            collectSalesTax(receiverAccountId, receiver, amount, resolvedPartner, initiator, memo, tradeId);
+            // Record the tax actually collected on the event so the market-analytics
+            // recorder logs the real figure instead of zero (ADT-130).
+            txn.setSalesTax(collectSalesTax(receiverAccountId, receiver, amount, resolvedPartner, initiator, memo, tradeId));
         }
         return true;
     }
@@ -273,13 +275,14 @@ public class EconomyService {
         return isBusinessUuid(sender) ? CHESTSHOP_SYSTEM_UUID : sender;
     }
 
-    private void collectSalesTax(int receiverAccountId, UUID receiver, BigDecimal amount, UUID partner, Player initiator, String memo, UUID tradeId) {
+    /** @return the tax actually collected (ADT-130), or {@code ZERO} if none was charged. */
+    private BigDecimal collectSalesTax(int receiverAccountId, UUID receiver, BigDecimal amount, UUID partner, Player initiator, String memo, UUID tradeId) {
         BigDecimal rate = resolveTaxRate(partner);
         if (rate.compareTo(BigDecimal.ZERO) <= 0) {
-            return;
+            return BigDecimal.ZERO;
         }
         if (initiator != null && Permission.has(initiator, Permission.NO_BUY_TAX)) {
-            return;
+            return BigDecimal.ZERO;
         }
         try {
             UUID initiatorUuid = isBusinessUuid(receiver) ? CHESTSHOP_SYSTEM_UUID : receiver;
@@ -292,6 +295,9 @@ public class EconomyService {
                     "ChestShop sales tax (" + rate.movePointRight(2).stripTrailingZeros().toPlainString()
                             + "% of " + amount + ") — " + memo,
                     initiatorUuid, "ChestShop", dedupKey);
+            if (result instanceof TaxResult.Collected c) {
+                return c.amountCharged();
+            }
             if (result instanceof TaxResult.Failed f) {
                 ChestShop.getBukkitLogger().warning(
                         "Treasury: sales-tax collection failed for accountId=" + receiverAccountId + ": " + f.errorMessage());
@@ -300,6 +306,7 @@ public class EconomyService {
             ChestShop.getBukkitLogger().log(Level.WARNING,
                     "Treasury: sales-tax collection threw for receiver " + receiver, e);
         }
+        return BigDecimal.ZERO;
     }
 
     /** Tax rate as a fraction: {@code SERVER_TAX_AMOUNT} for admin/server counterparties, else {@code TAX_AMOUNT}. */

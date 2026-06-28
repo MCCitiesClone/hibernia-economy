@@ -46,6 +46,11 @@ public class TransactionEvent {
     // anchor, was unique on every call and so could never dedup a double-fire.)
     private final UUID tradeId = UUID.randomUUID();
 
+    // Sales tax actually collected on this trade's money leg, set by the settle
+    // step and read by the market-analytics recorder so the market dataset reflects
+    // the real tax instead of a hard-coded zero (ADT-130). Defaults to zero (no tax).
+    private BigDecimal salesTax = BigDecimal.ZERO;
+
     private boolean cancelled = false;
 
     public TransactionEvent(PreTransactionEvent event, Sign sign) {
@@ -92,6 +97,15 @@ public class TransactionEvent {
      */
     public UUID getTradeId() {
         return tradeId;
+    }
+
+    /** @return the sales tax collected on this trade (ADT-130); zero if none. */
+    public BigDecimal getSalesTax() {
+        return salesTax;
+    }
+
+    public void setSalesTax(BigDecimal salesTax) {
+        this.salesTax = salesTax != null ? salesTax : BigDecimal.ZERO;
     }
 
     /**

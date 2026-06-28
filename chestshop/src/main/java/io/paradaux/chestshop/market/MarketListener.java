@@ -17,7 +17,6 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
@@ -56,7 +55,7 @@ public class MarketListener implements Listener {
 
             MarketApi market = MarketHook.market();
             market.recordSale(MarketRecords.sale(sign, item, quantity, event.getClient().getUniqueId(),
-                    owner, event.getExactPrice(), BigDecimal.ZERO, direction, shopStock));
+                    owner, event.getExactPrice(), event.getSalesTax(), direction, shopStock));
             market.upsertShop(MarketRecords.shop(sign, item, owner, shopStock));
         } catch (Throwable ignored) {
             // analytics only

@@ -62,7 +62,7 @@ public class ErrorMessageSender {
                     sendMessageToOwner(event.getOwnerAccount(), "chestshop.NOT_ENOUGH_SPACE_IN_YOUR_SHOP", new String[]{
                             "price", Economy.formatBalance(event.getExactPrice()),
                             "seller", event.getClient().getName(),
-                            "world", loc.getWorld().getName(),
+                            "world", loc.getWorld() != null ? loc.getWorld().getName() : "?", // ADT-140: world may be unloaded
                             "x", String.valueOf(loc.getBlockX()),
                             "y", String.valueOf(loc.getBlockY()),
                             "z", String.valueOf(loc.getBlockZ())
@@ -82,7 +82,7 @@ public class ErrorMessageSender {
                     sendMessageToOwner(event.getOwnerAccount(), "chestshop.NOT_ENOUGH_STOCK_IN_YOUR_SHOP", new String[]{
                             "price", Economy.formatBalance(event.getExactPrice()),
                             "buyer", event.getClient().getName(),
-                            "world", loc.getWorld().getName(),
+                            "world", loc.getWorld() != null ? loc.getWorld().getName() : "?", // ADT-140: world may be unloaded
                             "x", String.valueOf(loc.getBlockX()),
                             "y", String.valueOf(loc.getBlockY()),
                             "z", String.valueOf(loc.getBlockZ())

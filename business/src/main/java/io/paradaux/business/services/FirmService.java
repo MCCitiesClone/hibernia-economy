@@ -55,6 +55,14 @@ public interface FirmService {
      */
     Firm getFirmByNameOrId(String nameOrId);
 
+    /**
+     * Resolves an <em>active</em> firm directly by its integer id (ADT-99). Prefer
+     * this over {@code getFirmByNameOrId(Integer.toString(id))} on hot paths that
+     * already hold the id — it avoids the int→String→int round-trip and the
+     * dependency on the "names can't start with a digit" invariant.
+     */
+    Firm getFirmById(int firmId);
+
     /** Resolves a firm by name or id <em>including archived</em> ones (readers / idempotency checks). */
     Firm getAnyFirmByNameOrId(String nameOrId);
 

@@ -164,19 +164,12 @@ public class AdminFirmService {
             throw new ApiException(HttpStatus.BAD_REQUEST, "INVALID_BODY",
                     "At least one of 'discordUrl' or 'hqRegion' must be provided.");
         }
-        if (discordUrl != null && discordUrl.strip().length() > MAX_DISCORD_URL_LENGTH) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "INVALID_BODY",
-                    "Field 'discordUrl' must be at most " + MAX_DISCORD_URL_LENGTH + " characters.");
-        }
-        if (hqRegion != null && hqRegion.strip().length() > MAX_HQ_REGION_LENGTH) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "INVALID_BODY",
-                    "Field 'hqRegion' must be at most " + MAX_HQ_REGION_LENGTH + " characters.");
-        }
+        FirmFieldLimits.validate(discordUrl, hqRegion); // ADT-120: shared with FirmService
         Firm firm = firmMapper.findFirmById(firmId);
         if (firm == null) throw new ApiException(HttpStatus.NOT_FOUND, "FIRM_NOT_FOUND", "Firm not found.");
 
-        String newDiscord = discordUrl != null ? emptyToNull(discordUrl) : firm.getDiscordUrl();
-        String newHq = hqRegion != null ? emptyToNull(hqRegion) : firm.getHqRegion();
+        String newDiscord = discordUrl != null ? FirmFieldLimits.emptyToNull(discordUrl) : firm.getDiscordUrl();
+        String newHq = hqRegion != null ? FirmFieldLimits.emptyToNull(hqRegion) : firm.getHqRegion();
         firmMapper.updateFirm(firmId, firm.getDisplayName(), newDiscord, newHq);
         log.info("Admin updated firm details firmId={} by keyId={}", firmId, verified.keyId());
 
@@ -184,13 +177,7 @@ public class AdminFirmService {
     }
 
     // -------------------------------------------------------------------------
-
-    private static final int MAX_DISCORD_URL_LENGTH = 255; // firm.discord_url
-    private static final int MAX_HQ_REGION_LENGTH = 64;    // firm.hq_region
-
-    private static String emptyToNull(String v) {
-        return v.isBlank() ? null : v.strip();
-    }
+    // discord_url / hq_region width limits + emptyToNull live in FirmFieldLimits (ADT-120).
 
     private void requireServiceKey(VerifiedToken verified) {
         if (verified == null || !"SERVICE".equals(verified.keyType())) {

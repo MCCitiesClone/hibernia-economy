@@ -255,7 +255,7 @@ public class FirmTransactionServiceImpl implements FirmTransactionService {
     }
 
     private int resolveAccountId(Integer firmId) {
-        Firm firm = firms.getFirmByNameOrId(firmId.toString());
+        Firm firm = firms.getFirmById(firmId); // ADT-99: direct by-id, no String round-trip
         if (firm == null) {
             throw new IllegalArgumentException("Firm not found: " + firmId);
         }
@@ -530,7 +530,7 @@ public class FirmTransactionServiceImpl implements FirmTransactionService {
     }
 
     private String firmName(Integer firmId) {
-        Firm firm = firms.getFirmByNameOrId(firmId.toString());
+        Firm firm = firms.getFirmById(firmId); // ADT-99: direct by-id, no String round-trip
         return firm != null ? firm.getDisplayName() : ("firm#" + firmId);
     }
 

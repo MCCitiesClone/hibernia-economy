@@ -64,7 +64,7 @@ public class TransactionMessageSender {
         Location loc = event.getSign().getLocation();
         Map<String, String> replacementMap = new LinkedHashMap<>();
         replacementMap.put("price", Economy.formatBalance(event.getExactPrice()));
-        replacementMap.put("world", loc.getWorld().getName());
+        replacementMap.put("world", loc.getWorld() != null ? loc.getWorld().getName() : "?"); // ADT-140: world may be unloaded
         replacementMap.put("x", String.valueOf(loc.getBlockX()));
         replacementMap.put("y", String.valueOf(loc.getBlockY()));
         replacementMap.put("z", String.valueOf(loc.getBlockZ()));

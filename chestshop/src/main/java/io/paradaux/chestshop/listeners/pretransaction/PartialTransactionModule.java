@@ -52,7 +52,7 @@ public class PartialTransactionModule {
                 return;
             }
 
-            BigDecimal pricePerItemScaled = pricePerItem.multiply(new BigDecimal(amountAffordable)).setScale(Properties.PRICE_PRECISION, BigDecimal.ROUND_HALF_UP);
+            BigDecimal pricePerItemScaled = pricePerItem.multiply(new BigDecimal(amountAffordable)).setScale(Properties.PRICE_PRECISION, RoundingMode.HALF_UP);
             if (pricePerItem.compareTo(BigDecimal.ZERO) > 0 && pricePerItemScaled.compareTo(BigDecimal.ZERO) == 0) {
                 event.setCancelled(CLIENT_DOES_NOT_HAVE_ENOUGH_MONEY);
                 return;
@@ -71,7 +71,7 @@ public class PartialTransactionModule {
                 return;
             }
 
-            BigDecimal pricePerItemScaled = pricePerItem.multiply(new BigDecimal(possessedItemCount)).setScale(Properties.PRICE_PRECISION, BigDecimal.ROUND_HALF_UP);
+            BigDecimal pricePerItemScaled = pricePerItem.multiply(new BigDecimal(possessedItemCount)).setScale(Properties.PRICE_PRECISION, RoundingMode.HALF_UP);
             if (pricePerItem.compareTo(BigDecimal.ZERO) > 0 && pricePerItemScaled.compareTo(BigDecimal.ZERO) == 0) {
                 event.setCancelled(NOT_ENOUGH_STOCK_IN_CHEST);
                 return;
@@ -89,7 +89,7 @@ public class PartialTransactionModule {
                 return;
             }
 
-            BigDecimal pricePerItemScaled = pricePerItem.multiply(new BigDecimal(possessedItemCount)).setScale(Properties.PRICE_PRECISION, BigDecimal.ROUND_HALF_UP);
+            BigDecimal pricePerItemScaled = pricePerItem.multiply(new BigDecimal(possessedItemCount)).setScale(Properties.PRICE_PRECISION, RoundingMode.HALF_UP);
             if (pricePerItem.compareTo(BigDecimal.ZERO) > 0 && pricePerItemScaled.compareTo(BigDecimal.ZERO) == 0) {
                 event.setCancelled(NOT_ENOUGH_SPACE_IN_INVENTORY);
                 return;
@@ -132,7 +132,7 @@ public class PartialTransactionModule {
                     return;
                 }
 
-                BigDecimal pricePerItemScaled = pricePerItem.multiply(new BigDecimal(amountAffordable)).setScale(Properties.PRICE_PRECISION, BigDecimal.ROUND_HALF_UP);
+                BigDecimal pricePerItemScaled = pricePerItem.multiply(new BigDecimal(amountAffordable)).setScale(Properties.PRICE_PRECISION, RoundingMode.HALF_UP);
                 if (pricePerItem.compareTo(BigDecimal.ZERO) > 0 && pricePerItemScaled.compareTo(BigDecimal.ZERO) == 0) {
                     event.setCancelled(SHOP_DOES_NOT_HAVE_ENOUGH_MONEY);
                     return;
@@ -152,7 +152,7 @@ public class PartialTransactionModule {
                 return;
             }
 
-            BigDecimal pricePerItemScaled = pricePerItem.multiply(new BigDecimal(possessedItemCount)).setScale(Properties.PRICE_PRECISION, BigDecimal.ROUND_HALF_UP);
+            BigDecimal pricePerItemScaled = pricePerItem.multiply(new BigDecimal(possessedItemCount)).setScale(Properties.PRICE_PRECISION, RoundingMode.HALF_UP);
             if (pricePerItem.compareTo(BigDecimal.ZERO) > 0 && pricePerItemScaled.compareTo(BigDecimal.ZERO) == 0) {
                 event.setCancelled(NOT_ENOUGH_STOCK_IN_INVENTORY);
                 return;
@@ -170,7 +170,7 @@ public class PartialTransactionModule {
                 return;
             }
 
-            BigDecimal pricePerItemScaled = pricePerItem.multiply(new BigDecimal(possessedItemCount)).setScale(Properties.PRICE_PRECISION, BigDecimal.ROUND_HALF_UP);
+            BigDecimal pricePerItemScaled = pricePerItem.multiply(new BigDecimal(possessedItemCount)).setScale(Properties.PRICE_PRECISION, RoundingMode.HALF_UP);
             if (pricePerItem.compareTo(BigDecimal.ZERO) > 0 && pricePerItemScaled.compareTo(BigDecimal.ZERO) == 0) {
                 event.setCancelled(NOT_ENOUGH_SPACE_IN_CHEST);
                 return;

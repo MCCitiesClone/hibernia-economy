@@ -413,6 +413,14 @@ public class FirmServiceImpl implements FirmService {
     }
 
     @Override
+    public Firm getFirmById(int firmId) {
+        // Active-only, mirroring getFirmByNameOrId (ADT-99): disbanded firms stop
+        // resolving on command/action paths.
+        Firm firm = firms.getFirmById(firmId);
+        return (firm == null || Boolean.TRUE.equals(firm.getArchived())) ? null : firm;
+    }
+
+    @Override
     @Nullable
     public Firm getAnyFirmByNameOrId(String input) {
         if (input != null && !input.isEmpty() && input.chars().allMatch(Character::isDigit)) {

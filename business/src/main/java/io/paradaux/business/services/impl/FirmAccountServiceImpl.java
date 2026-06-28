@@ -80,32 +80,42 @@ public class FirmAccountServiceImpl implements FirmAccountService {
             throw new NoPermissionException("Only the proprietor can create accounts");
         }
 
-        // Reject duplicate display names within the same firm. Without this,
-        // a proprietor can spam-create N accounts named "Savings", each backed
-        // by a distinct Treasury BUSINESS account_id — making subsequent
-        // /business account deposit / withdraw by name ambiguous and the
-        // member-sync churn unbounded. One batch read instead of N (ADT-36).
-        List<Integer> existingIds = firmAccounts.listAccountsByFirm(firmId).stream()
-                .map(FirmAccount::getAccountId)
-                .toList();
-        for (Account a : treasury.getAccountsByIds(existingIds).values()) {
-            if (a.getDisplayName() != null
-                    && a.getDisplayName().equalsIgnoreCase(accountName)) {
-                throw new BadCommandException("An account named '" + accountName
-                        + "' already exists for this firm.");
+        // Serialise the duplicate-name check + create per firm so two concurrent
+        // creates of the same name can't both pass the check and mint two accounts
+        // (ADT-93). Reuses the per-firm reconciliation lock; it's reentrant, so the
+        // syncAccountMembers call below (which re-acquires it) is safe.
+        ReentrantLock lock = firmSyncLocks.computeIfAbsent(firmId, k -> new ReentrantLock());
+        lock.lock();
+        try {
+            // Reject duplicate display names within the same firm. Without this,
+            // a proprietor can spam-create N accounts named "Savings", each backed
+            // by a distinct Treasury BUSINESS account_id — making subsequent
+            // /business account deposit / withdraw by name ambiguous and the
+            // member-sync churn unbounded. One batch read instead of N (ADT-36).
+            List<Integer> existingIds = firmAccounts.listAccountsByFirm(firmId).stream()
+                    .map(FirmAccount::getAccountId)
+                    .toList();
+            for (Account a : treasury.getAccountsByIds(existingIds).values()) {
+                if (a.getDisplayName() != null
+                        && a.getDisplayName().equalsIgnoreCase(accountName)) {
+                    throw new BadCommandException("An account named '" + accountName
+                            + "' already exists for this firm.");
+                }
             }
+
+            // Create Treasury account
+            Account account = treasury.createAccount(AccountType.BUSINESS, actorId, accountName);
+
+            // Register it with the firm
+            firmAccounts.insertFirmAccount(firmId, account.getAccountId());
+
+            // Sync all current staff
+            syncAccountMembers(firmId, account.getAccountId());
+
+            return account;
+        } finally {
+            lock.unlock();
         }
-
-        // Create Treasury account
-        Account account = treasury.createAccount(AccountType.BUSINESS, actorId, accountName);
-
-        // Register it with the firm
-        firmAccounts.insertFirmAccount(firmId, account.getAccountId());
-
-        // Sync all current staff
-        syncAccountMembers(firmId, account.getAccountId());
-
-        return account;
     }
 
     @Override
