@@ -82,6 +82,16 @@ public final class Business extends JavaPlugin {
             throw new IllegalStateException("DatabaseConfiguration not found. Check @ConfigurationComponent and package scan.");
         }
 
+        // Fail fast rather than boot against the shared money DB with the shipped
+        // placeholder password — same guard Treasury has, so every writer to the
+        // shared DB behaves identically (ADT default-db-creds-in-shipped-config).
+        String dbPass = dbCfg.getPassword();
+        if ("password".equals(dbPass) || "CHANGE_ME".equals(dbPass)) {
+            throw new IllegalStateException(
+                    "Refusing to start: the database password is still the placeholder default. "
+                    + "Set database.password in config.yml.");
+        }
+
         // 1b) Obtain TreasuryApi from Bukkit services (Treasury plugin must be loaded first)
         RegisteredServiceProvider<TreasuryApi> rsp =
                 Bukkit.getServicesManager().getRegistration(TreasuryApi.class);

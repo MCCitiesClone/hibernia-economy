@@ -108,10 +108,11 @@ dependencies {
     compileOnly("com.github.TechFortress:GriefPrevention:16.12.0") { isTransitive = false }
     compileOnly("com.github.jojodmo:ItemBridge:b0054538c1") { isTransitive = false }
     compileOnly("de.themoep.showitem:api:1.6.3") { isTransitive = false }
-    // Substituted to the local Treasury/Business builds by the root composite
-    // (settings.gradle.kts); the version here only governs standalone builds,
-    // so it tracks the current dev version which carries the API ChestShop uses
-    // (FirmApi.getFirmByAccountId, StaffApi.hasPermissionForAccount, …).
+    // Direct project dependencies on the in-repo API modules (ADT stale-chestshop-substitution-comment):
+    // this is a single Gradle build (settings.gradle.kts include(...)), NOT a composite with
+    // includeBuild substitution, so there is no version pin to manage. compileOnly because
+    // Treasury/Business provide the API classes at runtime (see softdepend in plugin.yml);
+    // non-transitive so the APIs' own deps don't leak onto ChestShop's compile classpath.
     compileOnly(project(":treasury:treasury-api")) { isTransitive = false }
     compileOnly(project(":business:business-api")) { isTransitive = false }
 

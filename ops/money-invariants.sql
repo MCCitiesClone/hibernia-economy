@@ -40,12 +40,14 @@ SELECT
         AND mat_mismatches           = 0
         AND orphan_posting_accounts  = 0
         AND illegal_negative_accounts = 0
+        AND mat_balance_without_trigger = 0
        THEN 'OK' ELSE 'FAIL' END AS status,
   COALESCE(global_sum,0) AS global_sum,
   unbalanced_txns,
   mat_mismatches,
   orphan_posting_accounts,
   illegal_negative_accounts,
+  mat_balance_without_trigger,
   postings,
   accounts
 FROM (
@@ -75,6 +77,13 @@ FROM (
         WHERE m.balance < 0
           AND a.account_type NOT IN ('GOVERNMENT', 'SYSTEM')
           AND (a.allow_overdraft = 0 OR m.balance < -a.credit_limit)) AS illegal_negative_accounts,
+
+    -- Tamper signal (ADT invariants-trigger-bypass-not-detected): the AFTER-posting
+    -- triggers always bump account_balances_mat.version, so a row with a non-zero
+    -- balance but version = 0 means the balance was written WITHOUT a trigger, i.e.
+    -- account_balances_mat was edited outside the ledger. (Assumes the triggers are
+    -- the sole writer to that table.)
+    (SELECT COUNT(*) FROM account_balances_mat WHERE version = 0 AND balance <> 0) AS mat_balance_without_trigger,
 
     (SELECT COUNT(*) FROM ledger_postings) AS postings,
     (SELECT COUNT(*) FROM accounts)        AS accounts

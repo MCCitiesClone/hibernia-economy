@@ -94,9 +94,10 @@ public final class Treasury extends JavaPlugin {
         // Fail fast instead of silently booting against the shared money DB with the
         // documented default password — the guard treasury-api-plugin already has,
         // back-ported here so all writers to the shared DB behave the same (ADT-187).
-        if ("password".equals(dbCfg.getPassword())) {
+        String dbPass = dbCfg.getPassword();
+        if ("password".equals(dbPass) || "CHANGE_ME".equals(dbPass)) {
             throw new IllegalStateException(
-                    "Refusing to start: the database password is still the insecure default. "
+                    "Refusing to start: the database password is still the placeholder default. "
                     + "Set database.password in config.yml.");
         }
 

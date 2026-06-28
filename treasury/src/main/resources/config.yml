@@ -10,8 +10,10 @@ database:
   host: localhost
   port: 3306
   database: treasury
-  username: root
-  password: password
+  # Neutral placeholders — set these before first start (ADT default-db-creds-in-shipped-config).
+  # The plugin refuses to boot while the password is still the placeholder.
+  username: treasury
+  password: CHANGE_ME
   # Connection pool (HikariCP). Tune for your concurrent player count and DB capacity.
   # maximum-size is the hard cap on simultaneous DB connections — keep the sum across
   # all plugins/services (Treasury, rest-api, ingest, business, ...) below the DB's

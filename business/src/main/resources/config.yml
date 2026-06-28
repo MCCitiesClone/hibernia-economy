@@ -2,9 +2,9 @@ database:
   host: localhost
   port: 3306
   database: treasury
-  username: root
-  password: password
-  table-prefix: treasury_
+  username: treasury
+  # Placeholder; the plugin refuses to boot until this is changed from CHANGE_ME.
+  password: CHANGE_ME
 
 firm:
   # Maximum number of firms a single player may own (be proprietor of).
