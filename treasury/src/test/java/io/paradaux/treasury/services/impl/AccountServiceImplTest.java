@@ -401,6 +401,32 @@ class AccountServiceImplTest {
     }
 
     @Test
+    void getOrCreateSystemAccountId_concurrentInsert_reResolvesToWinner() {
+        UUID owner = UUID.randomUUID();
+        when(accountMapper.findSystemAccountForPlugin("RacyPlugin")).thenReturn(null);
+        // The insert loses the race against uq_one_system_per_plugin (V24, ADT-74).
+        org.mockito.Mockito.doThrow(new org.apache.ibatis.exceptions.PersistenceException("dup"))
+                .when(accountMapper).insertAccount(org.mockito.ArgumentMatchers.any());
+        when(accountMapper.findSystemAccountIdForPluginLocking("RacyPlugin")).thenReturn(123);
+
+        assertThat(svc.getOrCreateSystemAccountId("RacyPlugin", owner)).isEqualTo(123);
+        verify(accountMapper, org.mockito.Mockito.never()).seedBalance(org.mockito.ArgumentMatchers.anyInt());
+    }
+
+    @Test
+    void getOrCreateSystemAccountId_insertFailsAndNoWinner_propagates() {
+        UUID owner = UUID.randomUUID();
+        when(accountMapper.findSystemAccountForPlugin("BrokenPlugin")).thenReturn(null);
+        org.mockito.Mockito.doThrow(new org.apache.ibatis.exceptions.PersistenceException("boom"))
+                .when(accountMapper).insertAccount(org.mockito.ArgumentMatchers.any());
+        when(accountMapper.findSystemAccountIdForPluginLocking("BrokenPlugin")).thenReturn(null);
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(
+                        () -> svc.getOrCreateSystemAccountId("BrokenPlugin", owner))
+                .isInstanceOf(org.apache.ibatis.exceptions.PersistenceException.class);
+    }
+
+    @Test
     void updateAccount_known_callsMapperUpdate() {
         Account a = new Account();
         a.setAccountId(7);

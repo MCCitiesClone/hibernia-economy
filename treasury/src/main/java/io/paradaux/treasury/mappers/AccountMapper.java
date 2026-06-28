@@ -42,6 +42,22 @@ public interface AccountMapper {
     @ResultMap("accountMap")
     Account findSystemAccountForPlugin(@Param("pluginName") String pluginName);
 
+    /**
+     * Locking variant used to re-resolve after a concurrent SYSTEM-account insert
+     * trips {@code uq_one_system_per_plugin} (V24). Same REPEATABLE-READ reasoning
+     * as {@link #findPersonalAccountIdLocking}: {@code LOCK IN SHARE MODE} reads the
+     * latest committed row so the loser of the race resolves to the winner's id.
+     */
+    @Select("""
+            SELECT account_id
+              FROM accounts
+             WHERE account_type = 'SYSTEM'
+               AND display_name = #{pluginName}
+             LIMIT 1
+             LOCK IN SHARE MODE
+            """)
+    Integer findSystemAccountIdForPluginLocking(@Param("pluginName") String pluginName);
+
     @Select("""
             SELECT account_id
               FROM accounts

@@ -264,10 +264,23 @@ public class AccountServiceImpl implements AccountService {
         // disables the credit-limit check — the account can mint and burn freely.
         Account acc = new Account(0, AccountType.SYSTEM, owner, pluginName,
                 false, false, true, BigDecimal.valueOf(-1));
-        accountMapper.insertAccount(acc);
-        accountMapper.seedBalance(acc.getAccountId());
-        log.info("Created SYSTEM account for plugin '{}' (id={})", pluginName, acc.getAccountId());
-        return acc.getAccountId();
+        try {
+            accountMapper.insertAccount(acc);
+            accountMapper.seedBalance(acc.getAccountId());
+            log.info("Created SYSTEM account for plugin '{}' (id={})", pluginName, acc.getAccountId());
+            return acc.getAccountId();
+        } catch (PersistenceException e) {
+            // Concurrent first-resolve: another thread/process inserted this
+            // plugin's SYSTEM account between our check and insert, tripping
+            // uq_one_system_per_plugin (V24). Re-resolve to the committed row (with
+            // a locking read so REPEATABLE READ sees it) instead of propagating the
+            // duplicate-key error — mirrors getOrCreatePersonalAccountId (ADT-74).
+            Integer raced = accountMapper.findSystemAccountIdForPluginLocking(pluginName);
+            if (raced != null) {
+                return raced;
+            }
+            throw e;
+        }
     }
 
     // ---- Account lifecycle ----
