@@ -13,6 +13,7 @@ java {
         languageVersion.set(JavaLanguageVersion.of(21))
     }
     withSourcesJar()
+    withJavadocJar() // publish a -javadoc artifact for this documented public API (ADT no-javadoc-jar-or-compat-policy)
 }
 
 repositories {

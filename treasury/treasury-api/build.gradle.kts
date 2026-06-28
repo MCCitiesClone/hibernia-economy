@@ -11,6 +11,7 @@ java {
         languageVersion.set(JavaLanguageVersion.of(21))
     }
     withSourcesJar()
+    withJavadocJar() // publish a -javadoc artifact for this documented public API (ADT no-javadoc-jar-published)
 }
 
 tasks.withType<Jar>().configureEach {

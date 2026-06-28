@@ -158,7 +158,11 @@ public class GovServiceImpl implements GovService {
 
         long txnId;
         try {
-            txnId = ledgerService.transfer(new TransferRequest(
+            // A fine is an administrative debit by authority of permission, so it
+            // must bypass the debtor's requires_authorization gate (you can't dodge
+            // a fine by demanding an authorizer) — adminTransfer skips ONLY that gate
+            // and still fails on insufficient funds (ADT fine-debtor-auth-not-wrapped).
+            txnId = ledgerService.adminTransfer(new TransferRequest(
                     debtorAccountId,
                     govAccount.getAccountId(),
                     normalized,

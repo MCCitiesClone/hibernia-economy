@@ -130,11 +130,11 @@ async function callVoid(path: string, method: string, body?: unknown): Promise<v
 
 /** Set a per-issuer rate-limit multiplier override (admin). */
 export const setRateLimitOverride = (ownerUuid: string, multiplier: string, note: string | null) =>
-  callVoid(`/api/v1/admin/rate-limit-overrides/${ownerUuid}`, 'PUT', { multiplier, note });
+  callVoid(`/api/v1/admin/rate-limit-overrides/${encodeURIComponent(ownerUuid)}`, 'PUT', { multiplier, note });
 
 /** Clear a per-issuer rate-limit multiplier override (admin). */
 export const clearRateLimitOverride = (ownerUuid: string) =>
-  callVoid(`/api/v1/admin/rate-limit-overrides/${ownerUuid}`, 'DELETE');
+  callVoid(`/api/v1/admin/rate-limit-overrides/${encodeURIComponent(ownerUuid)}`, 'DELETE');
 
 /** Revoke an API key (admin). */
 export const revokeApiKey = (keyId: number) =>
@@ -146,7 +146,9 @@ export const rotateApiKey = (keyId: number) =>
 
 // ── Webhook subscriptions (ADT-14). The optional ownerUuid scopes a mutation to
 //    that owner's row (player self-service) vs. by-id (fleet admin). ──
-const ownerQ = (ownerUuid?: string) => (ownerUuid ? `?ownerUuid=${ownerUuid}` : '');
+// encodeURIComponent the interpolated identifier so a non-canonical value can't
+// break or alter the request URL (ADT owneruuid-query-not-encoded / owneruuid-url-injection).
+const ownerQ = (ownerUuid?: string) => (ownerUuid ? `?ownerUuid=${encodeURIComponent(ownerUuid)}` : '');
 
 export const createWebhook = (body: {
   ownerUuid: string;

@@ -122,7 +122,13 @@ public class FirmTransactionServiceImpl implements FirmTransactionService {
             return base;
         }
         String reason = base + ": " + cleaned;
-        return reason.length() > 255 ? reason.substring(0, 255) : reason;
+        // Truncate on a code-point boundary to the column's 255-character capacity so a
+        // surrogate pair (e.g. an emoji) at the cap can't be split mid-character, and so we
+        // measure characters not UTF-16 units (ADT memo-truncation-mid-character).
+        if (reason.codePointCount(0, reason.length()) > 255) {
+            reason = reason.substring(0, reason.offsetByCodePoints(0, 255));
+        }
+        return reason;
     }
 
     @Override

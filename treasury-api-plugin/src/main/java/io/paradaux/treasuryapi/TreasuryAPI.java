@@ -2,6 +2,7 @@ package io.paradaux.treasuryapi;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
+import io.paradaux.common.JwtKeys;
 import io.paradaux.hibernia.framework.commander.CommandManager;
 import io.paradaux.hibernia.framework.guice.HiberniaModule;
 import io.paradaux.business.api.BusinessApi;
@@ -49,6 +50,19 @@ public final class TreasuryAPI extends JavaPlugin {
                 || jwtSecret.length() < 32) {
             getLogger().severe("api.jwt-secret is unset, the placeholder default, or shorter than 32 characters. "
                     + "Set a long random secret matching the Treasury REST API before enabling. Disabling.");
+            getServer().getPluginManager().disablePlugin(this);
+            return;
+        }
+        // A `base64:` secret can pass the length check above (its raw string is long)
+        // yet decode to fewer than 32 bytes, which JwtKeys rejects only at the first
+        // mint. Validate the actual derivation here so a mis-sized key disables the
+        // plugin at boot rather than failing a player command later
+        // (ADT base64-secret-passes-startup-guard-but-crashes-mint).
+        try {
+            JwtKeys.deriveHmacKey(jwtSecret);
+        } catch (RuntimeException e) {
+            getLogger().severe("api.jwt-secret could not derive a valid signing key: " + e.getMessage()
+                    + " (a base64: secret must decode to at least 32 bytes). Disabling.");
             getServer().getPluginManager().disablePlugin(this);
             return;
         }

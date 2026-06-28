@@ -39,7 +39,10 @@ public class AccountServiceImpl implements AccountService {
     private final PersonalAccountCache personalAccountCache;
     private final EconomyConfiguration economyConfig;
     // DecimalFormat is not thread-safe; use a ThreadLocal so each thread gets its own instance.
-    private final ThreadLocal<DecimalFormat> formatter;
+    // Rebuilt when the configured pattern changes so `economy.format` reloads live via
+    // /treasury reload, consistent with currency-name reload (ADT format-pattern-not-reloaded).
+    private volatile ThreadLocal<DecimalFormat> formatter;
+    private volatile String formatterPattern;
 
     @Inject
     public AccountServiceImpl(AccountMapper accountMapper,
@@ -52,8 +55,12 @@ public class AccountServiceImpl implements AccountService {
         this.redirectCache = redirectCache;
         this.personalAccountCache = personalAccountCache;
         this.economyConfig = economyConfig;
-        String pattern = economyConfig.getEconomyFormat();
-        this.formatter = ThreadLocal.withInitial(() -> {
+        this.formatterPattern = economyConfig.getEconomyFormat();
+        this.formatter = newFormatter(this.formatterPattern);
+    }
+
+    private static ThreadLocal<DecimalFormat> newFormatter(String pattern) {
+        return ThreadLocal.withInitial(() -> {
             DecimalFormat fmt = new DecimalFormat(pattern);
             fmt.setRoundingMode(RoundingMode.HALF_EVEN);
             return fmt;
@@ -399,6 +406,13 @@ public class AccountServiceImpl implements AccountService {
 
     @Override
     public String formatAmount(BigDecimal amount) {
+        // Rebuild the formatter if economy.format changed via /treasury reload, so the
+        // pattern updates live like the currency names (ADT format-pattern-not-reloaded).
+        String current = economyConfig.getEconomyFormat();
+        if (!current.equals(formatterPattern)) {
+            formatter = newFormatter(current);
+            formatterPattern = current;
+        }
         BigDecimal scaled = amount.setScale(2, RoundingMode.HALF_EVEN);
         return formatter.get().format(scaled);
     }
