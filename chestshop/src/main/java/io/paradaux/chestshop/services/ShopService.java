@@ -22,15 +22,18 @@ import io.paradaux.chestshop.listeners.preshopcreation.PriceRatioChecker;
 import io.paradaux.chestshop.listeners.preshopcreation.QuantityChecker;
 import io.paradaux.chestshop.listeners.preshopcreation.TerrainChecker;
 import io.paradaux.chestshop.listeners.modules.StockCounterModule;
-import io.paradaux.chestshop.listeners.postshopcreation.MessageSender;
-import io.paradaux.chestshop.listeners.postshopcreation.ShopCreationLogger;
-import io.paradaux.chestshop.listeners.postshopcreation.SignSticker;
-import io.paradaux.chestshop.listeners.shopremoval.ShopRemovalLogger;
 import io.paradaux.chestshop.market.MarketListener;
 import io.paradaux.chestshop.signs.ChestShopSign;
+import io.paradaux.chestshop.utils.LocationUtil;
+import io.paradaux.chestshop.utils.uBlock;
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.Material;
 import org.bukkit.World;
+import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
 import org.bukkit.block.Sign;
+import org.bukkit.block.data.type.WallSign;
 import org.bukkit.entity.Player;
 
 import java.math.BigDecimal;
@@ -113,10 +116,10 @@ public class ShopService {
      * the market registry.
      */
     public void onCreated(ShopCreatedEvent event) {
-        SignSticker.onShopCreation(event);
-        MessageSender.onShopCreation(event);
-        ShopCreationLogger.onShopCreation(event);
-        MarketListener.onShopCreated(event);
+        stickSignToChest(event);   // was @NORMAL SignSticker
+        sendCreatedMessage(event); // was @MONITOR MessageSender
+        logCreation(event);        // was @MONITOR ShopCreationLogger
+        MarketListener.onShopCreated(event); // genuine market-DB sync — stays
     }
 
     /**
@@ -126,8 +129,94 @@ public class ShopService {
      */
     public void onDestroyed(ShopDestroyedEvent event) {
         refundOnRemoval(event.getDestroyer(), event.getSign());
-        ShopRemovalLogger.onShopRemoval(event);
-        MarketListener.onShopDestroyed(event);
+        logRemoval(event);                     // was @MONITOR ShopRemovalLogger
+        MarketListener.onShopDestroyed(event); // genuine market-DB sync — stays
+    }
+
+    // ---- post-creation reactions (were the postshopcreation listeners) ----------
+
+    private static final String CREATION_LOG = "%1$s created %2$s - %3$s - %4$s - at %5$s";
+    private static final String REMOVAL_LOG = "%1$s was removed by %2$s - %3$s - %4$s - at %5$s";
+
+    /** Stick a freshly-created shop sign onto its chest (config-gated, never for admin shops). */
+    private void stickSignToChest(ShopCreatedEvent event) {
+        if (!Properties.STICK_SIGNS_TO_CHESTS || ChestShopSign.isAdminShop(event.getSignLines())) {
+            return;
+        }
+
+        Block signBlock = event.getSign().getBlock();
+        if (!(signBlock.getBlockData() instanceof org.bukkit.block.data.type.Sign)) {
+            return;
+        }
+
+        BlockFace shopBlockFace = null;
+        for (BlockFace face : uBlock.CHEST_EXTENSION_FACES) {
+            if (uBlock.couldBeShopContainer(signBlock.getRelative(face))) {
+                shopBlockFace = face;
+                break;
+            }
+        }
+        if (shopBlockFace == null) {
+            return;
+        }
+
+        int index = signBlock.getType().name().indexOf("SIGN");
+        if (index < 0) {
+            return;
+        }
+        Material newMaterial = Material.valueOf(signBlock.getType().name().substring(0, index) + "WALL_SIGN");
+        signBlock.setType(newMaterial);
+
+        Sign sign = (Sign) signBlock.getState();
+        WallSign signMaterial = (WallSign) Bukkit.createBlockData(newMaterial);
+        signMaterial.setFacing(shopBlockFace.getOppositeFace());
+        sign.setBlockData(signMaterial);
+
+        String[] lines = event.getSignLines();
+        for (int i = 0; i < lines.length; ++i) {
+            sign.setLine(i, lines[i]);
+        }
+        sign.update(true);
+    }
+
+    /** Notify the creator that their shop was made. */
+    private void sendCreatedMessage(ShopCreatedEvent event) {
+        ChestShop.message().send(event.getPlayer(), "chestshop.SHOP_CREATED");
+    }
+
+    /** Write a shop-creation line to the shop log (off the main thread). */
+    private void logCreation(ShopCreatedEvent event) {
+        ChestShop.runInAsyncThread(() -> {
+            String creator = event.getPlayer().getName();
+            String shopOwner = ChestShopSign.getOwner(event.getSignLines());
+            String typeOfShop = ChestShopSign.isAdminShop(shopOwner)
+                    ? "an Admin Shop"
+                    : "a shop" + (event.createdByOwner() ? "" : " for " + event.getOwnerAccount().getName());
+            String item = ChestShopSign.getQuantity(event.getSignLines()) + ' ' + ChestShopSign.getItem(event.getSignLines());
+            String prices = ChestShopSign.getPrice(event.getSignLines());
+            String location = LocationUtil.locationToString(event.getSign().getLocation());
+            ChestShop.getShopLogger().info(String.format(CREATION_LOG, creator, typeOfShop, item, prices, location));
+        });
+    }
+
+    /** Write a shop-removal line to the shop log (off the main thread). */
+    private void logRemoval(ShopDestroyedEvent event) {
+        if (!Properties.LOG_ALL_SHOP_REMOVALS && event.getDestroyer() != null) {
+            return;
+        }
+        ChestShop.runInAsyncThread(() -> {
+            String shopOwner = ChestShopSign.getOwner(event.getSign());
+            String typeOfShop = ChestShopSign.isAdminShop(shopOwner)
+                    ? "An Admin Shop"
+                    : "A shop belonging to " + shopOwner;
+            String item = ChestShopSign.getQuantity(event.getSign()) + ' ' + ChestShopSign.getItem(event.getSign());
+            String prices = ChestShopSign.getPrice(event.getSign());
+            String location = LocationUtil.locationToString(event.getSign().getLocation());
+            ChestShop.getShopLogger().info(String.format(REMOVAL_LOG,
+                    typeOfShop,
+                    event.getDestroyer() != null ? event.getDestroyer().getName() : "???",
+                    item, prices, location));
+        });
     }
 
     /**
