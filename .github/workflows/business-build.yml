@@ -15,6 +15,11 @@ on:
       - '.github/workflows/business-build.yml'
   workflow_dispatch:
 
+# Least privilege (CodeQL actions/missing-workflow-permissions): build-only,
+# checkout is all the GITHUB_TOKEN needs.
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: ubuntu-latest
