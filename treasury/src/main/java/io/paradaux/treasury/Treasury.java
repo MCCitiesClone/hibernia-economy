@@ -21,8 +21,8 @@ import io.paradaux.treasury.api.impl.MarketApiImpl;
 import io.paradaux.treasury.api.impl.SalesQueryApiImpl;
 import io.paradaux.treasury.api.impl.TaxApiImpl;
 import io.paradaux.treasury.api.impl.TreasuryApiImpl;
+import io.paradaux.common.DataSourceProvider;
 import io.paradaux.treasury.guice.*;
-import io.paradaux.treasury.guice.providers.DataSourceProvider;
 import io.paradaux.treasury.model.config.DatabaseConfiguration;
 import io.paradaux.treasury.model.config.GovernmentConfiguration;
 import io.paradaux.treasury.model.config.LoggingConfiguration;
@@ -103,18 +103,22 @@ public final class Treasury extends JavaPlugin {
 
         // 2) Build the Guice injector. VaultModule is only installed when Vault
         //    is on the classpath, so VaultEconomyAdapter is bound conditionally.
-        DataSource dataSource = new DataSourceProvider(
-                dbCfg.getHost(),
-                Integer.parseInt(dbCfg.getPort()),
-                dbCfg.getDatabase(),
-                dbCfg.getUsername(),
-                dbCfg.getPassword(),
-                Integer.parseInt(dbCfg.getPoolMaximumSize()),
-                Integer.parseInt(dbCfg.getPoolMinimumIdle()),
-                Long.parseLong(dbCfg.getPoolConnectionTimeoutMs()),
-                Long.parseLong(dbCfg.getPoolMaxLifetimeMs()),
-                Long.parseLong(dbCfg.getPoolKeepaliveMs())
-        ).get();
+        DataSource dataSource = DataSourceProvider.builder(
+                        dbCfg.getHost(),
+                        Integer.parseInt(dbCfg.getPort()),
+                        dbCfg.getDatabase(),
+                        dbCfg.getUsername(),
+                        dbCfg.getPassword())
+                .poolName("Treasury-Hikari")
+                .maximumPoolSize(Integer.parseInt(dbCfg.getPoolMaximumSize()))
+                .minimumIdle(Integer.parseInt(dbCfg.getPoolMinimumIdle()))
+                .connectionTimeoutMs(Long.parseLong(dbCfg.getPoolConnectionTimeoutMs()))
+                .maxLifetimeMs(Long.parseLong(dbCfg.getPoolMaxLifetimeMs()))
+                .keepaliveMs(Long.parseLong(dbCfg.getPoolKeepaliveMs()))
+                .leakDetectionThresholdMs(30_000L)
+                .statementCaching(true)
+                .build()
+                .get();
 
         List<Module> modules = new ArrayList<>();
         modules.add(hiberniaModule);

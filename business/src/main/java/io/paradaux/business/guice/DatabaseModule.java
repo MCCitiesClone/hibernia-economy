@@ -5,7 +5,7 @@ import com.google.inject.Inject;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.google.inject.name.Names;
-import io.paradaux.business.guice.providers.DataSourceProvider;
+import io.paradaux.common.DataSourceProvider;
 import io.paradaux.business.mappers.FirmAccountsMapper;
 import io.paradaux.business.mappers.FirmMapper;
 import io.paradaux.business.mappers.FirmPlayerMapper;
@@ -72,6 +72,15 @@ public final class DatabaseModule extends AbstractModule {
                     "Refusing to start: the database password is still the insecure default. "
                     + "Set database.password in config.yml.");
         }
-        return new DataSourceProvider(host, port, db, user, pass).get();
+        // READ COMMITTED (MariaDB default is REPEATABLE READ). Firm-account creation
+        // reads firm_accounts, then calls treasury.createAccount() — a separate plugin
+        // that commits on its own connection mid-transaction — then writes firm_accounts.
+        // Under REPEATABLE READ that locking write fails with Error 1020 because our read
+        // view is stale after the intervening commit; READ COMMITTED gives each statement
+        // a fresh view.
+        return DataSourceProvider.builder(host, port, db, user, pass)
+                .transactionIsolation("TRANSACTION_READ_COMMITTED")
+                .build()
+                .get();
     }
 }

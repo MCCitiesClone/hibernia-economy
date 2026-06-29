@@ -18,6 +18,12 @@ repositories {
 }
 
 dependencies {
+    // compileOnly so :common does not drag HikariCP onto the Spring REST API's
+    // classpath; the Paper plugins that use DataSourceProvider already bundle Hikari
+    // (ADT-184).
+    compileOnly(libs.hikaricp)
+    testImplementation(libs.hikaricp)
+
     testImplementation(platform(libs.junit.bom))
     testImplementation(libs.junit.jupiter)
     testRuntimeOnly(libs.junit.platform.launcher)

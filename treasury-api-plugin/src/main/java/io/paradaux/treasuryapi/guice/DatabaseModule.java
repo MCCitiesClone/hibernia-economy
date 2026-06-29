@@ -5,7 +5,7 @@ import com.google.inject.Inject;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.google.inject.name.Names;
-import io.paradaux.treasuryapi.guice.providers.DataSourceProvider;
+import io.paradaux.common.DataSourceProvider;
 import io.paradaux.treasuryapi.mappers.ApiKeyMapper;
 import io.paradaux.treasuryapi.mappers.ExplorerGroupMapper;
 import io.paradaux.treasuryapi.mappers.ExplorerUiMapper;
@@ -65,7 +65,7 @@ public final class DatabaseModule extends AbstractModule {
                     "Refusing to start: the database password is still the insecure default. "
                     + "Set database.password in config.yml or the TREASURYAPI_DB_PASSWORD env var.");
         }
-        return new DataSourceProvider(host, port, db, user, pass).get();
+        return DataSourceProvider.builder(host, port, db, user, pass).build().get();
     }
 
     /** Prefer a non-blank environment variable over the config value (secret injection). */
