@@ -30,6 +30,25 @@ public interface LedgerMapper {
     })
     LedgerTxn findByDedupKey(@Param("key") byte[] clientKey);
 
+    /**
+     * Locking variant of {@link #findByDedupKey} (FOR UPDATE). Treasury runs at the
+     * MariaDB-default REPEATABLE READ, so after a concurrent identical-dedup-key insert
+     * trips {@code uq_ledger_dedup} a plain re-SELECT would still see the pre-race
+     * snapshot and miss the committed row. A locking read forces the latest committed
+     * version so the racing transaction id can be returned instead of propagating the
+     * duplicate-key error (ADT-73, mirrors AccountMapper's *Locking resolves).
+     */
+    @Select("""
+      SELECT txn_id, trade_time, settlement_time, message,
+             initiator_uuid_bin, authorizer_uuid_bin, plugin_system, client_dedup_key
+        FROM ledger_txns
+       WHERE client_dedup_key = #{key}
+       LIMIT 1
+       FOR UPDATE
+      """)
+    @ResultMap("txnMap")
+    LedgerTxn findByDedupKeyLocking(@Param("key") byte[] clientKey);
+
     @Select("""
       SELECT txn_id, trade_time, settlement_time, message,
              initiator_uuid_bin, authorizer_uuid_bin, plugin_system, client_dedup_key

@@ -20,6 +20,12 @@ import org.junit.jupiter.api.Test;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -84,6 +90,50 @@ class LedgerServiceTransferIT extends IntegrationTestBase {
         assertThat(secondTxn).isEqualTo(firstTxn);
         assertThat(balanceOf(a)).isEqualByComparingTo("400.00");
         assertThat(balanceOf(b)).isEqualByComparingTo("100.00");
+    }
+
+    @Test
+    void transfer_concurrentIdenticalDedupKey_allReturnSameTxnAndChargeOnce() throws Exception {
+        // ADT-73: several threads fire the SAME logical transfer (identical dedup key)
+        // at once. uq_ledger_dedup guarantees the money moves once; the loser inserts
+        // must re-resolve to the winner's txn id rather than propagating a duplicate-key
+        // PersistenceException. Assert: no thread throws, all return one txn id, the
+        // source is debited exactly once, and exactly one ledger_txn row exists.
+        Account a = createPersonalAccount(1_000);
+        Account b = createPersonalAccount(0);
+        byte[] key = Idempotency.sha256("test:concurrent-dedup");
+
+        int threads = 8;
+        CountDownLatch start = new CountDownLatch(1);
+        ExecutorService pool = Executors.newFixedThreadPool(threads);
+        try {
+            List<Callable<Long>> tasks = new java.util.ArrayList<>();
+            for (int i = 0; i < threads; i++) {
+                tasks.add(() -> {
+                    start.await(); // line everyone up so the inserts genuinely race
+                    return ledgerService.transfer(new TransferRequest(
+                            a.getAccountId(), b.getAccountId(), new BigDecimal("100.00"),
+                            "concurrent", TreasuryConstants.VIRTUAL_TREASURY_INITIATOR, null, "test", key));
+                });
+            }
+            List<Future<Long>> futures = new java.util.ArrayList<>();
+            for (Callable<Long> t : tasks) futures.add(pool.submit(t));
+            start.countDown();
+
+            Long firstTxn = null;
+            for (Future<Long> f : futures) {
+                Long txn = f.get(30, TimeUnit.SECONDS); // throws if any thread propagated an exception
+                if (firstTxn == null) firstTxn = txn;
+                assertThat(txn).isEqualTo(firstTxn);
+            }
+        } finally {
+            pool.shutdownNow();
+        }
+
+        // Money moved exactly once despite N concurrent attempts.
+        assertThat(balanceOf(a)).isEqualByComparingTo("900.00");
+        assertThat(balanceOf(b)).isEqualByComparingTo("100.00");
+        assertThat(ledgerMapper.findByDedupKey(key)).isNotNull();
     }
 
     @Test

@@ -16,6 +16,7 @@ import io.paradaux.treasury.utils.Money;
 import io.paradaux.treasury.utils.PersonalAccountCache;
 import io.paradaux.treasury.utils.PluginSystemAccountCache;
 import io.paradaux.treasury.utils.TreasuryConstants;
+import org.apache.ibatis.exceptions.PersistenceException;
 import org.jetbrains.annotations.Nullable;
 import org.mybatis.guice.transactional.Transactional;
 
@@ -229,8 +230,27 @@ public class LedgerServiceImpl implements LedgerService {
             }
         }
 
-        long txnId = insertTxn(req.message(), req.initiator(), req.authorizer(),
-                req.pluginSystem(), req.dedupKey());
+        final long txnId;
+        try {
+            txnId = insertTxn(req.message(), req.initiator(), req.authorizer(),
+                    req.pluginSystem(), req.dedupKey());
+        } catch (PersistenceException e) {
+            // Concurrent identical-dedup-key transfer: another thread/process inserted
+            // a ledger_txn with this client_dedup_key between our findByDedupKey check
+            // above and this insert, tripping uq_ledger_dedup. The unique constraint
+            // already prevented the double-spend; re-resolve to the committed txn id
+            // (locking read so REPEATABLE READ sees it) and return it instead of
+            // propagating the duplicate-key error (ADT-73, mirrors the *Locking
+            // re-resolves in AccountServiceImpl, ADT-74).
+            if (req.dedupKey() != null) {
+                LedgerTxn raced = ledgerMapper.findByDedupKeyLocking(req.dedupKey());
+                if (raced != null) {
+                    log.debug("Transfer deduplicated on concurrent insert: returning existing txn={}", raced.getTxnId());
+                    return raced.getTxnId();
+                }
+            }
+            throw e;
+        }
 
         // Both legs in one statement, ascending account_id so the per-row balance
         // trigger acquires balance-row locks in a consistent global order.
