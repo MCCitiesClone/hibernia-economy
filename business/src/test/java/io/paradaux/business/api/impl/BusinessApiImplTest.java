@@ -146,7 +146,7 @@ class BusinessApiImplTest {
     void firms_getFirmByAccountId_resolvesById() {
         Firm f = new Firm();
         when(accountService.getFirmIdByAccountId(99)).thenReturn(7);
-        when(firmService.getAnyFirmByNameOrId("7")).thenReturn(f);
+        when(firmService.getAnyFirmById(7)).thenReturn(f);
         assertThat(api.firms().getFirmByAccountId(99)).isSameAs(f);
     }
 

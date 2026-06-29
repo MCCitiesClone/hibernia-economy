@@ -71,14 +71,14 @@ class FirmTransactionServiceImplTest {
 
     @Test
     void getFirmBalance_usesDefaultAccount() {
-        when(firms.getFirmByNameOrId("1")).thenReturn(firm(1, 100));
+        when(firms.getFirmById(1)).thenReturn(firm(1, 100));
         when(treasury.getBalanceByAccountId(100)).thenReturn(new BigDecimal("50.00"));
         assertThat(svc.getFirmBalance(1)).isEqualByComparingTo("50.00");
     }
 
     @Test
     void getFirmBalance_unsetDefault_selfHealsToSurvivingAccount() {
-        when(firms.getFirmByNameOrId("1")).thenReturn(firm(1, null));
+        when(firms.getFirmById(1)).thenReturn(firm(1, null));
         when(firmAccounts.getAnyAccountId(1)).thenReturn(200);
         when(treasury.getBalanceByAccountId(200)).thenReturn(new BigDecimal("12"));
         assertThat(svc.getFirmBalance(1)).isEqualByComparingTo("12");
@@ -89,7 +89,7 @@ class FirmTransactionServiceImplTest {
     @Test
     void getFirmBalance_staleDefault_selfHealsToSurvivingAccount() {
         // Default points at account 100, but the firm no longer owns it (archived/removed).
-        when(firms.getFirmByNameOrId("1")).thenReturn(firm(1, 100));
+        when(firms.getFirmById(1)).thenReturn(firm(1, 100));
         when(firmAccounts.isFirmAccount(1, 100)).thenReturn(false);
         when(firmAccounts.getAnyAccountId(1)).thenReturn(200);
         when(treasury.getBalanceByAccountId(200)).thenReturn(new BigDecimal("7"));
@@ -99,7 +99,7 @@ class FirmTransactionServiceImplTest {
 
     @Test
     void getFirmBalance_throwsWhenFirmHasNoAccount() {
-        when(firms.getFirmByNameOrId("1")).thenReturn(firm(1, null));
+        when(firms.getFirmById(1)).thenReturn(firm(1, null));
         when(firmAccounts.getAnyAccountId(1)).thenReturn(null);
         assertThatThrownBy(() -> svc.getFirmBalance(1))
                 .isInstanceOf(NoFirmAccountException.class);
@@ -107,14 +107,14 @@ class FirmTransactionServiceImplTest {
 
     @Test
     void getFirmBalance_throwsForUnknownFirm() {
-        when(firms.getFirmByNameOrId("1")).thenReturn(null);
+        when(firms.getFirmById(1)).thenReturn(null);
         assertThatThrownBy(() -> svc.getFirmBalance(1))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
     void getFormattedBalance_delegates() {
-        when(firms.getFirmByNameOrId("1")).thenReturn(firm(1, 100));
+        when(firms.getFirmById(1)).thenReturn(firm(1, 100));
         when(treasury.getBalanceByAccountId(100)).thenReturn(new BigDecimal("1.00"));
         when(treasury.formatAmount(new BigDecimal("1.00"))).thenReturn("$1.00");
         assertThat(svc.getFormattedBalance(1)).isEqualTo("$1.00");
@@ -122,7 +122,7 @@ class FirmTransactionServiceImplTest {
 
     @Test
     void getTransactions_clampsPagination() {
-        when(firms.getFirmByNameOrId("1")).thenReturn(firm(1, 100));
+        when(firms.getFirmById(1)).thenReturn(firm(1, 100));
         Page<TransactionEntry> page = new Page<>(List.of(), 0, 0, 10);
         when(treasury.getTransactionHistory(100, 0, 10)).thenReturn(page);
         assertThat(svc.getTransactions(1, 0, 0)).isSameAs(page);
@@ -130,7 +130,7 @@ class FirmTransactionServiceImplTest {
 
     @Test
     void getTransactions_paginates() {
-        when(firms.getFirmByNameOrId("1")).thenReturn(firm(1, 100));
+        when(firms.getFirmById(1)).thenReturn(firm(1, 100));
         Page<TransactionEntry> page = new Page<>(List.of(), 0, 20, 10);
         when(treasury.getTransactionHistory(100, 20, 10)).thenReturn(page);
         assertThat(svc.getTransactions(1, 3, 10)).isSameAs(page);
@@ -148,7 +148,7 @@ class FirmTransactionServiceImplTest {
 
     @Test
     void deposit_insufficientPersonalFunds_throws() {
-        when(firms.getFirmByNameOrId("1")).thenReturn(firm(1, 100));
+        when(firms.getFirmById(1)).thenReturn(firm(1, 100));
         Account personal = new Account(); personal.setAccountId(7);
         when(treasury.resolveOrCreatePersonal(player)).thenReturn(personal);
         when(treasury.hasFunds(7, BigDecimal.ONE)).thenReturn(false);
@@ -158,7 +158,7 @@ class FirmTransactionServiceImplTest {
 
     @Test
     void deposit_noAccess_throws() {
-        when(firms.getFirmByNameOrId("1")).thenReturn(firm(1, 100));
+        when(firms.getFirmById(1)).thenReturn(firm(1, 100));
         Account personal = new Account(); personal.setAccountId(7);
         when(treasury.resolveOrCreatePersonal(player)).thenReturn(personal);
         when(treasury.hasFunds(7, BigDecimal.ONE)).thenReturn(true);
@@ -169,7 +169,7 @@ class FirmTransactionServiceImplTest {
 
     @Test
     void deposit_buildsTransferAndReturnsId() {
-        when(firms.getFirmByNameOrId("1")).thenReturn(firm(1, 100));
+        when(firms.getFirmById(1)).thenReturn(firm(1, 100));
         Account personal = new Account(); personal.setAccountId(7);
         when(treasury.resolveOrCreatePersonal(player)).thenReturn(personal);
         when(treasury.hasFunds(7, BigDecimal.TEN)).thenReturn(true);
@@ -191,7 +191,7 @@ class FirmTransactionServiceImplTest {
 
     @Test
     void deposit_withMemo_recordsItAsReason() {
-        when(firms.getFirmByNameOrId("1")).thenReturn(firm(1, 100));
+        when(firms.getFirmById(1)).thenReturn(firm(1, 100));
         Account personal = new Account(); personal.setAccountId(7);
         when(treasury.resolveOrCreatePersonal(player)).thenReturn(personal);
         when(treasury.hasFunds(7, BigDecimal.TEN)).thenReturn(true);
@@ -208,7 +208,7 @@ class FirmTransactionServiceImplTest {
 
     @Test
     void deposit_withBlankMemo_fallsBackToDefaultReason() {
-        when(firms.getFirmByNameOrId("1")).thenReturn(firm(1, 100));
+        when(firms.getFirmById(1)).thenReturn(firm(1, 100));
         Account personal = new Account(); personal.setAccountId(7);
         when(treasury.resolveOrCreatePersonal(player)).thenReturn(personal);
         when(treasury.hasFunds(7, BigDecimal.TEN)).thenReturn(true);
@@ -224,7 +224,7 @@ class FirmTransactionServiceImplTest {
 
     @Test
     void deposit_withOverlongMemo_capsReasonAt255() {
-        when(firms.getFirmByNameOrId("1")).thenReturn(firm(1, 100));
+        when(firms.getFirmById(1)).thenReturn(firm(1, 100));
         Account personal = new Account(); personal.setAccountId(7);
         when(treasury.resolveOrCreatePersonal(player)).thenReturn(personal);
         when(treasury.hasFunds(7, BigDecimal.TEN)).thenReturn(true);
@@ -248,7 +248,7 @@ class FirmTransactionServiceImplTest {
 
     @Test
     void withdraw_noAccessThrows() {
-        when(firms.getFirmByNameOrId("1")).thenReturn(firm(1, 100));
+        when(firms.getFirmById(1)).thenReturn(firm(1, 100));
         Account business = new Account(); business.setAccountId(100);
         Account personal = new Account(); personal.setAccountId(7);
         when(treasury.getAccountById(100)).thenReturn(business);
@@ -260,7 +260,7 @@ class FirmTransactionServiceImplTest {
 
     @Test
     void withdraw_insufficientBusinessFundsThrows() {
-        when(firms.getFirmByNameOrId("1")).thenReturn(firm(1, 100));
+        when(firms.getFirmById(1)).thenReturn(firm(1, 100));
         Account business = new Account(); business.setAccountId(100);
         Account personal = new Account(); personal.setAccountId(7);
         when(treasury.getAccountById(100)).thenReturn(business);
@@ -274,7 +274,7 @@ class FirmTransactionServiceImplTest {
     @Test
     void withdraw_authorizerRequired_andPlayerIsAuthorizer() {
         Firm f = firm(1, 100);
-        when(firms.getFirmByNameOrId("1")).thenReturn(f);
+        when(firms.getFirmById(1)).thenReturn(f);
 
         Account business = new Account();
         business.setAccountId(100);
@@ -299,7 +299,7 @@ class FirmTransactionServiceImplTest {
 
     @Test
     void withdraw_authorizerRequired_butPlayerIsNot_throws() {
-        when(firms.getFirmByNameOrId("1")).thenReturn(firm(1, 100));
+        when(firms.getFirmById(1)).thenReturn(firm(1, 100));
         Account business = new Account();
         business.setAccountId(100);
         business.setRequiresAuthorization(true);
@@ -317,7 +317,7 @@ class FirmTransactionServiceImplTest {
 
     @Test
     void withdraw_noAuthorizationRequired_succeeds() {
-        when(firms.getFirmByNameOrId("1")).thenReturn(firm(1, 100));
+        when(firms.getFirmById(1)).thenReturn(firm(1, 100));
         Account business = new Account();
         business.setAccountId(100);
         business.setRequiresAuthorization(false);
@@ -607,14 +607,14 @@ class FirmTransactionServiceImplTest {
 
     @Test
     void payIntoFirm_rejectsNonPositive() {
-        when(firms.getFirmByNameOrId("1")).thenReturn(firm(1, 100));
+        when(firms.getFirmById(1)).thenReturn(firm(1, 100));
         assertThatThrownBy(() -> svc.payIntoFirm(1, player, BigDecimal.ZERO))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
     void payIntoFirm_insufficientPersonalFunds_throws() {
-        when(firms.getFirmByNameOrId("1")).thenReturn(firm(1, 100));
+        when(firms.getFirmById(1)).thenReturn(firm(1, 100));
         when(treasury.getAccountById(100)).thenReturn(account(100, false, false));
         Account personal = new Account(); personal.setAccountId(7);
         when(treasury.resolveOrCreatePersonal(player)).thenReturn(personal);
@@ -625,7 +625,7 @@ class FirmTransactionServiceImplTest {
 
     @Test
     void payIntoFirm_succeeds_noAccessCheckOnPayer() {
-        when(firms.getFirmByNameOrId("1")).thenReturn(firm(1, 100));
+        when(firms.getFirmById(1)).thenReturn(firm(1, 100));
         when(treasury.getAccountById(100)).thenReturn(account(100, false, false));
         Account personal = new Account(); personal.setAccountId(7);
         when(treasury.resolveOrCreatePersonal(player)).thenReturn(personal);
@@ -659,7 +659,7 @@ class FirmTransactionServiceImplTest {
 
     @Test
     void payIntoAccount_succeeds() {
-        when(firms.getFirmByNameOrId("1")).thenReturn(firm(1, 100));
+        when(firms.getFirmById(1)).thenReturn(firm(1, 100));
         when(firmAccounts.isFirmAccount(1, 99)).thenReturn(true);
         when(treasury.getAccountById(99)).thenReturn(account(99, false, false));
         Account personal = new Account(); personal.setAccountId(7);
@@ -675,7 +675,7 @@ class FirmTransactionServiceImplTest {
 
     @Test
     void payPlayer_noAccess_throws() {
-        when(firms.getFirmByNameOrId("1")).thenReturn(firm(1, 100));
+        when(firms.getFirmById(1)).thenReturn(firm(1, 100));
         Account targetPersonal = new Account(); targetPersonal.setAccountId(7);
         when(treasury.resolveOrCreatePersonal(target)).thenReturn(targetPersonal);
         when(treasury.getAccountById(100)).thenReturn(account(100, false, false));
@@ -686,7 +686,7 @@ class FirmTransactionServiceImplTest {
 
     @Test
     void payPlayer_insufficientBusinessFunds_throws() {
-        when(firms.getFirmByNameOrId("1")).thenReturn(firm(1, 100));
+        when(firms.getFirmById(1)).thenReturn(firm(1, 100));
         Account targetPersonal = new Account(); targetPersonal.setAccountId(7);
         when(treasury.resolveOrCreatePersonal(target)).thenReturn(targetPersonal);
         when(treasury.getAccountById(100)).thenReturn(account(100, false, false));
@@ -698,7 +698,7 @@ class FirmTransactionServiceImplTest {
 
     @Test
     void payPlayer_succeeds() {
-        when(firms.getFirmByNameOrId("1")).thenReturn(firm(1, 100));
+        when(firms.getFirmById(1)).thenReturn(firm(1, 100));
         Account targetPersonal = new Account(); targetPersonal.setAccountId(7);
         when(treasury.resolveOrCreatePersonal(target)).thenReturn(targetPersonal);
         when(treasury.getAccountById(100)).thenReturn(account(100, false, false));
@@ -717,7 +717,7 @@ class FirmTransactionServiceImplTest {
 
     @Test
     void payPlayer_authorizerRequired_isAuthorizer_succeeds() {
-        when(firms.getFirmByNameOrId("1")).thenReturn(firm(1, 100));
+        when(firms.getFirmById(1)).thenReturn(firm(1, 100));
         Account targetPersonal = new Account(); targetPersonal.setAccountId(7);
         when(treasury.resolveOrCreatePersonal(target)).thenReturn(targetPersonal);
         when(treasury.getAccountById(100)).thenReturn(account(100, false, true));
@@ -736,7 +736,7 @@ class FirmTransactionServiceImplTest {
 
     @Test
     void payPlayer_authorizerRequired_notAuthorizer_throws() {
-        when(firms.getFirmByNameOrId("1")).thenReturn(firm(1, 100));
+        when(firms.getFirmById(1)).thenReturn(firm(1, 100));
         Account targetPersonal = new Account(); targetPersonal.setAccountId(7);
         when(treasury.resolveOrCreatePersonal(target)).thenReturn(targetPersonal);
         when(treasury.getAccountById(100)).thenReturn(account(100, false, true));
@@ -756,7 +756,7 @@ class FirmTransactionServiceImplTest {
 
     @Test
     void payPlayerFromAccount_succeeds() {
-        when(firms.getFirmByNameOrId("1")).thenReturn(firm(1, 100));
+        when(firms.getFirmById(1)).thenReturn(firm(1, 100));
         when(firmAccounts.isFirmAccount(1, 99)).thenReturn(true);
         Account targetPersonal = new Account(); targetPersonal.setAccountId(7);
         when(treasury.resolveOrCreatePersonal(target)).thenReturn(targetPersonal);
@@ -771,8 +771,8 @@ class FirmTransactionServiceImplTest {
 
     @Test
     void payFirm_succeeds() {
-        when(firms.getFirmByNameOrId("1")).thenReturn(firm(1, 100));
-        when(firms.getFirmByNameOrId("2")).thenReturn(firm(2, 200));
+        when(firms.getFirmById(1)).thenReturn(firm(1, 100));
+        when(firms.getFirmById(2)).thenReturn(firm(2, 200));
         when(treasury.getAccountById(100)).thenReturn(account(100, false, false));
         when(treasury.canAccessAccount(player, 100)).thenReturn(true);
         when(treasury.hasFunds(100, BigDecimal.TEN)).thenReturn(true);
@@ -788,16 +788,16 @@ class FirmTransactionServiceImplTest {
 
     @Test
     void payFirm_sameAccount_throws() {
-        when(firms.getFirmByNameOrId("1")).thenReturn(firm(1, 100));
-        when(firms.getFirmByNameOrId("2")).thenReturn(firm(2, 100));
+        when(firms.getFirmById(1)).thenReturn(firm(1, 100));
+        when(firms.getFirmById(2)).thenReturn(firm(2, 100));
         assertThatThrownBy(() -> svc.payFirm(1, 2, player, BigDecimal.ONE))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
     void payFirm_usesDefaultReasonFromFirmNames() {
-        when(firms.getFirmByNameOrId("1")).thenReturn(namedFirm(1, 100, "Acme"));
-        when(firms.getFirmByNameOrId("2")).thenReturn(namedFirm(2, 200, "Globex"));
+        when(firms.getFirmById(1)).thenReturn(namedFirm(1, 100, "Acme"));
+        when(firms.getFirmById(2)).thenReturn(namedFirm(2, 200, "Globex"));
         when(treasury.getAccountById(100)).thenReturn(account(100, false, false));
         when(treasury.canAccessAccount(player, 100)).thenReturn(true);
         when(treasury.hasFunds(100, BigDecimal.TEN)).thenReturn(true);
@@ -812,8 +812,8 @@ class FirmTransactionServiceImplTest {
 
     @Test
     void payFirm_withMemo_appendsSanitizedMemoToReason() {
-        when(firms.getFirmByNameOrId("1")).thenReturn(namedFirm(1, 100, "Acme"));
-        when(firms.getFirmByNameOrId("2")).thenReturn(namedFirm(2, 200, "Globex"));
+        when(firms.getFirmById(1)).thenReturn(namedFirm(1, 100, "Acme"));
+        when(firms.getFirmById(2)).thenReturn(namedFirm(2, 200, "Globex"));
         when(treasury.getAccountById(100)).thenReturn(account(100, false, false));
         when(treasury.canAccessAccount(player, 100)).thenReturn(true);
         when(treasury.hasFunds(100, BigDecimal.TEN)).thenReturn(true);
@@ -829,8 +829,8 @@ class FirmTransactionServiceImplTest {
 
     @Test
     void payFirm_withBlankMemo_fallsBackToDefaultReason() {
-        when(firms.getFirmByNameOrId("1")).thenReturn(namedFirm(1, 100, "Acme"));
-        when(firms.getFirmByNameOrId("2")).thenReturn(namedFirm(2, 200, "Globex"));
+        when(firms.getFirmById(1)).thenReturn(namedFirm(1, 100, "Acme"));
+        when(firms.getFirmById(2)).thenReturn(namedFirm(2, 200, "Globex"));
         when(treasury.getAccountById(100)).thenReturn(account(100, false, false));
         when(treasury.canAccessAccount(player, 100)).thenReturn(true);
         when(treasury.hasFunds(100, BigDecimal.TEN)).thenReturn(true);
@@ -853,15 +853,15 @@ class FirmTransactionServiceImplTest {
     @Test
     void payFirmFromAccount_sameAccount_throws() {
         when(firmAccounts.isFirmAccount(1, 100)).thenReturn(true);
-        when(firms.getFirmByNameOrId("2")).thenReturn(firm(2, 100));
+        when(firms.getFirmById(2)).thenReturn(firm(2, 100));
         assertThatThrownBy(() -> svc.payFirmFromAccount(1, 100, 2, player, BigDecimal.ONE))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
     void payFirmFromAccount_succeeds() {
-        when(firms.getFirmByNameOrId("1")).thenReturn(firm(1, 100));
-        when(firms.getFirmByNameOrId("2")).thenReturn(firm(2, 200));
+        when(firms.getFirmById(1)).thenReturn(firm(1, 100));
+        when(firms.getFirmById(2)).thenReturn(firm(2, 200));
         when(firmAccounts.isFirmAccount(1, 99)).thenReturn(true);
         when(treasury.getAccountById(99)).thenReturn(account(99, false, false));
         when(treasury.canAccessAccount(player, 99)).thenReturn(true);

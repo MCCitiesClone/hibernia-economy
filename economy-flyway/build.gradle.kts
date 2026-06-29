@@ -7,7 +7,7 @@
 buildscript {
     repositories { mavenCentral() }
     dependencies {
-        classpath("org.flywaydb:flyway-mysql:10.22.0")
+        classpath("org.flywaydb:flyway-mysql:12.9.0")
         classpath("com.mysql:mysql-connector-j:9.4.0")
     }
 }
@@ -20,7 +20,11 @@ plugins {
     // DatabaseType service-loader can't see them ("No database found to handle
     // jdbc:mysql://…"). Centralizing it via the root `apply false` splits the two
     // onto different classloaders and breaks MySQL/MariaDB handling.
-    id("org.flywaydb.flyway") version "10.22.0"
+    //
+    // Pinned to 12.9.0 to match the flyway library catalog (PAR-273): the 10.22.0
+    // plugin referenced org.gradle.api.plugins.JavaPluginConvention, removed in
+    // Gradle 9, so flywayMigrate failed under Gradle 9.6 (ADT — CI fix).
+    id("org.flywaydb.flyway") version "12.9.0"
 }
 
 // group + version are set centrally by the root allprojects block (single
