@@ -16,6 +16,7 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.UUID;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Thin Keycloak Admin REST client for the in-game linking flow: authenticates
@@ -31,9 +32,25 @@ public class KeycloakAdminClient {
             .connectTimeout(Duration.ofSeconds(10))
             .build();
 
+    // setMinecraftAttributes is a GET-merge-PUT of the whole Keycloak user
+    // representation, so two concurrent links for the SAME user can interleave and
+    // the later PUT clobbers the earlier one (or an unrelated attribute changed in
+    // between). Serialise per-user with a small fixed lock stripe keyed by the
+    // subject id — bounded memory, and only same-sub operations ever contend (ADT-113).
+    private static final int LOCK_STRIPES = 64;
+    private final ReentrantLock[] subjectLocks;
+
     @Inject
     public KeycloakAdminClient(KeycloakConfiguration cfg) {
         this.cfg = cfg;
+        this.subjectLocks = new ReentrantLock[LOCK_STRIPES];
+        for (int i = 0; i < LOCK_STRIPES; i++) {
+            this.subjectLocks[i] = new ReentrantLock();
+        }
+    }
+
+    private ReentrantLock lockFor(String sub) {
+        return subjectLocks[Math.floorMod(sub.hashCode(), LOCK_STRIPES)];
     }
 
     public boolean isEnabled() {
@@ -42,6 +59,18 @@ public class KeycloakAdminClient {
 
     /** Merges the minecraft attributes into the Keycloak user identified by {@code sub}. */
     public void setMinecraftAttributes(String sub, UUID uuid, String name) throws Exception {
+        // Serialise the read-modify-write per subject so concurrent links for the
+        // same user can't clobber one another (ADT-113).
+        ReentrantLock lock = lockFor(sub);
+        lock.lock();
+        try {
+            doSetMinecraftAttributes(sub, uuid, name);
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    private void doSetMinecraftAttributes(String sub, UUID uuid, String name) throws Exception {
         String token = serviceAccountToken();
         String userUrl = cfg.getBaseUrl() + "/admin/realms/" + cfg.getRealm() + "/users/" + sub;
 
