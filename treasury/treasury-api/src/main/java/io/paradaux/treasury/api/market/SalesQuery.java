@@ -13,7 +13,7 @@ import java.util.UUID;
  * (would expose server-wide sales) or with more than one (the scopes are distinct
  * granularities and would AND to an empty result). The remaining fields are
  * optional filters; a null filter means "no constraint". Build with
- * {@link SalesQuery#builder()}.
+ * {@code SalesQuery.builder()}.
  */
 @Getter
 @Builder

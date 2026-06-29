@@ -24,6 +24,15 @@ tasks.withType<JavaCompile> {
     options.release.set(21)
 }
 
+tasks.withType<Javadoc> {
+    options.encoding = "UTF-8"
+    // Lombok generates builder()/getters at compile time, but javadoc runs on the
+    // pre-Lombok source, so {@link}s to those members resolve as "reference not
+    // found". Don't let that fail the published -javadoc jar (and thus the publish
+    // workflow) — emit them as warnings instead (CI fix).
+    isFailOnError = false
+}
+
 repositories {
     mavenCentral()
     maven {
