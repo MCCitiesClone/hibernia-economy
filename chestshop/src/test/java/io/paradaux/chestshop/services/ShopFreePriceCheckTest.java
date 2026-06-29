@@ -1,9 +1,7 @@
-package io.paradaux.chestshop.tests;
+package io.paradaux.chestshop.services;
 
 import io.paradaux.chestshop.configuration.Properties;
 import io.paradaux.chestshop.events.PreShopCreationEvent;
-import io.paradaux.chestshop.listeners.preshopcreation.FreePriceChecker;
-import io.paradaux.chestshop.listeners.preshopcreation.PriceChecker;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -11,20 +9,25 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Free ($0) shops are rejected at creation by default, and permitted when the
- * {@code ALLOW_FREE_SHOPS} config flag is set (PAR-88).
+ * Free ($0) shops are rejected at creation by default, and permitted when
+ * {@code ALLOW_FREE_SHOPS} is set (PAR-88). Exercises {@link ShopService#checkPrice}
+ * (price-line normalise) then {@link ShopService#rejectFreeShop} (the free-shop gate),
+ * the steps that were {@code PriceChecker}/{@code FreePriceChecker} before the creation
+ * pipeline was folded into the service (PAR-282).
  */
-public class FreePriceCheckerTest {
+class ShopFreePriceCheckTest {
+
+    private final ShopService shops = new ShopService();
 
     @AfterEach
     void resetConfig() {
         Properties.ALLOW_FREE_SHOPS = false; // restore the default for other tests
     }
 
-    private static PreShopCreationEvent run(String priceLine) {
+    private PreShopCreationEvent run(String priceLine) {
         PreShopCreationEvent event = new PreShopCreationEvent(null, null, new String[]{null, null, priceLine, null});
-        PriceChecker.onPreShopCreation(event);      // normalise the price line first (LOWEST)
-        FreePriceChecker.onPreShopCreation(event);  // then the free-shop gate (NORMAL)
+        shops.checkPrice(event);      // normalise the price line first (LOWEST)
+        shops.rejectFreeShop(event);  // then the free-shop gate (NORMAL)
         return event;
     }
 

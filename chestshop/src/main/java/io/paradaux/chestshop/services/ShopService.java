@@ -9,102 +9,431 @@ import io.paradaux.chestshop.economy.Economy;
 import io.paradaux.chestshop.events.PreShopCreationEvent;
 import io.paradaux.chestshop.events.ShopCreatedEvent;
 import io.paradaux.chestshop.events.ShopDestroyedEvent;
-import io.paradaux.chestshop.listeners.preshopcreation.ChestChecker;
-import io.paradaux.chestshop.listeners.preshopcreation.CreationFeeGetter;
-import io.paradaux.chestshop.listeners.preshopcreation.ErrorMessageSender;
-import io.paradaux.chestshop.listeners.preshopcreation.FreePriceChecker;
-import io.paradaux.chestshop.listeners.preshopcreation.ItemChecker;
-import io.paradaux.chestshop.listeners.preshopcreation.MoneyChecker;
-import io.paradaux.chestshop.listeners.preshopcreation.NameChecker;
-import io.paradaux.chestshop.listeners.preshopcreation.PermissionChecker;
-import io.paradaux.chestshop.listeners.preshopcreation.PriceChecker;
-import io.paradaux.chestshop.listeners.preshopcreation.PriceRatioChecker;
-import io.paradaux.chestshop.listeners.preshopcreation.QuantityChecker;
-import io.paradaux.chestshop.listeners.preshopcreation.TerrainChecker;
+import io.paradaux.chestshop.Security;
+import io.paradaux.chestshop.events.PreShopCreationEvent.CreationOutcome;
 import io.paradaux.chestshop.listeners.modules.StockCounterModule;
 import io.paradaux.chestshop.market.MarketListener;
 import io.paradaux.chestshop.signs.ChestShopSign;
+import io.paradaux.chestshop.utils.ItemUtil;
 import io.paradaux.chestshop.utils.LocationUtil;
+import io.paradaux.chestshop.utils.MaterialUtil;
+import io.paradaux.chestshop.utils.PriceUtil;
+import io.paradaux.chestshop.utils.StringUtil;
 import io.paradaux.chestshop.utils.uBlock;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
+import org.bukkit.block.Container;
 import org.bukkit.block.Sign;
 import org.bukkit.block.data.type.WallSign;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
 
 import java.math.BigDecimal;
+import java.util.Locale;
+import java.util.logging.Level;
 
 import static io.paradaux.chestshop.Permission.NOFEE;
 import static io.paradaux.chestshop.signs.ChestShopSign.AUTOFILL_CODE;
 
 /**
- * Owns the shop-lifecycle <em>money</em> logic: the creation fee charged when a shop
- * is made and the refund issued when one is removed, including the mirrored
- * server-economy account movement. This was split across two listeners
- * ({@code CreationFeeGetter} and {@code ShopRefundListener}); the listeners are now
- * thin entrypoints that delegate here, the same shape as
- * {@link TransactionService} owning the money leg of a trade.
+ * Owns the whole shop lifecycle: creation validation ({@link #create}), the post-creation
+ * and post-removal reactions ({@link #onCreated}/{@link #onDestroyed}), and the
+ * creation-fee / removal-refund money (with the mirrored server-economy movement).
+ * This replaces ChestShop's old event-bus design — a {@code PreShopCreationEvent} fanned
+ * out to a dozen priority-ordered validator classes coordinating through a mutable
+ * outcome/signLines bag — with one service whose validation steps are ordinary ordered
+ * private methods (PAR-282). The genuine cross-cutting hooks (market-DB sync, stock
+ * counter) and {@code Security}/{@code ProtectionService} integration stay.
  *
- * <p>The money itself still flows through the {@code Currency*Event}s — those are
- * Treasury integration points (the ledger settles them), so this service fires them
- * rather than moving money directly. The shop-creation <em>validation</em> pipeline
- * and the market-DB sync remain their own listeners (genuine event coordination /
- * cross-plugin integration); collapsing those is a later phase.
- *
- * <p>Shops themselves have no ChestShop-owned persistence — they are sign + chest
- * world state — so there is no repository here, only this service.
+ * <p>Shops have no ChestShop-owned persistence — they are sign + chest world state — so
+ * there is no repository here, only this service.
  */
 @Singleton
 public class ShopService {
 
     /**
-     * Run a shop-sign creation through the validation steps and return the result.
-     * The former {@code preshopcreation} listeners are invoked here in the exact
-     * priority + registration order they used to fire as events, over a plain
-     * {@link PreShopCreationEvent} carrier — replacing the internal event dispatch.
-     * The genuine integration events they fire (ItemParse, AccountQuery/Access,
-     * BuildPermission) still fire. The two former {@code ignoreCancelled=true} steps
-     * (the creation-fee charge and NameChecker's second pass) run only while the
-     * creation is still un-cancelled, matching the old behaviour.
+     * Run a shop-sign creation through the validation steps and return the result context
+     * for the caller ({@code SignCreate}) to act on. The steps run in the exact order the
+     * former priority-ordered validators fired; like the originals (almost all
+     * {@code ignoreCancelled=false}) each runs unconditionally and may overwrite the
+     * outcome — so the reported failure is the last problem found. The two former
+     * {@code ignoreCancelled=true} steps (the creation-fee charge and the second name
+     * pass) run only while the creation is still un-cancelled.
      */
     public PreShopCreationEvent create(Player player, Sign sign, String[] signLines) {
         PreShopCreationEvent ctx = new PreShopCreationEvent(player, sign, signLines);
 
-        // priority LOWEST
-        ItemChecker.onPreShopCreation(ctx);
-        PriceChecker.onPreShopCreation(ctx);
-        QuantityChecker.onPreShopCreation(ctx);
-        // priority LOW
-        ChestChecker.onPreShopCreation(ctx);
-        NameChecker.onPreShopCreation(ctx);
-        // priority NORMAL
-        MoneyChecker.onPreShopCreation(ctx);
-        FreePriceChecker.onPreShopCreation(ctx);
-        TerrainChecker.onPreShopCreation(ctx);
-        // priority HIGH
+        // LOWEST
+        checkItem(ctx);
+        checkPrice(ctx);
+        checkQuantity(ctx);
+        // LOW
+        checkChest(ctx);
+        resolveName(ctx);
+        // NORMAL
+        checkCreationFunds(ctx);
+        rejectFreeShop(ctx);
+        checkTerrain(ctx);
+        // HIGH
         if (Properties.BLOCK_SHOPS_WITH_SELL_PRICE_HIGHER_THAN_BUY_PRICE) {
-            PriceRatioChecker.onPreShopCreation(ctx);
+            checkPriceRatio(ctx);
         }
-        PermissionChecker.onPreShopCreation(ctx);
+        checkCreationPermission(ctx);
         if (!ctx.isCancelled()) { // CreationFeeGetter ran @HIGH with ignoreCancelled=true
-            CreationFeeGetter.onShopCreation(ctx);
+            chargeCreationFeeStep(ctx);
         }
-        // StockCounterModule ran @HIGH after CreationFeeGetter with the default
-        // ignoreCancelled=false, so it fires regardless: it normalises the quantity
-        // line and seeds the stock counter onto the sign.
+        // StockCounterModule ran @HIGH with the default ignoreCancelled=false, so it
+        // fires regardless: it normalises the quantity line and seeds the stock counter.
         StockCounterModule.onPreShopCreation(ctx);
-        // priority HIGHEST — NameChecker's second pass (ignoreCancelled=true)
+        // HIGHEST — the name second pass (ignoreCancelled=true)
         if (!ctx.isCancelled()) {
-            NameChecker.onPreShopCreationHighest(ctx);
+            resolveName(ctx);
         }
-        // priority MONITOR
-        ErrorMessageSender.onPreShopCreation(ctx);
+        // MONITOR — tell the player why it failed
+        sendCreationError(ctx);
 
         return ctx;
+    }
+
+    // ---- creation validation steps (were the preshopcreation listeners) ---------
+
+    /** Resolve/normalise the item line; autofill from the chest, or reject an invalid item. */
+    private void checkItem(PreShopCreationEvent ctx) {
+        String itemCode = ChestShopSign.getItem(ctx.getSignLines());
+        ItemStack item = ChestShop.items().parse(itemCode);
+
+        if (item == null) {
+            if (Properties.ALLOW_AUTO_ITEM_FILL && itemCode.equals(AUTOFILL_CODE)) {
+                Container container = uBlock.findConnectedContainer(ctx.getSign());
+                if (container != null) {
+                    for (ItemStack stack : container.getInventory().getContents()) {
+                        if (!MaterialUtil.isEmpty(stack)) {
+                            item = stack;
+                            break;
+                        }
+                    }
+                }
+                if (item == null) {
+                    ctx.setSignLine(ChestShopSign.ITEM_LINE, ChatColor.BOLD + ChestShopSign.AUTOFILL_CODE);
+                    ctx.setOutcome(CreationOutcome.ITEM_AUTOFILL);
+                    return;
+                }
+            } else {
+                ctx.setOutcome(CreationOutcome.INVALID_ITEM);
+                return;
+            }
+        }
+
+        itemCode = ItemUtil.getSignName(item);
+        if (StringUtil.getMinecraftStringWidth(itemCode) > MaterialUtil.MAXIMUM_SIGN_WIDTH) {
+            ctx.setOutcome(CreationOutcome.INVALID_ITEM);
+            return;
+        }
+        ctx.setSignLine(ChestShopSign.ITEM_LINE, itemCode);
+    }
+
+    /** Normalise the price line (B/S prefixes, precision, multipliers) and reject if invalid.
+     *  Package-private so the price-parser unit test can exercise it directly. */
+    void checkPrice(PreShopCreationEvent ctx) {
+        String line = ChestShopSign.getPrice(ctx.getSignLines()).toUpperCase(Locale.ROOT);
+        if (Properties.PRICE_PRECISION <= 0) {
+            line = line.replaceAll("\\.\\d*", ""); // remove too many decimal places
+        } else {
+            line = line.replaceAll("(\\.\\d{0," + Properties.PRICE_PRECISION + "})\\d*", "$1");
+        }
+        line = line.replaceAll("(\\.\\d*[1-9])0+", "$1"); // trailing zeroes
+        line = line.replaceAll("(\\d)\\.0+(\\D|$)", "$1$2"); // point + zeroes when only trailing zeros
+
+        String[] parts = line.split(":");
+        if (parts.length > 1 && (isInvalidPricePart(parts[0]) ^ isInvalidPricePart(parts[1]))) {
+            line = line.replace(':', ' ');
+            parts = new String[]{line};
+        }
+        if (parts[0].split(" ").length > 2
+                || line.indexOf('B') != line.lastIndexOf('B')
+                || line.indexOf('S') != line.lastIndexOf('S')) {
+            ctx.setOutcome(CreationOutcome.INVALID_PRICE);
+            return;
+        }
+        if (PriceUtil.isPrice(parts[0])) {
+            line = "B " + line;
+        }
+        if (parts.length > 1 && PriceUtil.isPrice(parts[1])) {
+            line += " S";
+        }
+        if (line.length() > 15) {
+            line = line.replace(" ", "");
+        }
+        if (line.length() > 15) {
+            ctx.setOutcome(CreationOutcome.INVALID_PRICE);
+            return;
+        }
+        for (String part : parts) {
+            if (!PriceUtil.hasSingleMultiplier(part)) {
+                ctx.setOutcome(CreationOutcome.INVALID_PRICE);
+                return;
+            }
+        }
+        ctx.setSignLine(ChestShopSign.PRICE_LINE, line);
+        if (!PriceUtil.hasBuyPrice(line) && !PriceUtil.hasSellPrice(line)) {
+            ctx.setOutcome(CreationOutcome.INVALID_PRICE);
+        }
+    }
+
+    private static boolean isInvalidPricePart(String part) {
+        for (char character : new char[]{'B', 'S'}) {
+            if (part.contains(Character.toString(character))) {
+                return !PriceUtil.hasPrice(part, character);
+            }
+        }
+        return false;
+    }
+
+    /** Reject a missing / out-of-range quantity line. */
+    private void checkQuantity(PreShopCreationEvent ctx) {
+        int amount = -1;
+        try {
+            amount = ChestShopSign.getQuantity(ctx.getSignLines());
+        } catch (NumberFormatException ignored) {} // not a quantity on the line
+        if (amount < 1 || amount > Properties.MAX_SHOP_AMOUNT) {
+            ctx.setOutcome(CreationOutcome.INVALID_QUANTITY);
+        }
+    }
+
+    /** Require a backing chest (non-admin) the creator may access. */
+    private void checkChest(PreShopCreationEvent ctx) {
+        String nameLine = ChestShopSign.getOwner(ctx.getSignLines());
+        Container connectedContainer = uBlock.findConnectedContainer(ctx.getSign().getBlock());
+
+        if (connectedContainer == null) {
+            if (!ChestShopSign.isAdminShop(nameLine)) {
+                ctx.setOutcome(CreationOutcome.NO_CHEST);
+            }
+            return;
+        }
+        Player player = ctx.getPlayer();
+        if (Permission.has(player, Permission.ADMIN)) {
+            return;
+        }
+        if (!Security.canAccess(player, connectedContainer.getBlock())) {
+            ctx.setOutcome(CreationOutcome.NO_PERMISSION_FOR_CHEST);
+        }
+    }
+
+    /** Charge / require the configured creation fee. */
+    private void checkCreationFunds(PreShopCreationEvent ctx) {
+        BigDecimal shopCreationPrice = Properties.SHOP_CREATION_PRICE;
+        if (shopCreationPrice.compareTo(BigDecimal.ZERO) == 0
+                || ChestShopSign.isAdminShop(ctx.getSignLines())
+                || Permission.has(ctx.getPlayer(), NOFEE)) {
+            return;
+        }
+        if (!ChestShop.economy().hasFunds(ctx.getPlayer().getUniqueId(), shopCreationPrice)) {
+            ctx.setOutcome(CreationOutcome.NOT_ENOUGH_MONEY);
+        }
+    }
+
+    /** DemocracyCraft: reject free (price-0) shops unless {@link Properties#ALLOW_FREE_SHOPS} (PAR-88).
+     *  Package-private so the free-shop unit test can exercise it directly. */
+    void rejectFreeShop(PreShopCreationEvent ctx) {
+        if (Properties.ALLOW_FREE_SHOPS) {
+            return;
+        }
+        String price = ChestShopSign.getPrice(ctx.getSignLines());
+        if (isFreePrice(PriceUtil.getExactBuyPrice(price)) || isFreePrice(PriceUtil.getExactSellPrice(price))) {
+            ctx.setOutcome(CreationOutcome.INVALID_PRICE);
+        }
+    }
+
+    private static boolean isFreePrice(BigDecimal price) {
+        return price.compareTo(PriceUtil.FREE) == 0;
+    }
+
+    /** Require terrain build permission for the sign and its chest. */
+    private void checkTerrain(PreShopCreationEvent ctx) {
+        Player player = ctx.getPlayer();
+        if (!Security.canPlaceSign(player, ctx.getSign())) {
+            ctx.setOutcome(CreationOutcome.NO_PERMISSION_FOR_TERRAIN);
+            return;
+        }
+        Container connectedContainer = uBlock.findConnectedContainer(ctx.getSign().getBlock());
+        Location containerLocation = connectedContainer != null ? connectedContainer.getLocation() : null;
+        if (!ChestShop.protection().canBuild(player, containerLocation, ctx.getSign().getLocation())) {
+            ctx.setOutcome(CreationOutcome.NO_PERMISSION_FOR_TERRAIN);
+        }
+    }
+
+    /** Optionally reject a shop whose sell price exceeds its buy price. */
+    private void checkPriceRatio(PreShopCreationEvent ctx) {
+        String priceLine = ChestShopSign.getPrice(ctx.getSignLines());
+        if (PriceUtil.hasBuyPrice(priceLine) && PriceUtil.hasSellPrice(priceLine)
+                && PriceUtil.getExactSellPrice(priceLine).compareTo(PriceUtil.getExactBuyPrice(priceLine)) > 0) {
+            ctx.setOutcome(CreationOutcome.SELL_PRICE_HIGHER_THAN_BUY_PRICE);
+        }
+    }
+
+    /** Per-name / per-item shop-creation permission check. */
+    private void checkCreationPermission(PreShopCreationEvent ctx) {
+        Player player = ctx.getPlayer();
+
+        if (ctx.getOwnerAccount() != null
+                && !ChestShop.accounts().canUseName(player, Permission.OTHER_NAME_CREATE, ctx.getOwnerAccount().getShortName())) {
+            ctx.setSignLine(ChestShopSign.NAME_LINE, "");
+            ctx.setOutcome(CreationOutcome.NO_PERMISSION);
+            return;
+        }
+
+        String priceLine = ChestShopSign.getPrice(ctx.getSignLines());
+        String itemLine = ChestShopSign.getItem(ctx.getSignLines());
+        ItemStack item = ChestShop.items().parse(itemLine);
+
+        if (item == null) {
+            if (PriceUtil.hasBuyPrice(priceLine) && !Permission.has(player, Permission.SHOP_CREATION_BUY)
+                    || PriceUtil.hasSellPrice(priceLine) && !Permission.has(player, Permission.SHOP_CREATION_SELL)) {
+                ctx.setOutcome(CreationOutcome.NO_PERMISSION);
+            }
+            return;
+        }
+
+        String matID = item.getType().toString().toLowerCase(Locale.ROOT);
+        String[] parts = itemLine.split("#", 2);
+        if (parts.length == 2 && Permission.hasPermissionSetFalse(player, Permission.SHOP_CREATION_ID + matID + "#" + parts[1])) {
+            ctx.setOutcome(CreationOutcome.NO_PERMISSION);
+            return;
+        }
+
+        if (PriceUtil.hasBuyPrice(priceLine)) {
+            if (!canCreateForItem(player, Permission.SHOP_CREATION_BUY_ID + matID, matID, Permission.SHOP_CREATION_BUY)) {
+                ctx.setOutcome(CreationOutcome.NO_PERMISSION);
+            }
+        } else if (PriceUtil.hasSellPrice(priceLine)) {
+            if (!canCreateForItem(player, Permission.SHOP_CREATION_SELL_ID + matID, matID, Permission.SHOP_CREATION_SELL)) {
+                ctx.setOutcome(CreationOutcome.NO_PERMISSION);
+            }
+        }
+    }
+
+    /** Shared buy/sell creation-permission test for a specific material. */
+    private static boolean canCreateForItem(Player player, String perItemSideNode, String matID, Permission sideNode) {
+        return Permission.has(player, perItemSideNode)
+                || Permission.has(player, Permission.SHOP_CREATION)
+                || Permission.has(player, Permission.SHOP_CREATION_ID + matID) && Permission.has(player, sideNode);
+    }
+
+    /** Charge the creation fee (the former {@code ignoreCancelled=true} CreationFeeGetter step). */
+    private void chargeCreationFeeStep(PreShopCreationEvent ctx) {
+        if (!chargeCreationFee(ctx.getPlayer(), ctx.getSignLines())) {
+            ctx.setOutcome(CreationOutcome.NOT_ENOUGH_MONEY);
+            ctx.setSignLines(new String[4]);
+        }
+    }
+
+    /** Resolve the owner account from the name line (player or B:&lt;id&gt; business). */
+    private void resolveName(PreShopCreationEvent ctx) {
+        String name = ChestShopSign.getOwner(ctx.getSignLines());
+        Player player = ctx.getPlayer();
+
+        if (ChestShopSign.isBusinessAccount(name)) {
+            resolveBusinessName(ctx, player, name);
+            return;
+        }
+
+        Account account = ctx.getOwnerAccount();
+        if (account == null || !account.getShortName().equalsIgnoreCase(name)) {
+            account = null;
+            try {
+                if (name.isEmpty() || !ChestShop.accounts().canUseName(player, Permission.OTHER_NAME_CREATE, name)) {
+                    account = ChestShop.accounts().getOrCreateAccount(player);
+                } else {
+                    account = ChestShop.accounts().resolveAccount(name);
+                    if (account == null) {
+                        Player otherPlayer = ChestShop.getBukkitServer().getPlayer(name);
+                        try {
+                            account = otherPlayer != null
+                                    ? ChestShop.accounts().getOrCreateAccount(otherPlayer)
+                                    : ChestShop.accounts().getOrCreateAccount(ChestShop.getBukkitServer().getOfflinePlayer(name));
+                        } catch (IllegalArgumentException e) {
+                            ctx.getPlayer().sendMessage(e.getMessage());
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                ChestShop.getBukkitLogger().log(Level.SEVERE, "Error while trying to check account for name " + name + " with player " + player.getName(), e);
+            }
+        }
+        ctx.setOwnerAccount(account);
+        if (account != null) {
+            ctx.setSignLine(ChestShopSign.NAME_LINE, account.getShortName());
+        } else {
+            ctx.setSignLine(ChestShopSign.NAME_LINE, "");
+            ctx.setOutcome(CreationOutcome.UNKNOWN_PLAYER);
+        }
+    }
+
+    /**
+     * Validate and resolve a business-account ({@code B:<base36>}) name: Treasury must be
+     * present, the account must exist, and (unless the creator is a ChestShop admin) the
+     * creator must hold the firm's CHESTSHOP permission.
+     */
+    private void resolveBusinessName(PreShopCreationEvent ctx, Player player, String name) {
+        Account existing = ctx.getOwnerAccount();
+        if (existing != null && existing.getShortName().equalsIgnoreCase(name)) {
+            return; // already resolved on a previous pass
+        }
+
+        if (Bukkit.getPluginManager().getPlugin("Treasury") == null) {
+            ChestShop.message().send(player, "chestshop.TREASURY_REQUIRED");
+            failName(ctx);
+            return;
+        }
+        Account account = ChestShop.accounts().resolveAccount(name);
+        if (account == null) {
+            ChestShop.message().send(player, "chestshop.BUSINESS_ACCOUNT_NOT_FOUND");
+            failName(ctx);
+            return;
+        }
+        if (!Permission.has(player, Permission.ADMIN) && !ChestShop.accounts().canAccess(player, account)) {
+            ChestShop.message().send(player, "chestshop.BUSINESS_NO_CHESTSHOP_PERMISSION");
+            failName(ctx);
+            return;
+        }
+        ctx.setOwnerAccount(account);
+        int accountId = ChestShopSign.getBusinessAccountId(account.getShortName());
+        ctx.setSignLine(ChestShopSign.NAME_LINE, ChestShopSign.businessAccountSignName(accountId));
+    }
+
+    private void failName(PreShopCreationEvent ctx) {
+        ctx.setSignLine(ChestShopSign.NAME_LINE, "");
+        ctx.setOutcome(CreationOutcome.UNKNOWN_PLAYER);
+    }
+
+    /** Tell the creator why the shop could not be made (was the MONITOR ErrorMessageSender). */
+    private void sendCreationError(PreShopCreationEvent ctx) {
+        if (!ctx.isCancelled()) {
+            return;
+        }
+        String message = switch (ctx.getOutcome()) {
+            case UNKNOWN_PLAYER -> "chestshop.PLAYER_NOT_FOUND";
+            case INVALID_ITEM -> "chestshop.INCORRECT_ITEM_ID";
+            case INVALID_PRICE -> "chestshop.INVALID_SHOP_PRICE";
+            case INVALID_QUANTITY -> "chestshop.INVALID_SHOP_QUANTITY";
+            case SELL_PRICE_HIGHER_THAN_BUY_PRICE -> "chestshop.SELL_PRICE_HIGHER_THAN_BUY_PRICE";
+            case NO_CHEST -> "chestshop.NO_CHEST_DETECTED";
+            case NO_PERMISSION -> "chestshop.NO_PERMISSION";
+            case NO_PERMISSION_FOR_TERRAIN -> "chestshop.CANNOT_CREATE_SHOP_HERE";
+            case NO_PERMISSION_FOR_CHEST -> "chestshop.CANNOT_ACCESS_THE_CHEST";
+            case NOT_ENOUGH_MONEY -> "chestshop.NOT_ENOUGH_MONEY";
+            case ITEM_AUTOFILL -> "chestshop.CLICK_TO_AUTOFILL_ITEM";
+            default -> null;
+        };
+        if (message != null) {
+            ChestShop.message().send(ctx.getPlayer(), message);
+        }
     }
 
     /**
