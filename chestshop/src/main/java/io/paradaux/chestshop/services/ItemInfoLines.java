@@ -1,4 +1,4 @@
-package io.paradaux.chestshop.events;
+package io.paradaux.chestshop.services;
 
 import io.paradaux.chestshop.ChestShop;
 import net.kyori.adventure.text.Component;
@@ -11,38 +11,36 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * Carrier for an {@code /iteminfo} call, accumulated by
- * {@link io.paradaux.chestshop.services.InfoService#collectItemInfo}. Contributor steps add
- * info lines, kept as pre-rendered (prefix-less) {@link Component}s keyed by a stable string
- * so duplicates collapse and order is preserved; the caller sends them in order. Lines come
- * either from a {@code messages.properties} key (rendered through the framework
- * {@link io.paradaux.hibernia.framework.i18n.Message}) or as a raw component / legacy-section
- * string. Formerly a Bukkit event.
+ * Ordered accumulator for the lines {@link InfoService#collectItemInfo} produces for
+ * an {@code /iteminfo} call. Lines are pre-rendered (prefix-less) {@link Component}s
+ * keyed by a stable string so duplicates collapse (a later contributor can override an
+ * earlier one by reusing its key) and insertion order is preserved; the caller sends
+ * them in order. Lines come either from a {@code messages.properties} key (rendered via
+ * the framework {@link io.paradaux.hibernia.framework.i18n.Message}) or as a raw
+ * component / legacy-section string.
+ *
+ * <p>Was the {@code ItemInfoEvent} carrier of the old in-process event bus (PAR-282);
+ * it is plain data now, owned by the info service.
  *
  * @author Acrobot
  */
-public class ItemInfoEvent {
+public final class ItemInfoLines {
 
     private final CommandSender sender;
     private final ItemStack item;
-
     private final Map<String, Component> messages = new LinkedHashMap<>();
 
-    public ItemInfoEvent(CommandSender sender, ItemStack item) {
+    public ItemInfoLines(CommandSender sender, ItemStack item) {
         this.sender = sender;
         this.item = item;
     }
 
-    /**
-     * @return CommandSender who initiated the call
-     */
+    /** @return the CommandSender who initiated the {@code /iteminfo} call. */
     public CommandSender getSender() {
         return sender;
     }
 
-    /**
-     * @return Item recognised by /iteminfo
-     */
+    /** @return the item being described. */
     public ItemStack getItem() {
         return item;
     }
@@ -50,6 +48,7 @@ public class ItemInfoEvent {
     /**
      * Add a line rendered from a {@code messages.properties} key (prefix blanked),
      * stored under that key.
+     *
      * @param key  the message key (e.g. {@code chestshop.iteminfo_repaircost})
      * @param args alternating placeholder name/value pairs
      */
@@ -67,9 +66,7 @@ public class ItemInfoEvent {
         messages.put(key, LegacyComponentSerializer.legacySection().deserialize(message));
     }
 
-    /**
-     * @return the accumulated lines, each as a key → pre-rendered {@link Component} entry, in order
-     */
+    /** @return the accumulated lines as ordered key → pre-rendered {@link Component} entries. */
     public Collection<Map.Entry<String, Component>> getMessages() {
         return messages.entrySet();
     }

@@ -3,21 +3,17 @@ package io.paradaux.chestshop.commands;
 import io.paradaux.chestshop.Permission;
 import io.paradaux.chestshop.utils.MaterialUtil;
 import io.paradaux.chestshop.ChestShop;
-import io.paradaux.chestshop.configuration.Properties;
-import io.paradaux.chestshop.events.ItemInfoEvent;
+import io.paradaux.chestshop.services.ItemInfoLines;
 import io.paradaux.chestshop.utils.ItemUtil;
 import io.paradaux.hibernia.framework.commander.annotations.Command;
 import io.paradaux.hibernia.framework.commander.annotations.GreedyArg;
 import io.paradaux.hibernia.framework.commander.annotations.Route;
 import io.paradaux.hibernia.framework.commander.annotations.Sender;
 import io.paradaux.hibernia.framework.commander.spi.CommandHandler;
-import com.google.common.collect.ImmutableMap;
 import net.kyori.adventure.text.Component;
-import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.HumanEntity;
-import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.Map;
@@ -52,7 +48,7 @@ public class ItemInfo implements CommandHandler {
         }
 
         ChestShop.message().send(sender, "chestshop.iteminfo", "prefix", "");
-        if (!sendItemName(sender, item, "chestshop.iteminfo_fullname")) return;
+        if (!ChestShop.info().sendItemName(sender, item, "chestshop.iteminfo_fullname")) return;
 
         try {
             ChestShop.message().send(sender, "chestshop.iteminfo_shopname", "prefix", "", "item", ItemUtil.getSignName(item));
@@ -62,24 +58,9 @@ public class ItemInfo implements CommandHandler {
             return;
         }
 
-        ItemInfoEvent event = ChestShop.info().collectItemInfo(sender, item);
-        for (Map.Entry<String, Component> entry : event.getMessages()) {
+        ItemInfoLines lines = ChestShop.info().collectItemInfo(sender, item);
+        for (Map.Entry<String, Component> entry : lines.getMessages()) {
             sender.sendMessage(entry.getValue());
         }
-    }
-
-    public static boolean sendItemName(CommandSender sender, ItemStack item, String messageKey) {
-        try {
-            Map<String, String> replacementMap = ImmutableMap.of("item", ItemUtil.getName(item));
-            if (!Properties.SHOWITEM_MESSAGE || !(sender instanceof Player)
-                    || !MaterialUtil.Show.sendMessage((Player) sender, sender.getName(), messageKey, false, new ItemStack[]{item}, replacementMap)) {
-                sender.sendMessage(ChestShop.message().component(messageKey, ChestShop.values(false, replacementMap)));
-            }
-        } catch (IllegalArgumentException e) {
-            sender.sendMessage(ChatColor.RED + "Error while generating full name. Please contact an admin or take a look at the console/log!");
-            ChestShop.getPlugin().getLogger().log(Level.SEVERE, "Error while generating full item name", e);
-            return false;
-        }
-        return true;
     }
 }
