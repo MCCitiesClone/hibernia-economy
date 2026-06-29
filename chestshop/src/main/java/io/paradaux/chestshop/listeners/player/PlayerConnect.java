@@ -7,7 +7,6 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 
 import io.paradaux.chestshop.ChestShop;
-import io.paradaux.chestshop.listeners.pretransaction.ErrorMessageSender;
 import io.paradaux.chestshop.players.PlayerDTO;
 
 /**
@@ -32,9 +31,8 @@ public class PlayerConnect implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR)
     public static void onPlayerQuit(final PlayerQuitEvent event) {
-        // Drop the player's notification-cooldown rows. This was ErrorMessageSender's own
-        // PlayerQuitEvent handler, orphaned when the pre-transaction listeners were
-        // collapsed into TransactionService; re-homed here so the table still clears.
-        ErrorMessageSender.onQuit(event);
+        // Drop the player's notification-cooldown rows (owned by TransactionService since
+        // the pre-transaction validators were folded into it).
+        ChestShop.transactions().clearNotificationCooldowns(event.getPlayer().getUniqueId());
     }
 }

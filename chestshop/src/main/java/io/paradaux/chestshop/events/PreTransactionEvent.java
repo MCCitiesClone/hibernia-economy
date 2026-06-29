@@ -8,7 +8,6 @@ import org.bukkit.inventory.ItemStack;
 
 import java.math.BigDecimal;
 
-import static io.paradaux.chestshop.events.PreTransactionEvent.TransactionOutcome.OTHER;
 import static io.paradaux.chestshop.events.PreTransactionEvent.TransactionOutcome.TRANSACTION_SUCCESFUL;
 import static io.paradaux.chestshop.events.TransactionEvent.TransactionType;
 
@@ -53,14 +52,6 @@ public class PreTransactionEvent {
     }
 
     /**
-     * @deprecated Use {@link #PreTransactionEvent(Inventory, Inventory, ItemStack[], BigDecimal, Player, Account, Sign, TransactionType)}
-     */
-    @Deprecated
-    public PreTransactionEvent(Inventory ownerInventory, Inventory clientInventory, ItemStack[] items, double price, Player client, Account ownerAccount, Sign sign, TransactionType type) {
-        this(ownerInventory, clientInventory, items, BigDecimal.valueOf(price), client, ownerAccount, sign, type);
-    }
-
-    /**
      * @return Shop's sign
      */
     public Sign getSign() {
@@ -83,28 +74,6 @@ public class PreTransactionEvent {
      */
     public void setExactPrice(BigDecimal exactPrice) {
         this.exactPrice = exactPrice;
-    }
-
-    /**
-     * Get the total price
-     *
-     * @return Total price of the items
-     * @deprecated Use {@link #getExactPrice()}
-     */
-    @Deprecated
-    public double getPrice() {
-        return exactPrice.doubleValue();
-    }
-
-    /**
-     * Sets the price of the items
-     *
-     * @param price Price of the items
-     * @deprecated Use {@link #setExactPrice(BigDecimal)}
-     */
-    @Deprecated
-    public void setPrice(double price) {
-        this.exactPrice = BigDecimal.valueOf(price);
     }
 
     /**
@@ -190,14 +159,6 @@ public class PreTransactionEvent {
      */
     public boolean isCancelled() {
         return transactionOutcome != TRANSACTION_SUCCESFUL;
-    }
-
-    public void setCancelled(boolean cancel) {
-        if (cancel) {
-            transactionOutcome = OTHER;
-        } else {
-            transactionOutcome = TRANSACTION_SUCCESFUL;
-        }
     }
 
     /**
