@@ -2,6 +2,7 @@ package io.paradaux.treasury.api;
 
 import io.paradaux.treasury.model.Page;
 import io.paradaux.treasury.model.economy.*;
+import org.jetbrains.annotations.Nullable;
 
 import java.math.BigDecimal;
 import java.util.Collection;
@@ -9,11 +10,23 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+/**
+ * Public, in-process Treasury API.
+ *
+ * <p><b>Nullability contract (ADT-85):</b> unless a method is annotated
+ * {@link Nullable}, its return value is non-null. Collection, {@link List},
+ * {@link Map} and {@link Page} returns are always non-null but may be empty;
+ * a single-object lookup that can miss is annotated {@code @Nullable} and
+ * documents the miss case. Reference parameters are required (non-null) unless
+ * stated otherwise.
+ */
 public interface TreasuryApi {
 
     // ---- Balance ----
 
+    /** Never null: an account with no balance row reads as {@link BigDecimal#ZERO}. */
     BigDecimal getBalanceByAccountId(int accountId);
+    /** Never null: an unknown owner / missing balance reads as {@link BigDecimal#ZERO}. */
     BigDecimal getBalanceByOwnerUuid(UUID ownerUuid);
 
     /**
@@ -29,8 +42,10 @@ public interface TreasuryApi {
 
     // ---- Account lookups ----
 
-    Account getAccountByUUID(UUID ownerUuid);
-    Account getAccountById(int accountId);
+    /** @return the owner's PERSONAL account, or {@code null} if they have none. */
+    @Nullable Account getAccountByUUID(UUID ownerUuid);
+    /** @return the account, or {@code null} if no account with that id exists. */
+    @Nullable Account getAccountById(int accountId);
 
     /**
      * Batch variant of {@link #getAccountById(int)}: fetches many accounts in one
@@ -126,8 +141,8 @@ public interface TreasuryApi {
     /** Exports all transactions for an account as CSV, uploads to bytebin, returns the URL. */
     String exportTransactionsFor(int accountId);
 
-    /** Single transaction lookup by ID. */
-    LedgerTxn getTransaction(long txnId);
+    /** Single transaction lookup by ID. @return the transaction, or {@code null} if no txn has that id. */
+    @Nullable LedgerTxn getTransaction(long txnId);
 
     /** All postings belonging to a transaction. */
     List<LedgerPosting> getPostingsForTransaction(long txnId);
@@ -140,7 +155,7 @@ public interface TreasuryApi {
      * <p>Use this when a consuming plugin needs to route a payment to a specific named
      * government account (e.g. a configurable tax-destination account).
      */
-    Account getGovernmentAccountByName(String name);
+    @Nullable Account getGovernmentAccountByName(String name);
 
     // ---- Transfers ----
 
