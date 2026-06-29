@@ -22,7 +22,6 @@ import io.paradaux.chestshop.listeners.modules.MetricsModule;
 import io.paradaux.chestshop.listeners.modules.StockCounterModule;
 import io.paradaux.chestshop.listeners.player.*;
 import io.paradaux.chestshop.listeners.preshopcreation.CreationFeeGetter;
-import io.paradaux.chestshop.listeners.posttransaction.*;
 import io.paradaux.chestshop.listeners.preshopcreation.*;
 import io.paradaux.chestshop.listeners.pretransaction.*;
 import io.paradaux.chestshop.listeners.pretransaction.ErrorMessageSender;
