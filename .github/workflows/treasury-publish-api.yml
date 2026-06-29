@@ -9,7 +9,12 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write   # create tags + GitHub releases on main
+  contents: write        # create tags + GitHub releases on main
+  # The called treasury-test.yml requests these to surface JUnit results + post the
+  # coverage comment; a reusable workflow can't be granted more than its caller, so
+  # the caller must declare them too or the run fails at startup (CI fix).
+  checks: write
+  pull-requests: write
 
 concurrency:
   group: treasury-publish-api-${{ github.ref }}
