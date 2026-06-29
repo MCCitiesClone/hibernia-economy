@@ -12,6 +12,8 @@ import io.paradaux.treasuryrestapi.model.TransactionRow;
 import io.paradaux.treasuryrestapi.util.DiscordWebhook;
 import io.paradaux.treasuryrestapi.util.HmacSha256;
 import io.paradaux.treasuryrestapi.util.SsrfValidator;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -31,6 +33,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Tails the shared ledger and delivers new <b>settled</b> transactions to
@@ -74,6 +81,12 @@ public class WebhookDispatcherService {
     private long retryBaseSeconds;
     @Value("${treasury.webhook.retry-max-seconds:3600}")
     private long retryMaxSeconds;
+    @Value("${treasury.webhook.delivery-concurrency:8}")
+    private int deliveryConcurrency;
+
+    /** Bounded pool that fans out a tick's due deliveries so one slow/hung endpoint
+     *  no longer stalls the rest of the batch (ADT-116). Built in {@link #init()}. */
+    private ExecutorService deliveryExecutor;
 
     public WebhookDispatcherService(LedgerMapper ledgerMapper,
                                     WebhookSubscriptionMapper subscriptionMapper,
@@ -92,6 +105,25 @@ public class WebhookDispatcherService {
                 .connectTimeout(Duration.ofMillis(connectTimeoutMs))
                 .followRedirects(HttpClient.Redirect.NEVER)
                 .build();
+    }
+
+    @PostConstruct
+    void init() {
+        int threads = Math.max(1, deliveryConcurrency);
+        AtomicInteger seq = new AtomicInteger();
+        ThreadFactory tf = r -> {
+            Thread t = new Thread(r, "webhook-deliver-" + seq.incrementAndGet());
+            t.setDaemon(true);
+            return t;
+        };
+        this.deliveryExecutor = Executors.newFixedThreadPool(threads, tf);
+    }
+
+    @PreDestroy
+    void shutdown() {
+        if (deliveryExecutor != null) {
+            deliveryExecutor.shutdownNow();
+        }
     }
 
     @Scheduled(fixedDelayString = "${treasury.webhook.poll-ms:2000}",
@@ -148,8 +180,26 @@ public class WebhookDispatcherService {
 
     private void deliverDue() {
         List<DueDelivery> due = deliveryMapper.findDue(deliveryBatch);
+        if (due.isEmpty()) return;
+
+        // Fan the batch out across a bounded pool: each delivery does a blocking
+        // HttpClient.send up to httpTimeoutMs, so sending them sequentially let a few
+        // slow/hung endpoints stall every later delivery in the batch (and, with
+        // @Scheduled fixedDelay, the next tick). Each deliver() records its own
+        // outcome and never throws, so invokeAll just waits for the whole batch to
+        // settle (ADT-116).
+        if (deliveryExecutor == null || due.size() == 1) {
+            for (DueDelivery d : due) deliver(d);
+            return;
+        }
+        List<Callable<Void>> tasks = new ArrayList<>(due.size());
         for (DueDelivery d : due) {
-            deliver(d);
+            tasks.add(() -> { deliver(d); return null; });
+        }
+        try {
+            deliveryExecutor.invokeAll(tasks);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
         }
     }
 
