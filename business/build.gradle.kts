@@ -16,6 +16,10 @@ dependencies {
     // Business API subproject (bundled into shadow JAR)
     implementation(project(":business:business-api"))
 
+    // Shared framework-free utilities (balance-tax bracket model, etc.) — bundled
+    // into the shadow JAR (ADT-22, ADT-186).
+    implementation(project(":common"))
+
     // Paper API (provided by server)
     compileOnly(libs.paper.api)
 
