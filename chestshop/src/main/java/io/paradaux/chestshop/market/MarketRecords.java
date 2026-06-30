@@ -189,6 +189,11 @@ final class MarketRecords {
         return inventory == null ? 0 : inventoryUtil.getAmount(item, inventory);
     }
 
+    /** Remaining free space for the item in the container; null if unknown (no inventory). */
+    Integer capacityOf(ItemStack item, Inventory inventory) {
+        return inventory == null ? null : inventoryUtil.getRemainingCapacity(item, inventory);
+    }
+
     private static BigDecimal nonNegativeOrNull(BigDecimal v) {
         return (v == null || v.signum() < 0) ? null : v;
     }
@@ -210,7 +215,8 @@ final class MarketRecords {
                 owner.admin() ? null : shopStock);
     }
 
-    ChestShopShopRecord shop(Sign sign, ItemStack item, Owner owner, Integer currentStock) {
+    ChestShopShopRecord shop(Sign sign, ItemStack item, Owner owner,
+                             Integer currentStock, Integer estimatedCapacity) {
         Location l = sign.getLocation();
         String priceLine = sign.getLine(ChestShopSign.PRICE_LINE);
         int batch;
@@ -225,7 +231,8 @@ final class MarketRecords {
                 item.getType().name(), itemKey(item), itemName(item), isCustom(item), itemData(item),
                 nonNegativeOrNull(PriceUtil.getExactBuyPrice(priceLine)),
                 nonNegativeOrNull(PriceUtil.getExactSellPrice(priceLine)),
-                batch, owner.admin() ? null : currentStock);
+                batch, owner.admin() ? null : currentStock,
+                owner.admin() ? null : estimatedCapacity, worldUuid(l));
     }
 
     int totalAmount(ItemStack[] stock) {
@@ -234,5 +241,9 @@ final class MarketRecords {
 
     private static String worldName(Location l) {
         return l.getWorld() != null ? l.getWorld().getName() : null;
+    }
+
+    private static UUID worldUuid(Location l) {
+        return l.getWorld() != null ? l.getWorld().getUID() : null;
     }
 }

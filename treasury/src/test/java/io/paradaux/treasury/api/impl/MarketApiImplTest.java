@@ -57,7 +57,7 @@ class MarketApiImplTest {
         ChestShopShopRecord shop = new ChestShopShopRecord(
                 "world", 1, 2, 3, false, 100, "PERSONAL", null, UUID.randomUUID(),
                 "DIAMOND", "DIAMOND", "Diamond", false, null,
-                new BigDecimal("5.00"), null, 1, 64);
+                new BigDecimal("5.00"), null, 1, 64, 192, UUID.randomUUID());
 
         api.upsertShop(shop);
 
@@ -66,6 +66,7 @@ class MarketApiImplTest {
         Map<String, Object> p = cap.getValue();
         assertEquals("PERSONAL", p.get("shopAccountType"));
         assertEquals(64, p.get("currentStock"));
+        assertEquals(192, p.get("estimatedCapacity"));
         assertEquals(1, p.get("batchQty"));
     }
 
@@ -74,8 +75,8 @@ class MarketApiImplTest {
         MarketApiImpl api = new MarketApiImpl(mapper);
         api.deactivateShop("world", 1, 2, 3);
         verify(mapper).deactivateShop("world", 1, 2, 3);
-        api.updateShopStock("world", 1, 2, 3, 10);
-        verify(mapper).updateShopStock("world", 1, 2, 3, 10);
+        api.updateShopStock("world", 1, 2, 3, 10, 54);
+        verify(mapper).updateShopStock("world", 1, 2, 3, 10, 54);
     }
 
     @Test

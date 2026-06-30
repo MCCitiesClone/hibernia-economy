@@ -68,11 +68,12 @@ public class MarketListener implements Listener {
             MarketRecords.Owner owner = records.ownerFromUuid(ownerUuid, admin);
             String direction = event.getTransactionType() == TransactionContext.TransactionType.BUY ? "BUY" : "SELL";
             Integer shopStock = admin ? null : records.stockOf(item, event.getOwnerInventory());
+            Integer capacity = admin ? null : records.capacityOf(item, event.getOwnerInventory());
 
             MarketApi market = MarketHook.market();
             market.recordSale(records.sale(sign, item, quantity, event.getClient().getUniqueId(),
                     owner, event.getExactPrice(), event.getSalesTax(), direction, shopStock, event.getSettlementTxnId()));
-            market.upsertShop(records.shop(sign, item, owner, shopStock));
+            market.upsertShop(records.shop(sign, item, owner, shopStock, capacity));
         } catch (Throwable ignored) {
             // analytics only
         }
@@ -88,10 +89,11 @@ public class MarketListener implements Listener {
             boolean admin = chestShopSign.isAdminShop(event.getSignLines());
             UUID ownerUuid = event.getOwnerAccount() != null ? event.getOwnerAccount().getUuid() : null;
             MarketRecords.Owner owner = records.ownerFromUuid(ownerUuid, admin);
-            Integer stock = (!admin && event.getContainer() != null)
-                    ? records.stockOf(item, event.getContainer().getInventory())
-                    : null;
-            MarketHook.market().upsertShop(records.shop(sign, item, owner, stock));
+            Inventory container = (!admin && event.getContainer() != null)
+                    ? event.getContainer().getInventory() : null;
+            Integer stock = container != null ? records.stockOf(item, container) : null;
+            Integer capacity = container != null ? records.capacityOf(item, container) : null;
+            MarketHook.market().upsertShop(records.shop(sign, item, owner, stock, capacity));
         } catch (Throwable ignored) {
         }
     }
@@ -127,7 +129,7 @@ public class MarketListener implements Listener {
                 market.updateShopStock(
                         l.getWorld() != null ? l.getWorld().getName() : null,
                         l.getBlockX(), l.getBlockY(), l.getBlockZ(),
-                        records.stockOf(item, inv));
+                        records.stockOf(item, inv), records.capacityOf(item, inv));
             }
         } catch (Throwable ignored) {
         }

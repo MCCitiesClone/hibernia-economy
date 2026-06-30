@@ -43,6 +43,7 @@ public class DatabaseModule extends AbstractModule {
                 addMapperClass(AccountRedirectMapper.class);
                 addMapperClass(ChestShopMarketMapper.class);
                 addMapperClass(ChestShopSalesReadMapper.class);
+                addMapperClass(ShopQueryMapper.class);
                 addMapperClass(ExplorerAuditMapper.class);
 
                 addTypeHandlerClass(UuidBinaryTypeHandler.class);

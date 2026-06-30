@@ -3,6 +3,7 @@ package io.paradaux.chestshop.market;
 import io.paradaux.chestshop.ChestShop;
 import io.paradaux.business.api.BusinessApi;
 import io.paradaux.treasury.api.MarketApi;
+import io.paradaux.treasury.api.ShopQueryApi;
 import io.paradaux.treasury.api.TreasuryApi;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.RegisteredServiceProvider;
@@ -20,6 +21,7 @@ import java.util.logging.Level;
 public final class MarketHook {
 
     private static MarketApi market;
+    private static ShopQueryApi shopQuery;
     private static TreasuryApi treasury;
     private static BusinessApi business;
 
@@ -27,10 +29,13 @@ public final class MarketHook {
 
     public static void init() {
         market = load(MarketApi.class);
+        shopQuery = load(ShopQueryApi.class);
         treasury = load(TreasuryApi.class);
         business = load(BusinessApi.class);
         ChestShop.getBukkitLogger().log(Level.INFO, "ChestShop market tracker {0}",
                 enabled() ? "enabled" : "disabled (Treasury MarketApi not available)");
+        ChestShop.getBukkitLogger().log(Level.INFO, "ChestShop /find search {0}",
+                searchEnabled() ? "enabled" : "disabled (Treasury ShopQueryApi not available)");
     }
 
     private static <T> T load(Class<T> type) {
@@ -47,7 +52,13 @@ public final class MarketHook {
         return market != null && treasury != null;
     }
 
+    /** True when the ShopQueryApi (the /find read side) is available. */
+    public static boolean searchEnabled() {
+        return shopQuery != null;
+    }
+
     public static MarketApi market() { return market; }
+    public static ShopQueryApi shopQuery() { return shopQuery; }
     public static TreasuryApi treasury() { return treasury; }
     public static BusinessApi business() { return business; }
 }

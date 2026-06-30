@@ -76,6 +76,35 @@ public class InventoryUtil {
     }
 
     /**
+     * Remaining space for {@code item} in the inventory — how many more units of
+     * the shop item would still fit. Per slot: an empty slot contributes a full
+     * stack ({@code min(itemMax, invMax)}), a slot already holding a similar item
+     * contributes its headroom, a slot holding anything else contributes nothing.
+     * Honours the STACK_TO_64 config via {@link #getMaxStackSize}. Used to track a
+     * sell-shop's "room to sell into" for {@code /find} (REMAINING_CAPACITY sort,
+     * hide-full filter).
+     *
+     * @param item      the shop item
+     * @param inventory the shop container inventory
+     * @return remaining capacity in units (0 if the inventory is null)
+     */
+    public int getRemainingCapacity(ItemStack item, Inventory inventory) {
+        if (inventory == null) {
+            return 0;
+        }
+        int perStack = Math.min(getMaxStackSize(item), inventory.getMaxStackSize());
+        int capacity = 0;
+        for (ItemStack slot : getStorageContents(inventory)) {
+            if (MaterialUtil.isEmpty(slot)) {
+                capacity += perStack;
+            } else if (materialUtil.equals(slot, item)) {
+                capacity += Math.max(0, perStack - slot.getAmount());
+            }
+        }
+        return capacity;
+    }
+
+    /**
      * Tells if the inventory is empty
      *
      * @param inventory inventory

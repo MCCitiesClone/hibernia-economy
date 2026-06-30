@@ -5,9 +5,11 @@ import com.google.inject.Singleton;
 import io.paradaux.treasury.Treasury;
 import io.paradaux.treasury.api.MarketApi;
 import io.paradaux.treasury.api.SalesQueryApi;
+import io.paradaux.treasury.api.ShopQueryApi;
 import io.paradaux.treasury.api.TaxApi;
 import io.paradaux.treasury.api.impl.MarketApiImpl;
 import io.paradaux.treasury.api.impl.SalesQueryApiImpl;
+import io.paradaux.treasury.api.impl.ShopQueryApiImpl;
 import io.paradaux.treasury.api.impl.TaxApiImpl;
 import io.paradaux.treasury.events.FirstPlayerJoinEvent;
 import io.paradaux.treasury.events.PlayerLoginListener;
@@ -75,6 +77,8 @@ public class TreasuryModule extends AbstractModule {
         bind(MarketApi.class).to(MarketApiImpl.class).in(Singleton.class);
         bind(SalesQueryApiImpl.class).in(Singleton.class);
         bind(SalesQueryApi.class).to(SalesQueryApiImpl.class).in(Singleton.class);
+        bind(ShopQueryApiImpl.class).in(Singleton.class);
+        bind(ShopQueryApi.class).to(ShopQueryApiImpl.class).in(Singleton.class);
 
         // Government salaries — LuckPerms-group-based payouts on a timer.
         bind(Server.class).toInstance(treasury.getServer());

@@ -15,10 +15,12 @@ import lombok.extern.slf4j.Slf4j;
 import io.paradaux.treasury.adapters.VaultEconomyRegistrar;
 import io.paradaux.treasury.api.MarketApi;
 import io.paradaux.treasury.api.SalesQueryApi;
+import io.paradaux.treasury.api.ShopQueryApi;
 import io.paradaux.treasury.api.TaxApi;
 import io.paradaux.treasury.api.TreasuryApi;
 import io.paradaux.treasury.api.impl.MarketApiImpl;
 import io.paradaux.treasury.api.impl.SalesQueryApiImpl;
+import io.paradaux.treasury.api.impl.ShopQueryApiImpl;
 import io.paradaux.treasury.api.impl.TaxApiImpl;
 import io.paradaux.treasury.api.impl.TreasuryApiImpl;
 import io.paradaux.common.DataSourceProvider;
@@ -155,6 +157,7 @@ public final class Treasury extends JavaPlugin {
         registerTaxApi();
         registerMarketApi();
         registerSalesQueryApi();
+        registerShopQueryApi();
         scheduleSalaries();
 
         log.info("Treasury enabled.");
@@ -228,6 +231,11 @@ public final class Treasury extends JavaPlugin {
     private void registerSalesQueryApi() {
         SalesQueryApi salesQueryApi = injector.getInstance(SalesQueryApiImpl.class);
         Bukkit.getServicesManager().register(SalesQueryApi.class, salesQueryApi, this, ServicePriority.Highest);
+    }
+
+    private void registerShopQueryApi() {
+        ShopQueryApi shopQueryApi = injector.getInstance(ShopQueryApiImpl.class);
+        Bukkit.getServicesManager().register(ShopQueryApi.class, shopQueryApi, this, ServicePriority.Highest);
     }
 
     private boolean isVaultAvailable() {

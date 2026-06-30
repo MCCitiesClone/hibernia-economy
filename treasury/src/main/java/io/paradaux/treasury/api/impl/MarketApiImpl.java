@@ -97,6 +97,8 @@ public class MarketApiImpl implements MarketApi {
             p.put("sellPrice", sh.sellPrice());
             p.put("batchQty", sh.batchQty());
             p.put("currentStock", sh.currentStock());
+            p.put("estimatedCapacity", sh.estimatedCapacity());
+            p.put("worldUuid", sh.worldUuid());
             mapper.upsertShop(p);
         } catch (RuntimeException e) {
             log.warn("upsertShop failed (ignored): {}", e.toString());
@@ -115,11 +117,41 @@ public class MarketApiImpl implements MarketApi {
 
     @Override
     @Transactional
-    public void updateShopStock(String world, int x, int y, int z, Integer stock) {
+    public void updateShopStock(String world, int x, int y, int z, Integer stock, Integer estimatedCapacity) {
         try {
-            mapper.updateShopStock(world, x, y, z, stock);
+            mapper.updateShopStock(world, x, y, z, stock, estimatedCapacity);
         } catch (RuntimeException e) {
             log.warn("updateShopStock failed (ignored): {}", e.toString());
+        }
+    }
+
+    @Override
+    @Transactional
+    public void setShopVisibility(String world, int x, int y, int z, boolean visible) {
+        try {
+            mapper.setShopVisibility(world, x, y, z, visible);
+        } catch (RuntimeException e) {
+            log.warn("setShopVisibility failed (ignored): {}", e.toString());
+        }
+    }
+
+    @Override
+    @Transactional
+    public void setShopHologram(String world, int x, int y, int z, boolean hologram) {
+        try {
+            mapper.setShopHologram(world, x, y, z, hologram);
+        } catch (RuntimeException e) {
+            log.warn("setShopHologram failed (ignored): {}", e.toString());
+        }
+    }
+
+    @Override
+    @Transactional
+    public void setPreviewPreference(java.util.UUID playerUuid, boolean visible) {
+        try {
+            mapper.upsertPreviewPreference(playerUuid, visible);
+        } catch (RuntimeException e) {
+            log.warn("setPreviewPreference failed (ignored): {}", e.toString());
         }
     }
 }
