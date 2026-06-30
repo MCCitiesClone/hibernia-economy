@@ -49,6 +49,12 @@ public class TransactionContext {
     // the real tax instead of a hard-coded zero (ADT-130). Defaults to zero (no tax).
     private BigDecimal salesTax = BigDecimal.ZERO;
 
+    // The ledger txn id of this trade's primary money leg (the buyer→seller transfer,
+    // or the faucet/sink leg for an admin shop), set by the settle step and read by the
+    // market-analytics recorder so a recorded sale links back to its ledger movement
+    // (PAR-234). Null when nothing moved (both sides admin) or settlement failed.
+    private Long settlementTxnId;
+
     private boolean cancelled = false;
 
     public TransactionContext(PreTransactionContext event, Sign sign) {
@@ -77,6 +83,15 @@ public class TransactionContext {
     /** @return the sales tax collected on this trade (ADT-130); zero if none. */
     public BigDecimal getSalesTax() {
         return salesTax;
+    }
+
+    /** @return the ledger txn id of this trade's primary money leg (PAR-234), or null if none/unlinkable. */
+    public Long getSettlementTxnId() {
+        return settlementTxnId;
+    }
+
+    public void setSettlementTxnId(Long settlementTxnId) {
+        this.settlementTxnId = settlementTxnId;
     }
 
     public void setSalesTax(BigDecimal salesTax) {

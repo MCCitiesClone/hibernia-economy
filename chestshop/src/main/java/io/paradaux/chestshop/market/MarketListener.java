@@ -71,7 +71,7 @@ public class MarketListener implements Listener {
 
             MarketApi market = MarketHook.market();
             market.recordSale(records.sale(sign, item, quantity, event.getClient().getUniqueId(),
-                    owner, event.getExactPrice(), event.getSalesTax(), direction, shopStock));
+                    owner, event.getExactPrice(), event.getSalesTax(), direction, shopStock, event.getSettlementTxnId()));
             market.upsertShop(records.shop(sign, item, owner, shopStock));
         } catch (Throwable ignored) {
             // analytics only

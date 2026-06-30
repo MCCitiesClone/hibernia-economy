@@ -196,13 +196,13 @@ final class MarketRecords {
     // ── DTO builders ──
     ChestShopSaleRecord sale(Sign sign, ItemStack item, int quantity, UUID customer,
                                     Owner owner, BigDecimal total, BigDecimal tax,
-                                    String direction, Integer shopStock) {
+                                    String direction, Integer shopStock, Long txnId) {
         Location l = sign.getLocation();
         BigDecimal unit = quantity > 0
                 ? total.divide(BigDecimal.valueOf(quantity), 4, RoundingMode.HALF_UP)
                 : total;
         return new ChestShopSaleRecord(
-                null, direction, customer,
+                txnId, direction, customer,
                 owner.accountId(), owner.type(), owner.firmId(), owner.ownerUuid(), owner.admin(),
                 item.getType().name(), itemKey(item), itemName(item), isCustom(item), itemData(item),
                 quantity, unit, total, tax != null ? tax : BigDecimal.ZERO,

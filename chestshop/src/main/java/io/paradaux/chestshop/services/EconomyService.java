@@ -252,26 +252,33 @@ public class EconomyService {
 
         UUID tradeId = txn.getTradeId();
         int receiverAccountId = -1;
+        long settlementTxnId = 0;
         try {
             if (!senderIsAdmin && !receiverIsAdmin) {
                 // Direct buyer → seller transfer — atomic, no SYSTEM hop, no rollback.
                 int senderAccountId = resolveAccountId(sender);
                 receiverAccountId = resolveAccountId(receiver);
-                transfer(senderAccountId, receiverAccountId, amount, memo, transferInitiator(sender), tradeId);
+                settlementTxnId = transfer(senderAccountId, receiverAccountId, amount, memo, transferInitiator(sender), tradeId);
             } else if (receiverIsAdmin && !senderIsAdmin) {
                 // Paying into an admin shop with no server account → money sink (→ SYSTEM).
                 int senderAccountId = resolveAccountId(sender);
-                transfer(senderAccountId, systemAccountId, amount, memo, transferInitiator(sender), tradeId);
+                settlementTxnId = transfer(senderAccountId, systemAccountId, amount, memo, transferInitiator(sender), tradeId);
             } else if (senderIsAdmin && !receiverIsAdmin) {
                 // An admin shop with no server account pays out → money source (SYSTEM →).
                 receiverAccountId = resolveAccountId(receiver);
-                transfer(systemAccountId, receiverAccountId, amount, memo, CHESTSHOP_SYSTEM_UUID, tradeId);
+                settlementTxnId = transfer(systemAccountId, receiverAccountId, amount, memo, CHESTSHOP_SYSTEM_UUID, tradeId);
             }
             // both admin → no real accounts, nothing moves
         } catch (Exception e) {
             ChestShop.getBukkitLogger().log(Level.WARNING,
                     "Treasury: Could not settle " + amount + " from " + sender + " to " + receiver, e);
             return false;
+        }
+
+        // Link the recorded sale back to its primary money leg's ledger txn (PAR-234).
+        // Zero when nothing moved (both sides admin).
+        if (settlementTxnId > 0) {
+            txn.setSettlementTxnId(settlementTxnId);
         }
 
         // Sales tax — best-effort; the primary transfer has already committed.
@@ -283,12 +290,13 @@ public class EconomyService {
         return true;
     }
 
-    private void transfer(int from, int to, BigDecimal amount, String memo, UUID initiator, UUID tradeId) {
+    /** @return the ledger txn id of the posted transfer (PAR-234). */
+    private long transfer(int from, int to, BigDecimal amount, String memo, UUID initiator, UUID tradeId) {
         // ADT-129: deterministic dedup key anchored on the per-trade nonce, so a
         // double-fired settle of the same trade is collapsed by the ledger's UNIQUE
         // constraint instead of being recorded as a second money movement.
         byte[] dedupKey = Idempotency.sha256("chestshop:settle:" + tradeId);
-        treasury.transfer(new TransferRequest(from, to, amount, memo, initiator, null, "ChestShop", dedupKey));
+        return treasury.transfer(new TransferRequest(from, to, amount, memo, initiator, null, "ChestShop", dedupKey));
     }
 
     private UUID transferInitiator(UUID sender) {
