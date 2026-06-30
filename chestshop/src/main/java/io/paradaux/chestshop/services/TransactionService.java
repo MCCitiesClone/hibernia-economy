@@ -672,6 +672,20 @@ public class TransactionService {
      * the stock counter refreshes regardless; then, only if the trade settled, the empty
      * shop is removed and the MONITOR reactions (legacy-sign migration, market sync, log,
      * messages, metrics) run.
+     *
+     * <p><b>Main-thread contract (ADT-131).</b> This runs synchronously on the Bukkit main
+     * thread from the {@code PlayerInteract} handler, and most of it must: goods move via
+     * the main-thread-only inventory API, and the money legs are settled inline so the
+     * goods can be reversed if settlement fails ({@link #execute}) — a trade is all-or-nothing.
+     * That makes the per-click {@code TreasuryApi.transfer} (one MariaDB write, two with tax)
+     * a synchronous cost; settlement is fast-fail (no retries, see {@code EconomyService.settle})
+     * and benefits from a warm Treasury connection pool, but it cannot be moved off-thread
+     * without breaking the goods/money atomicity. The market sync ({@code market.onTransaction})
+     * also stays on-thread because {@code MarketApi.recordSale} fires a synchronous Bukkit
+     * event ({@code ChestShopSaleEvent}), which Paper forbids from an async context. The one
+     * deferrable step — the shop-log file write — is dispatched async in {@link #logTransaction}.
+     * A fuller async redesign would need a goods-move → async-settle → main-thread-reverse
+     * handshake and is deliberately out of scope here (tail-latency, not a correctness bug).
      */
     public void process(TransactionContext event) {
         execute(event);
@@ -856,12 +870,20 @@ public class TransactionService {
             itemList.append(entry.getValue()).append(' ').append(items.getName(entry.getKey()));
         }
 
-        ChestShop.getShopLogger().info(String.format(template,
+        // Build the line on the main thread (item-name/account/sign reads), then push the
+        // file write off the tick (ADT-131): per-trade disk I/O otherwise stalls the main
+        // thread on contended shared-host storage. java.util.logging is thread-safe and the
+        // line is self-contained + timestamped, so async logging is order-recoverable and
+        // can never affect the already-committed, synchronous trade. This is the only
+        // post-trade step with no main-thread dependency — the money legs (atomic) and the
+        // market sync (recordSale fires a synchronous Bukkit event) must stay on-thread.
+        String line = String.format(template,
                 event.getClient().getName(),
                 itemList.toString(),
                 event.getExactPrice(),
                 event.getOwnerAccount().getName(),
-                LocationUtil.locationToString(event.getSign().getLocation())));
+                LocationUtil.locationToString(event.getSign().getLocation()));
+        ChestShop.runInAsyncThread(() -> ChestShop.getShopLogger().info(line));
     }
 
     /** Notify the buyer and (unless they muted) the owner that a trade settled. */

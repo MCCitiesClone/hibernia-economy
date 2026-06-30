@@ -233,6 +233,12 @@ public class EconomyService {
      * (an admin shop paying out); an admin shop is first redirected to the configured
      * server-economy account when there is one. Replaces {@code CurrencyTransferEvent}
      * + {@code TreasuryEconomyProvider.onCurrencyTransfer} + {@code ServerAccountCorrector}.
+     *
+     * <p>Runs synchronously on the main thread (see {@link TransactionService#process}) and is
+     * fast-fail by contract (ADT-131): the primary transfer is a single attempt — any failure
+     * is caught and returns {@code false} immediately (no retries, no backoff), so a slow or
+     * failing ledger degrades to a cancelled trade rather than a held tick. The sales-tax leg
+     * is best-effort and runs only after the primary has already committed.
      */
     public boolean settle(BigDecimal amount, Player initiator, UUID partner, boolean buy, TransactionContext txn) {
         UUID resolvedPartner = partner;
