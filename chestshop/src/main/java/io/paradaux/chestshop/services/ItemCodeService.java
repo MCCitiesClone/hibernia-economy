@@ -23,6 +23,7 @@ import org.yaml.snakeyaml.nodes.Tag;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.logging.Level;
 
@@ -54,6 +55,18 @@ public class ItemCodeService {
     public void migrateIfNeeded() {
         File versionFile = ChestShop.loadFile("version");
         YamlConfiguration versionConfig = YamlConfiguration.loadConfiguration(versionFile);
+
+        // One-time: rewrite legacy Java-serialized item-code blobs to plain Base64
+        // (PAR-290 / ADT-136) before anything reads or dedups them, so the find-or-create
+        // key (the blob itself) is consistent across old and new rows. Gated to run once.
+        if (versionConfig.getInt("blob-encoding", 0) < BLOB_ENCODING_PLAIN && migrateBlobEncoding()) {
+            versionConfig.set("blob-encoding", BLOB_ENCODING_PLAIN);
+            try {
+                versionConfig.save(versionFile);
+            } catch (IOException e) {
+                ChestShop.getBukkitLogger().log(Level.SEVERE, "Error while recording the item-code blob-encoding version", e);
+            }
+        }
 
         int previousVersion = versionConfig.getInt("metadata-version", -1);
         int newVersion = currentMetadataVersion();
@@ -94,7 +107,7 @@ public class ItemCodeService {
             if (!loadedItem.isSimilar(item)) {
                 dumped = yaml.dump(loadedItem);
             }
-            String blob = Base64.encodeObject(dumped);
+            String blob = encodeBlob(dumped);
 
             Integer existing = items.findIdByBlob(blob);
             int id;
@@ -106,7 +119,7 @@ public class ItemCodeService {
                 id = row.getId();
             }
             return Base62.encode(id);
-        } catch (IOException e) {
+        } catch (RuntimeException e) {
             ChestShop.getBukkitLogger().log(Level.SEVERE, "Unable to get code of item " + item, e);
             return null;
         }
@@ -120,7 +133,7 @@ public class ItemCodeService {
             return null;
         }
         try {
-            return yaml.loadAs((String) Base64.decodeToObject(blob), ItemStack.class);
+            return yaml.loadAs(decodeBlob(blob), ItemStack.class);
         } catch (YAMLException e) {
             ChestShop.getBukkitLogger().log(Level.SEVERE,
                     "YAML of the item with ID " + code + " (" + id + ") is corrupted: \n" + blob);
@@ -238,12 +251,12 @@ public class ItemCodeService {
                     continue;
                 }
                 try {
-                    String serialized = (String) Base64.decodeToObject(blob);
+                    String serialized = decodeBlob(blob);
                     // Cheap version sniff: re-serialise only items not already at newVersion.
                     if (previousVersion < 0 || !serialized.contains("\nv: " + newVersion + "\n")) {
                         try {
                             ItemStack itemStack = yaml.loadAs(serialized, ItemStack.class);
-                            items.updateBlob(id, Base64.encodeObject(yaml.dump(itemStack)));
+                            items.updateBlob(id, encodeBlob(yaml.dump(itemStack)));
                             updated++;
                         } catch (RuntimeException e) {
                             ChestShop.getBukkitLogger().log(Level.SEVERE, "YAML of the item with ID "
@@ -270,6 +283,77 @@ public class ItemCodeService {
 
         ChestShop.getBukkitLogger().info("Finished updating database in " + (System.currentTimeMillis() - start) / 1000.0
                 + "s. " + updated + " items out of " + seen + " were updated!");
+        return true;
+    }
+
+    // ---- item-code blob codec (PAR-290 / ADT-136) ----
+    // New rows store the YAML string as plain Base64 of its UTF-8 bytes
+    // (java.util.Base64). Legacy rows are a Java-serialized String produced by the
+    // vendored Base64#encodeObject — the native-deserialization sink ADT-136 flags, and
+    // gross overkill for a plain string. decodeBlob reads both (plain first, falling back
+    // to the legacy object decoder), and migrateBlobEncoding() rewrites every legacy row
+    // to plain so decodeToObject is never reached again after a single migration.
+
+    private static final int BLOB_ENCODING_PLAIN = 1;
+
+    /** Encode a YAML string as plain Base64 of its UTF-8 bytes (the PAR-290 format). */
+    static String encodeBlob(String yamlString) {
+        return java.util.Base64.getEncoder().encodeToString(yamlString.getBytes(StandardCharsets.UTF_8));
+    }
+
+    /**
+     * Decode a stored item-code blob back to its YAML string, reading either the plain
+     * Base64 format or a legacy Java-serialized {@code String}. A legacy blob's bytes
+     * begin with the {@code ObjectOutputStream} stream header (0xAC 0xED), which plain
+     * UTF-8 YAML never does; blobs the strict {@link java.util.Base64} decoder rejects
+     * (e.g. line-broken legacy output) can only be legacy too.
+     */
+    static String decodeBlob(String blob) throws IOException, ClassNotFoundException {
+        byte[] raw;
+        try {
+            raw = java.util.Base64.getDecoder().decode(blob);
+        } catch (IllegalArgumentException notStandardBase64) {
+            return (String) Base64.decodeToObject(blob);
+        }
+        if (raw.length >= 2 && (raw[0] & 0xFF) == 0xAC && (raw[1] & 0xFF) == 0xED) {
+            return (String) Base64.decodeToObject(blob);
+        }
+        return new String(raw, StandardCharsets.UTF_8);
+    }
+
+    /** Rewrite every stored blob into the plain Base64 format. Idempotent; returns false on a fatal error. */
+    private boolean migrateBlobEncoding() {
+        ChestShop.getBukkitLogger().info("Migrating item-code blobs to plain Base64 (PAR-290)...");
+        int seen = 0;
+        int updated = 0;
+        long start = System.currentTimeMillis();
+        try {
+            for (int id : items.findAllIds()) {
+                seen++;
+                String blob = items.findBlobById(id);
+                if (blob == null) {
+                    continue;
+                }
+                try {
+                    String plain = encodeBlob(decodeBlob(blob));
+                    if (!plain.equals(blob)) {
+                        items.updateBlob(id, plain);
+                        updated++;
+                    }
+                } catch (IOException | ClassNotFoundException | RuntimeException e) {
+                    ChestShop.getBukkitLogger().log(Level.SEVERE,
+                            "Unable to re-encode item-code blob " + Base62.encode(id) + " (" + id + ")", e);
+                }
+                if (seen % 1000 == 0) {
+                    ChestShop.getBukkitLogger().info("Re-encoded " + seen + " blobs (" + updated + " rewritten)...");
+                }
+            }
+        } catch (RuntimeException e) {
+            ChestShop.getBukkitLogger().log(Level.SEVERE, "Item-code blob encoding migration failed", e);
+            return false;
+        }
+        ChestShop.getBukkitLogger().info("Finished item-code blob encoding migration in "
+                + (System.currentTimeMillis() - start) / 1000.0 + "s. " + updated + " of " + seen + " rewritten.");
         return true;
     }
 
