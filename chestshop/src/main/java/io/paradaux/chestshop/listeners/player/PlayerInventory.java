@@ -1,7 +1,7 @@
 package io.paradaux.chestshop.listeners.player;
 
 import com.google.inject.Inject;
-import io.paradaux.chestshop.configuration.Properties;
+import io.paradaux.chestshop.configuration.ChestShopConfiguration;
 import io.paradaux.chestshop.permission.Permissions;
 import io.paradaux.chestshop.services.Security;
 import io.paradaux.chestshop.services.InfoService;
@@ -33,17 +33,24 @@ public class PlayerInventory implements Listener {
     private final InfoService info;
     private final Message message;
     private final Security security;
+    private final ChestShopConfiguration config;
+    private final ChestShopSign chestShopSign;
+    private final ShopBlockUtil shopBlockUtil;
 
     @Inject
-    public PlayerInventory(InfoService info, Message message, Security security) {
+    public PlayerInventory(InfoService info, Message message, Security security,
+                           ChestShopConfiguration config, ChestShopSign chestShopSign, ShopBlockUtil shopBlockUtil) {
         this.info = info;
         this.message = message;
         this.security = security;
+        this.config = config;
+        this.chestShopSign = chestShopSign;
+        this.shopBlockUtil = shopBlockUtil;
     }
 
     @EventHandler
     public void onInventoryOpen(InventoryOpenEvent event) {
-        if (!Properties.TURN_OFF_DEFAULT_PROTECTION_WHEN_PROTECTED_EXTERNALLY) {
+        if (!config.isTurnOffDefaultProtectionWhenProtectedExternally()) {
             return;
         }
 
@@ -74,7 +81,7 @@ public class PlayerInventory implements Listener {
 
         boolean canAccess = false;
         for (Block container : containers) {
-            if (ChestShopSign.isShopBlock(container)) {
+            if (chestShopSign.isShopBlock(container)) {
                 if (security.canView(player, container, false)) {
                     canAccess = true;
                 }
@@ -86,7 +93,7 @@ public class PlayerInventory implements Listener {
         if (!canAccess) {
             if (Permissions.has(player, Permissions.SHOPINFO)) {
                 for (Block container : containers) {
-                    Sign sign = ShopBlockUtil.getConnectedSign(container);
+                    Sign sign = shopBlockUtil.getConnectedSign(container);
                     if (sign != null) {
                         info.showShopInfo((Player) event.getPlayer(), sign);
                     }

@@ -24,11 +24,15 @@ public class ShopInfo implements CommandHandler {
 
     private final InfoService info;
     private final Message message;
+    private final ChestShopSign chestShopSign;
+    private final ShopBlockUtil shopBlockUtil;
 
     @Inject
-    public ShopInfo(InfoService info, Message message) {
+    public ShopInfo(InfoService info, Message message, ChestShopSign chestShopSign, ShopBlockUtil shopBlockUtil) {
         this.info = info;
         this.message = message;
+        this.chestShopSign = chestShopSign;
+        this.shopBlockUtil = shopBlockUtil;
     }
 
     @Route("")
@@ -37,10 +41,10 @@ public class ShopInfo implements CommandHandler {
             Block target = ((Player) sender).getTargetBlockExact(5);
             if (target != null) {
                 Sign sign = null;
-                if (ChestShopSign.isValid(target)) {
+                if (chestShopSign.isValid(target)) {
                     sign = (Sign) target.getState();
-                } else if (ShopBlockUtil.couldBeShopContainer(target)) {
-                    sign = ShopBlockUtil.getConnectedSign(target);
+                } else if (shopBlockUtil.couldBeShopContainer(target)) {
+                    sign = shopBlockUtil.getConnectedSign(target);
                 }
 
                 if (sign != null) {

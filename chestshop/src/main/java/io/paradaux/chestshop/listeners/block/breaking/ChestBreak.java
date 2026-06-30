@@ -1,7 +1,7 @@
 package io.paradaux.chestshop.listeners.block.breaking;
 
 import com.google.inject.Inject;
-import io.paradaux.chestshop.configuration.Properties;
+import io.paradaux.chestshop.configuration.ChestShopConfiguration;
 import io.paradaux.chestshop.permission.Permissions;
 import io.paradaux.chestshop.services.AccountService;
 import io.paradaux.chestshop.utils.ShopBlockUtil;
@@ -22,11 +22,15 @@ public class ChestBreak implements Listener {
 
     private final Message message;
     private final AccountService accounts;
+    private final ChestShopConfiguration config;
+    private final ShopBlockUtil shopBlockUtil;
 
     @Inject
-    public ChestBreak(Message message, AccountService accounts) {
+    public ChestBreak(Message message, AccountService accounts, ChestShopConfiguration config, ShopBlockUtil shopBlockUtil) {
         this.message = message;
         this.accounts = accounts;
+        this.config = config;
+        this.shopBlockUtil = shopBlockUtil;
     }
 
     @EventHandler(ignoreCancelled = true)
@@ -39,7 +43,7 @@ public class ChestBreak implements Listener {
 
     @EventHandler(ignoreCancelled = true)
     public void onExplosion(EntityExplodeEvent event) {
-        if (event.blockList() == null || !Properties.USE_BUILT_IN_PROTECTION) {
+        if (event.blockList() == null || !config.isUseBuiltInProtection()) {
             return;
         }
 
@@ -59,11 +63,11 @@ public class ChestBreak implements Listener {
     }
 
     private boolean canBeBroken(Block block, Player breaker) {
-        if (!ShopBlockUtil.couldBeShopContainer(block) || !Properties.USE_BUILT_IN_PROTECTION) {
+        if (!shopBlockUtil.couldBeShopContainer(block) || !config.isUseBuiltInProtection()) {
             return true;
         }
 
-        Sign shopSign = ShopBlockUtil.getConnectedSign(block);
+        Sign shopSign = shopBlockUtil.getConnectedSign(block);
         if (breaker != null) {
             return accounts.hasPermission(breaker, Permissions.OTHER_NAME_DESTROY, shopSign);
         }

@@ -1,6 +1,6 @@
 package io.paradaux.chestshop.plugins;
 
-import io.paradaux.chestshop.configuration.Properties;
+import io.paradaux.chestshop.configuration.ChestShopConfiguration;
 import io.paradaux.chestshop.context.protection.BuildPermissionContext;
 import com.sk89q.worldedit.bukkit.BukkitAdapter;
 import com.sk89q.worldguard.WorldGuard;
@@ -24,10 +24,12 @@ import org.bukkit.plugin.Plugin;
 public class WorldGuardBuilding {
     private WorldGuardPlugin worldGuard;
     private WorldGuardPlatform worldGuardPlatform;
+    private final ChestShopConfiguration config;
 
-    public WorldGuardBuilding(Plugin plugin) {
+    public WorldGuardBuilding(Plugin plugin, ChestShopConfiguration config) {
         this.worldGuard = (WorldGuardPlugin) plugin;
         this.worldGuardPlatform = WorldGuard.getInstance().getPlatform();
+        this.config = config;
     }
 
     public void canBuild(BuildPermissionContext event) {
@@ -35,7 +37,7 @@ public class WorldGuardBuilding {
 
         if (regions == null) {
             event.allow(false);
-        } else if (Properties.WORLDGUARD_USE_FLAG) {
+        } else if (config.isWorldguardUseFlag()) {
             event.allow(regions.queryState(worldGuard.wrapPlayer(event.getPlayer()), WorldGuardFlags.ENABLE_SHOP) == StateFlag.State.ALLOW);
         } else {
             event.allow(regions.size() > 0);

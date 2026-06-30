@@ -2,7 +2,7 @@ package io.paradaux.chestshop.services;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import io.paradaux.chestshop.configuration.Properties;
+import io.paradaux.chestshop.configuration.ChestShopConfiguration;
 import io.paradaux.chestshop.services.AccountService;
 import io.paradaux.chestshop.services.ProtectionService;
 import io.paradaux.chestshop.signs.ChestShopSign;
@@ -29,11 +29,18 @@ public class Security {
 
     private final ProtectionService protection;
     private final AccountService accounts;
+    private final ChestShopConfiguration config;
+    private final ChestShopSign chestShopSign;
+    private final ShopBlockUtil shopBlockUtil;
 
     @Inject
-    public Security(ProtectionService protection, AccountService accounts) {
+    public Security(ProtectionService protection, AccountService accounts, ChestShopConfiguration config,
+                    ChestShopSign chestShopSign, ShopBlockUtil shopBlockUtil) {
         this.protection = protection;
         this.accounts = accounts;
+        this.config = config;
+        this.chestShopSign = chestShopSign;
+        this.shopBlockUtil = shopBlockUtil;
     }
 
     public boolean canAccess(Player player, Block block) {
@@ -51,7 +58,7 @@ public class Security {
     public boolean canPlaceSign(Player player, Sign sign) {
         Block baseBlock = BlockUtil.getAttachedBlock(sign);
 
-        if (!Properties.ALLOW_MULTIPLE_SHOPS_AT_ONE_BLOCK && anotherShopFound(baseBlock, sign.getBlock(), player)) {
+        if (!config.isAllowMultipleShopsAtOneBlock() && anotherShopFound(baseBlock, sign.getBlock(), player)) {
             return false;
         }
 
@@ -62,7 +69,7 @@ public class Security {
         for (BlockFace face : BLOCKS_AROUND) {
             Block block = sign.getRelative(face);
 
-            if (!ShopBlockUtil.couldBeShopContainer(block)) {
+            if (!shopBlockUtil.couldBeShopContainer(block)) {
                 continue;
             }
             if (!canAccess(player, block)) {
@@ -83,7 +90,7 @@ public class Security {
 
             Sign sign = (Sign) getState(block, false);
 
-            if (!ChestShopSign.isValid(sign) || !BlockUtil.getAttachedBlock(sign).equals(baseBlock)) {
+            if (!chestShopSign.isValid(sign) || !BlockUtil.getAttachedBlock(sign).equals(baseBlock)) {
                 continue;
             }
 

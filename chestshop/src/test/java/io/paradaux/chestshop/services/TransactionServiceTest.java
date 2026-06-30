@@ -1,14 +1,12 @@
 package io.paradaux.chestshop.services;
 
-import io.paradaux.chestshop.configuration.Properties;
+import io.paradaux.chestshop.configuration.ChestShopConfiguration;
 import io.paradaux.chestshop.context.TransactionContext;
 import io.paradaux.chestshop.utils.InventoryUtil;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.MockedStatic;
 
 import static io.paradaux.chestshop.context.TransactionContext.TransactionType.BUY;
 import static io.paradaux.chestshop.context.TransactionContext.TransactionType.SELL;
@@ -16,7 +14,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -35,18 +32,17 @@ import static org.mockito.Mockito.when;
  */
 class TransactionServiceTest {
 
-    private boolean stackTo64;
+    private InventoryUtil inventoryUtil;
+    private TransactionService service;
 
     @BeforeEach
-    void rememberConfig() {
-        stackTo64 = Properties.STACK_TO_64;
-        // Use the item's own max stack size path (the 3-arg transfer overload).
-        Properties.STACK_TO_64 = false;
-    }
-
-    @AfterEach
-    void restoreConfig() {
-        Properties.STACK_TO_64 = stackTo64;
+    void setUp() {
+        // STACK_TO_64 only affects InventoryUtil#getMaxStackSize, which is mocked
+        // away here — the transfer overloads under test are stubbed directly.
+        inventoryUtil = mock(InventoryUtil.class);
+        ChestShopConfiguration config = mock(ChestShopConfiguration.class);
+        service = new TransactionService(null, null, null, null, null, null, null, null,
+                config, null, null, inventoryUtil, null);
     }
 
     @Test
@@ -57,14 +53,11 @@ class TransactionServiceTest {
         when(target.getContents()).thenReturn(new ItemStack[]{null, null});
         ItemStack[] items = {mock(ItemStack.class)};
 
-        try (MockedStatic<InventoryUtil> util = mockStatic(InventoryUtil.class)) {
-            util.when(() -> InventoryUtil.transfer(any(ItemStack.class), eq(source), eq(target)))
-                    .thenReturn(0);
+        when(inventoryUtil.transfer(any(ItemStack.class), eq(source), eq(target))).thenReturn(0);
 
-            boolean moved = TransactionService.transferItems(source, target, items);
+        boolean moved = service.transferItems(source, target, items);
 
-            assertThat(moved).isTrue();
-        }
+        assertThat(moved).isTrue();
 
         // A complete move must not touch the snapshots.
         verify(source, never()).setContents(any());
@@ -81,15 +74,12 @@ class TransactionServiceTest {
         when(target.getContents()).thenReturn(targetSnapshot);
         ItemStack[] items = {mock(ItemStack.class)};
 
-        try (MockedStatic<InventoryUtil> util = mockStatic(InventoryUtil.class)) {
-            // Report leftovers — the target could not hold everything.
-            util.when(() -> InventoryUtil.transfer(any(ItemStack.class), eq(source), eq(target)))
-                    .thenReturn(3);
+        // Report leftovers — the target could not hold everything.
+        when(inventoryUtil.transfer(any(ItemStack.class), eq(source), eq(target))).thenReturn(3);
 
-            boolean moved = TransactionService.transferItems(source, target, items);
+        boolean moved = service.transferItems(source, target, items);
 
-            assertThat(moved).isFalse();
-        }
+        assertThat(moved).isFalse();
 
         // Both inventories must be restored from their snapshots, and the
         // holders must NOT be refreshed (the move did not happen).
@@ -111,15 +101,12 @@ class TransactionServiceTest {
         when(clientInv.getContents()).thenReturn(new ItemStack[]{null});
         when(ownerInv.getContents()).thenReturn(new ItemStack[]{null});
 
-        try (MockedStatic<InventoryUtil> util = mockStatic(InventoryUtil.class)) {
-            util.when(() -> InventoryUtil.transfer(any(ItemStack.class), eq(clientInv), eq(ownerInv)))
-                    .thenReturn(0);
+        when(inventoryUtil.transfer(any(ItemStack.class), eq(clientInv), eq(ownerInv))).thenReturn(0);
 
-            TransactionService.reverseTransfer(event);
+        service.reverseTransfer(event);
 
-            // A buy moved owner -> client, so the reversal must move client -> owner.
-            util.verify(() -> InventoryUtil.transfer(any(ItemStack.class), eq(clientInv), eq(ownerInv)));
-        }
+        // A buy moved owner -> client, so the reversal must move client -> owner.
+        verify(inventoryUtil).transfer(any(ItemStack.class), eq(clientInv), eq(ownerInv));
     }
 
     @Test
@@ -134,14 +121,11 @@ class TransactionServiceTest {
         when(clientInv.getContents()).thenReturn(new ItemStack[]{null});
         when(ownerInv.getContents()).thenReturn(new ItemStack[]{null});
 
-        try (MockedStatic<InventoryUtil> util = mockStatic(InventoryUtil.class)) {
-            util.when(() -> InventoryUtil.transfer(any(ItemStack.class), eq(ownerInv), eq(clientInv)))
-                    .thenReturn(0);
+        when(inventoryUtil.transfer(any(ItemStack.class), eq(ownerInv), eq(clientInv))).thenReturn(0);
 
-            TransactionService.reverseTransfer(event);
+        service.reverseTransfer(event);
 
-            // A sell moved client -> owner, so the reversal must move owner -> client.
-            util.verify(() -> InventoryUtil.transfer(any(ItemStack.class), eq(ownerInv), eq(clientInv)));
-        }
+        // A sell moved client -> owner, so the reversal must move owner -> client.
+        verify(inventoryUtil).transfer(any(ItemStack.class), eq(ownerInv), eq(clientInv));
     }
 }

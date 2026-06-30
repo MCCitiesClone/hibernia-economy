@@ -3,12 +3,10 @@ package io.paradaux.chestshop.utils;
 import io.paradaux.chestshop.utils.MaterialUtil;
 import org.bukkit.inventory.ItemStack;
 import org.junit.jupiter.api.Test;
-import org.mockito.MockedStatic;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
 /**
@@ -20,7 +18,7 @@ class AdminInventoryTest {
 
     @Test
     void setItem_indexBeyondCurrentLength_growsArrayInsteadOfThrowing() {
-        AdminInventory inventory = new AdminInventory(new ItemStack[0]);
+        AdminInventory inventory = new AdminInventory(new ItemStack[0], mock(MaterialUtil.class));
         ItemStack stack = mock(ItemStack.class);
 
         // Previously copyOfRange(content, 0, i) produced a length-i array and
@@ -38,19 +36,17 @@ class AdminInventoryTest {
         when(stored1.getAmount()).thenReturn(10);
         when(stored2.getAmount()).thenReturn(10);
 
-        AdminInventory inventory = new AdminInventory(new ItemStack[]{stored1, stored2});
+        MaterialUtil materialUtil = mock(MaterialUtil.class);
+        when(materialUtil.equals(any(), any())).thenReturn(true);
+        AdminInventory inventory = new AdminInventory(new ItemStack[]{stored1, stored2}, materialUtil);
 
         ItemStack query = mock(ItemStack.class);
         when(query.getAmount()).thenReturn(1); // query amount must be ignored
 
-        try (MockedStatic<MaterialUtil> material = mockStatic(MaterialUtil.class)) {
-            material.when(() -> MaterialUtil.equals(any(), any())).thenReturn(true);
-
-            // Two matched stacks of 10 each = 20 available, so 15 is satisfiable.
-            assertThat(inventory.contains(query, 15)).isTrue();
-            // ...but 25 is not. (The old bug summed the query's amount of 1
-            // per match = 2, making even small requests fail.)
-            assertThat(inventory.contains(query, 25)).isFalse();
-        }
+        // Two matched stacks of 10 each = 20 available, so 15 is satisfiable.
+        assertThat(inventory.contains(query, 15)).isTrue();
+        // ...but 25 is not. (The old bug summed the query's amount of 1
+        // per match = 2, making even small requests fail.)
+        assertThat(inventory.contains(query, 25)).isFalse();
     }
 }

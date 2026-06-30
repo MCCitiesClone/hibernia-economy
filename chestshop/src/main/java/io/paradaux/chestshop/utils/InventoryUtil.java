@@ -9,16 +9,28 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-import io.paradaux.chestshop.configuration.Properties;
+import io.paradaux.chestshop.configuration.ChestShopConfiguration;
 import com.google.common.collect.ImmutableMap;
+import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
 /**
  * @author Acrobot
  */
+@Singleton
 public class InventoryUtil {
     private static Boolean legacyContents = null;
+
+    private final ChestShopConfiguration config;
+    private final MaterialUtil materialUtil;
+
+    @Inject
+    public InventoryUtil(ChestShopConfiguration config, MaterialUtil materialUtil) {
+        this.config = config;
+        this.materialUtil = materialUtil;
+    }
 
     private static ItemStack[] getStorageContents(Inventory inventory) {
         if (legacyContents == null) {
@@ -40,7 +52,7 @@ public class InventoryUtil {
      * @param inventory inventory
      * @return amount of the item
      */
-    public static int getAmount(ItemStack item, Inventory inventory) {
+    public int getAmount(ItemStack item, Inventory inventory) {
         if (!inventory.contains(item.getType())) {
             return 0;
         }
@@ -53,7 +65,7 @@ public class InventoryUtil {
         int itemAmount = 0;
 
         for (ItemStack iStack : items.values()) {
-            if (!MaterialUtil.equals(iStack, item)) {
+            if (!materialUtil.equals(iStack, item)) {
                 continue;
             }
 
@@ -103,7 +115,7 @@ public class InventoryUtil {
      * @param inventory inventory
      * @return Does the inventory contain stock of this type?
      */
-    public static boolean hasItems(ItemStack[] items, Inventory inventory) {
+    public boolean hasItems(ItemStack[] items, Inventory inventory) {
         Map<ItemStack, Integer> itemCounts = getItemCounts(items);
         for (Map.Entry<ItemStack, Integer> entry : itemCounts.entrySet()) {
             if (getAmount(entry.getKey(), inventory) < entry.getValue()) {
@@ -121,10 +133,10 @@ public class InventoryUtil {
      * @param inventory inventory
      * @return Do the items fit inside the inventory?
      */
-    public static boolean fits(ItemStack[] items, Inventory inventory) {
-        Map<ItemStack, Integer> itemCounts = InventoryUtil.getItemCounts(items);
+    public boolean fits(ItemStack[] items, Inventory inventory) {
+        Map<ItemStack, Integer> itemCounts = getItemCounts(items);
         for (Map.Entry<ItemStack, Integer> entry : itemCounts.entrySet()) {
-            if (!InventoryUtil.fits(entry.getKey(), entry.getValue(), inventory)) {
+            if (!fits(entry.getKey(), entry.getValue(), inventory)) {
                 return false;
             }
         }
@@ -139,7 +151,7 @@ public class InventoryUtil {
      * @param inventory inventory
      * @return Does item fit inside inventory?
      */
-    public static boolean fits(ItemStack item, Inventory inventory) {
+    public boolean fits(ItemStack item, Inventory inventory) {
         return fits(item, item.getAmount(), inventory);
     }
 
@@ -151,7 +163,7 @@ public class InventoryUtil {
      * @param inventory inventory
      * @return Does item fit inside inventory?
      */
-    public static boolean fits(ItemStack item, int amount,Inventory inventory) {
+    public boolean fits(ItemStack item, int amount,Inventory inventory) {
         int left = amount;
         if (inventory.getSize() == Integer.MAX_VALUE) {
             return true;
@@ -167,7 +179,7 @@ public class InventoryUtil {
                 continue;
             }
 
-            if (!MaterialUtil.equals(iStack, item)) {
+            if (!materialUtil.equals(iStack, item)) {
                 continue;
             }
 
@@ -185,7 +197,7 @@ public class InventoryUtil {
      * @param targetInventory   Inventory to transfer the item to
      * @return Number of leftover items
      */
-    public static int transfer(ItemStack item, Inventory sourceInventory, Inventory targetInventory) {
+    public int transfer(ItemStack item, Inventory sourceInventory, Inventory targetInventory) {
         return transfer(item, sourceInventory, targetInventory, item.getMaxStackSize());
     }
 
@@ -198,14 +210,14 @@ public class InventoryUtil {
      * @param maxStackSize      Maximum item's stack size
      * @return Number of leftover items
      */
-    public static int transfer(ItemStack item, Inventory sourceInventory, Inventory targetInventory, int maxStackSize) {
+    public int transfer(ItemStack item, Inventory sourceInventory, Inventory targetInventory, int maxStackSize) {
         if (item.getAmount() < 1) {
             return 0;
         }
 
         int amount = item.getAmount();
         for (ItemStack currentItem : sourceInventory) {
-            if (MaterialUtil.equals(currentItem, item)) {
+            if (materialUtil.equals(currentItem, item)) {
                 ItemStack clone = currentItem.clone();
                 if (currentItem.getAmount() >= amount) {
                     clone.setAmount(amount);
@@ -241,7 +253,7 @@ public class InventoryUtil {
      * @param maxStackSize Maximum item's stack size
      * @return Number of leftover items
      */
-    public static int add(ItemStack item, Inventory inventory, int maxStackSize) {
+    public int add(ItemStack item, Inventory inventory, int maxStackSize) {
         if (item.getAmount() < 1) {
             return 0;
         }
@@ -253,7 +265,7 @@ public class InventoryUtil {
         return addManually(item, inventory, maxStackSize);
     }
 
-    private static int addManually(ItemStack item, Inventory inventory, int maxStackSize) {
+    private int addManually(ItemStack item, Inventory inventory, int maxStackSize) {
         int amountLeft = item.getAmount();
 
         for (int currentSlot = 0; currentSlot < effectiveSize(inventory) && amountLeft > 0; currentSlot++) {
@@ -265,7 +277,7 @@ public class InventoryUtil {
                 inventory.setItem(currentSlot, currentItem);
 
                 amountLeft -= currentItem.getAmount();
-            } else if (currentItem.getAmount() < maxStackSize && MaterialUtil.equals(currentItem, item)) {
+            } else if (currentItem.getAmount() < maxStackSize && materialUtil.equals(currentItem, item)) {
                 int neededToAdd = Math.min(maxStackSize - currentItem.getAmount(), amountLeft);
 
                 currentItem.setAmount(currentItem.getAmount() + neededToAdd);
@@ -288,7 +300,7 @@ public class InventoryUtil {
      * @param inventory Inventory
      * @return Number of leftover items
      */
-    public static int add(ItemStack item, Inventory inventory) {
+    public int add(ItemStack item, Inventory inventory) {
         Map<Integer, ItemStack> leftovers = inventory.addItem(item.clone()); // item needs to be cloned as cb changes the amount of the stack size
 
         if (!leftovers.isEmpty()) {
@@ -313,7 +325,7 @@ public class InventoryUtil {
      * @param inventory Inventory
      * @return Number of items that couldn't be removed
      */
-    public static int remove(ItemStack item, Inventory inventory) {
+    public int remove(ItemStack item, Inventory inventory) {
         Map<Integer, ItemStack> leftovers = inventory.removeItem(item);
 
         if (!leftovers.isEmpty()) {
@@ -323,13 +335,13 @@ public class InventoryUtil {
         return countItems(leftovers);
     }
 
-    private static int removeManually(ItemStack item, Inventory inventory) {
+    private int removeManually(ItemStack item, Inventory inventory) {
         int amountLeft = item.getAmount();
 
         for (int currentSlot = 0; currentSlot < effectiveSize(inventory) && amountLeft > 0; currentSlot++) {
             ItemStack currentItem = inventory.getItem(currentSlot);
 
-            if (currentItem != null && MaterialUtil.equals(currentItem, item)) {
+            if (currentItem != null && materialUtil.equals(currentItem, item)) {
                 int neededToRemove = Math.min(currentItem.getAmount(), amountLeft);
 
                 currentItem.setAmount(currentItem.getAmount() - neededToRemove);
@@ -347,7 +359,7 @@ public class InventoryUtil {
      * @param items Items to count
      * @return The map of items and their amounts. The keys are clones of the original items with their amounts set to 1.
      */
-    public static Map<ItemStack, Integer> getItemCounts(ItemStack... items) {
+    public Map<ItemStack, Integer> getItemCounts(ItemStack... items) {
         if (items == null || items.length == 0) {
             return Collections.emptyMap();
         }
@@ -362,7 +374,7 @@ public class InventoryUtil {
         Iterating:
         for (ItemStack item : items) {
             for (Map.Entry<ItemStack, Integer> entry : counts.entrySet()) {
-                if (MaterialUtil.equals(item, entry.getKey())) {
+                if (materialUtil.equals(item, entry.getKey())) {
                     entry.setValue(entry.getValue() + item.getAmount());
                     continue Iterating;
                 }
@@ -414,8 +426,8 @@ public class InventoryUtil {
      * @param item The item to get the max stacksize of
      * @return The max stacksize of the item stack's type or 64 if STACK_TO_64 is enabled
      */
-    public static int getMaxStackSize(ItemStack item) {
-        return Properties.STACK_TO_64 ? 64 : item.getMaxStackSize();
+    public int getMaxStackSize(ItemStack item) {
+        return config.isStackTo64() ? 64 : item.getMaxStackSize();
     }
 
     /**
@@ -424,7 +436,7 @@ public class InventoryUtil {
      * @param items The items to stack
      * @return An array of item stacks which's amount is a maximum of the allowed stack size
      */
-    public static ItemStack[] getItemsStacked(ItemStack... items) {
+    public ItemStack[] getItemsStacked(ItemStack... items) {
         List<ItemStack> stackedItems = new LinkedList<>();
         for (ItemStack item : items) {
             stackItems(stackedItems, item, item.getAmount());
@@ -439,7 +451,7 @@ public class InventoryUtil {
      * @param amount    The amount of the item to stack
      * @return An array of item stacks which's amount is a maximum of the allowed stack size
      */
-    public static ItemStack[] getItemStacked(ItemStack item, int amount) {
+    public ItemStack[] getItemStacked(ItemStack item, int amount) {
         return stackItems(new LinkedList<>(), item, amount).toArray(new ItemStack[0]);
     }
 
@@ -451,7 +463,7 @@ public class InventoryUtil {
      * @param amount    The amount of the item to stack
      * @return The input collection
      */
-    private static Collection<ItemStack> stackItems(Collection<ItemStack> stackedItems, ItemStack item, int amount) {
+    private Collection<ItemStack> stackItems(Collection<ItemStack> stackedItems, ItemStack item, int amount) {
         int maxStackSize = getMaxStackSize(item);
         if (maxStackSize == 0) {
             return stackedItems;
@@ -460,7 +472,7 @@ public class InventoryUtil {
         ItemStack itemClone = item.clone();
 
         for (ItemStack stackedItem : stackedItems) {
-            if (MaterialUtil.equals(stackedItem, itemClone) && stackedItem.getAmount() < getMaxStackSize(stackedItem)) {
+            if (materialUtil.equals(stackedItem, itemClone) && stackedItem.getAmount() < getMaxStackSize(stackedItem)) {
                 int amountToAdd = Math.min(getMaxStackSize(stackedItem) - stackedItem.getAmount(), amount);
                 stackedItem.setAmount(stackedItem.getAmount() + amountToAdd);
                 amount = amount - amountToAdd;

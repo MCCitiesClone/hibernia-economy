@@ -7,7 +7,7 @@ import com.google.inject.Provider;
 import com.google.inject.Singleton;
 import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.permission.Permissions;
-import io.paradaux.chestshop.configuration.Properties;
+import io.paradaux.chestshop.configuration.ChestShopConfiguration;
 import io.paradaux.chestshop.model.Account;
 import io.paradaux.chestshop.mappers.AccountMapper;
 import io.paradaux.chestshop.players.PlayerDTO;
@@ -48,19 +48,29 @@ public class AccountService {
 
     private final Object accountsLock = new Object();
 
-    private final SimpleCache<String, Account> usernameToAccount = new SimpleCache<>(Properties.CACHE_SIZE);
-    private final SimpleCache<UUID, Account> uuidToAccount = new SimpleCache<>(Properties.CACHE_SIZE);
-    private final SimpleCache<String, Account> shortToAccount = new SimpleCache<>(Properties.CACHE_SIZE);
-    private final SimpleCache<String, Boolean> invalidPlayers = new SimpleCache<>(Properties.CACHE_SIZE);
+    private final SimpleCache<String, Account> usernameToAccount;
+    private final SimpleCache<UUID, Account> uuidToAccount;
+    private final SimpleCache<String, Account> shortToAccount;
+    private final SimpleCache<String, Boolean> invalidPlayers;
+
+    private final ChestShopConfiguration config;
+    private final ChestShopSign chestShopSign;
 
     private Account adminAccount;
     private Account serverEconomyAccount;
     private int uuidVersion = -1;
 
     @Inject
-    public AccountService(AccountMapper accounts, Provider<EconomyService> economy) {
+    public AccountService(AccountMapper accounts, Provider<EconomyService> economy,
+                          ChestShopConfiguration config, ChestShopSign chestShopSign) {
         this.accounts = accounts;
         this.economy = economy;
+        this.config = config;
+        this.chestShopSign = chestShopSign;
+        this.usernameToAccount = new SimpleCache<>(config.getCacheSize());
+        this.uuidToAccount = new SimpleCache<>(config.getCacheSize());
+        this.shortToAccount = new SimpleCache<>(config.getCacheSize());
+        this.invalidPlayers = new SimpleCache<>(config.getCacheSize());
     }
 
     public int getAccountCount() {
@@ -77,7 +87,7 @@ public class AccountService {
      */
     public Account getOrCreateAccount(OfflinePlayer player) {
         Preconditions.checkNotNull(player.getName(), "Name of player " + player.getUniqueId() + " is null?");
-        Preconditions.checkArgument(player instanceof Player || !Properties.ENSURE_CORRECT_PLAYERID || uuidVersion < 0 || player.getUniqueId().version() == uuidVersion,
+        Preconditions.checkArgument(player instanceof Player || !config.isEnsureCorrectPlayerid() || uuidVersion < 0 || player.getUniqueId().version() == uuidVersion,
                 "Invalid OfflinePlayer! " + player.getUniqueId() + " has version " + player.getUniqueId().version() + " and not server version " + uuidVersion + ". " +
                         "If you believe that is an error and your setup allows such UUIDs then set the ENSURE_CORRECT_PLAYERID config option to false.");
         return getOrCreateAccount(player.getUniqueId(), player.getName());
@@ -204,7 +214,7 @@ public class AccountService {
             // no account with that shortname was found, try to get an offline player with that name
             OfflinePlayer offlinePlayer = ChestShop.getBukkitServer().getOfflinePlayer(name);
             if (offlinePlayer != null && offlinePlayer.getName() != null && offlinePlayer.getUniqueId() != null
-                    && (!Properties.ENSURE_CORRECT_PLAYERID || offlinePlayer.getUniqueId().version() == uuidVersion)) {
+                    && (!config.isEnsureCorrectPlayerid() || offlinePlayer.getUniqueId().version() == uuidVersion)) {
                 account = storeUsername(new PlayerDTO(offlinePlayer.getUniqueId(), offlinePlayer.getName()));
             } else {
                 invalidPlayers.put(name.toLowerCase(Locale.ROOT), true);
@@ -281,7 +291,7 @@ public class AccountService {
     }
 
     public boolean canUseName(Player player, String base, String name) {
-        if (ChestShopSign.isAdminShop(name)) {
+        if (chestShopSign.isAdminShop(name)) {
             if (Permissions.has(player, Permissions.ADMIN_SHOP)) {
                 return true;
             } else {
@@ -409,26 +419,26 @@ public class AccountService {
         }
         try {
             try {
-                adminAccount = new Account(Properties.ADMIN_SHOP_NAME, Bukkit.getOfflinePlayer(Properties.ADMIN_SHOP_NAME).getUniqueId());
+                adminAccount = new Account(config.getAdminShopName(), Bukkit.getOfflinePlayer(config.getAdminShopName()).getUniqueId());
             } catch (NullPointerException ratelimitedException) {
                 // This happens when the server was ratelimited by Mojang. Unfortunately there is no nice way to check that.
                 // We fall back to the method used by CraftBukkit to generate an OfflinePlayer's UUID
-                adminAccount = new Account(Properties.ADMIN_SHOP_NAME, UUID.nameUUIDFromBytes(("OfflinePlayer:" + Properties.ADMIN_SHOP_NAME).getBytes(Charsets.UTF_8)));
+                adminAccount = new Account(config.getAdminShopName(), UUID.nameUUIDFromBytes(("OfflinePlayer:" + config.getAdminShopName()).getBytes(Charsets.UTF_8)));
                 ChestShop.getBukkitLogger().log(Level.WARNING, "Your server appears to be ratelimited by Mojang and can't query UUID data from their API. If you run into issues with admin shops please report them!");
             }
             accounts.save(adminAccount);
 
-            if (!Properties.SERVER_ECONOMY_ACCOUNT.isEmpty()) {
-                serverEconomyAccount = getAccount(Properties.SERVER_ECONOMY_ACCOUNT);
+            if (!config.getServerEconomyAccount().isEmpty()) {
+                serverEconomyAccount = getAccount(config.getServerEconomyAccount());
             }
-            if (serverEconomyAccount == null && !Properties.SERVER_ECONOMY_ACCOUNT.isEmpty() && !Properties.SERVER_ECONOMY_ACCOUNT_UUID.equals(new UUID(0, 0))) {
-                serverEconomyAccount = getOrCreateAccount(Properties.SERVER_ECONOMY_ACCOUNT_UUID, Properties.SERVER_ECONOMY_ACCOUNT);
+            if (serverEconomyAccount == null && !config.getServerEconomyAccount().isEmpty() && !config.getServerEconomyAccountUuid().equals(new UUID(0, 0))) {
+                serverEconomyAccount = getOrCreateAccount(config.getServerEconomyAccountUuid(), config.getServerEconomyAccount());
             }
             if (serverEconomyAccount == null || serverEconomyAccount.getUuid() == null) {
                 serverEconomyAccount = null;
-                if (!Properties.SERVER_ECONOMY_ACCOUNT.isEmpty()) {
+                if (!config.getServerEconomyAccount().isEmpty()) {
                     ChestShop.getBukkitLogger().log(Level.WARNING, "Server economy account setting '"
-                            + Properties.SERVER_ECONOMY_ACCOUNT
+                            + config.getServerEconomyAccount()
                             + "' doesn't seem to be the name of a known player account!" +
                             " Please specify the SERVER_ECONOMY_ACCOUNT_UUID" +
                             " or log in at least once and create a player shop with that account" +

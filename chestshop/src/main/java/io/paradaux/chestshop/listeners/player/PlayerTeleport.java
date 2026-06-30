@@ -1,5 +1,6 @@
 package io.paradaux.chestshop.listeners.player;
 
+import com.google.inject.Inject;
 import io.paradaux.chestshop.signs.ChestShopSign;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
@@ -18,8 +19,15 @@ import static io.paradaux.chestshop.utils.ImplementationAdapter.getHolder;
  */
 public class PlayerTeleport implements Listener {
 
+    private final ChestShopSign chestShopSign;
+
+    @Inject
+    public PlayerTeleport(ChestShopSign chestShopSign) {
+        this.chestShopSign = chestShopSign;
+    }
+
     @EventHandler
-    public static void onPlayerTeleport(PlayerTeleportEvent event) {
+    public void onPlayerTeleport(PlayerTeleportEvent event) {
         InventoryHolder holder = getHolder(event.getPlayer().getOpenInventory().getTopInventory(), false);
         if (!(holder instanceof BlockState)) {
             return;
@@ -32,7 +40,7 @@ public class PlayerTeleport implements Listener {
             container = ((BlockState) holder).getBlock();
         }
 
-        if (ChestShopSign.isShopBlock(container)) {
+        if (chestShopSign.isShopBlock(container)) {
             event.getPlayer().closeInventory();
         }
     }

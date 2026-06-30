@@ -25,18 +25,22 @@ public class BlockPlace implements Listener {
 
     private final Message message;
     private final Security security;
+    private final ChestShopSign chestShopSign;
+    private final ShopBlockUtil shopBlockUtil;
 
     @Inject
-    public BlockPlace(Message message, Security security) {
+    public BlockPlace(Message message, Security security, ChestShopSign chestShopSign, ShopBlockUtil shopBlockUtil) {
         this.message = message;
         this.security = security;
+        this.chestShopSign = chestShopSign;
+        this.shopBlockUtil = shopBlockUtil;
     }
 
     @EventHandler(ignoreCancelled = true)
     public void onContainerPlace(BlockPlaceEvent event) {
         Block placed = event.getBlockPlaced();
 
-        if (!ShopBlockUtil.couldBeShopContainer(placed)) {
+        if (!shopBlockUtil.couldBeShopContainer(placed)) {
             return;
         }
 
@@ -65,7 +69,7 @@ public class BlockPlace implements Listener {
     public void onPlaceAgainstSign(BlockPlaceEvent event) {
         Block against = event.getBlockAgainst();
 
-        if (!ChestShopSign.isValid(against)) {
+        if (!chestShopSign.isValid(against)) {
             return;
         }
 
@@ -92,7 +96,7 @@ public class BlockPlace implements Listener {
         for (BlockFace face : searchDirections) {
             Block relative = placed.getRelative(face);
 
-            if (!ShopBlockUtil.couldBeShopContainer(relative)) {
+            if (!shopBlockUtil.couldBeShopContainer(relative)) {
                 continue;
             }
 

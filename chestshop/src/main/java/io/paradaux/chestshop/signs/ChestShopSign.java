@@ -5,8 +5,10 @@ import io.paradaux.chestshop.utils.ImplementationAdapter;
 import io.paradaux.chestshop.utils.QuantityUtil;
 import io.paradaux.chestshop.utils.StringUtil;
 import io.paradaux.chestshop.ChestShop;
-import io.paradaux.chestshop.configuration.Properties;
+import io.paradaux.chestshop.configuration.ChestShopConfiguration;
 import io.paradaux.chestshop.utils.AdminInventory;
+import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import io.paradaux.chestshop.model.Account;
 import io.paradaux.chestshop.permission.Permissions;
 import io.paradaux.chestshop.utils.ShopBlockUtil;
@@ -32,7 +34,18 @@ import static io.paradaux.chestshop.utils.MaterialUtil.METADATA;
 /**
  * @author Acrobot
  */
+@Singleton
 public class ChestShopSign {
+
+    private final ChestShopConfiguration config;
+    private final ShopBlockUtil shopBlockUtil;
+
+    @Inject
+    public ChestShopSign(ChestShopConfiguration config, ShopBlockUtil shopBlockUtil) {
+        this.config = config;
+        this.shopBlockUtil = shopBlockUtil;
+    }
+
     public static final byte NAME_LINE = 0;
     public static final byte QUANTITY_LINE = 1;
     public static final byte PRICE_LINE = 2;
@@ -77,23 +90,23 @@ public class ChestShopSign {
         return ownerInventory instanceof AdminInventory;
     }
 
-    public static boolean isAdminShop(String owner) {
-        return owner.replace(" ", "").equalsIgnoreCase(Properties.ADMIN_SHOP_NAME.replace(" ", ""));
+    public boolean isAdminShop(String owner) {
+        return owner.replace(" ", "").equalsIgnoreCase(config.getAdminShopName().replace(" ", ""));
     }
 
-    public static boolean isAdminShop(Sign sign) {
+    public boolean isAdminShop(Sign sign) {
         return isAdminShop(sign.getLines());
     }
 
-    public static boolean isAdminShop(String[] lines) {
+    public boolean isAdminShop(String[] lines) {
         return isAdminShop(getOwner(lines));
     }
 
-    public static boolean isValid(Sign sign) {
+    public boolean isValid(Sign sign) {
         return isValid(sign.getLines());
     }
 
-    public static boolean isValid(String[] lines) {
+    public boolean isValid(String[] lines) {
         lines = StringUtil.stripColourCodes(lines);
         return validateSign(lines)
                 && (getPrice(lines).toUpperCase(Locale.ROOT).contains("B")
@@ -105,8 +118,8 @@ public class ChestShopSign {
     private static final Pattern NAME_WITH_ID = Pattern.compile("^(.+):[A-Za-z0-9]+$");
     // The valid-playername regex comes from config and can change on reload, so cache it
     // by its source string rather than recompiling on every sign validation.
-    private static volatile String cachedPlayernameRegexp;
-    private static volatile Pattern cachedPlayernamePattern;
+    private volatile String cachedPlayernameRegexp;
+    private volatile Pattern cachedPlayernamePattern;
 
     /**
      * Whether the given sign lines form a structurally valid ChestShop sign (owner name,
@@ -114,7 +127,7 @@ public class ChestShopSign {
      * sign-format validation — was misplaced on {@code ItemService} behind the static
      * {@code ChestShop.items()} locator (PAR-282).
      */
-    public static boolean validateSign(String[] lines) {
+    public boolean validateSign(String[] lines) {
         String ownerName = getOwner(lines);
 
         // Validate the owner as a player name unless it is blank (auto-filled), an admin
@@ -150,8 +163,8 @@ public class ChestShopSign {
         return priceLine.indexOf(':') == priceLine.lastIndexOf(':');
     }
 
-    private static Pattern validNamePattern() {
-        String regexp = Properties.VALID_PLAYERNAME_REGEXP;
+    private Pattern validNamePattern() {
+        String regexp = config.getValidPlayernameRegexp();
         if (!regexp.equals(cachedPlayernameRegexp)) {
             cachedPlayernamePattern = Pattern.compile(regexp);
             cachedPlayernameRegexp = regexp;
@@ -159,7 +172,7 @@ public class ChestShopSign {
         return cachedPlayernamePattern;
     }
 
-    public static boolean isValid(Block sign) {
+    public boolean isValid(Block sign) {
         return BlockUtil.isSign(sign) && isValid((Sign) getState(sign, false));
     }
 
@@ -167,27 +180,27 @@ public class ChestShopSign {
      * @deprecated Use {@link #isShopBlock(Block}
      */
     @Deprecated
-    public static boolean isShopChest(Block chest) {
+    public boolean isShopChest(Block chest) {
         if (!BlockUtil.isChest(chest)) {
             return false;
         }
 
-        return ShopBlockUtil.getConnectedSign(chest) != null;
+        return shopBlockUtil.getConnectedSign(chest) != null;
     }
 
-    public static boolean isShopBlock(Block block) {
-        if (!ShopBlockUtil.couldBeShopContainer(block)) {
+    public boolean isShopBlock(Block block) {
+        if (!shopBlockUtil.couldBeShopContainer(block)) {
             return false;
         }
 
-        return ShopBlockUtil.getConnectedSign(block) != null;
+        return shopBlockUtil.getConnectedSign(block) != null;
     }
 
     /**
      * @deprecated Use {@link #isShopBlock(InventoryHolder}
      */
     @Deprecated
-    public static boolean isShopChest(InventoryHolder holder) {
+    public boolean isShopChest(InventoryHolder holder) {
         if (!BlockUtil.isChest(holder)) {
             return false;
         }
@@ -201,7 +214,7 @@ public class ChestShopSign {
         }
     }
 
-    public static boolean isShopBlock(InventoryHolder holder) {
+    public boolean isShopBlock(InventoryHolder holder) {
         if (holder instanceof DoubleChest) {
             return isShopBlock(ImplementationAdapter.getLeftSide((DoubleChest) holder, false))
                     || isShopBlock(ImplementationAdapter.getRightSide((DoubleChest) holder, false));
@@ -211,7 +224,7 @@ public class ChestShopSign {
         return false;
     }
 
-    public static Block getShopBlock(InventoryHolder holder) {
+    public Block getShopBlock(InventoryHolder holder) {
         if (holder instanceof DoubleChest) {
             return Optional.ofNullable(getShopBlock(ImplementationAdapter.getLeftSide((DoubleChest) holder, false)))
                     .orElse(getShopBlock(ImplementationAdapter.getRightSide((DoubleChest) holder, false)));
@@ -228,7 +241,7 @@ public class ChestShopSign {
      * @deprecated Call {@link #validateSign(String[])} instead.
      */
     @Deprecated
-    public static boolean isValidPreparedSign(String[] lines) {
+    public boolean isValidPreparedSign(String[] lines) {
         return validateSign(lines);
     }
 

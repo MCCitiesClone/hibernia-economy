@@ -6,7 +6,7 @@ import io.paradaux.business.api.BusinessApi;
 import io.paradaux.business.model.RolePermission;
 import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.permission.Permissions;
-import io.paradaux.chestshop.configuration.Properties;
+import io.paradaux.chestshop.configuration.ChestShopConfiguration;
 import io.paradaux.chestshop.model.Account;
 import io.paradaux.chestshop.context.TransactionContext;
 import io.paradaux.chestshop.signs.ChestShopSign;
@@ -62,11 +62,13 @@ public class EconomyService {
 
     private final AccountService accounts;
     private final ItemService items;
+    private final ChestShopConfiguration config;
 
     @Inject
-    public EconomyService(AccountService accounts, ItemService items) {
+    public EconomyService(AccountService accounts, ItemService items, ChestShopConfiguration config) {
         this.accounts = accounts;
         this.items = items;
+        this.config = config;
     }
 
     /** Wire the resolved Treasury handle + SYSTEM account + tax/business APIs in once available (enable time). */
@@ -85,7 +87,7 @@ public class EconomyService {
         }
         try {
             String formatted = t.formatAmount(amount);
-            return Properties.STRIP_PRICE_COLORS ? ChatColor.stripColor(formatted) : formatted;
+            return config.isStripPriceColors() ? ChatColor.stripColor(formatted) : formatted;
         } catch (Exception e) {
             ChestShop.getBukkitLogger().log(Level.WARNING, "Treasury: Could not format amount " + amount, e);
             return amount.toPlainString();
@@ -332,8 +334,8 @@ public class EconomyService {
     private BigDecimal resolveTaxRate(UUID partner) {
         double pct = (partner != null
                 && (accounts.isAdminShop(partner) || accounts.isServerEconomyAccount(partner)))
-                ? Properties.SERVER_TAX_AMOUNT
-                : Properties.TAX_AMOUNT;
+                ? config.getServerTaxAmount()
+                : config.getTaxAmount();
         if (pct == 0) {
             return BigDecimal.ZERO;
         }

@@ -1,6 +1,6 @@
 package io.paradaux.chestshop.services;
 
-import io.paradaux.chestshop.configuration.Properties;
+import io.paradaux.chestshop.configuration.ChestShopConfiguration;
 import io.paradaux.chestshop.model.Account;
 import io.paradaux.chestshop.mappers.AccountMapper;
 import io.paradaux.chestshop.players.PlayerDTO;
@@ -12,6 +12,9 @@ import java.util.Set;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * Exercises the Bukkit-free account logic now that it lives in a service over a
@@ -43,9 +46,10 @@ class AccountServiceTest {
 
     @BeforeEach
     void setUp() {
-        Properties.CACHE_SIZE = 128;
+        ChestShopConfiguration config = mock(ChestShopConfiguration.class);
+        when(config.getCacheSize()).thenReturn(128);
         mapper = new FakeAccountMapper();
-        service = new AccountService(mapper, () -> null);
+        service = new AccountService(mapper, () -> null, config, null);
     }
 
     @Test

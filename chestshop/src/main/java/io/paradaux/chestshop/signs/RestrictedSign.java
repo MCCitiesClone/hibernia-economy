@@ -29,11 +29,13 @@ public class RestrictedSign implements Listener {
 
     private final Message message;
     private final AccountService accounts;
+    private final ChestShopSign chestShopSign;
 
     @Inject
-    public RestrictedSign(Message message, AccountService accounts) {
+    public RestrictedSign(Message message, AccountService accounts, ChestShopSign chestShopSign) {
         this.message = message;
         this.accounts = accounts;
+        this.chestShopSign = chestShopSign;
     }
 
     @EventHandler(ignoreCancelled = true)
@@ -63,7 +65,7 @@ public class RestrictedSign implements Listener {
             }
             Block connectedSign = event.getBlock().getRelative(BlockFace.DOWN);
 
-            if (!Permissions.has(player, ADMIN) || !ChestShopSign.isValid(connectedSign)) {
+            if (!Permissions.has(player, ADMIN) || !chestShopSign.isValid(connectedSign)) {
                 dropSignAndCancelEvent(event);
                 return;
             }

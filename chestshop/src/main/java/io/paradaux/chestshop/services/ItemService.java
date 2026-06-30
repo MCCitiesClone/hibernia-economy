@@ -39,12 +39,16 @@ public class ItemService {
 
     private final ItemAliasModule aliases;
     private final ItemCodeService itemCodes;
+    private final MaterialUtil materialUtil;
+    private final InventoryUtil inventoryUtil;
     private volatile boolean itemBridgeEnabled = false;
 
     @Inject
-    public ItemService(ItemAliasModule aliases, ItemCodeService itemCodes) {
+    public ItemService(ItemAliasModule aliases, ItemCodeService itemCodes, MaterialUtil materialUtil, InventoryUtil inventoryUtil) {
         this.aliases = aliases;
         this.itemCodes = itemCodes;
+        this.materialUtil = materialUtil;
+        this.inventoryUtil = inventoryUtil;
     }
 
     /** Mark the ItemBridge custom-item integration as available (called when the plugin hooks). */
@@ -81,14 +85,14 @@ public class ItemService {
 
     /** Resolve the material part of an item code (vanilla material lookup), or {@code null}. */
     public Material parseMaterial(String materialString, short data) {
-        return MaterialUtil.getMaterial(materialString); // the legacy data value is ignored on modern materials
+        return materialUtil.getMaterial(materialString); // the legacy data value is ignored on modern materials
     }
 
     // ---- item display names (were the static ItemUtil helpers; PAR-282) ---------
 
     /** A comma-joined "count name" list for a set of stacks (used in trade/give messages). */
     public String getItemList(ItemStack[] items) {
-        Map<ItemStack, Integer> itemCounts = InventoryUtil.getItemCounts(items);
+        Map<ItemStack, Integer> itemCounts = inventoryUtil.getItemCounts(items);
 
         List<String> itemText = new ArrayList<>();
         for (Map.Entry<ItemStack, Integer> entry : itemCounts.entrySet()) {
@@ -132,7 +136,7 @@ public class ItemService {
             }
 
             ItemStack codeItem = parse(code);
-            if (!MaterialUtil.equals(itemStack, codeItem)) {
+            if (!materialUtil.equals(itemStack, codeItem)) {
                 throw new IllegalArgumentException("Cannot generate code for item " + itemStack
                         + " with maximum length of " + maxWidth
                         + " (code " + code + " results in item " + codeItem + ")");

@@ -30,13 +30,18 @@ public class SignCreate implements Listener {
     private final ItemService items;
     private final ShopService shops;
     private final SignBreak signBreak;
+    private final ChestShopSign chestShopSign;
+    private final ShopBlockUtil shopBlockUtil;
 
     @Inject
-    public SignCreate(AccountService accounts, ItemService items, ShopService shops, SignBreak signBreak) {
+    public SignCreate(AccountService accounts, ItemService items, ShopService shops, SignBreak signBreak,
+                      ChestShopSign chestShopSign, ShopBlockUtil shopBlockUtil) {
         this.accounts = accounts;
         this.items = items;
         this.shops = shops;
         this.signBreak = signBreak;
+        this.chestShopSign = chestShopSign;
+        this.shopBlockUtil = shopBlockUtil;
     }
 
     @EventHandler(ignoreCancelled = true)
@@ -49,7 +54,7 @@ public class SignCreate implements Listener {
 
         Sign sign = (Sign) ImplementationAdapter.getState(signBlock, false);
 
-        if (ChestShopSign.isValid(sign) && !accounts.canAccess(event.getPlayer(), sign)) {
+        if (chestShopSign.isValid(sign) && !accounts.canAccess(event.getPlayer(), sign)) {
             // There was already a shop here, but the player does not have permission to change it
             event.setCancelled(true);
             sign.update();
@@ -57,7 +62,7 @@ public class SignCreate implements Listener {
             return;
         }
 
-        if (ChestShopSign.isValid(event.getLines()) && !accounts.canUseName(event.getPlayer(), OTHER_NAME_DESTROY, ChestShopSign.getOwner(event.getLines()))) {
+        if (chestShopSign.isValid(event.getLines()) && !accounts.canUseName(event.getPlayer(), OTHER_NAME_DESTROY, ChestShopSign.getOwner(event.getLines()))) {
             event.setCancelled(true);
             sign.update();
             ChestShop.logDebug("Shop sign creation at " + sign.getLocation() + " by " + event.getPlayer().getName() + " was cancelled as they weren't able to create a shop for the account '" + ChestShopSign.getOwner(event.getLines()) + "'");
@@ -66,9 +71,9 @@ public class SignCreate implements Listener {
 
         String[] lines = StringUtil.stripColourCodes(event.getLines());
 
-        if (!ChestShopSign.validateSign(lines)) {
+        if (!chestShopSign.validateSign(lines)) {
             // Check if a valid shop already existed previously
-            if (ChestShopSign.isValid(sign)) {
+            if (chestShopSign.isValid(sign)) {
                 signBreak.sendShopDestroyed(sign, event.getPlayer());
             }
             return;
@@ -92,7 +97,7 @@ public class SignCreate implements Listener {
             return;
         }
 
-        ShopCreatedContext postEvent = new ShopCreatedContext(preEvent.getPlayer(), preEvent.getSign(), ShopBlockUtil.findConnectedContainer(preEvent.getSign()), preEvent.getSignLines(), preEvent.getOwnerAccount());
+        ShopCreatedContext postEvent = new ShopCreatedContext(preEvent.getPlayer(), preEvent.getSign(), shopBlockUtil.findConnectedContainer(preEvent.getSign()), preEvent.getSignLines(), preEvent.getOwnerAccount());
         shops.onCreated(postEvent);
     }
 }

@@ -4,7 +4,7 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.permission.Permissions;
-import io.paradaux.chestshop.configuration.Properties;
+import io.paradaux.chestshop.configuration.ChestShopConfiguration;
 import io.paradaux.hibernia.framework.i18n.Message;
 import io.paradaux.chestshop.model.Account;
 import io.paradaux.chestshop.context.PreShopCreationContext;
@@ -64,9 +64,13 @@ public class ShopService {
     private final Message message;
     private final Security security;
     private final MarketListener market;
+    private final ChestShopConfiguration config;
+    private final ChestShopSign chestShopSign;
+    private final ShopBlockUtil shopBlockUtil;
 
     @Inject
-    public ShopService(AccountService accounts, EconomyService economy, ItemService items, ProtectionService protection, StockCounterModule stockCounter, Message message, Security security, MarketListener market) {
+    public ShopService(AccountService accounts, EconomyService economy, ItemService items, ProtectionService protection, StockCounterModule stockCounter, Message message, Security security, MarketListener market,
+                       ChestShopConfiguration config, ChestShopSign chestShopSign, ShopBlockUtil shopBlockUtil) {
         this.accounts = accounts;
         this.economy = economy;
         this.items = items;
@@ -75,6 +79,9 @@ public class ShopService {
         this.message = message;
         this.security = security;
         this.market = market;
+        this.config = config;
+        this.chestShopSign = chestShopSign;
+        this.shopBlockUtil = shopBlockUtil;
     }
 
     /**
@@ -101,7 +108,7 @@ public class ShopService {
         rejectFreeShop(ctx);
         checkTerrain(ctx);
         // HIGH
-        if (Properties.BLOCK_SHOPS_WITH_SELL_PRICE_HIGHER_THAN_BUY_PRICE) {
+        if (config.isBlockShopsWithSellPriceHigherThanBuyPrice()) {
             checkPriceRatio(ctx);
         }
         checkCreationPermission(ctx);
@@ -129,8 +136,8 @@ public class ShopService {
         ItemStack item = items.parse(itemCode);
 
         if (item == null) {
-            if (Properties.ALLOW_AUTO_ITEM_FILL && itemCode.equals(AUTOFILL_CODE)) {
-                Container container = ShopBlockUtil.findConnectedContainer(ctx.getSign());
+            if (config.isAllowAutoItemFill() && itemCode.equals(AUTOFILL_CODE)) {
+                Container container = shopBlockUtil.findConnectedContainer(ctx.getSign());
                 if (container != null) {
                     for (ItemStack stack : container.getInventory().getContents()) {
                         if (!MaterialUtil.isEmpty(stack)) {
@@ -162,10 +169,10 @@ public class ShopService {
      *  Package-private so the price-parser unit test can exercise it directly. */
     void checkPrice(PreShopCreationContext ctx) {
         String line = ChestShopSign.getPrice(ctx.getSignLines()).toUpperCase(Locale.ROOT);
-        if (Properties.PRICE_PRECISION <= 0) {
+        if (config.getPricePrecision() <= 0) {
             line = line.replaceAll("\\.\\d*", ""); // remove too many decimal places
         } else {
-            line = line.replaceAll("(\\.\\d{0," + Properties.PRICE_PRECISION + "})\\d*", "$1");
+            line = line.replaceAll("(\\.\\d{0," + config.getPricePrecision() + "})\\d*", "$1");
         }
         line = line.replaceAll("(\\.\\d*[1-9])0+", "$1"); // trailing zeroes
         line = line.replaceAll("(\\d)\\.0+(\\D|$)", "$1$2"); // point + zeroes when only trailing zeros
@@ -221,7 +228,7 @@ public class ShopService {
         try {
             amount = ChestShopSign.getQuantity(ctx.getSignLines());
         } catch (NumberFormatException ignored) {} // not a quantity on the line
-        if (amount < 1 || amount > Properties.MAX_SHOP_AMOUNT) {
+        if (amount < 1 || amount > config.getMaxShopAmount()) {
             ctx.setOutcome(CreationOutcome.INVALID_QUANTITY);
         }
     }
@@ -229,10 +236,10 @@ public class ShopService {
     /** Require a backing chest (non-admin) the creator may access. */
     private void checkChest(PreShopCreationContext ctx) {
         String nameLine = ChestShopSign.getOwner(ctx.getSignLines());
-        Container connectedContainer = ShopBlockUtil.findConnectedContainer(ctx.getSign().getBlock());
+        Container connectedContainer = shopBlockUtil.findConnectedContainer(ctx.getSign().getBlock());
 
         if (connectedContainer == null) {
-            if (!ChestShopSign.isAdminShop(nameLine)) {
+            if (!chestShopSign.isAdminShop(nameLine)) {
                 ctx.setOutcome(CreationOutcome.NO_CHEST);
             }
             return;
@@ -248,9 +255,9 @@ public class ShopService {
 
     /** Charge / require the configured creation fee. */
     private void checkCreationFunds(PreShopCreationContext ctx) {
-        BigDecimal shopCreationPrice = Properties.SHOP_CREATION_PRICE;
+        BigDecimal shopCreationPrice = config.getShopCreationPrice();
         if (shopCreationPrice.compareTo(BigDecimal.ZERO) == 0
-                || ChestShopSign.isAdminShop(ctx.getSignLines())
+                || chestShopSign.isAdminShop(ctx.getSignLines())
                 || Permissions.has(ctx.getPlayer(), NOFEE)) {
             return;
         }
@@ -259,10 +266,10 @@ public class ShopService {
         }
     }
 
-    /** DemocracyCraft: reject free (price-0) shops unless {@link Properties#ALLOW_FREE_SHOPS} (PAR-88).
+    /** DemocracyCraft: reject free (price-0) shops unless {@code ALLOW_FREE_SHOPS} (PAR-88).
      *  Package-private so the free-shop unit test can exercise it directly. */
     void rejectFreeShop(PreShopCreationContext ctx) {
-        if (Properties.ALLOW_FREE_SHOPS) {
+        if (config.isAllowFreeShops()) {
             return;
         }
         String price = ChestShopSign.getPrice(ctx.getSignLines());
@@ -282,7 +289,7 @@ public class ShopService {
             ctx.setOutcome(CreationOutcome.NO_PERMISSION_FOR_TERRAIN);
             return;
         }
-        Container connectedContainer = ShopBlockUtil.findConnectedContainer(ctx.getSign().getBlock());
+        Container connectedContainer = shopBlockUtil.findConnectedContainer(ctx.getSign().getBlock());
         Location containerLocation = connectedContainer != null ? connectedContainer.getLocation() : null;
         if (!protection.canBuild(player, containerLocation, ctx.getSign().getLocation())) {
             ctx.setOutcome(CreationOutcome.NO_PERMISSION_FOR_TERRAIN);
@@ -490,7 +497,7 @@ public class ShopService {
 
     /** Stick a freshly-created shop sign onto its chest (config-gated, never for admin shops). */
     private void stickSignToChest(ShopCreatedContext event) {
-        if (!Properties.STICK_SIGNS_TO_CHESTS || ChestShopSign.isAdminShop(event.getSignLines())) {
+        if (!config.isStickSignsToChests() || chestShopSign.isAdminShop(event.getSignLines())) {
             return;
         }
 
@@ -501,7 +508,7 @@ public class ShopService {
 
         BlockFace shopBlockFace = null;
         for (BlockFace face : ShopBlockUtil.CHEST_EXTENSION_FACES) {
-            if (ShopBlockUtil.couldBeShopContainer(signBlock.getRelative(face))) {
+            if (shopBlockUtil.couldBeShopContainer(signBlock.getRelative(face))) {
                 shopBlockFace = face;
                 break;
             }
@@ -539,7 +546,7 @@ public class ShopService {
         ChestShop.runInAsyncThread(() -> {
             String creator = event.getPlayer().getName();
             String shopOwner = ChestShopSign.getOwner(event.getSignLines());
-            String typeOfShop = ChestShopSign.isAdminShop(shopOwner)
+            String typeOfShop = chestShopSign.isAdminShop(shopOwner)
                     ? "an Admin Shop"
                     : "a shop" + (event.createdByOwner() ? "" : " for " + event.getOwnerAccount().getName());
             String item = ChestShopSign.getQuantity(event.getSignLines()) + ' ' + ChestShopSign.getItem(event.getSignLines());
@@ -551,12 +558,12 @@ public class ShopService {
 
     /** Write a shop-removal line to the shop log (off the main thread). */
     private void logRemoval(ShopDestroyedContext event) {
-        if (!Properties.LOG_ALL_SHOP_REMOVALS && event.getDestroyer() != null) {
+        if (!config.isLogAllShopRemovals() && event.getDestroyer() != null) {
             return;
         }
         ChestShop.runInAsyncThread(() -> {
             String shopOwner = ChestShopSign.getOwner(event.getSign());
-            String typeOfShop = ChestShopSign.isAdminShop(shopOwner)
+            String typeOfShop = chestShopSign.isAdminShop(shopOwner)
                     ? "An Admin Shop"
                     : "A shop belonging to " + shopOwner;
             String item = ChestShopSign.getQuantity(event.getSign()) + ' ' + ChestShopSign.getItem(event.getSign());
@@ -576,10 +583,10 @@ public class ShopService {
      * the player could not afford it (the caller should fail the creation).
      */
     public boolean chargeCreationFee(Player player, String[] signLines) {
-        BigDecimal price = Properties.SHOP_CREATION_PRICE;
+        BigDecimal price = config.getShopCreationPrice();
 
         if (price.compareTo(BigDecimal.ZERO) == 0
-                || ChestShopSign.isAdminShop(signLines)
+                || chestShopSign.isAdminShop(signLines)
                 || Permissions.has(player, NOFEE)) {
             return true;
         }
@@ -600,7 +607,7 @@ public class ShopService {
      * placeholder sign, or an unknown owner account).
      */
     public void refundOnRemoval(Player destroyer, Sign sign) {
-        BigDecimal refund = Properties.SHOP_REFUND_PRICE;
+        BigDecimal refund = config.getShopRefundPrice();
 
         if (destroyer == null || Permissions.has(destroyer, NOFEE) || refund.compareTo(BigDecimal.ZERO) == 0) {
             return;

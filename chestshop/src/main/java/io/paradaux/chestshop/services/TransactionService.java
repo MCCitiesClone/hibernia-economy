@@ -7,7 +7,7 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.permission.Permissions;
-import io.paradaux.chestshop.configuration.Properties;
+import io.paradaux.chestshop.configuration.ChestShopConfiguration;
 import io.paradaux.hibernia.framework.i18n.Message;
 import io.paradaux.chestshop.model.Account;
 import io.paradaux.chestshop.context.PreTransactionContext;
@@ -101,9 +101,15 @@ public class TransactionService {
     private final Message message;
     private final ItemService items;
     private final MarketListener market;
+    private final ChestShopConfiguration config;
+    private final ChestShopSign chestShopSign;
+    private final ShopBlockUtil shopBlockUtil;
+    private final InventoryUtil inventoryUtil;
+    private final MaterialUtil materialUtil;
 
     @Inject
-    public TransactionService(EconomyService economy, ShopService shops, AccountService accounts, SignBreak signBreak, StockCounterModule stockCounter, Message message, ItemService items, MarketListener market) {
+    public TransactionService(EconomyService economy, ShopService shops, AccountService accounts, SignBreak signBreak, StockCounterModule stockCounter, Message message, ItemService items, MarketListener market,
+                              ChestShopConfiguration config, ChestShopSign chestShopSign, ShopBlockUtil shopBlockUtil, InventoryUtil inventoryUtil, MaterialUtil materialUtil) {
         this.economy = economy;
         this.shops = shops;
         this.accounts = accounts;
@@ -112,6 +118,11 @@ public class TransactionService {
         this.message = message;
         this.items = items;
         this.market = market;
+        this.config = config;
+        this.chestShopSign = chestShopSign;
+        this.shopBlockUtil = shopBlockUtil;
+        this.inventoryUtil = inventoryUtil;
+        this.materialUtil = materialUtil;
     }
 
     private static final String BUY_LOG = "%1$s bought %2$s for %3$.2f from %4$s at %5$s";
@@ -125,7 +136,7 @@ public class TransactionService {
      * as needed. The steps run in the exact order the former priority-ordered validators
      * fired; each self-guards on {@code isCancelled} where the original did.
      * {@code PartialTransactionModule} and the whole-amount {@code checkFundsAndStock}
-     * are config-selected alternatives ({@link Properties#ALLOW_PARTIAL_TRANSACTIONS}).
+     * are config-selected alternatives ({@code ALLOW_PARTIAL_TRANSACTIONS}).
      */
     public void validate(PreTransactionContext ctx) {
         rejectInvalidClientName(ctx);
@@ -134,7 +145,7 @@ public class TransactionService {
         rejectMissingPrice(ctx);
         rejectInvalidShop(ctx);
 
-        if (Properties.ALLOW_PARTIAL_TRANSACTIONS) {
+        if (config.isAllowPartialTransactions()) {
             adjustPartialBuy(ctx);
             adjustPartialSell(ctx);
         }
@@ -143,7 +154,7 @@ public class TransactionService {
         // gate stays where it lives and is invoked here in the former @LOW slot.
         RestrictedSign.onPreTransaction(ctx);
 
-        if (!Properties.ALLOW_PARTIAL_TRANSACTIONS && !ctx.isCancelled()) {
+        if (!config.isAllowPartialTransactions() && !ctx.isCancelled()) {
             checkFundsAndStock(ctx);
         }
         checkPermissions(ctx);
@@ -153,7 +164,7 @@ public class TransactionService {
     }
 
     private Pattern playernamePattern() {
-        String regexp = Properties.VALID_PLAYERNAME_REGEXP;
+        String regexp = config.getValidPlayernameRegexp();
         if (!regexp.equals(cachedPlayernameRegexp)) {
             cachedPlayernamePattern = Pattern.compile(regexp);
             cachedPlayernameRegexp = regexp;
@@ -167,7 +178,7 @@ public class TransactionService {
             return;
         }
         String name = ctx.getClient().getName();
-        if (ChestShopSign.isAdminShop(name) || !playernamePattern().matcher(name).matches()) {
+        if (chestShopSign.isAdminShop(name) || !playernamePattern().matcher(name).matches()) {
             ctx.setCancelled(INVALID_CLIENT_NAME);
         }
     }
@@ -177,19 +188,19 @@ public class TransactionService {
         if (ctx.isCancelled()) {
             return;
         }
-        if (Properties.IGNORE_CREATIVE_MODE && ctx.getClient().getGameMode() == GameMode.CREATIVE) {
+        if (config.isIgnoreCreativeMode() && ctx.getClient().getGameMode() == GameMode.CREATIVE) {
             ctx.setCancelled(CREATIVE_MODE_PROTECTION);
         }
     }
 
     /**
      * Cancel and break a free (price-0) shop that pre-dates the no-free-shops rule, unless
-     * {@link Properties#ALLOW_FREE_SHOPS} permits them (PAR-88). Cancelling with
+     * {@code ALLOW_FREE_SHOPS} permits them (PAR-88). Cancelling with
      * INVALID_SHOP sends the "invalid shop" message; the sign is then de-registered and
      * removed.
      */
     private void breakFreeShop(PreTransactionContext ctx) {
-        if (Properties.ALLOW_FREE_SHOPS || ctx.isCancelled()) {
+        if (config.isAllowFreeShops() || ctx.isCancelled()) {
             return;
         }
         Sign sign = ctx.getSign();
@@ -228,7 +239,7 @@ public class TransactionService {
             ctx.setCancelled(INVALID_SHOP);
             return;
         }
-        if (!ChestShopSign.isAdminShop(ctx.getSign()) && ctx.getOwnerInventory() == null) {
+        if (!chestShopSign.isAdminShop(ctx.getSign()) && ctx.getOwnerInventory() == null) {
             ctx.setCancelled(INVALID_SHOP);
         }
     }
@@ -249,7 +260,7 @@ public class TransactionService {
                 ctx.setCancelled(CLIENT_DOES_NOT_HAVE_ENOUGH_MONEY);
                 return;
             }
-            if (!InventoryUtil.hasItems(ctx.getStock(), ctx.getOwnerInventory())) {
+            if (!inventoryUtil.hasItems(ctx.getStock(), ctx.getOwnerInventory())) {
                 ctx.setCancelled(NOT_ENOUGH_STOCK_IN_CHEST);
             }
         } else {
@@ -257,7 +268,7 @@ public class TransactionService {
                 ctx.setCancelled(SHOP_DOES_NOT_HAVE_ENOUGH_MONEY);
                 return;
             }
-            if (!InventoryUtil.hasItems(ctx.getStock(), ctx.getClientInventory())) {
+            if (!inventoryUtil.hasItems(ctx.getStock(), ctx.getClientInventory())) {
                 ctx.setCancelled(NOT_ENOUGH_STOCK_IN_INVENTORY);
             }
         }
@@ -297,11 +308,11 @@ public class TransactionService {
             return;
         }
         if (ctx.getTransactionType() == SELL) {
-            if (!InventoryUtil.fits(ctx.getStock(), ctx.getOwnerInventory())) {
+            if (!inventoryUtil.fits(ctx.getStock(), ctx.getOwnerInventory())) {
                 ctx.setCancelled(NOT_ENOUGH_SPACE_IN_CHEST);
             }
         } else {
-            if (!InventoryUtil.fits(ctx.getStock(), ctx.getClientInventory())) {
+            if (!inventoryUtil.fits(ctx.getStock(), ctx.getClientInventory())) {
                 ctx.setCancelled(NOT_ENOUGH_SPACE_IN_INVENTORY);
             }
         }
@@ -336,7 +347,7 @@ public class TransactionService {
             ctx.setStock(getCountedItemStack(ctx.getStock(), amountAffordable));
         }
 
-        if (!InventoryUtil.hasItems(ctx.getStock(), ctx.getOwnerInventory())) {
+        if (!inventoryUtil.hasItems(ctx.getStock(), ctx.getOwnerInventory())) {
             ItemStack[] itemsHad = getItems(ctx.getStock(), ctx.getOwnerInventory());
             int possessed = InventoryUtil.countItems(itemsHad);
             if (possessed <= 0) {
@@ -352,7 +363,7 @@ public class TransactionService {
             ctx.setStock(itemsHad);
         }
 
-        if (!InventoryUtil.fits(ctx.getStock(), ctx.getClientInventory())) {
+        if (!inventoryUtil.fits(ctx.getStock(), ctx.getClientInventory())) {
             ItemStack[] itemsFit = getItemsThatFit(ctx.getStock(), ctx.getClientInventory());
             int possessed = InventoryUtil.countItems(itemsFit);
             if (possessed <= 0) {
@@ -402,7 +413,7 @@ public class TransactionService {
             ctx.setStock(getCountedItemStack(ctx.getStock(), amountAffordable));
         }
 
-        if (!InventoryUtil.hasItems(ctx.getStock(), ctx.getClientInventory())) {
+        if (!inventoryUtil.hasItems(ctx.getStock(), ctx.getClientInventory())) {
             ItemStack[] itemsHad = getItems(ctx.getStock(), ctx.getClientInventory());
             int possessed = InventoryUtil.countItems(itemsHad);
             if (possessed <= 0) {
@@ -418,7 +429,7 @@ public class TransactionService {
             ctx.setStock(itemsHad);
         }
 
-        if (!InventoryUtil.fits(ctx.getStock(), ctx.getOwnerInventory())) {
+        if (!inventoryUtil.fits(ctx.getStock(), ctx.getOwnerInventory())) {
             ItemStack[] itemsFit = getItemsThatFit(ctx.getStock(), ctx.getOwnerInventory());
             int possessed = InventoryUtil.countItems(itemsFit);
             if (possessed <= 0) {
@@ -439,8 +450,8 @@ public class TransactionService {
         }
     }
 
-    private static BigDecimal scalePrice(BigDecimal pricePerItem, int count) {
-        return pricePerItem.multiply(new BigDecimal(count)).setScale(Properties.PRICE_PRECISION, RoundingMode.HALF_UP);
+    private BigDecimal scalePrice(BigDecimal pricePerItem, int count) {
+        return pricePerItem.multiply(new BigDecimal(count)).setScale(config.getPricePrecision(), RoundingMode.HALF_UP);
     }
 
     /** A positive per-item price that scales to zero means the partial amount is unaffordable. */
@@ -452,16 +463,16 @@ public class TransactionService {
         return walletMoney.divide(pricePerItem, 0, RoundingMode.FLOOR).intValueExact();
     }
 
-    private static ItemStack[] getItems(ItemStack[] stock, Inventory inventory) {
+    private ItemStack[] getItems(ItemStack[] stock, Inventory inventory) {
         List<ItemStack> toReturn = new LinkedList<>();
-        for (Map.Entry<ItemStack, Integer> entry : InventoryUtil.getItemCounts(stock).entrySet()) {
-            int amount = InventoryUtil.getAmount(entry.getKey(), inventory);
-            Collections.addAll(toReturn, InventoryUtil.getItemStacked(entry.getKey(), Math.min(amount, entry.getValue())));
+        for (Map.Entry<ItemStack, Integer> entry : inventoryUtil.getItemCounts(stock).entrySet()) {
+            int amount = inventoryUtil.getAmount(entry.getKey(), inventory);
+            Collections.addAll(toReturn, inventoryUtil.getItemStacked(entry.getKey(), Math.min(amount, entry.getValue())));
         }
         return toReturn.toArray(new ItemStack[0]);
     }
 
-    private static ItemStack[] getCountedItemStack(ItemStack[] stock, int numberOfItems) {
+    private ItemStack[] getCountedItemStack(ItemStack[] stock, int numberOfItems) {
         int left = numberOfItems;
         LinkedList<ItemStack> stacks = new LinkedList<>();
 
@@ -479,9 +490,9 @@ public class TransactionService {
             }
 
             boolean added = false;
-            int maxStackSize = InventoryUtil.getMaxStackSize(stack);
+            int maxStackSize = inventoryUtil.getMaxStackSize(stack);
             for (ItemStack iStack : stacks) {
-                if (iStack.getAmount() < maxStackSize && MaterialUtil.equals(toAdd, iStack)) {
+                if (iStack.getAmount() < maxStackSize && materialUtil.equals(toAdd, iStack)) {
                     int newAmount = iStack.getAmount() + toAdd.getAmount();
                     if (newAmount > maxStackSize) {
                         iStack.setAmount(maxStackSize);
@@ -495,7 +506,7 @@ public class TransactionService {
             }
 
             if (!added) {
-                Collections.addAll(stacks, InventoryUtil.getItemsStacked(toAdd));
+                Collections.addAll(stacks, inventoryUtil.getItemsStacked(toAdd));
             }
             if (left <= 0) {
                 break;
@@ -504,17 +515,17 @@ public class TransactionService {
         return stacks.toArray(new ItemStack[0]);
     }
 
-    private static ItemStack[] getItemsThatFit(ItemStack[] stock, Inventory inventory) {
+    private ItemStack[] getItemsThatFit(ItemStack[] stock, Inventory inventory) {
         List<ItemStack> resultStock = new LinkedList<>();
         int emptySlots = InventoryUtil.countEmpty(inventory);
 
-        for (Map.Entry<ItemStack, Integer> entry : InventoryUtil.getItemCounts(stock).entrySet()) {
+        for (Map.Entry<ItemStack, Integer> entry : inventoryUtil.getItemCounts(stock).entrySet()) {
             ItemStack item = entry.getKey();
             int amount = entry.getValue();
-            int maxStackSize = InventoryUtil.getMaxStackSize(item);
+            int maxStackSize = inventoryUtil.getMaxStackSize(item);
             int free = 0;
             for (ItemStack itemInInventory : inventory.getContents()) {
-                if (MaterialUtil.equals(item, itemInInventory) && itemInInventory != null) {
+                if (materialUtil.equals(item, itemInInventory) && itemInInventory != null) {
                     free += (maxStackSize - itemInInventory.getAmount()) % maxStackSize;
                 }
             }
@@ -536,7 +547,7 @@ public class TransactionService {
                     amount = free;
                 }
             }
-            Collections.addAll(resultStock, InventoryUtil.getItemStacked(item, amount));
+            Collections.addAll(resultStock, inventoryUtil.getItemStacked(item, amount));
         }
         return resultStock.toArray(new ItemStack[0]);
     }
@@ -545,7 +556,7 @@ public class TransactionService {
 
     /** Drop a player's notification-cooldown rows (called from PlayerConnect on quit). */
     public void clearNotificationCooldowns(UUID playerUuid) {
-        if (Properties.NOTIFICATION_MESSAGE_COOLDOWN > 0) {
+        if (config.getNotificationMessageCooldown() > 0) {
             notificationCooldowns.rowMap().remove(playerUuid);
         }
     }
@@ -564,7 +575,7 @@ public class TransactionService {
             case CLIENT_DOES_NOT_HAVE_ENOUGH_MONEY -> messageKey = "chestshop.NOT_ENOUGH_MONEY";
             case SHOP_DOES_NOT_HAVE_ENOUGH_MONEY -> messageKey = "chestshop.NOT_ENOUGH_MONEY_SHOP";
             case NOT_ENOUGH_SPACE_IN_CHEST -> {
-                if (Properties.SHOW_MESSAGE_FULL_SHOP && !Properties.CSTOGGLE_TOGGLES_FULL_SHOP || !accounts.isIgnoring(ctx.getOwnerAccount().getUuid())) {
+                if (config.isShowMessageFullShop() && !config.isCstoggleTogglesFullShop() || !accounts.isIgnoring(ctx.getOwnerAccount().getUuid())) {
                     sendShopLocationMessage(ctx, "chestshop.NOT_ENOUGH_SPACE_IN_YOUR_SHOP", "seller");
                 }
                 messageKey = "chestshop.NOT_ENOUGH_SPACE_IN_CHEST";
@@ -572,7 +583,7 @@ public class TransactionService {
             case NOT_ENOUGH_SPACE_IN_INVENTORY -> messageKey = "chestshop.NOT_ENOUGH_SPACE_IN_INVENTORY";
             case NOT_ENOUGH_STOCK_IN_INVENTORY -> messageKey = "chestshop.NOT_ENOUGH_ITEMS_TO_SELL";
             case NOT_ENOUGH_STOCK_IN_CHEST -> {
-                if (Properties.SHOW_MESSAGE_OUT_OF_STOCK && !Properties.CSTOGGLE_TOGGLES_OUT_OF_STOCK || !accounts.isIgnoring(ctx.getOwnerAccount().getUuid())) {
+                if (config.isShowMessageOutOfStock() && !config.isCstoggleTogglesOutOfStock() || !accounts.isIgnoring(ctx.getOwnerAccount().getUuid())) {
                     sendShopLocationMessage(ctx, "chestshop.NOT_ENOUGH_STOCK_IN_YOUR_SHOP", "buyer");
                 }
                 messageKey = "chestshop.NOT_ENOUGH_STOCK";
@@ -608,14 +619,14 @@ public class TransactionService {
 
     private void sendMessageToOwner(Account ownerAccount, String key, String[] replacements, ItemStack... stock) {
         Player player = Bukkit.getPlayer(ownerAccount.getUuid());
-        if (player == null && !Properties.BUNGEECORD_MESSAGES) {
+        if (player == null && !config.isBungeecordMessages()) {
             return;
         }
 
-        if (Properties.NOTIFICATION_MESSAGE_COOLDOWN > 0) {
+        if (config.getNotificationMessageCooldown() > 0) {
             String cacheKey = key + "|" + String.join(",", replacements) + "|" + items.getItemList(stock);
             Long last = notificationCooldowns.get(ownerAccount.getUuid(), cacheKey);
-            if (last != null && last + Properties.NOTIFICATION_MESSAGE_COOLDOWN * 1000L > System.currentTimeMillis()) {
+            if (last != null && last + config.getNotificationMessageCooldown() * 1000L > System.currentTimeMillis()) {
                 return;
             }
             notificationCooldowns.put(ownerAccount.getUuid(), cacheKey, System.currentTimeMillis());
@@ -623,7 +634,7 @@ public class TransactionService {
 
         String itemList = items.getItemList(stock);
         if (player != null) {
-            if (Properties.SHOWITEM_MESSAGE && MaterialUtil.Show.sendMessage(message, player, key, stock, Collections.emptyMap(), replacements)) {
+            if (config.isShowitemMessage() && materialUtil.show().sendMessage(message, player, key, stock, Collections.emptyMap(), replacements)) {
                 return;
             }
             player.sendMessage(message.component(key, ChestShop.values(true, ImmutableMap.of("material", itemList, "item", itemList), replacements)));
@@ -699,15 +710,15 @@ public class TransactionService {
      * snapshotted first; on any shortfall both are restored and {@code false} is
      * returned so the caller can cancel before money moves.
      */
-    static boolean transferItems(Inventory source, Inventory target, ItemStack[] items) {
+    boolean transferItems(Inventory source, Inventory target, ItemStack[] items) {
         ItemStack[] sourceSnapshot = cloneContents(source);
         ItemStack[] targetSnapshot = cloneContents(target);
 
         int leftOver = 0;
         for (ItemStack item : items) {
-            leftOver += Properties.STACK_TO_64
-                    ? InventoryUtil.transfer(item, source, target, 64)
-                    : InventoryUtil.transfer(item, source, target);
+            leftOver += config.isStackTo64()
+                    ? inventoryUtil.transfer(item, source, target, 64)
+                    : inventoryUtil.transfer(item, source, target);
         }
 
         if (leftOver > 0) {
@@ -722,7 +733,7 @@ public class TransactionService {
     }
 
     /** Reverse a completed goods move after a failed money leg, keeping the trade atomic. */
-    static void reverseTransfer(TransactionContext event) {
+    void reverseTransfer(TransactionContext event) {
         boolean reversed = event.getTransactionType() == BUY
                 ? transferItems(event.getClientInventory(), event.getOwnerInventory(), event.getStock())
                 : transferItems(event.getOwnerInventory(), event.getClientInventory(), event.getStock());
@@ -763,7 +774,7 @@ public class TransactionService {
             return;
         }
         Sign sign = event.getSign();
-        if (ChestShopSign.isAdminShop(sign)) {
+        if (chestShopSign.isAdminShop(sign)) {
             return;
         }
         Inventory ownerInventory = event.getOwnerInventory();
@@ -771,13 +782,13 @@ public class TransactionService {
             return;
         }
 
-        Container connectedContainer = ShopBlockUtil.findConnectedContainer(sign);
+        Container connectedContainer = shopBlockUtil.findConnectedContainer(sign);
         shops.onDestroyed(new ShopDestroyedContext(null, sign, connectedContainer));
 
         Material signType = sign.getType();
         sign.getBlock().setType(Material.AIR);
 
-        if (Properties.REMOVE_EMPTY_CHESTS && !ChestShopSign.isAdminShop(ownerInventory) && InventoryUtil.isEmpty(ownerInventory)) {
+        if (config.isRemoveEmptyChests() && !ChestShopSign.isAdminShop(ownerInventory) && inventoryUtil.isEmpty(ownerInventory)) {
             if (connectedContainer != null) {
                 connectedContainer.getBlock().setType(Material.AIR);
             }
@@ -795,24 +806,24 @@ public class TransactionService {
         }
     }
 
-    private static boolean shopShouldBeRemoved(Inventory inventory, ItemStack[] stock) {
-        if (Properties.REMOVE_EMPTY_SHOPS) {
-            if (Properties.ALLOW_PARTIAL_TRANSACTIONS) {
+    private boolean shopShouldBeRemoved(Inventory inventory, ItemStack[] stock) {
+        if (config.isRemoveEmptyShops()) {
+            if (config.isAllowPartialTransactions()) {
                 for (ItemStack itemStack : stock) {
                     if (inventory.containsAtLeast(itemStack, 1)) {
                         return false;
                     }
                 }
                 return true;
-            } else if (!InventoryUtil.hasItems(stock, inventory)) {
+            } else if (!inventoryUtil.hasItems(stock, inventory)) {
                 return true;
             }
         }
         return false;
     }
 
-    private static boolean isInRemoveWorld(Sign sign) {
-        return Properties.REMOVE_EMPTY_WORLDS.isEmpty() || Properties.REMOVE_EMPTY_WORLDS.contains(sign.getWorld().getName());
+    private boolean isInRemoveWorld(Sign sign) {
+        return config.getRemoveEmptyWorlds().isEmpty() || config.getRemoveEmptyWorlds().contains(sign.getWorld().getName());
     }
 
     /** Write a completed trade to the shop log. */
@@ -820,7 +831,7 @@ public class TransactionService {
         String template = event.getTransactionType() == BUY ? BUY_LOG : SELL_LOG;
 
         StringBuilder itemList = new StringBuilder(50);
-        for (Map.Entry<ItemStack, Integer> entry : InventoryUtil.getItemCounts(event.getStock()).entrySet()) {
+        for (Map.Entry<ItemStack, Integer> entry : inventoryUtil.getItemCounts(event.getStock()).entrySet()) {
             itemList.append(entry.getValue()).append(' ').append(items.getName(entry.getKey()));
         }
 
@@ -837,13 +848,13 @@ public class TransactionService {
         Player player = event.getClient();
         boolean buy = event.getTransactionType() == BUY;
 
-        if (Properties.SHOW_TRANSACTION_INFORMATION_CLIENT) {
+        if (config.isShowTransactionInformationClient()) {
             sendTradeMessage(player, player.getName(),
                     buy ? "chestshop.YOU_BOUGHT_FROM_SHOP" : "chestshop.YOU_SOLD_TO_SHOP", event,
                     buy ? "owner" : "buyer", event.getOwnerAccount().getName());
         }
 
-        if (Properties.SHOW_TRANSACTION_INFORMATION_OWNER && !accounts.isIgnoring(event.getOwnerAccount().getUuid())) {
+        if (config.isShowTransactionInformationOwner() && !accounts.isIgnoring(event.getOwnerAccount().getUuid())) {
             Player owner = Bukkit.getPlayer(event.getOwnerAccount().getUuid());
             sendTradeMessage(owner, event.getOwnerAccount().getName(),
                     buy ? "chestshop.SOMEBODY_BOUGHT_FROM_YOUR_SHOP" : "chestshop.SOMEBODY_SOLD_TO_YOUR_SHOP", event,
@@ -865,7 +876,7 @@ public class TransactionService {
             replacementMap.put(replacements[i], replacements[i + 1]);
         }
 
-        if (Properties.SHOWITEM_MESSAGE && MaterialUtil.Show.sendMessage(message, player, playerName, key, event.getStock(), replacementMap)) {
+        if (config.isShowitemMessage() && materialUtil.show().sendMessage(message, player, playerName, key, event.getStock(), replacementMap)) {
             return;
         }
 

@@ -6,7 +6,6 @@ import io.paradaux.chestshop.commands.ItemInfo;
 import io.paradaux.chestshop.commands.ShopInfo;
 import io.paradaux.chestshop.commands.Toggle;
 import io.paradaux.chestshop.commands.Version;
-import io.paradaux.chestshop.configuration.Properties;
 import io.paradaux.chestshop.market.MarketHook;
 import io.paradaux.chestshop.market.MarketListener;
 import io.paradaux.chestshop.listeners.block.BlockPlace;
@@ -101,6 +100,10 @@ public class ChestShop extends JavaPlugin {
 
     private com.google.inject.Injector injector;
     private io.paradaux.hibernia.framework.configurator.ConfigurationLoader configurationLoader;
+    // The framework Configurator repopulates this same component instance in place on
+    // reload() (identity preserved), so injected references stay valid and this field can
+    // be captured once for the plugin's own metrics/logging/bungee reads (PAR-282).
+    private ChestShopConfiguration config;
 
     public ChestShop() {
         dataFolder = getDataFolder();
@@ -189,10 +192,11 @@ public class ChestShop extends JavaPlugin {
     }
 
     public void loadConfig() {
-        // Re-read config.yml through the framework and refresh the static Properties
-        // mirror. reload() re-fetches a fresh component snapshot (1.2.0 semantics).
+        // Re-read config.yml through the framework. reload() repopulates the same
+        // ChestShopConfiguration component instance in place, so the reference cached
+        // here (and every injected reference elsewhere) reflects the new values.
         configurationLoader.reload();
-        Properties.applyFrom(configurationLoader.getComponent(ChestShopConfiguration.class));
+        config = configurationLoader.getComponent(ChestShopConfiguration.class);
 
         accounts.load();
 
@@ -200,7 +204,7 @@ public class ChestShop extends JavaPlugin {
             shopLogger.removeHandler(handler);
         }
 
-        if (Properties.LOG_TO_FILE) {
+        if (config.isLogToFile()) {
             if (handler == null) {
                 File log = loadFile("ChestShop.log");
 
@@ -210,7 +214,7 @@ public class ChestShop extends JavaPlugin {
             shopLogger.addHandler(handler);
         }
 
-        shopLogger.setUseParentHandlers(Properties.LOG_TO_CONSOLE);
+        shopLogger.setUseParentHandlers(config.isLogToConsole());
     }
 
     private void turnOffDatabaseLogging() {
@@ -305,7 +309,7 @@ public class ChestShop extends JavaPlugin {
 
     //////////////////    REGISTER EVENTS, SCHEDULER & STATS    ///////////////////////////
     private void registerPluginMessagingChannels() {
-        if (Properties.BUNGEECORD_MESSAGES) {
+        if (config.isBungeecordMessages()) {
             getServer().getMessenger().registerOutgoingPluginChannel(this, "BungeeCord");
         }
     }
@@ -349,41 +353,41 @@ public class ChestShop extends JavaPlugin {
                 "sell", MetricsModule.getBoughtItemsCount()
         )));
 
-        bStats.addCustomChart(new SimplePie("includeSettingsInMetrics", () -> Properties.INCLUDE_SETTINGS_IN_METRICS ? "enabled" : "disabled"));
-        if (!Properties.INCLUDE_SETTINGS_IN_METRICS) return;
+        bStats.addCustomChart(new SimplePie("includeSettingsInMetrics", () -> config.isIncludeSettingsInMetrics() ? "enabled" : "disabled"));
+        if (!config.isIncludeSettingsInMetrics()) return;
 
-        bStats.addCustomChart(new SimplePie("ensure-correct-playerid", () -> Properties.ENSURE_CORRECT_PLAYERID ? "enabled" : "disabled"));
-        bStats.addCustomChart(new SimplePie("allow-sign-chest-open", () -> Properties.ALLOW_SIGN_CHEST_OPEN ? "enabled" : "disabled"));
-        bStats.addCustomChart(new SimplePie("uses-server-economy-account", () -> !Properties.SERVER_ECONOMY_ACCOUNT.isEmpty() ? "enabled" : "disabled"));
-        bStats.addCustomChart(new SimplePie("uses-server-economy-account-uuid", () -> !Properties.SERVER_ECONOMY_ACCOUNT_UUID.equals(new UUID(0, 0)) ? "enabled" : "disabled"));
-        bStats.addCustomChart(new SimplePie("allow-partial-transactions", () -> Properties.ALLOW_PARTIAL_TRANSACTIONS ? "enabled" : "disabled"));
-        bStats.addCustomChart(new SimplePie("bungeecord-messages", () -> Properties.BUNGEECORD_MESSAGES ? "enabled" : "disabled"));
-        bStats.addCustomChart(new SimplePie("allow-multiple-shops-at-one-block", () -> Properties.ALLOW_MULTIPLE_SHOPS_AT_ONE_BLOCK ? "enabled" : "disabled"));
-        bStats.addCustomChart(new SimplePie("allow-partial-transactions", () -> Properties.ALLOW_PARTIAL_TRANSACTIONS ? "enabled" : "disabled"));
-        bStats.addCustomChart(new SimplePie("log-to-console", () -> Properties.LOG_TO_CONSOLE ? "enabled" : "disabled"));
-        bStats.addCustomChart(new SimplePie("log-to-file", () -> Properties.LOG_TO_FILE ? "enabled" : "disabled"));
+        bStats.addCustomChart(new SimplePie("ensure-correct-playerid", () -> config.isEnsureCorrectPlayerid() ? "enabled" : "disabled"));
+        bStats.addCustomChart(new SimplePie("allow-sign-chest-open", () -> config.isAllowSignChestOpen() ? "enabled" : "disabled"));
+        bStats.addCustomChart(new SimplePie("uses-server-economy-account", () -> !config.getServerEconomyAccount().isEmpty() ? "enabled" : "disabled"));
+        bStats.addCustomChart(new SimplePie("uses-server-economy-account-uuid", () -> !config.getServerEconomyAccountUuid().equals(new UUID(0, 0)) ? "enabled" : "disabled"));
+        bStats.addCustomChart(new SimplePie("allow-partial-transactions", () -> config.isAllowPartialTransactions() ? "enabled" : "disabled"));
+        bStats.addCustomChart(new SimplePie("bungeecord-messages", () -> config.isBungeecordMessages() ? "enabled" : "disabled"));
+        bStats.addCustomChart(new SimplePie("allow-multiple-shops-at-one-block", () -> config.isAllowMultipleShopsAtOneBlock() ? "enabled" : "disabled"));
+        bStats.addCustomChart(new SimplePie("allow-partial-transactions", () -> config.isAllowPartialTransactions() ? "enabled" : "disabled"));
+        bStats.addCustomChart(new SimplePie("log-to-console", () -> config.isLogToConsole() ? "enabled" : "disabled"));
+        bStats.addCustomChart(new SimplePie("log-to-file", () -> config.isLogToFile() ? "enabled" : "disabled"));
 
         bStats.addCustomChart(new AdvancedBarChart("pluginProperties", () -> {
             Map<String, int[]> map = new LinkedHashMap<>();
-            map.put("ensure-correct-playerid", getChartArray(Properties.ENSURE_CORRECT_PLAYERID));
-            map.put("reverse-buttons", getChartArray(Properties.REVERSE_BUTTONS));
-            map.put("shift-sells-in-stacks", getChartArray(Properties.SHIFT_SELLS_IN_STACKS));
-            map.put("shift-sells-everything", getChartArray(Properties.SHIFT_SELLS_EVERYTHING));
-            map.put("allow-sign-chest-open", getChartArray(!Properties.ALLOW_SIGN_CHEST_OPEN));
-            map.put("sign-dying", getChartArray(!Properties.SIGN_DYING));
-            map.put("remove-empty-shops", getChartArray(!Properties.REMOVE_EMPTY_SHOPS));
-            map.put("remove-empty-chests", getChartArray(!Properties.REMOVE_EMPTY_CHESTS));
-            map.put("uses-server-economy-account", getChartArray(!Properties.SERVER_ECONOMY_ACCOUNT.isEmpty()));
-            map.put("uses-server-economy-account-uuid", getChartArray(!Properties.SERVER_ECONOMY_ACCOUNT_UUID.equals(new UUID(0, 0))));
-            map.put("allow-multiple-shops-at-one-block", getChartArray(Properties.ALLOW_MULTIPLE_SHOPS_AT_ONE_BLOCK));
-            map.put("allow-partial-transactions", getChartArray(Properties.ALLOW_PARTIAL_TRANSACTIONS));
-            map.put("bungeecord-messages", getChartArray(Properties.BUNGEECORD_MESSAGES));
-            map.put("log-to-console", getChartArray(Properties.LOG_TO_CONSOLE));
-            map.put("log-to-file", getChartArray(Properties.LOG_TO_FILE));
+            map.put("ensure-correct-playerid", getChartArray(config.isEnsureCorrectPlayerid()));
+            map.put("reverse-buttons", getChartArray(config.isReverseButtons()));
+            map.put("shift-sells-in-stacks", getChartArray(config.isShiftSellsInStacks()));
+            map.put("shift-sells-everything", getChartArray(config.isShiftSellsEverything()));
+            map.put("allow-sign-chest-open", getChartArray(!config.isAllowSignChestOpen()));
+            map.put("sign-dying", getChartArray(!config.isSignDying()));
+            map.put("remove-empty-shops", getChartArray(!config.isRemoveEmptyShops()));
+            map.put("remove-empty-chests", getChartArray(!config.isRemoveEmptyChests()));
+            map.put("uses-server-economy-account", getChartArray(!config.getServerEconomyAccount().isEmpty()));
+            map.put("uses-server-economy-account-uuid", getChartArray(!config.getServerEconomyAccountUuid().equals(new UUID(0, 0))));
+            map.put("allow-multiple-shops-at-one-block", getChartArray(config.isAllowMultipleShopsAtOneBlock()));
+            map.put("allow-partial-transactions", getChartArray(config.isAllowPartialTransactions()));
+            map.put("bungeecord-messages", getChartArray(config.isBungeecordMessages()));
+            map.put("log-to-console", getChartArray(config.isLogToConsole()));
+            map.put("log-to-file", getChartArray(config.isLogToFile()));
             return map;
         }));
         bStats.addCustomChart(new SimpleBarChart("shopContainers",
-                () -> Properties.SHOP_CONTAINERS.stream().map(Material::name).collect(Collectors.toMap(k -> k, k -> 1))));
+                () -> config.getShopContainers().stream().map(Material::name).collect(Collectors.toMap(k -> k, k -> 1))));
     }
 
     public static DrilldownPie createStaticDrilldownStat(String statId, String value1, String value2) {
@@ -424,7 +428,7 @@ public class ChestShop extends JavaPlugin {
     }
 
     public static void logDebug(String message) {
-        if (Properties.DEBUG) {
+        if (plugin.config != null && plugin.config.isDebug()) {
             getBukkitLogger().info("[DEBUG] " + message);
         }
     }
@@ -494,7 +498,7 @@ public class ChestShop extends JavaPlugin {
     }
 
     private static void sendBungeeMessage(String playerName, String channel, String message) {
-        if (Properties.BUNGEECORD_MESSAGES && !Bukkit.getOnlinePlayers().isEmpty()) {
+        if (plugin.config != null && plugin.config.isBungeecordMessages() && !Bukkit.getOnlinePlayers().isEmpty()) {
             ByteArrayDataOutput out = ByteStreams.newDataOutput();
             out.writeUTF(channel);
             out.writeUTF(playerName);

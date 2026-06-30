@@ -27,10 +27,14 @@ import static io.paradaux.chestshop.utils.BlockUtil.isSign;
 public class VanillaShopProtection {
 
     private final AccountService accounts;
+    private final ChestShopSign chestShopSign;
+    private final ShopBlockUtil shopBlockUtil;
 
     @Inject
-    public VanillaShopProtection(AccountService accounts) {
+    public VanillaShopProtection(AccountService accounts, ChestShopSign chestShopSign, ShopBlockUtil shopBlockUtil) {
         this.accounts = accounts;
+        this.chestShopSign = chestShopSign;
+        this.shopBlockUtil = shopBlockUtil;
     }
 
     // Invoked directly by ProtectionService (was a NORMAL ProtectionCheckContext listener).
@@ -55,7 +59,7 @@ public class VanillaShopProtection {
         if (isSign(block)) {
             Sign sign = (Sign) getState(block, false);
 
-            if (!ChestShopSign.isValid(sign)) {
+            if (!chestShopSign.isValid(sign)) {
                 return true;
             }
 
@@ -64,8 +68,8 @@ public class VanillaShopProtection {
             }
         }
 
-        if (ShopBlockUtil.couldBeShopContainer(block)) {
-            Sign sign = ShopBlockUtil.getConnectedSign(block);
+        if (shopBlockUtil.couldBeShopContainer(block)) {
+            Sign sign = shopBlockUtil.getConnectedSign(block);
 
             if (sign != null && !isShopMember(player, sign)) {
                 return false;
@@ -76,7 +80,7 @@ public class VanillaShopProtection {
     }
 
     private boolean canBeProtected(Block block) {
-        return isSign(block) || ShopBlockUtil.couldBeShopContainer(block);
+        return isSign(block) || shopBlockUtil.couldBeShopContainer(block);
     }
 
     private boolean isShopMember(Player player, Sign sign) {

@@ -1,12 +1,15 @@
 package io.paradaux.chestshop.services;
 
-import io.paradaux.chestshop.configuration.Properties;
+import io.paradaux.chestshop.configuration.ChestShopConfiguration;
 import io.paradaux.chestshop.context.PreShopCreationContext;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * Free ($0) shops are rejected at creation by default, and permitted when
@@ -17,11 +20,17 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 class ShopFreePriceCheckTest {
 
-    private final ShopService shops = new ShopService(null, null, null, null, null, null, null, null);
+    private final ChestShopConfiguration config = mock(ChestShopConfiguration.class);
+    private final ShopService shops = new ShopService(null, null, null, null, null, null, null, null, config, null, null);
+
+    {
+        when(config.getPricePrecision()).thenReturn(2);
+        lenient().when(config.isAllowFreeShops()).thenReturn(false);
+    }
 
     @AfterEach
     void resetConfig() {
-        Properties.ALLOW_FREE_SHOPS = false; // restore the default for other tests
+        when(config.isAllowFreeShops()).thenReturn(false); // restore the default for other tests
     }
 
     private PreShopCreationContext run(String priceLine) {
@@ -44,7 +53,7 @@ class ShopFreePriceCheckTest {
 
     @Test
     public void freeShop_isAllowedWhenConfigEnabled() {
-        Properties.ALLOW_FREE_SHOPS = true;
+        when(config.isAllowFreeShops()).thenReturn(true);
         assertFalse(run("B 0").isCancelled());
         assertFalse(run("S 0").isCancelled());
         assertFalse(run("B 0:S 0").isCancelled());

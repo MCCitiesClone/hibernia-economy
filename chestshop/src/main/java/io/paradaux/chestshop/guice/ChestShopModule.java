@@ -7,6 +7,10 @@ import io.paradaux.chestshop.services.EconomyService;
 import io.paradaux.chestshop.services.ItemCodeService;
 import io.paradaux.chestshop.services.ShopService;
 import io.paradaux.chestshop.services.TransactionService;
+import io.paradaux.chestshop.signs.ChestShopSign;
+import io.paradaux.chestshop.utils.InventoryUtil;
+import io.paradaux.chestshop.utils.MaterialUtil;
+import io.paradaux.chestshop.utils.ShopBlockUtil;
 
 /**
  * ChestShop's own Guice bindings — its service layer, alongside the framework's
@@ -26,5 +30,14 @@ public class ChestShopModule extends AbstractModule {
         bind(AccountService.class).in(Singleton.class);
         bind(ShopService.class).in(Singleton.class);
         bind(EconomyService.class).in(Singleton.class);
+        // The former static config-reading utils, now injected @Singleton components
+        // routed through ChestShopConfiguration (PAR-282). Bound explicitly so the
+        // single shared instance (e.g. MaterialUtil's material cache) is unambiguous;
+        // the MaterialUtil↔InventoryUtil and ShopBlockUtil↔ChestShopSign construction
+        // cycles are broken with Provider<> injection inside those classes.
+        bind(MaterialUtil.class).in(Singleton.class);
+        bind(InventoryUtil.class).in(Singleton.class);
+        bind(ShopBlockUtil.class).in(Singleton.class);
+        bind(ChestShopSign.class).in(Singleton.class);
     }
 }

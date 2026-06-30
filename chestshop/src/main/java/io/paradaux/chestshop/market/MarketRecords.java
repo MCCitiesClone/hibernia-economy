@@ -42,11 +42,13 @@ final class MarketRecords {
 
     private final ItemService items;
     private final ItemCodeService itemCodes;
+    private final InventoryUtil inventoryUtil;
 
     @Inject
-    MarketRecords(ItemService items, ItemCodeService itemCodes) {
+    MarketRecords(ItemService items, ItemCodeService itemCodes, InventoryUtil inventoryUtil) {
         this.items = items;
         this.itemCodes = itemCodes;
+        this.inventoryUtil = inventoryUtil;
     }
 
     record Owner(Integer accountId, String type, Integer firmId, UUID ownerUuid, boolean admin) {}
@@ -184,7 +186,7 @@ final class MarketRecords {
     }
 
     int stockOf(ItemStack item, Inventory inventory) {
-        return inventory == null ? 0 : InventoryUtil.getAmount(item, inventory);
+        return inventory == null ? 0 : inventoryUtil.getAmount(item, inventory);
     }
 
     private static BigDecimal nonNegativeOrNull(BigDecimal v) {

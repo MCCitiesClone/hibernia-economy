@@ -4,7 +4,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import io.paradaux.chestshop.ChestShop;
-import io.paradaux.chestshop.configuration.Properties;
+import io.paradaux.chestshop.configuration.ChestShopConfiguration;
 import io.paradaux.hibernia.framework.i18n.Message;
 import io.paradaux.chestshop.model.Account;
 import io.paradaux.chestshop.signs.ChestShopSign;
@@ -71,20 +71,32 @@ public class InfoService {
     private final EconomyService economy;
     private final ItemService items;
     private final Message message;
+    private final ChestShopConfiguration config;
+    private final ChestShopSign chestShopSign;
+    private final ShopBlockUtil shopBlockUtil;
+    private final InventoryUtil inventoryUtil;
+    private final MaterialUtil materialUtil;
 
     @Inject
-    public InfoService(AccountService accounts, EconomyService economy, ItemService items, Message message) {
+    public InfoService(AccountService accounts, EconomyService economy, ItemService items, Message message,
+                       ChestShopConfiguration config, ChestShopSign chestShopSign, ShopBlockUtil shopBlockUtil,
+                       InventoryUtil inventoryUtil, MaterialUtil materialUtil) {
         this.accounts = accounts;
         this.economy = economy;
         this.items = items;
         this.message = message;
+        this.config = config;
+        this.chestShopSign = chestShopSign;
+        this.shopBlockUtil = shopBlockUtil;
+        this.inventoryUtil = inventoryUtil;
+        this.materialUtil = materialUtil;
     }
 
     // ---- /shopinfo -------------------------------------------------------------
 
     /** Render the {@code /shopinfo} (or middle-click) output for a shop sign. */
     public void showShopInfo(Player sender, Sign sign) {
-        if (!ChestShopSign.isValid(sign)) {
+        if (!chestShopSign.isValid(sign)) {
             message.send(sender, "chestshop.INVALID_SHOP_DETECTED");
             return;
         }
@@ -114,9 +126,9 @@ public class InfoService {
             return;
         }
 
-        Container shopBlock = ShopBlockUtil.findConnectedContainer(sign);
+        Container shopBlock = shopBlockUtil.findConnectedContainer(sign);
         String stock = shopBlock != null
-                ? String.valueOf(InventoryUtil.getAmount(item, shopBlock.getInventory()))
+                ? String.valueOf(inventoryUtil.getAmount(item, shopBlock.getInventory()))
                 : "∞"; // Infinity symbol
 
         Map<String, String> replacementMap = ImmutableMap.of(
@@ -126,8 +138,8 @@ public class InfoService {
                 "prices", pricesLine,
                 "quantity", String.valueOf(amount)
         );
-        if (!Properties.SHOWITEM_MESSAGE
-                || !MaterialUtil.Show.sendMessage(message, sender, sender.getName(), "chestshop.shopinfo", false, new ItemStack[]{item}, replacementMap)) {
+        if (!config.isShowitemMessage()
+                || !materialUtil.show().sendMessage(message, sender, sender.getName(), "chestshop.shopinfo", false, new ItemStack[]{item}, replacementMap)) {
             sender.sendMessage(message.component("chestshop.shopinfo", ChestShop.values(false, replacementMap)));
         }
 
@@ -189,8 +201,8 @@ public class InfoService {
     public boolean sendItemName(CommandSender sender, ItemStack item, String messageKey) {
         try {
             Map<String, String> replacementMap = ImmutableMap.of("item", items.getName(item));
-            if (!Properties.SHOWITEM_MESSAGE || !(sender instanceof Player)
-                    || !MaterialUtil.Show.sendMessage(message, (Player) sender, sender.getName(), messageKey, false, new ItemStack[]{item}, replacementMap)) {
+            if (!config.isShowitemMessage() || !(sender instanceof Player)
+                    || !materialUtil.show().sendMessage(message, (Player) sender, sender.getName(), messageKey, false, new ItemStack[]{item}, replacementMap)) {
                 sender.sendMessage(message.component(messageKey, ChestShop.values(false, replacementMap)));
             }
         } catch (IllegalArgumentException e) {

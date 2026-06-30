@@ -22,9 +22,11 @@ public class AdminInventory implements Inventory {
 
     private ItemStack[] content;
     private int maxStackSize = 64;
+    private final MaterialUtil materialUtil;
 
-    public AdminInventory(ItemStack[] content) {
+    public AdminInventory(ItemStack[] content, MaterialUtil materialUtil) {
         this.content = content;
+        this.materialUtil = materialUtil;
     }
 
     @Override
@@ -127,7 +129,7 @@ public class AdminInventory implements Inventory {
     public boolean contains(ItemStack itemStack, int i) {
         int amount = 0;
         for (ItemStack item : content) {
-            if (MaterialUtil.equals(item, itemStack)) {
+            if (materialUtil.equals(item, itemStack)) {
                 amount += item.getAmount();
             }
         }
@@ -182,7 +184,7 @@ public class AdminInventory implements Inventory {
     @Override
     public int first(ItemStack itemStack) {
         for (int i = 0; i < content.length; i++) {
-            if (MaterialUtil.equals(content[i], itemStack)) {
+            if (materialUtil.equals(content[i], itemStack)) {
                 return i;
             }
         }

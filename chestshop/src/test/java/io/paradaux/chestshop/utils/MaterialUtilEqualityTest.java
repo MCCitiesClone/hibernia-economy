@@ -1,16 +1,21 @@
 package io.paradaux.chestshop.utils;
 
+import io.paradaux.chestshop.configuration.ChestShopConfiguration;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.LinkedHashSet;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * Targets {@link MaterialUtil#isEmpty(ItemStack)} and
@@ -21,6 +26,16 @@ import static org.mockito.Mockito.mock;
 class MaterialUtilEqualityTest {
 
     @Mock private ItemStack stack;
+
+    private MaterialUtil materialUtil;
+
+    @BeforeEach
+    void setUp() {
+        ChestShopConfiguration config = mock(ChestShopConfiguration.class);
+        lenient().when(config.getCacheSize()).thenReturn(1000);
+        lenient().when(config.getExcludedItemAttributes()).thenReturn(new LinkedHashSet<>());
+        materialUtil = new MaterialUtil(config, () -> null);
+    }
 
     @Test
     void isEmpty_trueForNull() {
@@ -42,7 +57,7 @@ class MaterialUtilEqualityTest {
 
     @Test
     void equals_returnsTrueForBothEmpty() {
-        assertThat(MaterialUtil.equals(null, null)).isTrue();
+        assertThat(materialUtil.equals(null, null)).isTrue();
     }
 
     @Test
@@ -51,8 +66,8 @@ class MaterialUtilEqualityTest {
         lenient().when(real.getType()).thenReturn(Material.STONE);
         lenient().when(real.getAmount()).thenReturn(1);
 
-        assertThat(MaterialUtil.equals(real, null)).isFalse();
-        assertThat(MaterialUtil.equals(null, real)).isFalse();
+        assertThat(materialUtil.equals(real, null)).isFalse();
+        assertThat(materialUtil.equals(null, real)).isFalse();
     }
 
     @Test
@@ -64,7 +79,7 @@ class MaterialUtilEqualityTest {
         lenient().when(b.getType()).thenReturn(Material.DIRT);
         lenient().when(b.getAmount()).thenReturn(1);
 
-        assertThat(MaterialUtil.equals(a, b)).isFalse();
+        assertThat(materialUtil.equals(a, b)).isFalse();
     }
 
     @Test
@@ -78,7 +93,7 @@ class MaterialUtilEqualityTest {
         lenient().when(b.getAmount()).thenReturn(1);
         lenient().when(b.hasItemMeta()).thenReturn(false);
 
-        assertThat(MaterialUtil.equals(a, b)).isTrue();
+        assertThat(materialUtil.equals(a, b)).isTrue();
     }
 
     @Test
@@ -96,6 +111,6 @@ class MaterialUtilEqualityTest {
         lenient().when(meta.hasItemMeta()).thenReturn(true);
         lenient().when(meta.getItemMeta()).thenReturn(itemMeta);
 
-        assertThat(MaterialUtil.equals(plain, meta)).isFalse();
+        assertThat(materialUtil.equals(plain, meta)).isFalse();
     }
 }

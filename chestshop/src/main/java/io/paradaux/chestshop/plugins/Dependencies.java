@@ -7,7 +7,7 @@ import io.paradaux.chestshop.services.EconomyService;
 import io.paradaux.chestshop.services.ItemService;
 import io.paradaux.chestshop.services.ProtectionService;
 import io.paradaux.chestshop.utils.MaterialUtil;
-import io.paradaux.chestshop.configuration.Properties;
+import io.paradaux.chestshop.configuration.ChestShopConfiguration;
 import io.paradaux.chestshop.economy.EconomyProvider;
 import io.paradaux.chestshop.economy.TreasuryEconomyProvider;
 import com.google.common.collect.ImmutableMap;
@@ -39,12 +39,14 @@ public class Dependencies implements Listener {
     private final ProtectionService protection;
     private final ItemService items;
     private final EconomyService economy;
+    private final ChestShopConfiguration config;
 
     @Inject
-    public Dependencies(ProtectionService protection, ItemService items, EconomyService economy) {
+    public Dependencies(ProtectionService protection, ItemService items, EconomyService economy, ChestShopConfiguration config) {
         this.protection = protection;
         this.items = items;
         this.economy = economy;
+        this.config = config;
     }
 
     private boolean isLoaded(String plugin) {
@@ -151,24 +153,24 @@ public class Dependencies implements Listener {
         switch (dependency) {
             //Terrain protection plugins
             case WorldGuard:
-                boolean inUse = Properties.WORLDGUARD_USE_PROTECTION || Properties.WORLDGUARD_INTEGRATION;
+                boolean inUse = config.isWorldguardUseProtection() || config.isWorldguardIntegration();
 
                 if (!inUse) {
                     return false;
                 }
 
-                if (Properties.WORLDGUARD_USE_PROTECTION) {
+                if (config.isWorldguardUseProtection()) {
                     protection.setWorldGuardProtection(new WorldGuardProtection(plugin)::onProtectionCheck);
                 }
 
-                if (Properties.WORLDGUARD_INTEGRATION) {
-                    protection.setWorldGuardBuilding(new WorldGuardBuilding(plugin)::canBuild);
+                if (config.isWorldguardIntegration()) {
+                    protection.setWorldGuardBuilding(new WorldGuardBuilding(plugin, config)::canBuild);
                 }
 
                 break;
 
             case GriefPrevention:
-                if (!Properties.GRIEFPREVENTION_INTEGRATION) {
+                if (!config.isGriefpreventionIntegration()) {
                     return false;
                 }
                 protection.setGriefPreventionBuilding(new GriefPrevenentionBuilding(plugin)::canBuild);

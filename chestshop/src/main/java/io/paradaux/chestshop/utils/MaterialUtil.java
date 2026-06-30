@@ -2,7 +2,10 @@ package io.paradaux.chestshop.utils;
 
 import io.paradaux.chestshop.utils.SimpleCache;
 import io.paradaux.chestshop.ChestShop;
-import io.paradaux.chestshop.configuration.Properties;
+import io.paradaux.chestshop.configuration.ChestShopConfiguration;
+import com.google.inject.Inject;
+import com.google.inject.Provider;
+import com.google.inject.Singleton;
 import de.themoep.ShowItem.api.ShowItem;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
@@ -37,6 +40,7 @@ import static io.paradaux.chestshop.utils.StringUtil.getMinecraftStringWidth;
 /**
  * @author Acrobot
  */
+@Singleton
 public class MaterialUtil {
     public static final Pattern DURABILITY = Pattern.compile(":\\d+");
     public static final Pattern METADATA = Pattern.compile("#[0-9a-zA-Z]+");
@@ -73,9 +77,28 @@ public class MaterialUtil {
             "Hrtbr", "Hrtb"
     );
 
-    private static final SimpleCache<String, Material> MATERIAL_CACHE = new SimpleCache<>(Properties.CACHE_SIZE);
+    private final SimpleCache<String, Material> materialCache;
 
     private static final Yaml YAML = new Yaml(new YamlBukkitConstructor(), new YamlRepresenter(), new DumperOptions());
+
+    private final ChestShopConfiguration config;
+    // Lazy to break the MaterialUtil ↔ InventoryUtil construction cycle (Show#sendMessage
+    // counts items through InventoryUtil; InventoryUtil#equals comparisons come back here).
+    private final Provider<InventoryUtil> inventoryUtil;
+    private final Show show;
+
+    @Inject
+    public MaterialUtil(ChestShopConfiguration config, Provider<InventoryUtil> inventoryUtil) {
+        this.config = config;
+        this.inventoryUtil = inventoryUtil;
+        this.materialCache = new SimpleCache<>(config.getCacheSize());
+        this.show = new Show(inventoryUtil);
+    }
+
+    /** The ShowItem hover/icon message facade (its {@code showItem} hook is process-wide). */
+    public Show show() {
+        return show;
+    }
 
     private static class YamlBukkitConstructor extends YamlConstructor {
         public YamlBukkitConstructor() {
@@ -100,7 +123,7 @@ public class MaterialUtil {
      * @param two second itemStack
      * @return Are they equal?
      */
-    public static boolean equals(ItemStack one, ItemStack two) {
+    public boolean equals(ItemStack one, ItemStack two) {
         if (one == null || two == null) {
             return one == two;
         }
@@ -178,12 +201,12 @@ public class MaterialUtil {
     }
 
     /**
-     * Remove all keys included in the {@link Properties#EXCLUDED_ITEM_ATTRIBUTES} config option from a serialized
+     * Remove all keys included in the {@code EXCLUDED_ITEM_ATTRIBUTES} config option from a serialized
      * meta map
      * @param map The serialized item data to modify
      */
-    private static void removeExcludedKeys(Map<String, Object> map) {
-        map.keySet().removeAll(Properties.EXCLUDED_ITEM_ATTRIBUTES);
+    private void removeExcludedKeys(Map<String, Object> map) {
+        map.keySet().removeAll(config.getExcludedItemAttributes());
     }
 
     /**
@@ -192,7 +215,7 @@ public class MaterialUtil {
      * @param name Name of the material
      * @return Material found
      */
-    public static Material getMaterial(String name) {
+    public Material getMaterial(String name) {
         String replacedName = name;
         // revert unidirectional abbreviations
         List<Map.Entry<String, String>> abbreviations = new ArrayList<>(UNIDIRECTIONAL_ABBREVIATIONS.entrySet());
@@ -203,7 +226,7 @@ public class MaterialUtil {
 
         String formatted = name.replaceAll("(?<!^)(?>\\s?)([A-Z1-9])", "_$1").replace(' ', '_').toUpperCase(Locale.ROOT);
 
-        Material material = MATERIAL_CACHE.get(formatted);
+        Material material = materialCache.get(formatted);
         if (material != null) {
             return material;
         }
@@ -211,13 +234,13 @@ public class MaterialUtil {
         material = Material.matchMaterial(name);
 
         if (material != null) {
-            MATERIAL_CACHE.put(formatted, material);
+            materialCache.put(formatted, material);
             return material;
         }
 
         material = new EnumParser<Material>().parse(replacedName, Material.values());
         if (material != null) {
-            MATERIAL_CACHE.put(formatted, material);
+            materialCache.put(formatted, material);
         }
 
         return material;
@@ -446,6 +469,13 @@ public class MaterialUtil {
     public static class Show {
         private static ShowItem showItem = null;
 
+        // Lazy: see the MaterialUtil ↔ InventoryUtil cycle note above.
+        private final Provider<InventoryUtil> inventoryUtil;
+
+        private Show(Provider<InventoryUtil> inventoryUtil) {
+            this.inventoryUtil = inventoryUtil;
+        }
+
         /**
          * Lets the class know that it's safe to use the ShowItem methods now
          *
@@ -462,7 +492,7 @@ public class MaterialUtil {
          * @param message The raw message
          * @param stock   The items in stock
          */
-        public static boolean sendMessage(io.paradaux.hibernia.framework.i18n.Message message, Player player, String key, ItemStack[] stock, Map<String, String> replacementMap, String... replacements) {
+        public boolean sendMessage(io.paradaux.hibernia.framework.i18n.Message message, Player player, String key, ItemStack[] stock, Map<String, String> replacementMap, String... replacements) {
             return sendMessage(message, player, player.getName(), key, stock, replacementMap, replacements);
         }
 
@@ -474,7 +504,7 @@ public class MaterialUtil {
          * @param message       The raw message
          * @param stock         The items in stock
          */
-        public static boolean sendMessage(io.paradaux.hibernia.framework.i18n.Message message, Player player, String playerName, String key, ItemStack[] stock, Map<String, String> replacementMap, String... replacements) {
+        public boolean sendMessage(io.paradaux.hibernia.framework.i18n.Message message, Player player, String playerName, String key, ItemStack[] stock, Map<String, String> replacementMap, String... replacements) {
             return sendMessage(message, player, playerName, key, true, stock, replacementMap, replacements);
         }
 
@@ -487,13 +517,13 @@ public class MaterialUtil {
          * @param showPrefix    If the prefix should show
          * @param stock         The items in stock
          */
-        public static boolean sendMessage(io.paradaux.hibernia.framework.i18n.Message message, Player player, String playerName, String key, boolean showPrefix, ItemStack[] stock, Map<String, String> replacementMap, String... replacements) {
+        public boolean sendMessage(io.paradaux.hibernia.framework.i18n.Message message, Player player, String playerName, String key, boolean showPrefix, ItemStack[] stock, Map<String, String> replacementMap, String... replacements) {
             if (showItem == null) {
                 return false;
             }
 
             TextComponent.Builder itemComponent = Component.text();
-            for (Map.Entry<ItemStack, Integer> entry : InventoryUtil.getItemCounts(stock).entrySet()) {
+            for (Map.Entry<ItemStack, Integer> entry : inventoryUtil.get().getItemCounts(stock).entrySet()) {
                 try {
                     ItemStack item = entry.getKey();
                     if (item == null || item.getType() == Material.AIR || entry.getValue() <= 0) {

@@ -1,15 +1,20 @@
 package io.paradaux.chestshop.utils;
 
+import io.paradaux.chestshop.configuration.ChestShopConfiguration;
 import org.bukkit.Material;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 
 import java.util.Collections;
+import java.util.LinkedHashSet;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mock;
 
 /**
  * Tests for {@link io.paradaux.chestshop.utils.MaterialUtil}
@@ -17,7 +22,17 @@ import static org.junit.jupiter.api.Assertions.assertSame;
  * @author Acrobot
  */
 public class MaterialTest {
-    
+
+    private MaterialUtil materialUtil;
+
+    @BeforeEach
+    void setUp() {
+        ChestShopConfiguration config = mock(ChestShopConfiguration.class);
+        lenient().when(config.getCacheSize()).thenReturn(1000);
+        lenient().when(config.getExcludedItemAttributes()).thenReturn(new LinkedHashSet<>());
+        materialUtil = new MaterialUtil(config, () -> null);
+    }
+
     @Test
     public void testCodes() {
         for (Material material : Material.values()) {
@@ -25,7 +40,7 @@ public class MaterialTest {
                 continue;
             }
             String shortenedName = MaterialUtil.getShortenedName(material.toString(), MaterialUtil.MAXIMUM_SIGN_WIDTH);
-            assertSame(material, MaterialUtil.getMaterial(shortenedName), shortenedName + " did not produce " + material);
+            assertSame(material, materialUtil.getMaterial(shortenedName), shortenedName + " did not produce " + material);
         }
     }
 
@@ -40,7 +55,7 @@ public class MaterialTest {
                     continue;
                 }
                 String shortenedName = MaterialUtil.getShortenedName(material.toString(), maxWidth);
-                assertSame(material, MaterialUtil.getMaterial(shortenedName), shortenedName + " with " + metaData + " meta did not produce " + material);
+                assertSame(material, materialUtil.getMaterial(shortenedName), shortenedName + " with " + metaData + " meta did not produce " + material);
             }
         }
     }
@@ -53,7 +68,7 @@ public class MaterialTest {
             "Exp Bottle"
     })
     public void testCodesWithAndWithoutSpace(String materialName) {
-        assertNotNull(MaterialUtil.getMaterial(materialName));
+        assertNotNull(materialUtil.getMaterial(materialName));
     }
 
     @Test

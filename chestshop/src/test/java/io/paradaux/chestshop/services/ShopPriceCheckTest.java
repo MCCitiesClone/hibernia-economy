@@ -1,5 +1,6 @@
 package io.paradaux.chestshop.services;
 
+import io.paradaux.chestshop.configuration.ChestShopConfiguration;
 import io.paradaux.chestshop.context.PreShopCreationContext;
 import io.paradaux.chestshop.signs.ChestShopSign;
 import io.paradaux.chestshop.utils.PriceUtil;
@@ -12,6 +13,8 @@ import java.math.BigDecimal;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * Exercises {@link ShopService#checkPrice} — the shop-sign price-line parser/normaliser
@@ -20,7 +23,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 class ShopPriceCheckTest {
 
-    private final ShopService shops = new ShopService(null, null, null, null, null, null, null, null);
+    private final ShopService shops = newShopService();
+
+    private static ShopService newShopService() {
+        ChestShopConfiguration config = mock(ChestShopConfiguration.class);
+        when(config.getPricePrecision()).thenReturn(2);
+        return new ShopService(null, null, null, null, null, null, null, null, config, null, null);
+    }
 
     static String[] getPriceString(String prices) {
         return new String[]{null, null, prices, null};

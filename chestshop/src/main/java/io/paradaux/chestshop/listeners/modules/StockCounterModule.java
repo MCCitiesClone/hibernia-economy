@@ -7,7 +7,7 @@ import io.paradaux.chestshop.utils.InventoryUtil;
 import io.paradaux.chestshop.utils.MaterialUtil;
 import io.paradaux.chestshop.utils.QuantityUtil;
 import io.paradaux.chestshop.ChestShop;
-import io.paradaux.chestshop.configuration.Properties;
+import io.paradaux.chestshop.configuration.ChestShopConfiguration;
 import io.paradaux.chestshop.context.PreShopCreationContext;
 import io.paradaux.chestshop.context.TransactionContext;
 import io.paradaux.chestshop.signs.ChestShopSign;
@@ -37,10 +37,21 @@ public class StockCounterModule implements Listener {
     private static final String PRICE_LINE_WITH_COUNT = "Q %d : C %d";
 
     private final ItemService items;
+    private final ChestShopConfiguration config;
+    private final ChestShopSign chestShopSign;
+    private final ShopBlockUtil shopBlockUtil;
+    private final InventoryUtil inventoryUtil;
+    private final MaterialUtil materialUtil;
 
     @Inject
-    public StockCounterModule(ItemService items) {
+    public StockCounterModule(ItemService items, ChestShopConfiguration config, ChestShopSign chestShopSign,
+                              ShopBlockUtil shopBlockUtil, InventoryUtil inventoryUtil, MaterialUtil materialUtil) {
         this.items = items;
+        this.config = config;
+        this.chestShopSign = chestShopSign;
+        this.shopBlockUtil = shopBlockUtil;
+        this.inventoryUtil = inventoryUtil;
+        this.materialUtil = materialUtil;
     }
 
     // Invoked directly by ShopService#create (was a @HIGH PreShopCreationContext listener).
@@ -56,19 +67,19 @@ public class StockCounterModule implements Listener {
             event.setSignLine(QUANTITY_LINE, Integer.toString(quantity));
         }
 
-        if (!Properties.USE_STOCK_COUNTER
-                || (Properties.FORCE_UNLIMITED_ADMIN_SHOP && ChestShopSign.isAdminShop(event.getSignLines()))) {
+        if (!config.isUseStockCounter()
+                || (config.isForceUnlimitedAdminShop() && chestShopSign.isAdminShop(event.getSignLines()))) {
             return;
         }
 
-        if (Properties.MAX_SHOP_AMOUNT > 99999) {
+        if (config.getMaxShopAmount() > 99999) {
             ChestShop.getBukkitLogger().warning("Stock counter cannot be used if MAX_SHOP_AMOUNT is over 5 digits");
             return;
         }
 
         ItemStack itemTradedByShop = determineItemTradedByShop(ChestShopSign.getItem(event.getSignLines()));
         if (itemTradedByShop != null) {
-            Container container = ShopBlockUtil.findConnectedContainer(event.getSign());
+            Container container = shopBlockUtil.findConnectedContainer(event.getSign());
             if (container != null) {
                 event.setSignLine(QUANTITY_LINE, getQuantityLineWithCounter(quantity, itemTradedByShop, container.getInventory()));
             }
@@ -82,20 +93,20 @@ public class StockCounterModule implements Listener {
         }
 
         InventoryHolder holder = getHolder(event.getInventory(), false);
-        if (!ShopBlockUtil.couldBeShopContainer(holder)) {
+        if (!shopBlockUtil.couldBeShopContainer(holder)) {
             return;
         }
 
-        for (Sign shopSign : ShopBlockUtil.findConnectedShopSigns(holder)) {
-            if (!Properties.USE_STOCK_COUNTER
-                    || (Properties.FORCE_UNLIMITED_ADMIN_SHOP && ChestShopSign.isAdminShop(shopSign))) {
+        for (Sign shopSign : shopBlockUtil.findConnectedShopSigns(holder)) {
+            if (!config.isUseStockCounter()
+                    || (config.isForceUnlimitedAdminShop() && chestShopSign.isAdminShop(shopSign))) {
                 if (QuantityUtil.quantityLineContainsCounter(ChestShopSign.getQuantityLine(shopSign))) {
                     removeCounterFromQuantityLine(shopSign);
                 }
                 continue;
             }
 
-            if (Properties.MAX_SHOP_AMOUNT > 99999) {
+            if (config.getMaxShopAmount() > 99999) {
                 ChestShop.getBukkitLogger().warning("Stock counter cannot be used if MAX_SHOP_AMOUNT is over 5 digits");
                 if (QuantityUtil.quantityLineContainsCounter(ChestShopSign.getQuantityLine(shopSign))) {
                     removeCounterFromQuantityLine(shopSign);
@@ -110,14 +121,14 @@ public class StockCounterModule implements Listener {
     // Invoked directly by TransactionService#process (was a @HIGH TransactionContext listener).
     public void onTransaction(final TransactionContext event) {
         String quantityLine = ChestShopSign.getQuantityLine(event.getSign());
-        if (!Properties.USE_STOCK_COUNTER) {
+        if (!config.isUseStockCounter()) {
             if (QuantityUtil.quantityLineContainsCounter(quantityLine)) {
                 removeCounterFromQuantityLine(event.getSign());
             }
             return;
         }
 
-        if (Properties.MAX_SHOP_AMOUNT > 99999) {
+        if (config.getMaxShopAmount() > 99999) {
             ChestShop.getBukkitLogger().warning("Stock counter cannot be used if MAX_SHOP_AMOUNT is over 5 digits");
             if (QuantityUtil.quantityLineContainsCounter(quantityLine)) {
                 removeCounterFromQuantityLine(event.getSign());
@@ -125,11 +136,11 @@ public class StockCounterModule implements Listener {
             return;
         }
 
-        if (Properties.FORCE_UNLIMITED_ADMIN_SHOP && ChestShopSign.isAdminShop(event.getSign())) {
+        if (config.isForceUnlimitedAdminShop() && chestShopSign.isAdminShop(event.getSign())) {
             return;
         }
 
-        for (Sign shopSign : ShopBlockUtil.findConnectedShopSigns( getHolder(event.getOwnerInventory(), false))) {
+        for (Sign shopSign : shopBlockUtil.findConnectedShopSigns( getHolder(event.getOwnerInventory(), false))) {
             updateCounterOnQuantityLine(shopSign, event.getOwnerInventory());
         }
     }
@@ -153,10 +164,10 @@ public class StockCounterModule implements Listener {
             return;
         }
 
-        int numTradedItemsInChest = InventoryUtil.getAmount(itemTradedByShop, chestShopInventory);
+        int numTradedItemsInChest = inventoryUtil.getAmount(itemTradedByShop, chestShopInventory);
 
         for (ItemStack extraStack : extraItems) {
-            if (!MaterialUtil.equals(extraStack, itemTradedByShop)) {
+            if (!materialUtil.equals(extraStack, itemTradedByShop)) {
                 continue;
             }
 
@@ -177,8 +188,8 @@ public class StockCounterModule implements Listener {
     }
 
     public void updateCounterOnItemMoveEvent(ItemStack toAdd, InventoryHolder destinationHolder) {
-        Block shopBlock = ChestShopSign.getShopBlock(destinationHolder);
-        Sign connectedSign = ShopBlockUtil.getConnectedSign(shopBlock);
+        Block shopBlock = chestShopSign.getShopBlock(destinationHolder);
+        Sign connectedSign = shopBlockUtil.getConnectedSign(shopBlock);
 
         updateCounterOnQuantityLine(connectedSign, destinationHolder.getInventory(), toAdd);
     }
@@ -196,7 +207,7 @@ public class StockCounterModule implements Listener {
     }
 
     public String getQuantityLineWithCounter(int amount, ItemStack itemTransacted, Inventory chestShopInventory) {
-        int numTransactionItemsInChest = InventoryUtil.getAmount(itemTransacted, chestShopInventory);
+        int numTransactionItemsInChest = inventoryUtil.getAmount(itemTransacted, chestShopInventory);
 
         return String.format(PRICE_LINE_WITH_COUNT, amount, numTransactionItemsInChest);
     }

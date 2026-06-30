@@ -23,9 +23,10 @@ import java.util.logging.Level;
  * <p>The framework binds the supported scalar/enum/{@code BigDecimal} types
  * directly; the few types it can't bind natively ({@link UUID}, {@code Set}s of
  * {@link Material}/{@code String}) are stored as {@code String}/{@code List} and
- * exposed through the hand-written adapter getters below. The legacy static
- * {@link Properties} mirror is populated from an instance of this component at
- * boot/reload.
+ * exposed through the hand-written adapter getters below. This component is the
+ * single source of truth: it is injected wherever config is read (the former
+ * static {@code Properties} mirror was removed in PAR-282), and the Configurator
+ * repopulates this same instance in place on reload so injected references stay valid.
  *
  * @author Acrobot (original config), migrated to HiberniaFramework
  */

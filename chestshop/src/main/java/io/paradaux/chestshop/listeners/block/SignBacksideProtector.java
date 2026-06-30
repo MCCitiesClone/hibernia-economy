@@ -21,10 +21,12 @@ import org.bukkit.event.block.SignChangeEvent;
 public class SignBacksideProtector implements Listener {
 
     private final Message message;
+    private final ChestShopSign chestShopSign;
 
     @Inject
-    public SignBacksideProtector(Message message) {
+    public SignBacksideProtector(Message message, ChestShopSign chestShopSign) {
         this.message = message;
+        this.chestShopSign = chestShopSign;
     }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.LOW)
@@ -37,7 +39,7 @@ public class SignBacksideProtector implements Listener {
 
         if (event.getSide() != Side.FRONT) {
             Sign sign = (Sign) ImplementationAdapter.getState(signBlock, false);
-            if (ChestShopSign.isValid(sign)) {
+            if (chestShopSign.isValid(sign)) {
                 event.setCancelled(true);
                 message.send(event.getPlayer(), "chestshop.CANNOT_CHANGE_SIGN_BACKSIDE");
             }

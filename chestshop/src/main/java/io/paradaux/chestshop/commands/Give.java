@@ -29,11 +29,13 @@ public class Give implements CommandHandler {
 
     private final ItemService items;
     private final Message message;
+    private final InventoryUtil inventoryUtil;
 
     @Inject
-    public Give(ItemService items, Message message) {
+    public Give(ItemService items, Message message, InventoryUtil inventoryUtil) {
         this.items = items;
         this.message = message;
+        this.inventoryUtil = inventoryUtil;
     }
 
     @Route("give <args>")
@@ -90,7 +92,7 @@ public class Give implements CommandHandler {
         }
 
         item.setAmount(quantity);
-        InventoryUtil.add(item, receiver.getInventory());
+        inventoryUtil.add(item, receiver.getInventory());
 
         message.send(sender, "chestshop.ITEM_GIVEN", "prefix", "", "item", items.getName(item), "player", receiver.getName());
     }

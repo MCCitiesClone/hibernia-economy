@@ -42,11 +42,16 @@ public class MarketListener implements Listener {
 
     private final MarketRecords records;
     private final io.paradaux.chestshop.services.ItemCodeService itemCodes;
+    private final ChestShopSign chestShopSign;
+    private final ShopBlockUtil shopBlockUtil;
 
     @Inject
-    public MarketListener(MarketRecords records, io.paradaux.chestshop.services.ItemCodeService itemCodes) {
+    public MarketListener(MarketRecords records, io.paradaux.chestshop.services.ItemCodeService itemCodes,
+                          ChestShopSign chestShopSign, ShopBlockUtil shopBlockUtil) {
         this.records = records;
         this.itemCodes = itemCodes;
+        this.chestShopSign = chestShopSign;
+        this.shopBlockUtil = shopBlockUtil;
     }
 
     // Invoked directly by TransactionService#process (was a @MONITOR TransactionContext listener).
@@ -58,7 +63,7 @@ public class MarketListener implements Listener {
             ItemStack item = stock[0];
             int quantity = records.totalAmount(stock);
             Sign sign = event.getSign();
-            boolean admin = ChestShopSign.isAdminShop(sign);
+            boolean admin = chestShopSign.isAdminShop(sign);
             UUID ownerUuid = event.getOwnerAccount() != null ? event.getOwnerAccount().getUuid() : null;
             MarketRecords.Owner owner = records.ownerFromUuid(ownerUuid, admin);
             String direction = event.getTransactionType() == TransactionContext.TransactionType.BUY ? "BUY" : "SELL";
@@ -80,7 +85,7 @@ public class MarketListener implements Listener {
             Sign sign = event.getSign();
             ItemStack item = itemCodes.decode(event.getSignLines()[ChestShopSign.ITEM_LINE]);
             if (item == null) return;
-            boolean admin = ChestShopSign.isAdminShop(event.getSignLines());
+            boolean admin = chestShopSign.isAdminShop(event.getSignLines());
             UUID ownerUuid = event.getOwnerAccount() != null ? event.getOwnerAccount().getUuid() : null;
             MarketRecords.Owner owner = records.ownerFromUuid(ownerUuid, admin);
             Integer stock = (!admin && event.getContainer() != null)
@@ -109,12 +114,12 @@ public class MarketListener implements Listener {
         try {
             InventoryHolder holder = event.getInventory().getHolder();
             if (holder == null) return;
-            List<Sign> signs = ShopBlockUtil.findConnectedShopSigns(holder);
+            List<Sign> signs = shopBlockUtil.findConnectedShopSigns(holder);
             if (signs.isEmpty()) return;
             Inventory inv = event.getInventory();
             MarketApi market = MarketHook.market();
             for (Sign sign : signs) {
-                if (ChestShopSign.isAdminShop(sign)) continue;
+                if (chestShopSign.isAdminShop(sign)) continue;
                 String itemName = ChestShopSign.getItem(sign);
                 ItemStack item = itemName != null ? itemCodes.decode(itemName) : null;
                 if (item == null) continue;

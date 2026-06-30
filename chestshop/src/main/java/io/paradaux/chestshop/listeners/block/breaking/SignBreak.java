@@ -4,7 +4,7 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import io.paradaux.chestshop.utils.BlockUtil;
 import io.paradaux.chestshop.ChestShop;
-import io.paradaux.chestshop.configuration.Properties;
+import io.paradaux.chestshop.configuration.ChestShopConfiguration;
 import io.paradaux.chestshop.context.ShopDestroyedContext;
 import io.paradaux.chestshop.services.AccountService;
 import io.paradaux.chestshop.services.ShopService;
@@ -46,12 +46,19 @@ public class SignBreak implements Listener {
     private final AccountService accounts;
     private final ShopService shops;
     private final Message message;
+    private final ChestShopConfiguration config;
+    private final ChestShopSign chestShopSign;
+    private final ShopBlockUtil shopBlockUtil;
 
     @Inject
-    public SignBreak(AccountService accounts, ShopService shops, Message message) {
+    public SignBreak(AccountService accounts, ShopService shops, Message message,
+                     ChestShopConfiguration config, ChestShopSign chestShopSign, ShopBlockUtil shopBlockUtil) {
         this.accounts = accounts;
         this.shops = shops;
         this.message = message;
+        this.config = config;
+        this.chestShopSign = chestShopSign;
+        this.shopBlockUtil = shopBlockUtil;
     }
 
     public void handlePhysicsBreak(Block block) {
@@ -62,7 +69,7 @@ public class SignBreak implements Listener {
         Sign sign = (Sign) getState(block, false);
         Block attachedBlock = BlockUtil.getAttachedBlock(sign);
 
-        if (attachedBlock.getType() == Material.AIR && ChestShopSign.isValid(sign)) {
+        if (attachedBlock.getType() == Material.AIR && chestShopSign.isValid(sign)) {
             sendShopDestroyed((Sign) block.getState(), block.hasMetadata(METADATA_NAME)
                     ? (Player) block.getMetadata(METADATA_NAME).get(0).value()
                     : null);
@@ -82,7 +89,7 @@ public class SignBreak implements Listener {
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
     public void onBrokenSign(BlockBreakEvent event) {
-        if (ChestShopSign.isValid(event.getBlock())) {
+        if (chestShopSign.isValid(event.getBlock())) {
             sendShopDestroyed((Sign) event.getBlock().getState(), event.getPlayer());
         }
     }
@@ -109,7 +116,7 @@ public class SignBreak implements Listener {
 
     @EventHandler(ignoreCancelled = true)
     public void onExplosion(EntityExplodeEvent event) {
-        if (event.blockList() == null || !Properties.USE_BUILT_IN_PROTECTION) {
+        if (event.blockList() == null || !config.isUseBuiltInProtection()) {
             return;
         }
 
@@ -143,11 +150,11 @@ public class SignBreak implements Listener {
 
         for (Sign sign : attachedSigns) {
 
-            if (!canBeBroken || !ChestShopSign.isValid(sign)) {
+            if (!canBeBroken || !chestShopSign.isValid(sign)) {
                 continue;
             }
 
-            if (Properties.TURN_OFF_SIGN_PROTECTION || canDestroyShop(breaker, ChestShopSign.getOwner(sign))) {
+            if (config.isTurnOffSignProtection() || canDestroyShop(breaker, ChestShopSign.getOwner(sign))) {
                 brokenBlocks.add(sign);
             } else {
                 canBeBroken = false;
@@ -170,7 +177,7 @@ public class SignBreak implements Listener {
     }
 
     public void sendShopDestroyed(Sign sign, Player player) {
-        Container connectedContainer = ShopBlockUtil.findConnectedContainer(sign.getBlock());
+        Container connectedContainer = shopBlockUtil.findConnectedContainer(sign.getBlock());
 
         shops.onDestroyed(new ShopDestroyedContext(player, sign, connectedContainer));
     }

@@ -1,8 +1,11 @@
 package io.paradaux.chestshop.utils;
 
 import io.paradaux.chestshop.utils.BlockUtil;
-import io.paradaux.chestshop.configuration.Properties;
+import io.paradaux.chestshop.configuration.ChestShopConfiguration;
 import io.paradaux.chestshop.signs.ChestShopSign;
+import com.google.inject.Inject;
+import com.google.inject.Provider;
+import com.google.inject.Singleton;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
@@ -25,27 +28,40 @@ import static io.paradaux.chestshop.utils.ImplementationAdapter.getState;
 /**
  * @author Acrobot
  */
+@Singleton
 public class ShopBlockUtil {
     public static final BlockFace[] CHEST_EXTENSION_FACES = {BlockFace.EAST, BlockFace.NORTH, BlockFace.WEST, BlockFace.SOUTH};
     public static final BlockFace[] SHOP_FACES = {BlockFace.SELF, BlockFace.DOWN, BlockFace.UP, BlockFace.EAST, BlockFace.NORTH, BlockFace.WEST, BlockFace.SOUTH};
 
-    public static Sign getConnectedSign(Block block) {
-        Sign sign = ShopBlockUtil.findAnyNearbyShopSign(block);
+    private final ChestShopConfiguration config;
+    // Lazy to break the ShopBlockUtil ↔ ChestShopSign construction cycle (this util
+    // resolves shop signs; ChestShopSign asks back whether a block is a shop container).
+    private final Provider<ChestShopSign> chestShopSign;
+
+    @Inject
+    public ShopBlockUtil(ChestShopConfiguration config, Provider<ChestShopSign> chestShopSign) {
+        this.config = config;
+        this.chestShopSign = chestShopSign;
+    }
+
+    public Sign getConnectedSign(Block block) {
+        Sign sign = findAnyNearbyShopSign(block);
 
         if (sign == null) {
             Block neighbor = findNeighbor(block);
             if (neighbor != null) {
-                sign = ShopBlockUtil.findAnyNearbyShopSign(neighbor);
+                sign = findAnyNearbyShopSign(neighbor);
             }
         }
 
         return sign;
     }
 
-    public static Container findConnectedContainer(Sign sign) {
+    public Container findConnectedContainer(Sign sign) {
         if (!BlockUtil.isLoaded(sign.getBlock())) {
             return null;
         }
+        // (config/sign-dependent — see couldBeShopContainer / ChestShopSign below)
 
         BlockFace signFace = null;
         BlockData data = sign.getBlockData();
@@ -55,7 +71,7 @@ public class ShopBlockUtil {
         return findConnectedContainer(sign.getLocation(), signFace);
     }
 
-    public static Container findConnectedContainer(Block block) {
+    public Container findConnectedContainer(Block block) {
         if (!BlockUtil.isLoaded(block)) {
             return null;
         }
@@ -68,10 +84,10 @@ public class ShopBlockUtil {
         return findConnectedContainer(block.getLocation(), signFace);
     }
 
-    private static Container findConnectedContainer(Location location, BlockFace signFace) {
+    private Container findConnectedContainer(Location location, BlockFace signFace) {
         if (signFace != null) {
             Block faceBlock = location.clone().add(signFace.getModX(), signFace.getModY(), signFace.getModZ()).getBlock();
-            if (ShopBlockUtil.couldBeShopContainer(faceBlock)) {
+            if (couldBeShopContainer(faceBlock)) {
                 return (Container) faceBlock.getState();
             }
         }
@@ -79,7 +95,7 @@ public class ShopBlockUtil {
         for (BlockFace bf : SHOP_FACES) {
             if (bf != signFace) {
                 Block faceBlock = location.clone().add(bf.getModX(), bf.getModY(), bf.getModZ()).getBlock();
-                if (ShopBlockUtil.couldBeShopContainer(faceBlock)) {
+                if (couldBeShopContainer(faceBlock)) {
                     return (Container) faceBlock.getState();
                 }
             }
@@ -87,7 +103,7 @@ public class ShopBlockUtil {
         return null;
     }
 
-    public static List<Sign> findConnectedShopSigns(InventoryHolder chestShopInventoryHolder) {
+    public List<Sign> findConnectedShopSigns(InventoryHolder chestShopInventoryHolder) {
         List<Sign> result = new ArrayList<>();
 
         if (chestShopInventoryHolder instanceof DoubleChest) {
@@ -101,27 +117,27 @@ public class ShopBlockUtil {
             Block leftChest = ((BlockState) leftChestSide).getBlock();
             Block rightChest = ((BlockState) rightChestSide).getBlock();
 
-            if (ChestShopSign.isShopBlock(leftChest)) {
-                result.addAll(ShopBlockUtil.findConnectedShopSigns(leftChest));
+            if (chestShopSign.get().isShopBlock(leftChest)) {
+                result.addAll(findConnectedShopSigns(leftChest));
             }
 
-            if (ChestShopSign.isShopBlock(rightChest)) {
-                result.addAll(ShopBlockUtil.findConnectedShopSigns(rightChest));
+            if (chestShopSign.get().isShopBlock(rightChest)) {
+                result.addAll(findConnectedShopSigns(rightChest));
             }
         }
 
         else if (chestShopInventoryHolder instanceof BlockState) {
             Block chestBlock = ((BlockState) chestShopInventoryHolder).getBlock();
 
-            if (ChestShopSign.isShopBlock(chestBlock)) {
-                result.addAll(ShopBlockUtil.findConnectedShopSigns(chestBlock));
+            if (chestShopSign.get().isShopBlock(chestBlock)) {
+                result.addAll(findConnectedShopSigns(chestBlock));
             }
         }
 
         return result;
     }
 
-    public static List<Sign> findConnectedShopSigns(Block chestBlock) {
+    public List<Sign> findConnectedShopSigns(Block chestBlock) {
         List<Sign> result = new ArrayList<>();
 
         for (BlockFace bf : SHOP_FACES) {
@@ -138,7 +154,7 @@ public class ShopBlockUtil {
                 continue;
             }
 
-            if (ChestShopSign.isValid(sign)) {
+            if (chestShopSign.get().isValid(sign)) {
                 result.add(sign);
             }
         }
@@ -146,7 +162,7 @@ public class ShopBlockUtil {
         return result;
     }
 
-    public static Sign findAnyNearbyShopSign(Block block) {
+    public Sign findAnyNearbyShopSign(Block block) {
         for (BlockFace bf : SHOP_FACES) {
             Block faceBlock = block.getRelative(bf);
             if (!BlockUtil.isLoaded(faceBlock)) {
@@ -165,7 +181,7 @@ public class ShopBlockUtil {
 
             Sign sign = (Sign) getState(faceBlock, false);
 
-            if (ChestShopSign.isValid(sign)) {
+            if (chestShopSign.get().isValid(sign)) {
                 return sign;
             }
         }
@@ -216,11 +232,11 @@ public class ShopBlockUtil {
         return null;
     }
 
-    public static boolean couldBeShopContainer(Block block) {
-        return block != null && BlockUtil.isLoaded(block) && Properties.SHOP_CONTAINERS.contains(block.getType());
+    public boolean couldBeShopContainer(Block block) {
+        return block != null && BlockUtil.isLoaded(block) && config.getShopContainers().contains(block.getType());
     }
 
-    public static boolean couldBeShopContainer(InventoryHolder holder) {
+    public boolean couldBeShopContainer(InventoryHolder holder) {
         return (holder instanceof Container && couldBeShopContainer(((Container) holder).getBlock()))
                     || (holder instanceof DoubleChest && couldBeShopContainer(getLeftSide((DoubleChest) holder, false)));
     }
