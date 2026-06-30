@@ -1,6 +1,5 @@
 package io.paradaux.chestshop.permission;
 
-import io.paradaux.chestshop.AdminBypass;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 

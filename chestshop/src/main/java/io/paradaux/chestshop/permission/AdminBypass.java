@@ -1,4 +1,4 @@
-package io.paradaux.chestshop;
+package io.paradaux.chestshop.permission;
 
 import org.bukkit.entity.Player;
 
@@ -14,11 +14,11 @@ import java.util.concurrent.ConcurrentHashMap;
  * a staff member voluntarily switch that off so they can <em>play</em> — get
  * charged for trades, lose access to others' shops — and flip it back on later.
  *
- * <p>The whole mechanic rides on one gate: {@link Permission#has} returns
+ * <p>The whole mechanic rides on one gate: {@link Permissions#has} returns
  * {@code false} for the elevated ("staff") nodes below while a player is opted
  * out, so every admin-gated path in the plugin demotes them to a normal player
  * without touching any of those call sites. The toggle command itself is gated by
- * the framework's Bukkit permission check (not {@link Permission#has}), so an
+ * the framework's Bukkit permission check (not {@link Permissions#has}), so an
  * opted-out admin can always turn it back on.
  *
  * <p>State is in-memory (resets on restart, re-granting bypass by default — the

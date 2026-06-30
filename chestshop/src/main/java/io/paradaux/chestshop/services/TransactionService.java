@@ -86,12 +86,12 @@ import static io.paradaux.chestshop.utils.PriceUtil.NO_PRICE;
 public class TransactionService {
 
     /** Cooldown table for owner out-of-stock / full-shop notifications: (owner, msgKey) → last-sent ms. */
-    private static final Table<UUID, String, Long> notificationCooldowns = HashBasedTable.create();
+    private final Table<UUID, String, Long> notificationCooldowns = HashBasedTable.create();
 
     // Cache the compiled valid-playername pattern, rebuilt only when the config string
     // changes, instead of recompiling the regex on every click (per-click hot path).
-    private static volatile String cachedPlayernameRegexp;
-    private static volatile Pattern cachedPlayernamePattern;
+    private volatile String cachedPlayernameRegexp;
+    private volatile Pattern cachedPlayernamePattern;
 
     private final EconomyService economy;
     private final ShopService shops;
@@ -152,7 +152,7 @@ public class TransactionService {
         sendErrorMessage(ctx);
     }
 
-    private static Pattern playernamePattern() {
+    private Pattern playernamePattern() {
         String regexp = Properties.VALID_PLAYERNAME_REGEXP;
         if (!regexp.equals(cachedPlayernameRegexp)) {
             cachedPlayernamePattern = Pattern.compile(regexp);
