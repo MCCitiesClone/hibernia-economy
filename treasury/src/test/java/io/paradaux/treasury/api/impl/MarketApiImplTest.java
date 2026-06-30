@@ -15,7 +15,11 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyMap;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 
@@ -77,6 +81,43 @@ class MarketApiImplTest {
         verify(mapper).deactivateShop("world", 1, 2, 3);
         api.updateShopStock("world", 1, 2, 3, 10, 54);
         verify(mapper).updateShopStock("world", 1, 2, 3, 10, 54);
+    }
+
+    @Test
+    void visibilityHologramAndPreview_delegate() {
+        MarketApiImpl api = new MarketApiImpl(mapper);
+        UUID player = UUID.randomUUID();
+
+        api.setShopVisibility("world", 1, 2, 3, false);
+        verify(mapper).setShopVisibility("world", 1, 2, 3, false);
+
+        api.setShopHologram("world", 4, 5, 6, true);
+        verify(mapper).setShopHologram("world", 4, 5, 6, true);
+
+        api.setPreviewPreference(player, false);
+        verify(mapper).upsertPreviewPreference(player, false);
+    }
+
+    @Test
+    void writes_failSoft_swallowMapperErrors() {
+        MarketApiImpl api = new MarketApiImpl(mapper);
+        UUID player = UUID.randomUUID();
+        doThrow(new RuntimeException("db down")).when(mapper)
+                .setShopVisibility(anyString(), anyInt(), anyInt(), anyInt(), anyBoolean());
+        doThrow(new RuntimeException("db down")).when(mapper)
+                .setShopHologram(anyString(), anyInt(), anyInt(), anyInt(), anyBoolean());
+        doThrow(new RuntimeException("db down")).when(mapper)
+                .upsertPreviewPreference(any(), anyBoolean());
+        doThrow(new RuntimeException("db down")).when(mapper)
+                .updateShopStock(anyString(), anyInt(), anyInt(), anyInt(), any(), any());
+        doThrow(new RuntimeException("db down")).when(mapper)
+                .deactivateShop(anyString(), anyInt(), anyInt(), anyInt());
+
+        assertDoesNotThrow(() -> api.setShopVisibility("w", 0, 0, 0, true));
+        assertDoesNotThrow(() -> api.setShopHologram("w", 0, 0, 0, true));
+        assertDoesNotThrow(() -> api.setPreviewPreference(player, true));
+        assertDoesNotThrow(() -> api.updateShopStock("w", 0, 0, 0, 1, 1));
+        assertDoesNotThrow(() -> api.deactivateShop("w", 0, 0, 0));
     }
 
     @Test
