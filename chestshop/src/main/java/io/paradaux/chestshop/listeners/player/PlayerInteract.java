@@ -121,7 +121,7 @@ public class PlayerInteract implements Listener {
         }
 
         if (Properties.ALLOW_AUTO_ITEM_FILL && ChatColor.stripColor(ChestShopSign.getItem(sign)).equals(AUTOFILL_CODE)) {
-            if (ChestShopSign.hasPermission(player, OTHER_NAME_CREATE, sign)) {
+            if (accounts.hasPermission(player, OTHER_NAME_CREATE, sign)) {
                 ItemStack item = player.getInventory().getItemInMainHand();
                 if (!MaterialUtil.isEmpty(item)) {
                     event.setCancelled(true);
@@ -154,8 +154,8 @@ public class PlayerInteract implements Listener {
             return;
         }
 
-        boolean notAllowedToTrade = ChestShopSign.isOwner(player, sign)
-                || (Properties.IGNORE_ACCESS_PERMS && ChestShopSign.canAccess(player, sign));
+        boolean notAllowedToTrade = accounts.isOwner(player, sign)
+                || (Properties.IGNORE_ACCESS_PERMS && accounts.canAccess(player, sign));
         if (notAllowedToTrade && player.getInventory().getItemInMainHand().getType().name().contains("SIGN") && action == RIGHT_CLICK_BLOCK) {
             // Allow editing of sign (if supported)
             return;
@@ -169,7 +169,7 @@ public class PlayerInteract implements Listener {
             }
         }
 
-        if (notAllowedToTrade && ChestShopSign.canAccess(player, sign) && !ChestShopSign.isAdminShop(sign)) {
+        if (notAllowedToTrade && accounts.canAccess(player, sign) && !ChestShopSign.isAdminShop(sign)) {
             if (Properties.ALLOW_SIGN_CHEST_OPEN && !(Properties.IGNORE_CREATIVE_MODE && player.getGameMode() == GameMode.CREATIVE)) {
                 if (player.isSneaking() || player.isInsideVehicle()
                         || (Properties.ALLOW_LEFT_CLICK_DESTROYING && action == LEFT_CLICK_BLOCK)) {
@@ -190,7 +190,7 @@ public class PlayerInteract implements Listener {
 
         if (action == RIGHT_CLICK_BLOCK) {
             event.setCancelled(true);
-        } else if (action == LEFT_CLICK_BLOCK && !Properties.TURN_OFF_SIGN_PROTECTION && !ChestShopSign.canAccess(player, sign)) {
+        } else if (action == LEFT_CLICK_BLOCK && !Properties.TURN_OFF_SIGN_PROTECTION && !accounts.canAccess(player, sign)) {
             event.setCancelled(true);
         }
 

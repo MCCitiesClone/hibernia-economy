@@ -1,7 +1,10 @@
 package io.paradaux.chestshop.plugins;
 
+import com.google.inject.Inject;
+import com.google.inject.Singleton;
 import io.paradaux.chestshop.events.protection.ProtectionCheckEvent;
 import io.paradaux.chestshop.permission.Permissions;
+import io.paradaux.chestshop.services.AccountService;
 import io.paradaux.chestshop.signs.ChestShopSign;
 import io.paradaux.chestshop.utils.uBlock;
 import org.bukkit.block.Block;
@@ -15,14 +18,23 @@ import static io.paradaux.chestshop.utils.BlockUtil.isSign;
 /**
  * ChestShop's own (vanilla) shop-member access protection. {@link #onProtectionCheck} is
  * invoked directly by {@link io.paradaux.chestshop.services.ProtectionService}; this is no
- * longer a Bukkit {@code Listener}.
+ * longer a Bukkit {@code Listener}. Injected so the membership check goes through
+ * {@link AccountService} rather than the static locator (PAR-282).
  *
  * @author Acrobot
  */
+@Singleton
 public class ChestShop {
 
+    private final AccountService accounts;
+
+    @Inject
+    public ChestShop(AccountService accounts) {
+        this.accounts = accounts;
+    }
+
     // Invoked directly by ProtectionService (was a NORMAL ProtectionCheckEvent listener).
-    public static void onProtectionCheck(ProtectionCheckEvent event) {
+    public void onProtectionCheck(ProtectionCheckEvent event) {
         if (event.getResult() == Event.Result.DENY || event.isBuiltInProtectionIgnored()) {
             return;
         }
@@ -35,7 +47,7 @@ public class ChestShop {
         }
     }
 
-    public static boolean canAccess(Player player, Block block) {
+    public boolean canAccess(Player player, Block block) {
         if (!canBeProtected(block)) {
             return true;
         }
@@ -63,11 +75,11 @@ public class ChestShop {
         return true;
     }
 
-    private static boolean canBeProtected(Block block) {
+    private boolean canBeProtected(Block block) {
         return isSign(block) || uBlock.couldBeShopContainer(block);
     }
 
-    private static boolean isShopMember(Player player, Sign sign) {
-        return ChestShopSign.hasPermission(player, Permissions.OTHER_NAME_ACCESS, sign);
+    private boolean isShopMember(Player player, Sign sign) {
+        return accounts.hasPermission(player, Permissions.OTHER_NAME_ACCESS, sign);
     }
 }

@@ -28,6 +28,13 @@ import java.util.function.Consumer;
 @Singleton
 public class ProtectionService {
 
+    private final io.paradaux.chestshop.plugins.ChestShop vanillaProtection;
+
+    @com.google.inject.Inject
+    public ProtectionService(io.paradaux.chestshop.plugins.ChestShop vanillaProtection) {
+        this.vanillaProtection = vanillaProtection;
+    }
+
     @Nullable private volatile Consumer<ProtectionCheckEvent> worldGuardProtection;
     @Nullable private volatile Consumer<BuildPermissionEvent> worldGuardBuilding;
     @Nullable private volatile Consumer<BuildPermissionEvent> griefPreventionBuilding;
@@ -60,7 +67,7 @@ public class ProtectionService {
     private boolean runProtectionCheck(ProtectionCheckEvent event) {
         // Vanilla ChestShop shop-member protection always runs first; both handlers only
         // ever set DENY (and self-guard on it), so the result is "deny if either denies".
-        io.paradaux.chestshop.plugins.ChestShop.onProtectionCheck(event);
+        vanillaProtection.onProtectionCheck(event);
         Consumer<ProtectionCheckEvent> wg = worldGuardProtection;
         if (wg != null) {
             wg.accept(event);

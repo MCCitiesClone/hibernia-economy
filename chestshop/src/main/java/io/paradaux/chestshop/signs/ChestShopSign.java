@@ -162,39 +162,8 @@ public class ChestShopSign {
         return null;
     }
 
-    public static boolean canAccess(Player player, Sign sign) {
-        return hasPermission(player, Permissions.OTHER_NAME_ACCESS, sign);
-    }
-
-    public static boolean hasPermission(Player player, String base, Sign sign) {
-        if (player == null) return false;
-        if (sign == null) return true;
-
-        String name = getOwner(sign);
-        if (name == null || name.isEmpty()) return true;
-
-        return ChestShop.accounts().canUseName(player, base, name);
-    }
-
-    public static boolean isOwner(Player player, Sign sign) {
-        if (player == null || sign == null) return false;
-
-        String name = getOwner(sign);
-        if (name == null || name.isEmpty()) return false;
-
-        Account account = ChestShop.accounts().resolveAccount(name);
-        if (account == null) {
-            return player.getName().equalsIgnoreCase(name);
-        }
-
-        // For business accounts, the UUID is synthetic and will never match a player
-        // UUID; delegate to canAccess so the firm membership/ownership is checked via API.
-        if (isBusinessAccount(name)) {
-            return ChestShop.accounts().canAccess(player, account);
-        }
-
-        return account.getUuid().equals(player.getUniqueId());
-    }
+    // canAccess / hasPermission / isOwner (the account-access predicates) moved to
+    // AccountService (PAR-282) — they were ledger logic living on a sign util.
 
     /**
      * @deprecated Call {@code ChestShop.items().validateSign(...)}

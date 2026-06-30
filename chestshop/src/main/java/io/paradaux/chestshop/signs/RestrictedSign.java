@@ -4,6 +4,7 @@ import com.google.inject.Inject;
 import io.paradaux.chestshop.utils.BlockUtil;
 import io.paradaux.chestshop.events.PreTransactionEvent;
 import io.paradaux.chestshop.permission.Permissions;
+import io.paradaux.chestshop.services.AccountService;
 import io.paradaux.hibernia.framework.i18n.Message;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
@@ -27,14 +28,16 @@ public class RestrictedSign implements Listener {
     private static final BlockFace[] SIGN_CONNECTION_FACES = {BlockFace.SELF, BlockFace.UP, BlockFace.EAST, BlockFace.WEST, BlockFace.NORTH, BlockFace.SOUTH};
 
     private final Message message;
+    private final AccountService accounts;
 
     @Inject
-    public RestrictedSign(Message message) {
+    public RestrictedSign(Message message, AccountService accounts) {
         this.message = message;
+        this.accounts = accounts;
     }
 
     @EventHandler(ignoreCancelled = true)
-    public static void onBlockDestroy(BlockBreakEvent event) {
+    public void onBlockDestroy(BlockBreakEvent event) {
         Block destroyed = event.getBlock();
         Sign attachedRestrictedSign = getRestrictedSign(destroyed.getLocation());
 
@@ -67,7 +70,7 @@ public class RestrictedSign implements Listener {
 
             Sign sign = (Sign) getState(connectedSign, false);
 
-            if (!ChestShopSign.hasPermission(player, Permissions.OTHER_NAME_DESTROY, sign)) {
+            if (!accounts.hasPermission(player, Permissions.OTHER_NAME_DESTROY, sign)) {
                 dropSignAndCancelEvent(event);
                 return;
             }
@@ -140,9 +143,9 @@ public class RestrictedSign implements Listener {
         return !BlockUtil.isSign(blockUp) || hasPermission(player, ((Sign) getState(blockUp, false)).getLines());
     }
 
-    public static boolean canDestroy(Player player, Sign sign) {
+    public boolean canDestroy(Player player, Sign sign) {
         Sign shopSign = getAssociatedSign(sign);
-        return ChestShopSign.hasPermission(player, Permissions.OTHER_NAME_DESTROY, shopSign);
+        return accounts.hasPermission(player, Permissions.OTHER_NAME_DESTROY, shopSign);
     }
 
     public static Sign getAssociatedSign(Sign restricted) {

@@ -3,6 +3,7 @@ package io.paradaux.chestshop;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import io.paradaux.chestshop.configuration.Properties;
+import io.paradaux.chestshop.services.AccountService;
 import io.paradaux.chestshop.services.ProtectionService;
 import io.paradaux.chestshop.signs.ChestShopSign;
 import io.paradaux.chestshop.utils.BlockUtil;
@@ -29,10 +30,12 @@ public class Security {
     private static final BlockFace[] BLOCKS_AROUND = {BlockFace.UP, BlockFace.DOWN, BlockFace.EAST, BlockFace.WEST, BlockFace.NORTH, BlockFace.SOUTH};
 
     private final ProtectionService protection;
+    private final AccountService accounts;
 
     @Inject
-    public Security(ProtectionService protection) {
+    public Security(ProtectionService protection, AccountService accounts) {
         this.protection = protection;
+        this.accounts = accounts;
     }
 
     public boolean protect(Player player, Block block) {
@@ -100,7 +103,7 @@ public class Security {
                 continue;
             }
 
-            if (!ChestShopSign.isOwner(player, sign)) {
+            if (!accounts.isOwner(player, sign)) {
                 return true;
             }
         }

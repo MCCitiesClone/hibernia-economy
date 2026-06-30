@@ -49,7 +49,7 @@ public class SignCreate implements Listener {
 
         Sign sign = (Sign) ImplementationAdapter.getState(signBlock, false);
 
-        if (ChestShopSign.isValid(sign) && !ChestShopSign.canAccess(event.getPlayer(), sign)) {
+        if (ChestShopSign.isValid(sign) && !accounts.canAccess(event.getPlayer(), sign)) {
             // There was already a shop here, but the player does not have permission to change it
             event.setCancelled(true);
             sign.update();

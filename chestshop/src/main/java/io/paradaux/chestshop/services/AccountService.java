@@ -19,6 +19,7 @@ import io.paradaux.chestshop.utils.encoding.Base62;
 import org.apache.ibatis.exceptions.PersistenceException;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
+import org.bukkit.block.Sign;
 import org.bukkit.entity.Player;
 
 import java.util.Date;
@@ -335,6 +336,48 @@ public class AccountService {
                 + " cannot access the account " + account.getName() + "/" + account.getUuid()
                 + " as their UUID doesn't match!");
         return false;
+    }
+
+    // ---- shop-sign access predicates (were the static ChestShopSign methods; PAR-282) ----
+
+    /**
+     * Whether {@code player} may use the owner name on {@code sign} for the given permission
+     * {@code base} (e.g. create/access/destroy). A null sign or blank owner is permitted.
+     */
+    public boolean hasPermission(Player player, String base, Sign sign) {
+        if (player == null) return false;
+        if (sign == null) return true;
+
+        String name = ChestShopSign.getOwner(sign);
+        if (name == null || name.isEmpty()) return true;
+
+        return canUseName(player, base, name);
+    }
+
+    /** Whether {@code player} is the shop's owner — by UUID, or firm membership for a business shop. */
+    public boolean isOwner(Player player, Sign sign) {
+        if (player == null || sign == null) return false;
+
+        String name = ChestShopSign.getOwner(sign);
+        if (name == null || name.isEmpty()) return false;
+
+        Account account = resolveAccount(name);
+        if (account == null) {
+            return player.getName().equalsIgnoreCase(name);
+        }
+
+        // For business accounts the UUID is synthetic and never matches a player UUID;
+        // delegate to canAccess so firm membership/ownership is checked via the API.
+        if (ChestShopSign.isBusinessAccount(name)) {
+            return canAccess(player, account);
+        }
+
+        return account.getUuid().equals(player.getUniqueId());
+    }
+
+    /** Whether {@code player} may access (open/trade-with) the shop on {@code sign}. */
+    public boolean canAccess(Player player, Sign sign) {
+        return hasPermission(player, Permissions.OTHER_NAME_ACCESS, sign);
     }
 
     /** Whether {@code player} has muted shop sale/stock notifications (the {@code /chestshop notify} toggle). */

@@ -3,7 +3,7 @@ package io.paradaux.chestshop.listeners.block.breaking;
 import com.google.inject.Inject;
 import io.paradaux.chestshop.configuration.Properties;
 import io.paradaux.chestshop.permission.Permissions;
-import io.paradaux.chestshop.signs.ChestShopSign;
+import io.paradaux.chestshop.services.AccountService;
 import io.paradaux.chestshop.utils.uBlock;
 import io.paradaux.hibernia.framework.i18n.Message;
 import org.bukkit.block.Block;
@@ -21,10 +21,12 @@ import org.bukkit.event.entity.EntityExplodeEvent;
 public class ChestBreak implements Listener {
 
     private final Message message;
+    private final AccountService accounts;
 
     @Inject
-    public ChestBreak(Message message) {
+    public ChestBreak(Message message, AccountService accounts) {
         this.message = message;
+        this.accounts = accounts;
     }
 
     @EventHandler(ignoreCancelled = true)
@@ -36,7 +38,7 @@ public class ChestBreak implements Listener {
     }
 
     @EventHandler(ignoreCancelled = true)
-    public static void onExplosion(EntityExplodeEvent event) {
+    public void onExplosion(EntityExplodeEvent event) {
         if (event.blockList() == null || !Properties.USE_BUILT_IN_PROTECTION) {
             return;
         }
@@ -50,20 +52,20 @@ public class ChestBreak implements Listener {
     }
 
     @EventHandler(ignoreCancelled = true)
-    public static void onEntityChangeBlock(EntityChangeBlockEvent event) {
+    public void onEntityChangeBlock(EntityChangeBlockEvent event) {
         if (!canBeBroken(event.getBlock(), null)) {
             event.setCancelled(true);
         }
     }
 
-    private static boolean canBeBroken(Block block, Player breaker) {
+    private boolean canBeBroken(Block block, Player breaker) {
         if (!uBlock.couldBeShopContainer(block) || !Properties.USE_BUILT_IN_PROTECTION) {
             return true;
         }
 
         Sign shopSign = uBlock.getConnectedSign(block);
         if (breaker != null) {
-            return  ChestShopSign.hasPermission(breaker, Permissions.OTHER_NAME_DESTROY, shopSign);
+            return accounts.hasPermission(breaker, Permissions.OTHER_NAME_DESTROY, shopSign);
         }
         return shopSign == null;
     }
