@@ -1,4 +1,4 @@
-package io.paradaux.chestshop.events.protection;
+package io.paradaux.chestshop.context.protection;
 
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
@@ -14,14 +14,14 @@ import javax.annotation.Nullable;
  *
  * @author Acrobot
  */
-public class BuildPermissionEvent {
+public class BuildPermissionContext {
 
     private Player player;
     private Location chest, sign;
 
     private boolean allowed = true;
 
-    public BuildPermissionEvent(Player player, @Nullable Location chest, Location sign) {
+    public BuildPermissionContext(Player player, @Nullable Location chest, Location sign) {
         this.player = player;
         this.chest = chest;
         this.sign = sign;

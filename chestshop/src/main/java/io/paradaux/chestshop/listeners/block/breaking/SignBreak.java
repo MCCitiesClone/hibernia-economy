@@ -5,7 +5,7 @@ import com.google.inject.Singleton;
 import io.paradaux.chestshop.utils.BlockUtil;
 import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.configuration.Properties;
-import io.paradaux.chestshop.events.ShopDestroyedEvent;
+import io.paradaux.chestshop.context.ShopDestroyedContext;
 import io.paradaux.chestshop.services.AccountService;
 import io.paradaux.chestshop.services.ShopService;
 import io.paradaux.chestshop.signs.ChestShopSign;
@@ -63,7 +63,7 @@ public class SignBreak implements Listener {
         Block attachedBlock = BlockUtil.getAttachedBlock(sign);
 
         if (attachedBlock.getType() == Material.AIR && ChestShopSign.isValid(sign)) {
-            sendShopDestroyedEvent((Sign) block.getState(), block.hasMetadata(METADATA_NAME)
+            sendShopDestroyed((Sign) block.getState(), block.hasMetadata(METADATA_NAME)
                     ? (Player) block.getMetadata(METADATA_NAME).get(0).value()
                     : null);
         }
@@ -83,7 +83,7 @@ public class SignBreak implements Listener {
     @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
     public void onBrokenSign(BlockBreakEvent event) {
         if (ChestShopSign.isValid(event.getBlock())) {
-            sendShopDestroyedEvent((Sign) event.getBlock().getState(), event.getPlayer());
+            sendShopDestroyed((Sign) event.getBlock().getState(), event.getPlayer());
         }
     }
 
@@ -169,10 +169,10 @@ public class SignBreak implements Listener {
         return player != null && accounts.canUseName(player, OTHER_NAME_DESTROY, name);
     }
 
-    public void sendShopDestroyedEvent(Sign sign, Player player) {
+    public void sendShopDestroyed(Sign sign, Player player) {
         Container connectedContainer = uBlock.findConnectedContainer(sign.getBlock());
 
-        shops.onDestroyed(new ShopDestroyedEvent(player, sign, connectedContainer));
+        shops.onDestroyed(new ShopDestroyedContext(player, sign, connectedContainer));
     }
 
     private static List<Sign> getAttachedSigns(Block block) {

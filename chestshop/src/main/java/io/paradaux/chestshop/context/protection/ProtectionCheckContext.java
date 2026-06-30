@@ -1,4 +1,4 @@
-package io.paradaux.chestshop.events.protection;
+package io.paradaux.chestshop.context.protection;
 
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
@@ -12,7 +12,7 @@ import org.bukkit.event.Event;
  *
  * @author Acrobot
  */
-public class ProtectionCheckEvent {
+public class ProtectionCheckContext {
 
     private Event.Result result = Event.Result.DEFAULT;
     private boolean ignoreBuiltInProtection = false;
@@ -20,18 +20,18 @@ public class ProtectionCheckEvent {
     private Block block;
     private Player player;
 
-    public ProtectionCheckEvent(Block block, Player player) {
+    public ProtectionCheckContext(Block block, Player player) {
         this.block = block;
         this.player = player;
     }
 
-    public ProtectionCheckEvent(Block block, Player player, boolean ignoreBuiltInProtection) {
+    public ProtectionCheckContext(Block block, Player player, boolean ignoreBuiltInProtection) {
         this.block = block;
         this.player = player;
         this.ignoreBuiltInProtection = ignoreBuiltInProtection;
     }
 
-    public ProtectionCheckEvent(Block block, Player player, boolean ignoreBuiltInProtection, boolean checkManagement) {
+    public ProtectionCheckContext(Block block, Player player, boolean ignoreBuiltInProtection, boolean checkManagement) {
         this.block = block;
         this.player = player;
         this.ignoreBuiltInProtection = ignoreBuiltInProtection;

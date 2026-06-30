@@ -1,4 +1,4 @@
-package io.paradaux.chestshop.events;
+package io.paradaux.chestshop.context;
 
 import io.paradaux.chestshop.database.Account;
 import org.bukkit.block.Sign;
@@ -8,8 +8,8 @@ import org.bukkit.inventory.ItemStack;
 
 import java.math.BigDecimal;
 
-import static io.paradaux.chestshop.events.PreTransactionEvent.TransactionOutcome.TRANSACTION_SUCCESFUL;
-import static io.paradaux.chestshop.events.TransactionEvent.TransactionType;
+import static io.paradaux.chestshop.context.PreTransactionContext.TransactionOutcome.TRANSACTION_SUCCESSFUL;
+import static io.paradaux.chestshop.context.TransactionContext.TransactionType;
 
 /**
  * The mutable carrier threaded through the pre-transaction validation steps run by
@@ -20,7 +20,7 @@ import static io.paradaux.chestshop.events.TransactionEvent.TransactionType;
  *
  * @author Acrobot
  */
-public class PreTransactionEvent {
+public class PreTransactionContext {
 
     private final Player client;
     private Account ownerAccount;
@@ -35,9 +35,9 @@ public class PreTransactionEvent {
 
     private BigDecimal exactPrice;
 
-    private TransactionOutcome transactionOutcome = TRANSACTION_SUCCESFUL;
+    private TransactionOutcome transactionOutcome = TRANSACTION_SUCCESSFUL;
 
-    public PreTransactionEvent(Inventory ownerInventory, Inventory clientInventory, ItemStack[] items, BigDecimal exactPrice, Player client, Account ownerAccount, Sign sign, TransactionType type) {
+    public PreTransactionContext(Inventory ownerInventory, Inventory clientInventory, ItemStack[] items, BigDecimal exactPrice, Player client, Account ownerAccount, Sign sign, TransactionType type) {
         this.ownerInventory = ownerInventory;
         this.clientInventory = (clientInventory == null ? client.getInventory() : clientInventory);
 
@@ -158,7 +158,7 @@ public class PreTransactionEvent {
      * @return Is the transaction cancelled?
      */
     public boolean isCancelled() {
-        return transactionOutcome != TRANSACTION_SUCCESFUL;
+        return transactionOutcome != TRANSACTION_SUCCESSFUL;
     }
 
     /**
@@ -204,6 +204,6 @@ public class PreTransactionEvent {
 
         OTHER, //For plugin use!
 
-        TRANSACTION_SUCCESFUL
+        TRANSACTION_SUCCESSFUL
     }
 }

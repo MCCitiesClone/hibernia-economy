@@ -1,6 +1,6 @@
 package io.paradaux.chestshop.services;
 
-import io.paradaux.chestshop.events.PreShopCreationEvent;
+import io.paradaux.chestshop.context.PreShopCreationContext;
 import io.paradaux.chestshop.signs.ChestShopSign;
 import io.paradaux.chestshop.utils.PriceUtil;
 import org.junit.jupiter.api.Test;
@@ -28,11 +28,11 @@ class ShopPriceCheckTest {
 
     @Test
     public void testLegalBuyPrice() {
-        PreShopCreationEvent event = new PreShopCreationEvent(null, null, getPriceString("B 1"));
+        PreShopCreationContext event = new PreShopCreationContext(null, null, getPriceString("B 1"));
         shops.checkPrice(event);
         assertEquals(PriceUtil.getExactBuyPrice(ChestShopSign.getPrice(event.getSignLines())), BigDecimal.valueOf(1));
 
-        event = new PreShopCreationEvent(null, null, getPriceString("B FREE"));
+        event = new PreShopCreationContext(null, null, getPriceString("B FREE"));
         shops.checkPrice(event);
         assertEquals(PriceUtil.FREE, PriceUtil.getExactBuyPrice(ChestShopSign.getPrice(event.getSignLines())));
 
@@ -55,11 +55,11 @@ class ShopPriceCheckTest {
 
     @Test
     public void testLegalSellPrice() {
-        PreShopCreationEvent event = new PreShopCreationEvent(null, null, getPriceString("S 1"));
+        PreShopCreationContext event = new PreShopCreationContext(null, null, getPriceString("S 1"));
         shops.checkPrice(event);
         assertEquals(PriceUtil.getExactSellPrice(ChestShopSign.getPrice(event.getSignLines())), BigDecimal.valueOf(1));
 
-        event = new PreShopCreationEvent(null, null, getPriceString("S FREE"));
+        event = new PreShopCreationContext(null, null, getPriceString("S FREE"));
         shops.checkPrice(event);
         assertEquals(PriceUtil.getExactSellPrice(ChestShopSign.getPrice(event.getSignLines())), PriceUtil.FREE);
 
@@ -74,7 +74,7 @@ class ShopPriceCheckTest {
 
     @Test
     public void testLegalBuyAndSellPrices() {
-        PreShopCreationEvent event = createEventFromString("B 2:S 1");
+        PreShopCreationContext event = createEventFromString("B 2:S 1");
         assertEquals(getExactSellPrice(event), BigDecimal.valueOf(1));
         assertEquals(getExactBuyPrice(event), BigDecimal.valueOf(2));
         assertFalse(event.isCancelled());
@@ -92,7 +92,7 @@ class ShopPriceCheckTest {
 
     @Test
     public void testLegalBuyAndSellPricesWithMultipliers() {
-        PreShopCreationEvent event = createEventFromString("B 2M:S 1K");
+        PreShopCreationContext event = createEventFromString("B 2M:S 1K");
         assertEquals(BigDecimal.valueOf(1000), getExactSellPrice(event));
         assertEquals(BigDecimal.valueOf(2_000_000), getExactBuyPrice(event));
         assertFalse(event.isCancelled());
@@ -140,20 +140,20 @@ class ShopPriceCheckTest {
     }
 
     private String normalisedPrice(String priceLine) {
-        PreShopCreationEvent event = createEventFromString(priceLine);
+        PreShopCreationContext event = createEventFromString(priceLine);
         return ChestShopSign.getPrice(event.getSignLines());
     }
 
-    private static BigDecimal getExactSellPrice(PreShopCreationEvent event) {
+    private static BigDecimal getExactSellPrice(PreShopCreationContext event) {
         return PriceUtil.getExactSellPrice(ChestShopSign.getPrice(event.getSignLines()));
     }
 
-    private static BigDecimal getExactBuyPrice(PreShopCreationEvent event) {
+    private static BigDecimal getExactBuyPrice(PreShopCreationContext event) {
         return PriceUtil.getExactBuyPrice(ChestShopSign.getPrice(event.getSignLines()));
     }
 
-    private PreShopCreationEvent createEventFromString(String priceString) {
-        PreShopCreationEvent event = new PreShopCreationEvent(null, null, getPriceString(priceString));
+    private PreShopCreationContext createEventFromString(String priceString) {
+        PreShopCreationContext event = new PreShopCreationContext(null, null, getPriceString(priceString));
         shops.checkPrice(event);
         return event;
     }

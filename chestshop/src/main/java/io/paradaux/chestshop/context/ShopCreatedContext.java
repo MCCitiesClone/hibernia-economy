@@ -1,7 +1,6 @@
-package io.paradaux.chestshop.events;
+package io.paradaux.chestshop.context;
 
 import io.paradaux.chestshop.database.Account;
-import org.bukkit.block.Chest;
 import org.bukkit.block.Container;
 import org.bukkit.block.Sign;
 import org.bukkit.entity.Player;
@@ -16,7 +15,7 @@ import javax.annotation.Nullable;
  *
  * @author Acrobot
  */
-public class ShopCreatedEvent {
+public class ShopCreatedContext {
 
     private final Player creator;
 
@@ -25,17 +24,7 @@ public class ShopCreatedEvent {
     @Nullable private final Account ownerAccount;
     @Nullable private final Container container;
 
-    @Deprecated
-    public ShopCreatedEvent(Player creator, Sign sign, @Nullable Chest chest, String[] signLines) {
-        this(creator, sign, (Container) chest, signLines);
-    }
-
-    @Deprecated
-    public ShopCreatedEvent(Player creator, Sign sign, @Nullable Container container, String[] signLines) {
-        this(creator, sign, container, signLines, null);
-    }
-
-    public ShopCreatedEvent(Player creator, Sign sign, @Nullable Container container, String[] signLines, @Nullable Account ownerAccount) {
+    public ShopCreatedContext(Player creator, Sign sign, @Nullable Container container, String[] signLines, @Nullable Account ownerAccount) {
         this.creator = creator;
         this.sign = sign;
         this.container = container;
@@ -87,14 +76,6 @@ public class ShopCreatedEvent {
      */
     @Nullable public Container getContainer() {
         return container;
-    }
-
-    /**
-     * @deprecated Use {@link #getContainer()}
-     */
-    @Deprecated
-    @Nullable public Chest getChest() {
-        return container instanceof Chest ? (Chest) container : null;
     }
 
     /**

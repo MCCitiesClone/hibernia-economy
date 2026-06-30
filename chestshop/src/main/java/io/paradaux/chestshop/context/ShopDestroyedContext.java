@@ -1,6 +1,5 @@
-package io.paradaux.chestshop.events;
+package io.paradaux.chestshop.context;
 
-import org.bukkit.block.Chest;
 import org.bukkit.block.Container;
 import org.bukkit.block.Sign;
 import org.bukkit.entity.Player;
@@ -15,19 +14,14 @@ import javax.annotation.Nullable;
  *
  * @author Acrobot
  */
-public class ShopDestroyedEvent {
+public class ShopDestroyedContext {
 
     private final Player destroyer;
 
     private final Sign sign;
     private final Container container;
 
-    @Deprecated
-    public ShopDestroyedEvent(@Nullable Player destroyer, Sign sign, @Nullable Chest chest) {
-        this(destroyer, sign, (Container) chest);
-    }
-
-    public ShopDestroyedEvent(@Nullable Player destroyer, Sign sign, @Nullable Container container) {
+    public ShopDestroyedContext(@Nullable Player destroyer, Sign sign, @Nullable Container container) {
         this.destroyer = destroyer;
         this.sign = sign;
         this.container = container;
@@ -45,14 +39,6 @@ public class ShopDestroyedEvent {
      */
     @Nullable public Container getContainer() {
         return container;
-    }
-
-    /**
-     * @deprecated Use {@link #getContainer()}
-     */
-    @Deprecated
-    @Nullable public Chest getChest() {
-        return container instanceof Chest ? (Chest) container : null;
     }
 
     /**

@@ -2,9 +2,9 @@ package io.paradaux.chestshop.market;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import io.paradaux.chestshop.events.ShopCreatedEvent;
-import io.paradaux.chestshop.events.ShopDestroyedEvent;
-import io.paradaux.chestshop.events.TransactionEvent;
+import io.paradaux.chestshop.context.ShopCreatedContext;
+import io.paradaux.chestshop.context.ShopDestroyedContext;
+import io.paradaux.chestshop.context.TransactionContext;
 import io.paradaux.chestshop.signs.ChestShopSign;
 import io.paradaux.chestshop.utils.uBlock;
 import io.paradaux.treasury.api.MarketApi;
@@ -31,8 +31,8 @@ import java.util.UUID;
  *    connected shop signs (mirrors ChestShop's own sign-counter refresh).
  *
  * <p>The first three are invoked directly by {@code TransactionService}/{@code ShopService}
- * at the MONITOR point of their pipelines (they were {@code TransactionEvent}/
- * {@code ShopCreatedEvent}/{@code ShopDestroyedEvent} listeners before those events were
+ * at the MONITOR point of their pipelines (they were {@code TransactionContext}/
+ * {@code ShopCreatedContext}/{@code ShopDestroyedContext} listeners before those events were
  * collapsed); {@link #onInventoryClose} is the only remaining Bukkit handler, which is why
  * this is still a registered {@link Listener}. All are fully guarded: analytics must never
  * disrupt a trade.
@@ -49,8 +49,8 @@ public class MarketListener implements Listener {
         this.itemCodes = itemCodes;
     }
 
-    // Invoked directly by TransactionService#process (was a @MONITOR TransactionEvent listener).
-    public void onTransaction(TransactionEvent event) {
+    // Invoked directly by TransactionService#process (was a @MONITOR TransactionContext listener).
+    public void onTransaction(TransactionContext event) {
         if (!MarketHook.enabled()) return;
         try {
             ItemStack[] stock = event.getStock();
@@ -61,7 +61,7 @@ public class MarketListener implements Listener {
             boolean admin = ChestShopSign.isAdminShop(sign);
             UUID ownerUuid = event.getOwnerAccount() != null ? event.getOwnerAccount().getUuid() : null;
             MarketRecords.Owner owner = records.ownerFromUuid(ownerUuid, admin);
-            String direction = event.getTransactionType() == TransactionEvent.TransactionType.BUY ? "BUY" : "SELL";
+            String direction = event.getTransactionType() == TransactionContext.TransactionType.BUY ? "BUY" : "SELL";
             Integer shopStock = admin ? null : records.stockOf(item, event.getOwnerInventory());
 
             MarketApi market = MarketHook.market();
@@ -73,8 +73,8 @@ public class MarketListener implements Listener {
         }
     }
 
-    // Invoked directly by ShopService#onCreated (was a @MONITOR ShopCreatedEvent listener).
-    public void onShopCreated(ShopCreatedEvent event) {
+    // Invoked directly by ShopService#onCreated (was a @MONITOR ShopCreatedContext listener).
+    public void onShopCreated(ShopCreatedContext event) {
         if (!MarketHook.enabled()) return;
         try {
             Sign sign = event.getSign();
@@ -91,8 +91,8 @@ public class MarketListener implements Listener {
         }
     }
 
-    // Invoked directly by ShopService#onDestroyed (was a @MONITOR ShopDestroyedEvent listener).
-    public void onShopDestroyed(ShopDestroyedEvent event) {
+    // Invoked directly by ShopService#onDestroyed (was a @MONITOR ShopDestroyedContext listener).
+    public void onShopDestroyed(ShopDestroyedContext event) {
         if (!MarketHook.enabled()) return;
         try {
             Location l = event.getSign().getLocation();

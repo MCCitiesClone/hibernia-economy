@@ -2,7 +2,7 @@ package io.paradaux.chestshop.plugins;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import io.paradaux.chestshop.events.protection.ProtectionCheckEvent;
+import io.paradaux.chestshop.context.protection.ProtectionCheckContext;
 import io.paradaux.chestshop.permission.Permissions;
 import io.paradaux.chestshop.services.AccountService;
 import io.paradaux.chestshop.signs.ChestShopSign;
@@ -33,8 +33,8 @@ public class ChestShop {
         this.accounts = accounts;
     }
 
-    // Invoked directly by ProtectionService (was a NORMAL ProtectionCheckEvent listener).
-    public void onProtectionCheck(ProtectionCheckEvent event) {
+    // Invoked directly by ProtectionService (was a NORMAL ProtectionCheckContext listener).
+    public void onProtectionCheck(ProtectionCheckContext event) {
         if (event.getResult() == Event.Result.DENY || event.isBuiltInProtectionIgnored()) {
             return;
         }

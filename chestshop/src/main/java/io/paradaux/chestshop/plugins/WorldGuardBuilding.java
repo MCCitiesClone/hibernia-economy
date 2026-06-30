@@ -1,7 +1,7 @@
 package io.paradaux.chestshop.plugins;
 
 import io.paradaux.chestshop.configuration.Properties;
-import io.paradaux.chestshop.events.protection.BuildPermissionEvent;
+import io.paradaux.chestshop.context.protection.BuildPermissionContext;
 import com.sk89q.worldedit.bukkit.BukkitAdapter;
 import com.sk89q.worldguard.WorldGuard;
 import com.sk89q.worldguard.bukkit.WorldGuardPlugin;
@@ -30,7 +30,7 @@ public class WorldGuardBuilding {
         this.worldGuardPlatform = WorldGuard.getInstance().getPlatform();
     }
 
-    public void canBuild(BuildPermissionEvent event) {
+    public void canBuild(BuildPermissionContext event) {
         ApplicableRegionSet regions = getApplicableRegions(event.getSign().getBlock().getLocation());
 
         if (regions == null) {

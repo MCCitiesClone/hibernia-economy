@@ -1,8 +1,6 @@
-package io.paradaux.chestshop.events;
+package io.paradaux.chestshop.context;
 
 import io.paradaux.chestshop.database.Account;
-import org.bukkit.Bukkit;
-import org.bukkit.OfflinePlayer;
 import org.bukkit.block.Sign;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
@@ -23,7 +21,7 @@ import java.util.UUID;
  *
  * @author Acrobot
  */
-public class TransactionEvent {
+public class TransactionContext {
     private final TransactionType type;
 
     private final Inventory ownerInventory;
@@ -53,7 +51,7 @@ public class TransactionEvent {
 
     private boolean cancelled = false;
 
-    public TransactionEvent(PreTransactionEvent event, Sign sign) {
+    public TransactionContext(PreTransactionContext event, Sign sign) {
         this.type = event.getTransactionType();
 
         this.ownerInventory = event.getOwnerInventory();
@@ -66,29 +64,6 @@ public class TransactionEvent {
         this.exactPrice = event.getExactPrice();
 
         this.sign = sign;
-    }
-
-    public TransactionEvent(TransactionType type, Inventory ownerInventory, Inventory clientInventory, Player client, Account ownerAccount, ItemStack[] stock, BigDecimal exactPrice, Sign sign) {
-        this.type = type;
-
-        this.ownerInventory = ownerInventory;
-        this.clientInventory = clientInventory;
-
-        this.client = client;
-        this.ownerAccount = ownerAccount;
-
-        this.stock = stock;
-        this.exactPrice = exactPrice;
-
-        this.sign = sign;
-    }
-
-    /**
-     * @deprecated Use {@link #TransactionEvent(TransactionType, Inventory, Inventory, Player, Account, ItemStack[], BigDecimal, Sign)}
-     */
-    @Deprecated
-    public TransactionEvent(TransactionType type, Inventory ownerInventory, Inventory clientInventory, Player client, Account ownerAccount, ItemStack[] stock, double price, Sign sign) {
-        this(type, ownerInventory, clientInventory, client, ownerAccount, stock, BigDecimal.valueOf(price), sign);
     }
 
     /**
@@ -144,15 +119,6 @@ public class TransactionEvent {
     }
 
     /**
-     * @return Shop's owner
-     * @deprecated Use {@link #getOwnerAccount}
-     */
-    @Deprecated
-    public OfflinePlayer getOwner() {
-        return Bukkit.getOfflinePlayer(ownerAccount.getUuid());
-    }
-
-    /**
      * @return Stock available
      */
     public ItemStack[] getStock() {
@@ -166,17 +132,6 @@ public class TransactionEvent {
      */
     public BigDecimal getExactPrice() {
         return exactPrice;
-    }
-
-    /**
-     * Get the total price
-     *
-     * @return Total price of the items
-     * @deprecated Use {@link #getExactPrice()}
-     */
-    @Deprecated
-    public double getPrice() {
-        return exactPrice.doubleValue();
     }
 
     /**

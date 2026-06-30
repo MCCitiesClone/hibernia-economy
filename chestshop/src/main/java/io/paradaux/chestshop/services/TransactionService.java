@@ -10,9 +10,9 @@ import io.paradaux.chestshop.permission.Permissions;
 import io.paradaux.chestshop.configuration.Properties;
 import io.paradaux.hibernia.framework.i18n.Message;
 import io.paradaux.chestshop.database.Account;
-import io.paradaux.chestshop.events.PreTransactionEvent;
-import io.paradaux.chestshop.events.ShopDestroyedEvent;
-import io.paradaux.chestshop.events.TransactionEvent;
+import io.paradaux.chestshop.context.PreTransactionContext;
+import io.paradaux.chestshop.context.ShopDestroyedContext;
+import io.paradaux.chestshop.context.TransactionContext;
 import io.paradaux.chestshop.listeners.block.breaking.SignBreak;
 import io.paradaux.chestshop.listeners.modules.MetricsModule;
 import io.paradaux.chestshop.listeners.modules.StockCounterModule;
@@ -50,29 +50,29 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.regex.Pattern;
 
-import static io.paradaux.chestshop.events.PreTransactionEvent.TransactionOutcome.CLIENT_DEPOSIT_FAILED;
-import static io.paradaux.chestshop.events.PreTransactionEvent.TransactionOutcome.CLIENT_DOES_NOT_HAVE_ENOUGH_MONEY;
-import static io.paradaux.chestshop.events.PreTransactionEvent.TransactionOutcome.CLIENT_DOES_NOT_HAVE_PERMISSION;
-import static io.paradaux.chestshop.events.PreTransactionEvent.TransactionOutcome.CREATIVE_MODE_PROTECTION;
-import static io.paradaux.chestshop.events.PreTransactionEvent.TransactionOutcome.INVALID_CLIENT_NAME;
-import static io.paradaux.chestshop.events.PreTransactionEvent.TransactionOutcome.INVALID_SHOP;
-import static io.paradaux.chestshop.events.PreTransactionEvent.TransactionOutcome.NOT_ENOUGH_SPACE_IN_CHEST;
-import static io.paradaux.chestshop.events.PreTransactionEvent.TransactionOutcome.NOT_ENOUGH_SPACE_IN_INVENTORY;
-import static io.paradaux.chestshop.events.PreTransactionEvent.TransactionOutcome.NOT_ENOUGH_STOCK_IN_CHEST;
-import static io.paradaux.chestshop.events.PreTransactionEvent.TransactionOutcome.NOT_ENOUGH_STOCK_IN_INVENTORY;
-import static io.paradaux.chestshop.events.PreTransactionEvent.TransactionOutcome.SHOP_DEPOSIT_FAILED;
-import static io.paradaux.chestshop.events.PreTransactionEvent.TransactionOutcome.SHOP_DOES_NOT_BUY_THIS_ITEM;
-import static io.paradaux.chestshop.events.PreTransactionEvent.TransactionOutcome.SHOP_DOES_NOT_HAVE_ENOUGH_MONEY;
-import static io.paradaux.chestshop.events.PreTransactionEvent.TransactionOutcome.SHOP_DOES_NOT_SELL_THIS_ITEM;
-import static io.paradaux.chestshop.events.TransactionEvent.TransactionType.BUY;
-import static io.paradaux.chestshop.events.TransactionEvent.TransactionType.SELL;
+import static io.paradaux.chestshop.context.PreTransactionContext.TransactionOutcome.CLIENT_DEPOSIT_FAILED;
+import static io.paradaux.chestshop.context.PreTransactionContext.TransactionOutcome.CLIENT_DOES_NOT_HAVE_ENOUGH_MONEY;
+import static io.paradaux.chestshop.context.PreTransactionContext.TransactionOutcome.CLIENT_DOES_NOT_HAVE_PERMISSION;
+import static io.paradaux.chestshop.context.PreTransactionContext.TransactionOutcome.CREATIVE_MODE_PROTECTION;
+import static io.paradaux.chestshop.context.PreTransactionContext.TransactionOutcome.INVALID_CLIENT_NAME;
+import static io.paradaux.chestshop.context.PreTransactionContext.TransactionOutcome.INVALID_SHOP;
+import static io.paradaux.chestshop.context.PreTransactionContext.TransactionOutcome.NOT_ENOUGH_SPACE_IN_CHEST;
+import static io.paradaux.chestshop.context.PreTransactionContext.TransactionOutcome.NOT_ENOUGH_SPACE_IN_INVENTORY;
+import static io.paradaux.chestshop.context.PreTransactionContext.TransactionOutcome.NOT_ENOUGH_STOCK_IN_CHEST;
+import static io.paradaux.chestshop.context.PreTransactionContext.TransactionOutcome.NOT_ENOUGH_STOCK_IN_INVENTORY;
+import static io.paradaux.chestshop.context.PreTransactionContext.TransactionOutcome.SHOP_DEPOSIT_FAILED;
+import static io.paradaux.chestshop.context.PreTransactionContext.TransactionOutcome.SHOP_DOES_NOT_BUY_THIS_ITEM;
+import static io.paradaux.chestshop.context.PreTransactionContext.TransactionOutcome.SHOP_DOES_NOT_HAVE_ENOUGH_MONEY;
+import static io.paradaux.chestshop.context.PreTransactionContext.TransactionOutcome.SHOP_DOES_NOT_SELL_THIS_ITEM;
+import static io.paradaux.chestshop.context.TransactionContext.TransactionType.BUY;
+import static io.paradaux.chestshop.context.TransactionContext.TransactionType.SELL;
 import static io.paradaux.chestshop.utils.PriceUtil.NO_PRICE;
 
 /**
  * Owns a shop trade end to end: pre-trade validation ({@link #validate}), the atomic
  * goods+money settlement ({@link #execute}), and the post-trade reactions
  * ({@link #process}). This replaces ChestShop's old "Bukkit events as middleware"
- * design — a {@code PreTransactionEvent}/{@code TransactionEvent} fanned out to ~20
+ * design — a {@code PreTransactionContext}/{@code TransactionContext} fanned out to ~20
  * priority-ordered listener classes coordinating through a mutable bag — with one
  * service whose steps are ordinary, ordered private methods (PAR-282). It is the
  * atomicity guarantee ADT-4 asked for, readable and unit-testable in one place.
@@ -121,13 +121,13 @@ public class TransactionService {
 
     /**
      * Run a shop interaction through the pre-transaction validation steps, mutating the
-     * {@link PreTransactionEvent} context (cancelling it, or adjusting its stock/price)
+     * {@link PreTransactionContext} context (cancelling it, or adjusting its stock/price)
      * as needed. The steps run in the exact order the former priority-ordered validators
      * fired; each self-guards on {@code isCancelled} where the original did.
      * {@code PartialTransactionModule} and the whole-amount {@code checkFundsAndStock}
      * are config-selected alternatives ({@link Properties#ALLOW_PARTIAL_TRANSACTIONS}).
      */
-    public void validate(PreTransactionEvent ctx) {
+    public void validate(PreTransactionContext ctx) {
         rejectInvalidClientName(ctx);
         rejectCreativeMode(ctx);
         breakFreeShop(ctx);
@@ -162,7 +162,7 @@ public class TransactionService {
     }
 
     /** Block trades by an admin-shop name or a client whose name fails the valid-name regex. */
-    private void rejectInvalidClientName(PreTransactionEvent ctx) {
+    private void rejectInvalidClientName(PreTransactionContext ctx) {
         if (ctx.isCancelled()) {
             return;
         }
@@ -173,7 +173,7 @@ public class TransactionService {
     }
 
     /** Optionally block creative-mode players from trading. */
-    private void rejectCreativeMode(PreTransactionEvent ctx) {
+    private void rejectCreativeMode(PreTransactionContext ctx) {
         if (ctx.isCancelled()) {
             return;
         }
@@ -188,7 +188,7 @@ public class TransactionService {
      * INVALID_SHOP sends the "invalid shop" message; the sign is then de-registered and
      * removed.
      */
-    private void breakFreeShop(PreTransactionEvent ctx) {
+    private void breakFreeShop(PreTransactionContext ctx) {
         if (Properties.ALLOW_FREE_SHOPS || ctx.isCancelled()) {
             return;
         }
@@ -201,7 +201,7 @@ public class TransactionService {
             return;
         }
         ctx.setCancelled(INVALID_SHOP);
-        signBreak.sendShopDestroyedEvent(sign, ctx.getClient());
+        signBreak.sendShopDestroyed(sign, ctx.getClient());
         sign.getBlock().breakNaturally();
     }
 
@@ -210,7 +210,7 @@ public class TransactionService {
     }
 
     /** Cancel if the shop has no price for the requested direction. */
-    private void rejectMissingPrice(PreTransactionEvent ctx) {
+    private void rejectMissingPrice(PreTransactionContext ctx) {
         if (ctx.isCancelled()) {
             return;
         }
@@ -220,7 +220,7 @@ public class TransactionService {
     }
 
     /** Cancel if the trade has no stock, or a non-admin shop has no backing container. */
-    private void rejectInvalidShop(PreTransactionEvent ctx) {
+    private void rejectInvalidShop(PreTransactionContext ctx) {
         if (ctx.isCancelled()) {
             return;
         }
@@ -243,7 +243,7 @@ public class TransactionService {
     }
 
     /** Whole-amount funds + stock check (used when partial transactions are disabled). */
-    private void checkFundsAndStock(PreTransactionEvent ctx) {
+    private void checkFundsAndStock(PreTransactionContext ctx) {
         if (ctx.getTransactionType() == BUY) {
             if (!economy.hasFunds(ctx.getClient().getUniqueId(), ctx.getExactPrice())) {
                 ctx.setCancelled(CLIENT_DOES_NOT_HAVE_ENOUGH_MONEY);
@@ -264,7 +264,7 @@ public class TransactionService {
     }
 
     /** Per-item buy/sell permission check (supports per-material and #-prefixed nodes). */
-    private void checkPermissions(PreTransactionEvent ctx) {
+    private void checkPermissions(PreTransactionContext ctx) {
         if (ctx.isCancelled()) {
             return;
         }
@@ -292,7 +292,7 @@ public class TransactionService {
     }
 
     /** Cancel if the receiving inventory (chest on SELL, client on BUY) can't hold the stock. */
-    private void checkStockFits(PreTransactionEvent ctx) {
+    private void checkStockFits(PreTransactionContext ctx) {
         if (ctx.isCancelled()) {
             return;
         }
@@ -309,7 +309,7 @@ public class TransactionService {
 
     // ---- partial-fulfilment maths (was PartialTransactionModule) ----------------
 
-    private void adjustPartialBuy(PreTransactionEvent ctx) {
+    private void adjustPartialBuy(PreTransactionContext ctx) {
         if (ctx.isCancelled() || ctx.getTransactionType() != BUY) {
             return;
         }
@@ -373,7 +373,7 @@ public class TransactionService {
         }
     }
 
-    private void adjustPartialSell(PreTransactionEvent ctx) {
+    private void adjustPartialSell(PreTransactionContext ctx) {
         if (ctx.isCancelled() || ctx.getTransactionType() != SELL) {
             return;
         }
@@ -551,7 +551,7 @@ public class TransactionService {
     }
 
     /** Tell the client (and, for full/out-of-stock, the owner) why a trade was cancelled. */
-    private void sendErrorMessage(PreTransactionEvent ctx) {
+    private void sendErrorMessage(PreTransactionContext ctx) {
         if (!ctx.isCancelled()) {
             return;
         }
@@ -594,7 +594,7 @@ public class TransactionService {
         }
     }
 
-    private void sendShopLocationMessage(PreTransactionEvent ctx, String key, String actorPlaceholder) {
+    private void sendShopLocationMessage(PreTransactionContext ctx, String key, String actorPlaceholder) {
         Location loc = ctx.getSign().getLocation();
         sendMessageToOwner(ctx.getOwnerAccount(), key, new String[]{
                 "price", economy.format(ctx.getExactPrice()),
@@ -641,7 +641,7 @@ public class TransactionService {
      * shop is removed and the MONITOR reactions (legacy-sign migration, market sync, log,
      * messages, metrics) run.
      */
-    public void process(TransactionEvent event) {
+    public void process(TransactionContext event) {
         execute(event);
 
         // Runs regardless of cancellation (was @HIGH ignoreCancelled=false).
@@ -665,7 +665,7 @@ public class TransactionService {
      * reversing the goods if the (pre-validated, so exceptional) money leg fails, so the
      * trade is all-or-nothing.
      */
-    public void execute(TransactionEvent event) {
+    public void execute(TransactionContext event) {
         boolean buy = event.getTransactionType() == BUY;
 
         Inventory from = buy ? event.getOwnerInventory() : event.getClientInventory();
@@ -684,7 +684,7 @@ public class TransactionService {
         }
     }
 
-    private static void cancelOnShortfall(TransactionEvent event) {
+    private static void cancelOnShortfall(TransactionContext event) {
         event.setCancelled(true);
         ChestShop.getBukkitLogger().severe(
                 "Aborted a ChestShop transaction at "
@@ -722,7 +722,7 @@ public class TransactionService {
     }
 
     /** Reverse a completed goods move after a failed money leg, keeping the trade atomic. */
-    static void reverseTransfer(TransactionEvent event) {
+    static void reverseTransfer(TransactionContext event) {
         boolean reversed = event.getTransactionType() == BUY
                 ? transferItems(event.getClientInventory(), event.getOwnerInventory(), event.getStock())
                 : transferItems(event.getOwnerInventory(), event.getClientInventory(), event.getStock());
@@ -758,7 +758,7 @@ public class TransactionService {
     // ---- post-transaction reactions (were the posttransaction listeners) --------
 
     /** Remove a shop whose container ran dry after a buy (config-gated, never admin shops). */
-    private void deleteEmptyShop(TransactionEvent event) {
+    private void deleteEmptyShop(TransactionContext event) {
         if (event.getTransactionType() != BUY) {
             return;
         }
@@ -772,7 +772,7 @@ public class TransactionService {
         }
 
         Container connectedContainer = uBlock.findConnectedContainer(sign);
-        shops.onDestroyed(new ShopDestroyedEvent(null, sign, connectedContainer));
+        shops.onDestroyed(new ShopDestroyedContext(null, sign, connectedContainer));
 
         Material signType = sign.getType();
         sign.getBlock().setType(Material.AIR);
@@ -816,7 +816,7 @@ public class TransactionService {
     }
 
     /** Write a completed trade to the shop log. */
-    private void logTransaction(TransactionEvent event) {
+    private void logTransaction(TransactionContext event) {
         String template = event.getTransactionType() == BUY ? BUY_LOG : SELL_LOG;
 
         StringBuilder itemList = new StringBuilder(50);
@@ -833,7 +833,7 @@ public class TransactionService {
     }
 
     /** Notify the buyer and (unless they muted) the owner that a trade settled. */
-    private void sendTransactionMessages(TransactionEvent event) {
+    private void sendTransactionMessages(TransactionContext event) {
         Player player = event.getClient();
         boolean buy = event.getTransactionType() == BUY;
 
@@ -851,7 +851,7 @@ public class TransactionService {
         }
     }
 
-    private void sendTradeMessage(Player player, String playerName, String key, TransactionEvent event, String... replacements) {
+    private void sendTradeMessage(Player player, String playerName, String key, TransactionContext event, String... replacements) {
         Location loc = event.getSign().getLocation();
         Map<String, String> replacementMap = new LinkedHashMap<>();
         replacementMap.put("price", economy.format(event.getExactPrice()));

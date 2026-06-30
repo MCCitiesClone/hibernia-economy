@@ -1,4 +1,4 @@
-package io.paradaux.chestshop.events;
+package io.paradaux.chestshop.context;
 
 import io.paradaux.chestshop.database.Account;
 import org.bukkit.block.Sign;
@@ -16,7 +16,7 @@ import javax.annotation.Nullable;
  *
  * @author Acrobot
  */
-public class PreShopCreationEvent {
+public class PreShopCreationContext {
 
     private Player creator;
     @Nullable private Account ownerAccount = null;
@@ -25,7 +25,7 @@ public class PreShopCreationEvent {
     private Sign sign;
     private String[] signLines;
 
-    public PreShopCreationEvent(Player creator, Sign sign, String[] signLines) {
+    public PreShopCreationContext(Player creator, Sign sign, String[] signLines) {
         this.creator = creator;
         this.sign = sign;
         this.signLines = signLines.clone();
@@ -170,7 +170,7 @@ public class PreShopCreationEvent {
     /**
      * Possible outcomes
      */
-    public static enum CreationOutcome {
+    public enum CreationOutcome {
         INVALID_ITEM,
         INVALID_PRICE,
         INVALID_QUANTITY,

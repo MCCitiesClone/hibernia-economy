@@ -8,8 +8,8 @@ import io.paradaux.chestshop.utils.MaterialUtil;
 import io.paradaux.chestshop.utils.QuantityUtil;
 import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.configuration.Properties;
-import io.paradaux.chestshop.events.PreShopCreationEvent;
-import io.paradaux.chestshop.events.TransactionEvent;
+import io.paradaux.chestshop.context.PreShopCreationContext;
+import io.paradaux.chestshop.context.TransactionContext;
 import io.paradaux.chestshop.signs.ChestShopSign;
 import io.paradaux.chestshop.utils.uBlock;
 import org.bukkit.block.Block;
@@ -43,8 +43,8 @@ public class StockCounterModule implements Listener {
         this.items = items;
     }
 
-    // Invoked directly by ShopService#create (was a @HIGH PreShopCreationEvent listener).
-    public void onPreShopCreation(PreShopCreationEvent event) {
+    // Invoked directly by ShopService#create (was a @HIGH PreShopCreationContext listener).
+    public void onPreShopCreation(PreShopCreationContext event) {
         int quantity;
         try {
             quantity = ChestShopSign.getQuantity(event.getSignLines());
@@ -107,8 +107,8 @@ public class StockCounterModule implements Listener {
         }
     }
 
-    // Invoked directly by TransactionService#process (was a @HIGH TransactionEvent listener).
-    public void onTransaction(final TransactionEvent event) {
+    // Invoked directly by TransactionService#process (was a @HIGH TransactionContext listener).
+    public void onTransaction(final TransactionContext event) {
         String quantityLine = ChestShopSign.getQuantityLine(event.getSign());
         if (!Properties.USE_STOCK_COUNTER) {
             if (QuantityUtil.quantityLineContainsCounter(quantityLine)) {

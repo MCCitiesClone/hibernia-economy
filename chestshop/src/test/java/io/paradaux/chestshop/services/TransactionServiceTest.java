@@ -1,7 +1,7 @@
 package io.paradaux.chestshop.services;
 
 import io.paradaux.chestshop.configuration.Properties;
-import io.paradaux.chestshop.events.TransactionEvent;
+import io.paradaux.chestshop.context.TransactionContext;
 import io.paradaux.chestshop.utils.InventoryUtil;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
@@ -10,8 +10,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
 
-import static io.paradaux.chestshop.events.TransactionEvent.TransactionType.BUY;
-import static io.paradaux.chestshop.events.TransactionEvent.TransactionType.SELL;
+import static io.paradaux.chestshop.context.TransactionContext.TransactionType.BUY;
+import static io.paradaux.chestshop.context.TransactionContext.TransactionType.SELL;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -101,7 +101,7 @@ class TransactionServiceTest {
 
     @Test
     void reverseTransfer_forBuy_movesGoodsFromClientBackToOwner() {
-        TransactionEvent event = mock(TransactionEvent.class);
+        TransactionContext event = mock(TransactionContext.class);
         Inventory ownerInv = mock(Inventory.class);
         Inventory clientInv = mock(Inventory.class);
         when(event.getTransactionType()).thenReturn(BUY);
@@ -124,7 +124,7 @@ class TransactionServiceTest {
 
     @Test
     void reverseTransfer_forSell_movesGoodsFromOwnerBackToClient() {
-        TransactionEvent event = mock(TransactionEvent.class);
+        TransactionContext event = mock(TransactionContext.class);
         Inventory ownerInv = mock(Inventory.class);
         Inventory clientInv = mock(Inventory.class);
         when(event.getTransactionType()).thenReturn(SELL);

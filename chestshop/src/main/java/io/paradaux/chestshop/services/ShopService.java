@@ -7,11 +7,11 @@ import io.paradaux.chestshop.permission.Permissions;
 import io.paradaux.chestshop.configuration.Properties;
 import io.paradaux.hibernia.framework.i18n.Message;
 import io.paradaux.chestshop.database.Account;
-import io.paradaux.chestshop.events.PreShopCreationEvent;
-import io.paradaux.chestshop.events.ShopCreatedEvent;
-import io.paradaux.chestshop.events.ShopDestroyedEvent;
+import io.paradaux.chestshop.context.PreShopCreationContext;
+import io.paradaux.chestshop.context.ShopCreatedContext;
+import io.paradaux.chestshop.context.ShopDestroyedContext;
 import io.paradaux.chestshop.Security;
-import io.paradaux.chestshop.events.PreShopCreationEvent.CreationOutcome;
+import io.paradaux.chestshop.context.PreShopCreationContext.CreationOutcome;
 import io.paradaux.chestshop.listeners.modules.StockCounterModule;
 import io.paradaux.chestshop.market.MarketListener;
 import io.paradaux.chestshop.signs.ChestShopSign;
@@ -44,7 +44,7 @@ import static io.paradaux.chestshop.signs.ChestShopSign.AUTOFILL_CODE;
  * Owns the whole shop lifecycle: creation validation ({@link #create}), the post-creation
  * and post-removal reactions ({@link #onCreated}/{@link #onDestroyed}), and the
  * creation-fee / removal-refund money (with the mirrored server-economy movement).
- * This replaces ChestShop's old event-bus design — a {@code PreShopCreationEvent} fanned
+ * This replaces ChestShop's old event-bus design — a {@code PreShopCreationContext} fanned
  * out to a dozen priority-ordered validator classes coordinating through a mutable
  * outcome/signLines bag — with one service whose validation steps are ordinary ordered
  * private methods (PAR-282). The genuine cross-cutting hooks (market-DB sync, stock
@@ -86,8 +86,8 @@ public class ShopService {
      * {@code ignoreCancelled=true} steps (the creation-fee charge and the second name
      * pass) run only while the creation is still un-cancelled.
      */
-    public PreShopCreationEvent create(Player player, Sign sign, String[] signLines) {
-        PreShopCreationEvent ctx = new PreShopCreationEvent(player, sign, signLines);
+    public PreShopCreationContext create(Player player, Sign sign, String[] signLines) {
+        PreShopCreationContext ctx = new PreShopCreationContext(player, sign, signLines);
 
         // LOWEST
         checkItem(ctx);
@@ -124,7 +124,7 @@ public class ShopService {
     // ---- creation validation steps (were the preshopcreation listeners) ---------
 
     /** Resolve/normalise the item line; autofill from the chest, or reject an invalid item. */
-    private void checkItem(PreShopCreationEvent ctx) {
+    private void checkItem(PreShopCreationContext ctx) {
         String itemCode = ChestShopSign.getItem(ctx.getSignLines());
         ItemStack item = items.parse(itemCode);
 
@@ -160,7 +160,7 @@ public class ShopService {
 
     /** Normalise the price line (B/S prefixes, precision, multipliers) and reject if invalid.
      *  Package-private so the price-parser unit test can exercise it directly. */
-    void checkPrice(PreShopCreationEvent ctx) {
+    void checkPrice(PreShopCreationContext ctx) {
         String line = ChestShopSign.getPrice(ctx.getSignLines()).toUpperCase(Locale.ROOT);
         if (Properties.PRICE_PRECISION <= 0) {
             line = line.replaceAll("\\.\\d*", ""); // remove too many decimal places
@@ -216,7 +216,7 @@ public class ShopService {
     }
 
     /** Reject a missing / out-of-range quantity line. */
-    private void checkQuantity(PreShopCreationEvent ctx) {
+    private void checkQuantity(PreShopCreationContext ctx) {
         int amount = -1;
         try {
             amount = ChestShopSign.getQuantity(ctx.getSignLines());
@@ -227,7 +227,7 @@ public class ShopService {
     }
 
     /** Require a backing chest (non-admin) the creator may access. */
-    private void checkChest(PreShopCreationEvent ctx) {
+    private void checkChest(PreShopCreationContext ctx) {
         String nameLine = ChestShopSign.getOwner(ctx.getSignLines());
         Container connectedContainer = uBlock.findConnectedContainer(ctx.getSign().getBlock());
 
@@ -247,7 +247,7 @@ public class ShopService {
     }
 
     /** Charge / require the configured creation fee. */
-    private void checkCreationFunds(PreShopCreationEvent ctx) {
+    private void checkCreationFunds(PreShopCreationContext ctx) {
         BigDecimal shopCreationPrice = Properties.SHOP_CREATION_PRICE;
         if (shopCreationPrice.compareTo(BigDecimal.ZERO) == 0
                 || ChestShopSign.isAdminShop(ctx.getSignLines())
@@ -261,7 +261,7 @@ public class ShopService {
 
     /** DemocracyCraft: reject free (price-0) shops unless {@link Properties#ALLOW_FREE_SHOPS} (PAR-88).
      *  Package-private so the free-shop unit test can exercise it directly. */
-    void rejectFreeShop(PreShopCreationEvent ctx) {
+    void rejectFreeShop(PreShopCreationContext ctx) {
         if (Properties.ALLOW_FREE_SHOPS) {
             return;
         }
@@ -276,7 +276,7 @@ public class ShopService {
     }
 
     /** Require terrain build permission for the sign and its chest. */
-    private void checkTerrain(PreShopCreationEvent ctx) {
+    private void checkTerrain(PreShopCreationContext ctx) {
         Player player = ctx.getPlayer();
         if (!security.canPlaceSign(player, ctx.getSign())) {
             ctx.setOutcome(CreationOutcome.NO_PERMISSION_FOR_TERRAIN);
@@ -290,7 +290,7 @@ public class ShopService {
     }
 
     /** Optionally reject a shop whose sell price exceeds its buy price. */
-    private void checkPriceRatio(PreShopCreationEvent ctx) {
+    private void checkPriceRatio(PreShopCreationContext ctx) {
         String priceLine = ChestShopSign.getPrice(ctx.getSignLines());
         if (PriceUtil.hasBuyPrice(priceLine) && PriceUtil.hasSellPrice(priceLine)
                 && PriceUtil.getExactSellPrice(priceLine).compareTo(PriceUtil.getExactBuyPrice(priceLine)) > 0) {
@@ -299,7 +299,7 @@ public class ShopService {
     }
 
     /** Per-name / per-item shop-creation permission check. */
-    private void checkCreationPermission(PreShopCreationEvent ctx) {
+    private void checkCreationPermission(PreShopCreationContext ctx) {
         Player player = ctx.getPlayer();
 
         if (ctx.getOwnerAccount() != null
@@ -347,7 +347,7 @@ public class ShopService {
     }
 
     /** Charge the creation fee (the former {@code ignoreCancelled=true} CreationFeeGetter step). */
-    private void chargeCreationFeeStep(PreShopCreationEvent ctx) {
+    private void chargeCreationFeeStep(PreShopCreationContext ctx) {
         if (!chargeCreationFee(ctx.getPlayer(), ctx.getSignLines())) {
             ctx.setOutcome(CreationOutcome.NOT_ENOUGH_MONEY);
             ctx.setSignLines(new String[4]);
@@ -355,7 +355,7 @@ public class ShopService {
     }
 
     /** Resolve the owner account from the name line (player or B:&lt;id&gt; business). */
-    private void resolveName(PreShopCreationEvent ctx) {
+    private void resolveName(PreShopCreationContext ctx) {
         String name = ChestShopSign.getOwner(ctx.getSignLines());
         Player player = ctx.getPlayer();
 
@@ -401,7 +401,7 @@ public class ShopService {
      * present, the account must exist, and (unless the creator is a ChestShop admin) the
      * creator must hold the firm's CHESTSHOP permission.
      */
-    private void resolveBusinessName(PreShopCreationEvent ctx, Player player, String name) {
+    private void resolveBusinessName(PreShopCreationContext ctx, Player player, String name) {
         Account existing = ctx.getOwnerAccount();
         if (existing != null && existing.getShortName().equalsIgnoreCase(name)) {
             return; // already resolved on a previous pass
@@ -428,13 +428,13 @@ public class ShopService {
         ctx.setSignLine(ChestShopSign.NAME_LINE, ChestShopSign.businessAccountSignName(accountId));
     }
 
-    private void failName(PreShopCreationEvent ctx) {
+    private void failName(PreShopCreationContext ctx) {
         ctx.setSignLine(ChestShopSign.NAME_LINE, "");
         ctx.setOutcome(CreationOutcome.UNKNOWN_PLAYER);
     }
 
     /** Tell the creator why the shop could not be made (was the MONITOR ErrorMessageSender). */
-    private void sendCreationError(PreShopCreationEvent ctx) {
+    private void sendCreationError(PreShopCreationContext ctx) {
         if (!ctx.isCancelled()) {
             return;
         }
@@ -459,13 +459,13 @@ public class ShopService {
 
     /**
      * Run the post-creation reactions for a freshly-created shop, in the exact priority
-     * + registration order the former {@link ShopCreatedEvent} listeners fired in
+     * + registration order the former {@link ShopCreatedContext} listeners fired in
      * (replacing the Bukkit event dispatch): NORMAL {@code SignSticker} sticks the sign
      * to its chest, then MONITOR {@code MessageSender} notifies the creator,
      * {@code ShopCreationLogger} logs it, and {@code MarketListener} upserts the shop in
      * the market registry.
      */
-    public void onCreated(ShopCreatedEvent event) {
+    public void onCreated(ShopCreatedContext event) {
         stickSignToChest(event);   // was @NORMAL SignSticker
         sendCreatedMessage(event); // was @MONITOR MessageSender
         logCreation(event);        // was @MONITOR ShopCreationLogger
@@ -473,11 +473,11 @@ public class ShopService {
     }
 
     /**
-     * Run the post-removal reactions for a removed shop, in the former {@link ShopDestroyedEvent}
+     * Run the post-removal reactions for a removed shop, in the former {@link ShopDestroyedContext}
      * listener order (all MONITOR): issue the removal refund, log the removal, then mark
      * the shop inactive in the market registry.
      */
-    public void onDestroyed(ShopDestroyedEvent event) {
+    public void onDestroyed(ShopDestroyedContext event) {
         refundOnRemoval(event.getDestroyer(), event.getSign());
         logRemoval(event);                     // was @MONITOR ShopRemovalLogger
         market.onShopDestroyed(event); // genuine market-DB sync — stays
@@ -489,7 +489,7 @@ public class ShopService {
     private static final String REMOVAL_LOG = "%1$s was removed by %2$s - %3$s - %4$s - at %5$s";
 
     /** Stick a freshly-created shop sign onto its chest (config-gated, never for admin shops). */
-    private void stickSignToChest(ShopCreatedEvent event) {
+    private void stickSignToChest(ShopCreatedContext event) {
         if (!Properties.STICK_SIGNS_TO_CHESTS || ChestShopSign.isAdminShop(event.getSignLines())) {
             return;
         }
@@ -530,12 +530,12 @@ public class ShopService {
     }
 
     /** Notify the creator that their shop was made. */
-    private void sendCreatedMessage(ShopCreatedEvent event) {
+    private void sendCreatedMessage(ShopCreatedContext event) {
         message.send(event.getPlayer(), "chestshop.SHOP_CREATED");
     }
 
     /** Write a shop-creation line to the shop log (off the main thread). */
-    private void logCreation(ShopCreatedEvent event) {
+    private void logCreation(ShopCreatedContext event) {
         ChestShop.runInAsyncThread(() -> {
             String creator = event.getPlayer().getName();
             String shopOwner = ChestShopSign.getOwner(event.getSignLines());
@@ -550,7 +550,7 @@ public class ShopService {
     }
 
     /** Write a shop-removal line to the shop log (off the main thread). */
-    private void logRemoval(ShopDestroyedEvent event) {
+    private void logRemoval(ShopDestroyedContext event) {
         if (!Properties.LOG_ALL_SHOP_REMOVALS && event.getDestroyer() != null) {
             return;
         }

@@ -6,8 +6,8 @@ import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.configuration.Properties;
 import io.paradaux.chestshop.economy.AdminInventory;
 import io.paradaux.chestshop.database.Account;
-import io.paradaux.chestshop.events.PreTransactionEvent;
-import io.paradaux.chestshop.events.TransactionEvent;
+import io.paradaux.chestshop.context.PreTransactionContext;
+import io.paradaux.chestshop.context.TransactionContext;
 import io.paradaux.chestshop.permission.Permissions;
 import io.paradaux.chestshop.Security;
 import io.paradaux.chestshop.services.AccountService;
@@ -44,9 +44,9 @@ import java.util.logging.Level;
 
 import static io.paradaux.chestshop.utils.ImplementationAdapter.getState;
 import static io.paradaux.chestshop.utils.BlockUtil.isSign;
-import static io.paradaux.chestshop.events.TransactionEvent.TransactionType;
-import static io.paradaux.chestshop.events.TransactionEvent.TransactionType.BUY;
-import static io.paradaux.chestshop.events.TransactionEvent.TransactionType.SELL;
+import static io.paradaux.chestshop.context.TransactionContext.TransactionType;
+import static io.paradaux.chestshop.context.TransactionContext.TransactionType.BUY;
+import static io.paradaux.chestshop.context.TransactionContext.TransactionType.SELL;
 import static io.paradaux.chestshop.permission.Permissions.OTHER_NAME_CREATE;
 import static io.paradaux.chestshop.signs.ChestShopSign.*;
 import static org.bukkit.event.block.Action.LEFT_CLICK_BLOCK;
@@ -203,7 +203,7 @@ public class PlayerInteract implements Listener {
         // below dispatches AccountQuery/AccountCheck/ItemParse events and scans
         // inventories; an auto-clicker would otherwise force that work (and a
         // DB/economy round-trip) every tick. The old SpamClickProtector only
-        // cancelled the already-built PreTransactionEvent, i.e. after the cost
+        // cancelled the already-built PreTransactionContext, i.e. after the cost
         // was already paid (ADT-44).
         long now = System.currentTimeMillis();
         Long lastClick = LAST_TRADE_CLICK.get(player);
@@ -212,7 +212,7 @@ public class PlayerInteract implements Listener {
         }
         LAST_TRADE_CLICK.put(player, now);
 
-        PreTransactionEvent pEvent = preparePreTransactionEvent(sign, player, action);
+        PreTransactionContext pEvent = preparePreTransactionContext(sign, player, action);
         if (pEvent == null)
             return;
 
@@ -220,11 +220,11 @@ public class PlayerInteract implements Listener {
         if (pEvent.isCancelled())
             return;
 
-        TransactionEvent tEvent = new TransactionEvent(pEvent, sign);
+        TransactionContext tEvent = new TransactionContext(pEvent, sign);
         transactions.process(tEvent);
     }
 
-    private PreTransactionEvent preparePreTransactionEvent(Sign sign, Player player, Action action) {
+    private PreTransactionContext preparePreTransactionContext(Sign sign, Player player, Action action) {
         String name = ChestShopSign.getOwner(sign);
         String prices = ChestShopSign.getPrice(sign);
         String material = ChestShopSign.getItem(sign);
@@ -301,7 +301,7 @@ public class PlayerInteract implements Listener {
         }
 
         TransactionType transactionType = (action == buy ? BUY : SELL);
-        return new PreTransactionEvent(ownerInventory, player.getInventory(), items, price, player, account, sign, transactionType);
+        return new PreTransactionContext(ownerInventory, player.getInventory(), items, price, player, account, sign, transactionType);
     }
 
     private static boolean isAllowedForShift(boolean buyTransaction) {

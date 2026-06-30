@@ -8,7 +8,7 @@ import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.permission.Permissions;
 import io.paradaux.chestshop.configuration.Properties;
 import io.paradaux.chestshop.database.Account;
-import io.paradaux.chestshop.events.TransactionEvent;
+import io.paradaux.chestshop.context.TransactionContext;
 import io.paradaux.chestshop.signs.ChestShopSign;
 import io.paradaux.treasury.api.TaxApi;
 import io.paradaux.treasury.api.TreasuryApi;
@@ -232,7 +232,7 @@ public class EconomyService {
      * server-economy account when there is one. Replaces {@code CurrencyTransferEvent}
      * + {@code TreasuryListener.onCurrencyTransfer} + {@code ServerAccountCorrector}.
      */
-    public boolean settle(BigDecimal amount, Player initiator, UUID partner, boolean buy, TransactionEvent txn) {
+    public boolean settle(BigDecimal amount, Player initiator, UUID partner, boolean buy, TransactionContext txn) {
         UUID resolvedPartner = partner;
         if (accounts.isAdminShop(resolvedPartner) && !accounts.isServerEconomyAccount(resolvedPartner)) {
             Account server = accounts.getServerEconomyAccount();
@@ -340,12 +340,12 @@ public class EconomyService {
         return BigDecimal.valueOf(pct).divide(BigDecimal.valueOf(100), 6, RoundingMode.HALF_UP);
     }
 
-    private String buildTransferMessage(TransactionEvent txn) {
+    private String buildTransferMessage(TransactionContext txn) {
         int totalItems = Arrays.stream(txn.getStock()).mapToInt(ItemStack::getAmount).sum();
         String itemName = transferItemName(txn);
         String ownerName = txn.getOwnerAccount().getName();
         String clientName = txn.getClient().getName();
-        boolean isBuy = txn.getTransactionType() == TransactionEvent.TransactionType.BUY;
+        boolean isBuy = txn.getTransactionType() == TransactionContext.TransactionType.BUY;
 
         String prefix = clientName + (isBuy ? " bought x" : " sold x") + totalItems + " ";
         String suffix = (isBuy ? " from " : " to ") + ownerName;
@@ -360,7 +360,7 @@ public class EconomyService {
         return prefix + itemName + suffix;
     }
 
-    private String transferItemName(TransactionEvent txn) {
+    private String transferItemName(TransactionContext txn) {
         ItemStack[] stock = txn.getStock();
         if (stock != null && stock.length > 0 && stock[0] != null) {
             try {
@@ -493,7 +493,7 @@ public class EconomyService {
      * Runs as a MONITOR-equivalent post-transaction step (was
      * {@code TreasuryListener.onTransactionMigrateSign}).
      */
-    public void migrateLegacyBusinessSign(TransactionEvent event) {
+    public void migrateLegacyBusinessSign(TransactionContext event) {
         Sign sign = event.getSign();
         Account owner = event.getOwnerAccount();
         if (sign == null || owner == null || owner.getUuid() == null || !isBusinessUuid(owner.getUuid())) {

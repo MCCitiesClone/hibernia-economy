@@ -1,7 +1,7 @@
 package io.paradaux.chestshop.plugins;
 
 import io.paradaux.chestshop.utils.BlockUtil;
-import io.paradaux.chestshop.events.protection.ProtectionCheckEvent;
+import io.paradaux.chestshop.context.protection.ProtectionCheckContext;
 import com.sk89q.worldedit.bukkit.BukkitAdapter;
 import com.sk89q.worldedit.util.Location;
 import com.sk89q.worldedit.world.World;
@@ -39,7 +39,7 @@ public class WorldGuardProtection {
         this.worldGuardPlatform = WorldGuard.getInstance().getPlatform();
     }
 
-    public void onProtectionCheck(ProtectionCheckEvent event) {
+    public void onProtectionCheck(ProtectionCheckContext event) {
         if (event.getResult() == Event.Result.DENY) {
             return;
         }
