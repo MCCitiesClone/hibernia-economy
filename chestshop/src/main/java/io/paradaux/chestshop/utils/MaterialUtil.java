@@ -579,6 +579,17 @@ public class MaterialUtil {
         }
     }
 
+    /**
+     * The custom-item-code (#NNN) encoding — the one place MaterialUtil still reaches a
+     * service via the static {@code ChestShop.itemCodes()} locator (PAR-282). It is a
+     * deliberate boundary: this is the vendored, deeply-static item-naming util (its
+     * {@code getName}/{@code getItem} are called from dozens of static contexts), and the
+     * code lookup is DB-backed ({@link io.paradaux.chestshop.services.ItemCodeService} →
+     * {@code ItemCodeMapper}). Removing the locator would mean threading the service as a
+     * parameter through the whole naming graph — a service-as-param regression worse than
+     * one clearly-scoped accessor — or making MaterialUtil injectable, which its static
+     * call sites forbid. Everything else in the plugin is on constructor DI.
+     */
     public static class Metadata {
         /**
          * Returns the ItemMeta represented by this code
