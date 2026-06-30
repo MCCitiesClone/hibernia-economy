@@ -24,10 +24,12 @@ import java.util.List;
 public class BlockPlace implements Listener {
 
     private final Message message;
+    private final Security security;
 
     @Inject
-    public BlockPlace(Message message) {
+    public BlockPlace(Message message, Security security) {
         this.message = message;
+        this.security = security;
     }
 
     @EventHandler(ignoreCancelled = true)
@@ -44,7 +46,7 @@ public class BlockPlace implements Listener {
             return;
         }
 
-        if (!Security.canAccess(player, placed)) {
+        if (!security.canAccess(player, placed)) {
             message.send(event.getPlayer(), "chestshop.ACCESS_DENIED");
             event.setCancelled(true);
             return;
@@ -52,7 +54,7 @@ public class BlockPlace implements Listener {
 
         Block neighbor = uBlock.findNeighbor(placed);
 
-        if (neighbor != null && !Security.canAccess(event.getPlayer(), neighbor)) {
+        if (neighbor != null && !security.canAccess(event.getPlayer(), neighbor)) {
             message.send(event.getPlayer(), "chestshop.ACCESS_DENIED");
             event.setCancelled(true);
         }
@@ -94,7 +96,7 @@ public class BlockPlace implements Listener {
                 continue;
             }
 
-            if (!Security.canAccess(event.getPlayer(), relative)) {
+            if (!security.canAccess(event.getPlayer(), relative)) {
                 message.send(event.getPlayer(), "chestshop.ACCESS_DENIED");
                 event.setCancelled(true);
                 return;

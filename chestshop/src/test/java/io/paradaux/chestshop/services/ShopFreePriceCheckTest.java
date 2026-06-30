@@ -17,7 +17,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 class ShopFreePriceCheckTest {
 
-    private final ShopService shops = new ShopService(null, null, null, null, null, null);
+    private final ShopService shops = new ShopService(null, null, null, null, null, null, null);
 
     @AfterEach
     void resetConfig() {

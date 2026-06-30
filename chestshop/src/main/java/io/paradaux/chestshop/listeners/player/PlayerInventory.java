@@ -32,11 +32,13 @@ public class PlayerInventory implements Listener {
 
     private final InfoService info;
     private final Message message;
+    private final Security security;
 
     @Inject
-    public PlayerInventory(InfoService info, Message message) {
+    public PlayerInventory(InfoService info, Message message, Security security) {
         this.info = info;
         this.message = message;
+        this.security = security;
     }
 
     @EventHandler
@@ -73,7 +75,7 @@ public class PlayerInventory implements Listener {
         boolean canAccess = false;
         for (Block container : containers) {
             if (ChestShopSign.isShopBlock(container)) {
-                if (Security.canView(player, container, false)) {
+                if (security.canView(player, container, false)) {
                     canAccess = true;
                 }
             } else {

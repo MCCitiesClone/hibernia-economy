@@ -72,16 +72,18 @@ public class PlayerInteract implements Listener {
     private final EconomyService economy;
     private final ItemService items;
     private final Message message;
+    private final Security security;
 
     @Inject
     public PlayerInteract(TransactionService transactions, InfoService info, AccountService accounts,
-                          EconomyService economy, ItemService items, Message message) {
+                          EconomyService economy, ItemService items, Message message, Security security) {
         this.transactions = transactions;
         this.info = info;
         this.accounts = accounts;
         this.economy = economy;
         this.items = items;
         this.message = message;
+        this.security = security;
     }
 
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
@@ -97,7 +99,7 @@ public class PlayerInteract implements Listener {
             Sign sign = uBlock.getConnectedSign(block);
             if (sign != null) {
 
-                if (!Security.canView(player, block, Properties.TURN_OFF_DEFAULT_PROTECTION_WHEN_PROTECTED_EXTERNALLY)) {
+                if (!security.canView(player, block, Properties.TURN_OFF_DEFAULT_PROTECTION_WHEN_PROTECTED_EXTERNALLY)) {
                     if (Permissions.has(player, Permissions.SHOPINFO)) {
                         info.showShopInfo(player, sign);
                         event.setCancelled(true);
@@ -193,7 +195,7 @@ public class PlayerInteract implements Listener {
             event.setCancelled(true);
         }
 
-        if (Properties.CHECK_ACCESS_FOR_SHOP_USE && !Security.canAccess(player, block, true)) {
+        if (Properties.CHECK_ACCESS_FOR_SHOP_USE && !security.canAccess(player, block, true)) {
             message.send(player, "chestshop.TRADE_DENIED");
             return;
         }
@@ -340,11 +342,11 @@ public class PlayerInteract implements Listener {
             return;
         }
 
-        if (!Security.canAccess(player, signBlock)) {
+        if (!security.canAccess(player, signBlock)) {
             return;
         }
         
-        if (!Security.canAccess(player, container.getBlock())) {
+        if (!security.canAccess(player, container.getBlock())) {
             return;
         }
 

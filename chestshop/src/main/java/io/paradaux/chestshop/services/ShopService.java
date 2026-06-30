@@ -63,15 +63,17 @@ public class ShopService {
     private final ProtectionService protection;
     private final StockCounterModule stockCounter;
     private final Message message;
+    private final Security security;
 
     @Inject
-    public ShopService(AccountService accounts, EconomyService economy, ItemService items, ProtectionService protection, StockCounterModule stockCounter, Message message) {
+    public ShopService(AccountService accounts, EconomyService economy, ItemService items, ProtectionService protection, StockCounterModule stockCounter, Message message, Security security) {
         this.accounts = accounts;
         this.economy = economy;
         this.items = items;
         this.protection = protection;
         this.stockCounter = stockCounter;
         this.message = message;
+        this.security = security;
     }
 
     /**
@@ -238,7 +240,7 @@ public class ShopService {
         if (Permissions.has(player, Permissions.ADMIN)) {
             return;
         }
-        if (!Security.canAccess(player, connectedContainer.getBlock())) {
+        if (!security.canAccess(player, connectedContainer.getBlock())) {
             ctx.setOutcome(CreationOutcome.NO_PERMISSION_FOR_CHEST);
         }
     }
@@ -275,7 +277,7 @@ public class ShopService {
     /** Require terrain build permission for the sign and its chest. */
     private void checkTerrain(PreShopCreationEvent ctx) {
         Player player = ctx.getPlayer();
-        if (!Security.canPlaceSign(player, ctx.getSign())) {
+        if (!security.canPlaceSign(player, ctx.getSign())) {
             ctx.setOutcome(CreationOutcome.NO_PERMISSION_FOR_TERRAIN);
             return;
         }
