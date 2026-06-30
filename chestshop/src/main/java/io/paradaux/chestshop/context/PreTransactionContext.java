@@ -37,6 +37,11 @@ public class PreTransactionContext {
 
     private TransactionOutcome transactionOutcome = TRANSACTION_SUCCESSFUL;
 
+    // Set by the (side-effect-free) free-shop validation step when a legacy price-0 shop
+    // is rejected, so the destructive removal runs exactly once after validation finishes
+    // rather than mutating the world mid-validation (ADT-139).
+    private boolean rejectedAsFreeShop = false;
+
     public PreTransactionContext(Inventory ownerInventory, Inventory clientInventory, ItemStack[] items, BigDecimal exactPrice, Player client, Account ownerAccount, Sign sign, TransactionType type) {
         this.ownerInventory = ownerInventory;
         this.clientInventory = (clientInventory == null ? client.getInventory() : clientInventory);
@@ -49,6 +54,15 @@ public class PreTransactionContext {
 
         this.sign = sign;
         this.transactionType = type;
+    }
+
+    /** @return whether this trade was rejected because it is a legacy free (price-0) shop (ADT-139). */
+    public boolean isRejectedAsFreeShop() {
+        return rejectedAsFreeShop;
+    }
+
+    public void setRejectedAsFreeShop(boolean rejectedAsFreeShop) {
+        this.rejectedAsFreeShop = rejectedAsFreeShop;
     }
 
     /**

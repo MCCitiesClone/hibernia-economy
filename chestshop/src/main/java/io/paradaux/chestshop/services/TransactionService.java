@@ -141,7 +141,7 @@ public class TransactionService {
     public void validate(PreTransactionContext ctx) {
         rejectInvalidClientName(ctx);
         rejectCreativeMode(ctx);
-        breakFreeShop(ctx);
+        flagFreeShop(ctx);
         rejectMissingPrice(ctx);
         rejectInvalidShop(ctx);
 
@@ -161,6 +161,11 @@ public class TransactionService {
         checkStockFits(ctx);
 
         sendErrorMessage(ctx);
+
+        // Side effects run only after validation has fully concluded: a legacy free shop
+        // flagged above is removed here, exactly once, so the validation steps themselves
+        // stay pure outcome-setters (ADT-139).
+        removeFlaggedFreeShop(ctx);
     }
 
     private Pattern playernamePattern() {
@@ -194,12 +199,13 @@ public class TransactionService {
     }
 
     /**
-     * Cancel and break a free (price-0) shop that pre-dates the no-free-shops rule, unless
-     * {@code ALLOW_FREE_SHOPS} permits them (PAR-88). Cancelling with
-     * INVALID_SHOP sends the "invalid shop" message; the sign is then de-registered and
-     * removed.
+     * Detect a free (price-0) shop that pre-dates the no-free-shops rule, unless
+     * {@code ALLOW_FREE_SHOPS} permits them (PAR-88). Pure: it only cancels with
+     * INVALID_SHOP (which sends the "invalid shop" message) and flags the shop for
+     * removal — the actual de-registration + block break happens once, after validation,
+     * in {@link #removeFlaggedFreeShop} (ADT-139).
      */
-    private void breakFreeShop(PreTransactionContext ctx) {
+    private void flagFreeShop(PreTransactionContext ctx) {
         if (config.isAllowFreeShops() || ctx.isCancelled()) {
             return;
         }
@@ -212,6 +218,18 @@ public class TransactionService {
             return;
         }
         ctx.setCancelled(INVALID_SHOP);
+        ctx.setRejectedAsFreeShop(true);
+    }
+
+    /** Remove a free shop flagged by {@link #flagFreeShop}, after validation has concluded (ADT-139). */
+    private void removeFlaggedFreeShop(PreTransactionContext ctx) {
+        if (!ctx.isRejectedAsFreeShop()) {
+            return;
+        }
+        Sign sign = ctx.getSign();
+        if (sign == null) {
+            return;
+        }
         signBreak.sendShopDestroyed(sign, ctx.getClient());
         sign.getBlock().breakNaturally();
     }
