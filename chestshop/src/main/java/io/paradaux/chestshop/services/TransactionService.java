@@ -9,7 +9,7 @@ import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.permission.Permissions;
 import io.paradaux.chestshop.configuration.Properties;
 import io.paradaux.hibernia.framework.i18n.Message;
-import io.paradaux.chestshop.database.Account;
+import io.paradaux.chestshop.model.Account;
 import io.paradaux.chestshop.context.PreTransactionContext;
 import io.paradaux.chestshop.context.ShopDestroyedContext;
 import io.paradaux.chestshop.context.TransactionContext;

@@ -1,4 +1,4 @@
-package io.paradaux.chestshop.database;
+package io.paradaux.chestshop.model;
 
 /**
  * A row of the {@code items} table ({@code items.db}): an auto-increment id ↔ the

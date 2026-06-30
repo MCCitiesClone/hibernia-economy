@@ -187,6 +187,7 @@ tasks.jacocoTestReport {
                     "io/paradaux/chestshop/listeners/**",
                     "io/paradaux/chestshop/commands/**",
                     "io/paradaux/chestshop/plugins/**",
+                    "io/paradaux/chestshop/economy/**",
                     "io/paradaux/chestshop/database/**",
                 )
             }

@@ -8,7 +8,7 @@ import com.google.inject.Singleton;
 import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.permission.Permissions;
 import io.paradaux.chestshop.configuration.Properties;
-import io.paradaux.chestshop.database.Account;
+import io.paradaux.chestshop.model.Account;
 import io.paradaux.chestshop.mappers.AccountMapper;
 import io.paradaux.chestshop.players.PlayerDTO;
 import io.paradaux.chestshop.signs.ChestShopSign;

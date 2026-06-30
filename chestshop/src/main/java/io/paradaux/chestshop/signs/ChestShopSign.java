@@ -7,7 +7,7 @@ import io.paradaux.chestshop.utils.StringUtil;
 import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.configuration.Properties;
 import io.paradaux.chestshop.utils.AdminInventory;
-import io.paradaux.chestshop.database.Account;
+import io.paradaux.chestshop.model.Account;
 import io.paradaux.chestshop.permission.Permissions;
 import io.paradaux.chestshop.utils.ShopBlockUtil;
 import org.bukkit.Bukkit;

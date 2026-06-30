@@ -3,7 +3,7 @@ package io.paradaux.chestshop.services;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import io.paradaux.chestshop.ChestShop;
-import io.paradaux.chestshop.database.Item;
+import io.paradaux.chestshop.model.Item;
 import io.paradaux.chestshop.mappers.ItemCodeMapper;
 import io.paradaux.chestshop.utils.MaterialUtil;
 import io.paradaux.chestshop.utils.StringUtil;

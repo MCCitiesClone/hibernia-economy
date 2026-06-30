@@ -1,6 +1,6 @@
 package io.paradaux.chestshop.mappers;
 
-import io.paradaux.chestshop.database.Account;
+import io.paradaux.chestshop.model.Account;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;

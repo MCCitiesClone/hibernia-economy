@@ -13,7 +13,7 @@ import io.paradaux.chestshop.listeners.block.BlockPlace;
 import io.paradaux.chestshop.listeners.block.breaking.ChestBreak;
 import io.paradaux.chestshop.listeners.block.breaking.SignBreak;
 import io.paradaux.chestshop.listeners.block.SignCreate;
-import io.paradaux.chestshop.listeners.economy.EconomyAdapter;
+import io.paradaux.chestshop.economy.EconomyProvider;
 import io.paradaux.chestshop.listeners.GarbageTextListener;
 import io.paradaux.chestshop.listeners.item.ItemMoveListener;
 import io.paradaux.chestshop.listeners.modules.ItemAliasModule;
@@ -391,9 +391,9 @@ public class ChestShop extends JavaPlugin {
         return new DrilldownPie(statId, () -> map);
     }
 
-    public static DrilldownPie createStaticDrilldownStat(String statId, Callable<EconomyAdapter.ProviderInfo> callableProviderInfo) {
+    public static DrilldownPie createStaticDrilldownStat(String statId, Callable<EconomyProvider.ProviderInfo> callableProviderInfo) {
         return new DrilldownPie(statId, () -> {
-            EconomyAdapter.ProviderInfo providerInfo = callableProviderInfo.call();
+            EconomyProvider.ProviderInfo providerInfo = callableProviderInfo.call();
             if (providerInfo == null) {
                 return ImmutableMap.of();
             }
@@ -470,10 +470,6 @@ public class ChestShop extends JavaPlugin {
             values.put(replacements[i], replacements[i + 1]);
         }
         return values;
-    }
-
-    public static void registerListener(Listener listener) {
-        plugin.registerEvent(listener);
     }
 
     public static <E extends Event> E callEvent(E event) {

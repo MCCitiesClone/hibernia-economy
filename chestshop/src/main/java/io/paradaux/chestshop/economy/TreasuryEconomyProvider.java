@@ -1,7 +1,6 @@
-package io.paradaux.chestshop.listeners.economy.plugins;
+package io.paradaux.chestshop.economy;
 
 import io.paradaux.chestshop.ChestShop;
-import io.paradaux.chestshop.listeners.economy.EconomyAdapter;
 import io.paradaux.chestshop.services.EconomyService;
 import io.paradaux.business.api.BusinessApi;
 import io.paradaux.treasury.api.TaxApi;
@@ -16,26 +15,26 @@ import java.util.UUID;
 import java.util.logging.Level;
 
 /**
- * Treasury economy adapter for ChestShop.
+ * Treasury economy provider for ChestShop.
  *
- * <p>This adapter is now only responsible for advertising the active provider
+ * <p>This provider is now only responsible for advertising the active provider
  * ({@link #getProviderInfo()}) and, at enable time, resolving the Treasury (and
  * optional Business) handles and binding them to {@link io.paradaux.chestshop.services.EconomyService}
- * via {@link #prepareListener()}. All ledger access — account resolution, access
+ * via {@link #prepare(EconomyService)}. All ledger access — account resolution, access
  * checks, balances, settlement and legacy business-sign migration — runs through that
  * single {@link TreasuryApi}/{@link BusinessApi} boundary.
  */
-public class TreasuryListener extends EconomyAdapter {
+public class TreasuryEconomyProvider extends EconomyProvider {
 
     static final UUID CHESTSHOP_SYSTEM_UUID = new UUID(0xC5B0FFFFFFFFFFFEL, 0xFFFFFFFFFFFFFFFEL);
 
     /**
-     * Attempt to initialize the Treasury listener.
+     * Attempt to initialize the Treasury economy provider.
      *
-     * @return A new TreasuryListener, or null if Treasury is not available
+     * @return A new TreasuryEconomyProvider, or null if Treasury is not available
      */
     @Nullable
-    public static TreasuryListener prepareListener(EconomyService economy) {
+    public static TreasuryEconomyProvider prepare(EconomyService economy) {
         if (Bukkit.getPluginManager().getPlugin("Treasury") == null) {
             return null;
         }
@@ -99,7 +98,7 @@ public class TreasuryListener extends EconomyAdapter {
         // replaced the currency + account event bus.
         economy.bind(treasury, systemAccountId, taxApi, businessApi);
 
-        return new TreasuryListener();
+        return new TreasuryEconomyProvider();
     }
 
     @Override

@@ -1,6 +1,6 @@
 package io.paradaux.chestshop.context;
 
-import io.paradaux.chestshop.database.Account;
+import io.paradaux.chestshop.model.Account;
 import org.bukkit.block.Container;
 import org.bukkit.block.Sign;
 import org.bukkit.entity.Player;

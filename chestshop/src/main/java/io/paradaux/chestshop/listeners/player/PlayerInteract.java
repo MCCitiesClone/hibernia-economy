@@ -5,7 +5,7 @@ import io.paradaux.chestshop.utils.*;
 import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.configuration.Properties;
 import io.paradaux.chestshop.utils.AdminInventory;
-import io.paradaux.chestshop.database.Account;
+import io.paradaux.chestshop.model.Account;
 import io.paradaux.chestshop.context.PreTransactionContext;
 import io.paradaux.chestshop.context.TransactionContext;
 import io.paradaux.chestshop.permission.Permissions;

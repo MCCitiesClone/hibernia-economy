@@ -7,7 +7,7 @@ import io.paradaux.business.model.RolePermission;
 import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.permission.Permissions;
 import io.paradaux.chestshop.configuration.Properties;
-import io.paradaux.chestshop.database.Account;
+import io.paradaux.chestshop.model.Account;
 import io.paradaux.chestshop.context.TransactionContext;
 import io.paradaux.chestshop.signs.ChestShopSign;
 import io.paradaux.treasury.api.TaxApi;
@@ -36,15 +36,15 @@ import java.util.logging.Level;
  * The internal economy API: ChestShop's single point of contact with the Treasury
  * ledger ({@link TreasuryApi}). Services call these methods directly instead of
  * firing the old internal {@code Currency*Event}s and routing them through
- * {@code TreasuryListener} — replacing the economy event bus with a
+ * {@code TreasuryEconomyProvider} — replacing the economy event bus with a
  * treasury-api-style service boundary.
  *
  * <p>The live {@link TreasuryApi} (and optional {@link BusinessApi}) handle + the
  * ChestShop SYSTEM account id are {@linkplain #bind bound} once Treasury is resolved
- * at enable (from {@code TreasuryListener.prepareListener}); ChestShop requires
+ * at enable (from {@code TreasuryEconomyProvider.prepare}); ChestShop requires
  * Treasury, so by the time any economy call runs they are set. Account resolution,
  * access checks, balances, settlement and legacy business-sign migration all live
- * here now — the {@code Currency*}/{@code Account*} event bus and {@code TreasuryListener}'s
+ * here now — the {@code Currency*}/{@code Account*} event bus and {@code TreasuryEconomyProvider}'s
  * handlers were collapsed into these direct calls.
  */
 @Singleton
@@ -230,7 +230,7 @@ public class EconomyService {
      * ChestShop SYSTEM account as a money sink (paying into an admin shop) or source
      * (an admin shop paying out); an admin shop is first redirected to the configured
      * server-economy account when there is one. Replaces {@code CurrencyTransferEvent}
-     * + {@code TreasuryListener.onCurrencyTransfer} + {@code ServerAccountCorrector}.
+     * + {@code TreasuryEconomyProvider.onCurrencyTransfer} + {@code ServerAccountCorrector}.
      */
     public boolean settle(BigDecimal amount, Player initiator, UUID partner, boolean buy, TransactionContext txn) {
         UUID resolvedPartner = partner;
@@ -389,7 +389,7 @@ public class EconomyService {
         return server != null ? server.getUuid() : null;
     }
 
-    // ── Treasury account resolution (duplicated from TreasuryListener for now) ──────
+    // ── Treasury account resolution (duplicated from TreasuryEconomyProvider for now) ──────
 
     private static boolean isBusinessUuid(UUID uuid) {
         return uuid.getMostSignificantBits() == BUSINESS_UUID_MSB;
@@ -405,7 +405,7 @@ public class EconomyService {
      * Resolve a business-account sign name ({@code B:<base36 id>}, or a legacy
      * {@code b:<firm name>}) to a synthetic ChestShop {@link Account}, or {@code null}
      * if {@code name} isn't a business token or doesn't resolve. Replaces the business
-     * half of {@code AccountQueryEvent} → {@code TreasuryListener.onAccountQuery}.
+     * half of {@code AccountQueryEvent} → {@code TreasuryEconomyProvider.onAccountQuery}.
      */
     @Nullable
     public Account resolveBusinessAccount(String name) {
@@ -450,7 +450,7 @@ public class EconomyService {
      * {@code CHESTSHOP} role permission via the Business API (or Treasury membership
      * if Business is absent), with disbanded/orphaned firms left accessible. Returns
      * {@code false} for non-business accounts. Replaces the business half of
-     * {@code AccountAccessEvent} → {@code TreasuryListener.onAccountAccess}.
+     * {@code AccountAccessEvent} → {@code TreasuryEconomyProvider.onAccountAccess}.
      */
     public boolean canAccessBusinessAccount(Player player, Account account) {
         if (account == null || account.getShortName() == null) {
@@ -491,7 +491,7 @@ public class EconomyService {
      * token, so if the physical sign still shows the legacy text we rewrite the owner line
      * in place. A no-op for shops already in the native form (or non-business owners).
      * Runs as a MONITOR-equivalent post-transaction step (was
-     * {@code TreasuryListener.onTransactionMigrateSign}).
+     * {@code TreasuryEconomyProvider.onTransactionMigrateSign}).
      */
     public void migrateLegacyBusinessSign(TransactionContext event) {
         Sign sign = event.getSign();

@@ -8,8 +8,8 @@ import io.paradaux.chestshop.services.ItemService;
 import io.paradaux.chestshop.services.ProtectionService;
 import io.paradaux.chestshop.utils.MaterialUtil;
 import io.paradaux.chestshop.configuration.Properties;
-import io.paradaux.chestshop.listeners.economy.EconomyAdapter;
-import io.paradaux.chestshop.listeners.economy.plugins.TreasuryListener;
+import io.paradaux.chestshop.economy.EconomyProvider;
+import io.paradaux.chestshop.economy.TreasuryEconomyProvider;
 import com.google.common.collect.ImmutableMap;
 import org.bstats.charts.DrilldownPie;
 import org.bukkit.Bukkit;
@@ -117,22 +117,21 @@ public class Dependencies implements Listener {
     private boolean loadEconomy() {
         String plugin = "none";
 
-        EconomyAdapter economyAdapter = null;
+        EconomyProvider economyProvider = null;
 
         if (Bukkit.getPluginManager().getPlugin("Treasury") != null) {
             plugin = "Treasury";
-            economyAdapter = TreasuryListener.prepareListener(economy);
+            economyProvider = TreasuryEconomyProvider.prepare(economy);
         }
 
-        if (economyAdapter == null) {
-            ChestShop.getBukkitLogger().severe("No Economy adapter found! You need to install Treasury!");
+        if (economyProvider == null) {
+            ChestShop.getBukkitLogger().severe("No Economy provider found! You need to install Treasury!");
             return false;
         }
 
         ChestShop.getMetrics().addCustomChart(ChestShop.createStaticDrilldownStat("economyAdapter", plugin, Bukkit.getPluginManager().getPlugin(plugin).getDescription().getVersion()));
-        ChestShop.getMetrics().addCustomChart(ChestShop.createStaticDrilldownStat("economyPlugin", economyAdapter::getProviderInfo));
+        ChestShop.getMetrics().addCustomChart(ChestShop.createStaticDrilldownStat("economyPlugin", economyProvider::getProviderInfo));
 
-        ChestShop.registerListener(economyAdapter);
         ChestShop.getBukkitLogger().info(plugin + " loaded!");
         return true;
     }
@@ -148,8 +147,6 @@ public class Dependencies implements Listener {
         } catch (IllegalArgumentException exception) {
             return false;
         }
-
-        Listener listener = null;
 
         switch (dependency) {
             //Terrain protection plugins
@@ -187,10 +184,6 @@ public class Dependencies implements Listener {
             case ShowItem:
                 MaterialUtil.Show.initialize(plugin);
                 break;
-        }
-
-        if (listener != null) {
-            ChestShop.registerListener(listener);
         }
 
         PluginDescriptionFile description = plugin.getDescription();

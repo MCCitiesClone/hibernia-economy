@@ -1,15 +1,15 @@
-package io.paradaux.chestshop.listeners.economy;
+package io.paradaux.chestshop.economy;
 
-import org.bukkit.event.Listener;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * The economy provider abstraction: the {@link Listener} ChestShop registers to
- * settle its economy, exposing its {@link ProviderInfo} for metrics. Treasury is
- * the only implementation ({@code TreasuryListener}); the former currency-event
- * handlers it declared have all collapsed into {@link io.paradaux.chestshop.services.EconomyService}.
+ * ChestShop's economy provider abstraction, exposing the active provider's
+ * {@link ProviderInfo} for metrics. Treasury is the only implementation
+ * ({@code TreasuryEconomyProvider}); the former currency-event handlers it declared
+ * have all collapsed into {@link io.paradaux.chestshop.services.EconomyService}, so
+ * this is no longer a Bukkit {@code Listener}.
  */
-public abstract class EconomyAdapter implements Listener {
+public abstract class EconomyProvider {
 
     @Nullable
     public abstract ProviderInfo getProviderInfo();

@@ -2,7 +2,7 @@ package io.paradaux.chestshop.commands;
 
 import com.google.inject.Inject;
 import io.paradaux.chestshop.ChestShop;
-import io.paradaux.chestshop.database.Account;
+import io.paradaux.chestshop.model.Account;
 import io.paradaux.chestshop.services.AccountService;
 import io.paradaux.hibernia.framework.commander.annotations.Command;
 import io.paradaux.hibernia.framework.commander.annotations.Description;

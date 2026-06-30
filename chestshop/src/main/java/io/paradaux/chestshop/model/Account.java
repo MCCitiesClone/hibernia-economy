@@ -1,4 +1,4 @@
-package io.paradaux.chestshop.database;
+package io.paradaux.chestshop.model;
 
 import io.paradaux.chestshop.utils.NameUtil;
 
