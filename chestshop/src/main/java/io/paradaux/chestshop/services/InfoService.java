@@ -1,6 +1,7 @@
 package io.paradaux.chestshop.services;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.configuration.Properties;
@@ -66,6 +67,17 @@ import static io.paradaux.chestshop.utils.StringUtil.capitalizeFirstLetter;
 @Singleton
 public class InfoService {
 
+    private final AccountService accounts;
+    private final EconomyService economy;
+    private final ItemService items;
+
+    @Inject
+    public InfoService(AccountService accounts, EconomyService economy, ItemService items) {
+        this.accounts = accounts;
+        this.economy = economy;
+        this.items = items;
+    }
+
     // ---- /shopinfo -------------------------------------------------------------
 
     /** Render the {@code /shopinfo} (or middle-click) output for a shop sign. */
@@ -85,7 +97,7 @@ public class InfoService {
         }
         String pricesLine = ChestShopSign.getPrice(sign);
 
-        Account account = ChestShop.accounts().resolveAccount(nameLine);
+        Account account = accounts.resolveAccount(nameLine);
         if (account == null) {
             ChestShop.message().send(sender, "chestshop.INVALID_SHOP_DETECTED");
             return;
@@ -94,7 +106,7 @@ public class InfoService {
         String ownerName = account.getName();
         ownerName = ownerName != null ? ownerName : nameLine;
 
-        ItemStack item = ChestShop.items().parse(ChestShopSign.getItem(sign));
+        ItemStack item = items.parse(ChestShopSign.getItem(sign));
         if (item == null || amount < 1) {
             ChestShop.message().send(sender, "chestshop.INVALID_SHOP_DETECTED");
             return;
@@ -128,13 +140,13 @@ public class InfoService {
         if (!buyPrice.equals(PriceUtil.NO_PRICE)) {
             ChestShop.message().send(sender, "chestshop.shopinfo_buy", "prefix", "",
                     "amount", String.valueOf(amount),
-                    "price", ChestShop.economy().format(buyPrice)
+                    "price", economy.format(buyPrice)
             );
         }
         if (!sellPrice.equals(PriceUtil.NO_PRICE)) {
             ChestShop.message().send(sender, "chestshop.shopinfo_sell", "prefix", "",
                     "amount", String.valueOf(amount),
-                    "price", ChestShop.economy().format(sellPrice)
+                    "price", economy.format(sellPrice)
             );
         }
     }

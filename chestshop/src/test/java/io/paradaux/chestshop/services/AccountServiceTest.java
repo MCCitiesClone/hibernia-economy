@@ -45,7 +45,7 @@ class AccountServiceTest {
     void setUp() {
         Properties.CACHE_SIZE = 128;
         mapper = new FakeAccountMapper();
-        service = new AccountService(mapper);
+        service = new AccountService(mapper, () -> null);
     }
 
     @Test

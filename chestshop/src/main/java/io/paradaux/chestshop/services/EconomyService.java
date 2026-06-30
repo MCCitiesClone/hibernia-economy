@@ -1,5 +1,6 @@
 package io.paradaux.chestshop.services;
 
+import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import io.paradaux.business.api.BusinessApi;
 import io.paradaux.business.model.RolePermission;
@@ -58,6 +59,13 @@ public class EconomyService {
     private volatile int systemAccountId;
     private volatile TaxApi taxApi;
     @Nullable private volatile BusinessApi businessApi;
+
+    private final AccountService accounts;
+
+    @Inject
+    public EconomyService(AccountService accounts) {
+        this.accounts = accounts;
+    }
 
     /** Wire the resolved Treasury handle + SYSTEM account + tax/business APIs in once available (enable time). */
     public void bind(TreasuryApi treasury, int systemAccountId, TaxApi taxApi, @Nullable BusinessApi businessApi) {
@@ -215,8 +223,8 @@ public class EconomyService {
      */
     public boolean settle(BigDecimal amount, Player initiator, UUID partner, boolean buy, TransactionEvent txn) {
         UUID resolvedPartner = partner;
-        if (ChestShop.accounts().isAdminShop(resolvedPartner) && !ChestShop.accounts().isServerEconomyAccount(resolvedPartner)) {
-            Account server = ChestShop.accounts().getServerEconomyAccount();
+        if (accounts.isAdminShop(resolvedPartner) && !accounts.isServerEconomyAccount(resolvedPartner)) {
+            Account server = accounts.getServerEconomyAccount();
             if (server != null) {
                 resolvedPartner = server.getUuid();
             }
@@ -224,8 +232,8 @@ public class EconomyService {
 
         UUID sender = buy ? initiator.getUniqueId() : resolvedPartner;
         UUID receiver = buy ? resolvedPartner : initiator.getUniqueId();
-        boolean senderIsAdmin = ChestShop.accounts().isAdminShop(sender);
-        boolean receiverIsAdmin = ChestShop.accounts().isAdminShop(receiver);
+        boolean senderIsAdmin = accounts.isAdminShop(sender);
+        boolean receiverIsAdmin = accounts.isAdminShop(receiver);
 
         String memo = buildTransferMessage(txn);
 
@@ -310,9 +318,9 @@ public class EconomyService {
     }
 
     /** Tax rate as a fraction: {@code SERVER_TAX_AMOUNT} for admin/server counterparties, else {@code TAX_AMOUNT}. */
-    private static BigDecimal resolveTaxRate(UUID partner) {
+    private BigDecimal resolveTaxRate(UUID partner) {
         double pct = (partner != null
-                && (ChestShop.accounts().isAdminShop(partner) || ChestShop.accounts().isServerEconomyAccount(partner)))
+                && (accounts.isAdminShop(partner) || accounts.isServerEconomyAccount(partner)))
                 ? Properties.SERVER_TAX_AMOUNT
                 : Properties.TAX_AMOUNT;
         if (pct == 0) {
@@ -363,10 +371,10 @@ public class EconomyService {
      * a no-op / unlimited, matching the old {@code ServerAccountCorrector}).
      */
     private UUID normaliseAdminTarget(UUID target) {
-        if (!ChestShop.accounts().isAdminShop(target) || ChestShop.accounts().isServerEconomyAccount(target)) {
+        if (!accounts.isAdminShop(target) || accounts.isServerEconomyAccount(target)) {
             return target;
         }
-        Account server = ChestShop.accounts().getServerEconomyAccount();
+        Account server = accounts.getServerEconomyAccount();
         return server != null ? server.getUuid() : null;
     }
 

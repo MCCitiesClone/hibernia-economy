@@ -1,5 +1,6 @@
 package io.paradaux.chestshop.services;
 
+import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.Permission;
@@ -56,6 +57,19 @@ import static io.paradaux.chestshop.signs.ChestShopSign.AUTOFILL_CODE;
 @Singleton
 public class ShopService {
 
+    private final AccountService accounts;
+    private final EconomyService economy;
+    private final ItemService items;
+    private final ProtectionService protection;
+
+    @Inject
+    public ShopService(AccountService accounts, EconomyService economy, ItemService items, ProtectionService protection) {
+        this.accounts = accounts;
+        this.economy = economy;
+        this.items = items;
+        this.protection = protection;
+    }
+
     /**
      * Run a shop-sign creation through the validation steps and return the result context
      * for the caller ({@code SignCreate}) to act on. The steps run in the exact order the
@@ -105,7 +119,7 @@ public class ShopService {
     /** Resolve/normalise the item line; autofill from the chest, or reject an invalid item. */
     private void checkItem(PreShopCreationEvent ctx) {
         String itemCode = ChestShopSign.getItem(ctx.getSignLines());
-        ItemStack item = ChestShop.items().parse(itemCode);
+        ItemStack item = items.parse(itemCode);
 
         if (item == null) {
             if (Properties.ALLOW_AUTO_ITEM_FILL && itemCode.equals(AUTOFILL_CODE)) {
@@ -233,7 +247,7 @@ public class ShopService {
                 || Permission.has(ctx.getPlayer(), NOFEE)) {
             return;
         }
-        if (!ChestShop.economy().hasFunds(ctx.getPlayer().getUniqueId(), shopCreationPrice)) {
+        if (!economy.hasFunds(ctx.getPlayer().getUniqueId(), shopCreationPrice)) {
             ctx.setOutcome(CreationOutcome.NOT_ENOUGH_MONEY);
         }
     }
@@ -263,7 +277,7 @@ public class ShopService {
         }
         Container connectedContainer = uBlock.findConnectedContainer(ctx.getSign().getBlock());
         Location containerLocation = connectedContainer != null ? connectedContainer.getLocation() : null;
-        if (!ChestShop.protection().canBuild(player, containerLocation, ctx.getSign().getLocation())) {
+        if (!protection.canBuild(player, containerLocation, ctx.getSign().getLocation())) {
             ctx.setOutcome(CreationOutcome.NO_PERMISSION_FOR_TERRAIN);
         }
     }
@@ -282,7 +296,7 @@ public class ShopService {
         Player player = ctx.getPlayer();
 
         if (ctx.getOwnerAccount() != null
-                && !ChestShop.accounts().canUseName(player, Permission.OTHER_NAME_CREATE, ctx.getOwnerAccount().getShortName())) {
+                && !accounts.canUseName(player, Permission.OTHER_NAME_CREATE, ctx.getOwnerAccount().getShortName())) {
             ctx.setSignLine(ChestShopSign.NAME_LINE, "");
             ctx.setOutcome(CreationOutcome.NO_PERMISSION);
             return;
@@ -290,7 +304,7 @@ public class ShopService {
 
         String priceLine = ChestShopSign.getPrice(ctx.getSignLines());
         String itemLine = ChestShopSign.getItem(ctx.getSignLines());
-        ItemStack item = ChestShop.items().parse(itemLine);
+        ItemStack item = items.parse(itemLine);
 
         if (item == null) {
             if (PriceUtil.hasBuyPrice(priceLine) && !Permission.has(player, Permission.SHOP_CREATION_BUY)
@@ -347,16 +361,16 @@ public class ShopService {
         if (account == null || !account.getShortName().equalsIgnoreCase(name)) {
             account = null;
             try {
-                if (name.isEmpty() || !ChestShop.accounts().canUseName(player, Permission.OTHER_NAME_CREATE, name)) {
-                    account = ChestShop.accounts().getOrCreateAccount(player);
+                if (name.isEmpty() || !accounts.canUseName(player, Permission.OTHER_NAME_CREATE, name)) {
+                    account = accounts.getOrCreateAccount(player);
                 } else {
-                    account = ChestShop.accounts().resolveAccount(name);
+                    account = accounts.resolveAccount(name);
                     if (account == null) {
                         Player otherPlayer = ChestShop.getBukkitServer().getPlayer(name);
                         try {
                             account = otherPlayer != null
-                                    ? ChestShop.accounts().getOrCreateAccount(otherPlayer)
-                                    : ChestShop.accounts().getOrCreateAccount(ChestShop.getBukkitServer().getOfflinePlayer(name));
+                                    ? accounts.getOrCreateAccount(otherPlayer)
+                                    : accounts.getOrCreateAccount(ChestShop.getBukkitServer().getOfflinePlayer(name));
                         } catch (IllegalArgumentException e) {
                             ctx.getPlayer().sendMessage(e.getMessage());
                         }
@@ -391,13 +405,13 @@ public class ShopService {
             failName(ctx);
             return;
         }
-        Account account = ChestShop.accounts().resolveAccount(name);
+        Account account = accounts.resolveAccount(name);
         if (account == null) {
             ChestShop.message().send(player, "chestshop.BUSINESS_ACCOUNT_NOT_FOUND");
             failName(ctx);
             return;
         }
-        if (!Permission.has(player, Permission.ADMIN) && !ChestShop.accounts().canAccess(player, account)) {
+        if (!Permission.has(player, Permission.ADMIN) && !accounts.canAccess(player, account)) {
             ChestShop.message().send(player, "chestshop.BUSINESS_NO_CHESTSHOP_PERMISSION");
             failName(ctx);
             return;
@@ -563,7 +577,7 @@ public class ShopService {
             return true;
         }
 
-        if (!ChestShop.economy().withdraw(player.getUniqueId(), price, player.getWorld())) {
+        if (!economy.withdraw(player.getUniqueId(), price, player.getWorld())) {
             return false;
         }
 
@@ -589,12 +603,12 @@ public class ShopService {
             return;
         }
 
-        Account account = ChestShop.accounts().resolveAccount(ChestShopSign.getOwner(sign));
+        Account account = accounts.resolveAccount(ChestShopSign.getOwner(sign));
         if (account == null) {
             return;
         }
 
-        ChestShop.economy().deposit(account.getUuid(), refund, sign.getWorld());
+        economy.deposit(account.getUuid(), refund, sign.getWorld());
 
         debitServerEconomy(refund, sign.getWorld());
         ChestShop.message().send(destroyer, "chestshop.SHOP_REFUNDED", "amount", Economy.formatBalance(refund));
@@ -602,17 +616,17 @@ public class ShopService {
 
     /** Mirror a collected creation fee into the server-economy account, if one is configured. */
     private void creditServerEconomy(BigDecimal amount, World world) {
-        Account serverAccount = ChestShop.accounts().getServerEconomyAccount();
+        Account serverAccount = accounts.getServerEconomyAccount();
         if (serverAccount != null) {
-            ChestShop.economy().deposit(serverAccount.getUuid(), amount, world);
+            economy.deposit(serverAccount.getUuid(), amount, world);
         }
     }
 
     /** Mirror an issued refund out of the server-economy account, if one is configured. */
     private void debitServerEconomy(BigDecimal amount, World world) {
-        Account serverAccount = ChestShop.accounts().getServerEconomyAccount();
+        Account serverAccount = accounts.getServerEconomyAccount();
         if (serverAccount != null) {
-            ChestShop.economy().withdraw(serverAccount.getUuid(), amount, world);
+            economy.withdraw(serverAccount.getUuid(), amount, world);
         }
     }
 }

@@ -3,6 +3,7 @@ package io.paradaux.chestshop.services;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Table;
+import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.Permission;
@@ -93,6 +94,15 @@ public class TransactionService {
     // changes, instead of recompiling the regex on every click (per-click hot path).
     private static volatile String cachedPlayernameRegexp;
     private static volatile Pattern cachedPlayernamePattern;
+
+    private final EconomyService economy;
+    private final ShopService shops;
+
+    @Inject
+    public TransactionService(EconomyService economy, ShopService shops) {
+        this.economy = economy;
+        this.shops = shops;
+    }
 
     private static final String BUY_LOG = "%1$s bought %2$s for %3$.2f from %4$s at %5$s";
     private static final String SELL_LOG = "%1$s sold %2$s for %3$.2f to %4$s at %5$s";
@@ -225,7 +235,7 @@ public class TransactionService {
     /** Whole-amount funds + stock check (used when partial transactions are disabled). */
     private void checkFundsAndStock(PreTransactionEvent ctx) {
         if (ctx.getTransactionType() == BUY) {
-            if (!ChestShop.economy().hasFunds(ctx.getClient().getUniqueId(), ctx.getExactPrice())) {
+            if (!economy.hasFunds(ctx.getClient().getUniqueId(), ctx.getExactPrice())) {
                 ctx.setCancelled(CLIENT_DOES_NOT_HAVE_ENOUGH_MONEY);
                 return;
             }
@@ -233,7 +243,7 @@ public class TransactionService {
                 ctx.setCancelled(NOT_ENOUGH_STOCK_IN_CHEST);
             }
         } else {
-            if (!ChestShop.economy().hasFunds(ctx.getOwnerAccount().getUuid(), ctx.getExactPrice())) {
+            if (!economy.hasFunds(ctx.getOwnerAccount().getUuid(), ctx.getExactPrice())) {
                 ctx.setCancelled(SHOP_DOES_NOT_HAVE_ENOUGH_MONEY);
                 return;
             }
@@ -299,9 +309,9 @@ public class TransactionService {
         }
         Player client = ctx.getClient();
         BigDecimal pricePerItem = ctx.getExactPrice().divide(BigDecimal.valueOf(itemCount), MathContext.DECIMAL128);
-        BigDecimal walletMoney = ChestShop.economy().getBalance(client.getUniqueId());
+        BigDecimal walletMoney = economy.getBalance(client.getUniqueId());
 
-        if (!ChestShop.economy().hasFunds(client.getUniqueId(), ctx.getExactPrice())) {
+        if (!economy.hasFunds(client.getUniqueId(), ctx.getExactPrice())) {
             int amountAffordable = getAmountOfAffordableItems(walletMoney, pricePerItem);
             if (amountAffordable < 1) {
                 ctx.setCancelled(CLIENT_DOES_NOT_HAVE_ENOUGH_MONEY);
@@ -348,7 +358,7 @@ public class TransactionService {
             ctx.setStock(itemsFit);
         }
 
-        if (!ChestShop.economy().canHold(ctx.getOwnerAccount().getUuid(), ctx.getExactPrice())) {
+        if (!economy.canHold(ctx.getOwnerAccount().getUuid(), ctx.getExactPrice())) {
             ctx.setCancelled(SHOP_DEPOSIT_FAILED);
         }
     }
@@ -366,8 +376,8 @@ public class TransactionService {
         BigDecimal pricePerItem = ctx.getExactPrice().divide(BigDecimal.valueOf(itemCount), MathContext.DECIMAL128);
 
         if (Economy.isOwnerEconomicallyActive(ctx.getOwnerInventory())
-                && !ChestShop.economy().hasFunds(owner, ctx.getExactPrice())) {
-            BigDecimal walletMoney = ChestShop.economy().getBalance(owner);
+                && !economy.hasFunds(owner, ctx.getExactPrice())) {
+            BigDecimal walletMoney = economy.getBalance(owner);
             int amountAffordable = getAmountOfAffordableItems(walletMoney, pricePerItem);
             if (amountAffordable < 1) {
                 ctx.setCancelled(SHOP_DOES_NOT_HAVE_ENOUGH_MONEY);
@@ -414,7 +424,7 @@ public class TransactionService {
             ctx.setStock(itemsFit);
         }
 
-        if (!ChestShop.economy().canHold(client.getUniqueId(), ctx.getExactPrice())) {
+        if (!economy.canHold(client.getUniqueId(), ctx.getExactPrice())) {
             ctx.setCancelled(CLIENT_DEPOSIT_FAILED);
         }
     }
@@ -633,7 +643,7 @@ public class TransactionService {
         deleteEmptyShop(event); // was @HIGHEST EmptyShopDeleter
 
         // MONITOR reactions, in registration order.
-        ChestShop.economy().migrateLegacyBusinessSign(event);
+        economy.migrateLegacyBusinessSign(event);
         MarketListener.onTransaction(event);   // genuine market-DB sync — stays
         logTransaction(event);                 // was @MONITOR TransactionLogger
         sendTransactionMessages(event);        // was @MONITOR TransactionMessageSender
@@ -655,7 +665,7 @@ public class TransactionService {
             return;
         }
 
-        if (!ChestShop.economy().settle(event.getExactPrice(), event.getClient(),
+        if (!economy.settle(event.getExactPrice(), event.getClient(),
                 event.getOwnerAccount().getUuid(), buy, event)) {
             // The goods already moved but the money didn't settle — put the goods
             // back and cancel, keeping the trade atomic.
@@ -752,7 +762,7 @@ public class TransactionService {
         }
 
         Container connectedContainer = uBlock.findConnectedContainer(sign);
-        ChestShop.shops().onDestroyed(new ShopDestroyedEvent(null, sign, connectedContainer));
+        shops.onDestroyed(new ShopDestroyedEvent(null, sign, connectedContainer));
 
         Material signType = sign.getType();
         sign.getBlock().setType(Material.AIR);

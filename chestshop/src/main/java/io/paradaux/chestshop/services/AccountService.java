@@ -3,6 +3,7 @@ package io.paradaux.chestshop.services;
 import com.google.common.base.Charsets;
 import com.google.common.base.Preconditions;
 import com.google.inject.Inject;
+import com.google.inject.Provider;
 import com.google.inject.Singleton;
 import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.Permission;
@@ -40,6 +41,9 @@ import java.util.logging.Level;
 public class AccountService {
 
     private final AccountMapper accounts;
+    // Lazy to break the AccountService ↔ EconomyService construction cycle (business
+    // name resolution / firm access checks delegate to the economy service).
+    private final Provider<EconomyService> economy;
 
     private final Object accountsLock = new Object();
 
@@ -53,8 +57,9 @@ public class AccountService {
     private int uuidVersion = -1;
 
     @Inject
-    public AccountService(AccountMapper accounts) {
+    public AccountService(AccountMapper accounts, Provider<EconomyService> economy) {
         this.accounts = accounts;
+        this.economy = economy;
     }
 
     public int getAccountCount() {
@@ -178,7 +183,7 @@ public class AccountService {
      * Replaces the {@code AccountQueryEvent} dispatch.
      */
     public Account resolveAccount(String name) {
-        Account business = ChestShop.economy().resolveBusinessAccount(name);
+        Account business = economy.get().resolveBusinessAccount(name);
         if (business != null) {
             return business;
         }
@@ -320,7 +325,7 @@ public class AccountService {
      * the {@code AccountAccessEvent} dispatch.
      */
     public boolean canAccess(Player player, Account account) {
-        if (ChestShop.economy().canAccessBusinessAccount(player, account)) {
+        if (economy.get().canAccessBusinessAccount(player, account)) {
             return true;
         }
         if (player.getUniqueId().equals(account.getUuid())) {
