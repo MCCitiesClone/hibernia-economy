@@ -190,6 +190,19 @@ public class ChestShop extends JavaPlugin {
         injector.getInstance(io.paradaux.hibernia.framework.events.ListenerManager.class).registerAll();
         MarketHook.init();
 
+        // Optional: keep the shop registry clean when WorldEdit/FAWE bulk-removes
+        // shops (WE bypasses Bukkit block events). Only touched when WE is present,
+        // so its classes are never loaded otherwise.
+        if (getServer().getPluginManager().getPlugin("WorldEdit") != null
+                || getServer().getPluginManager().getPlugin("FastAsyncWorldEdit") != null) {
+            try {
+                new io.paradaux.chestshop.find.integration.WorldEditShopCleanup(this).register();
+            } catch (Throwable t) {
+                getBukkitLogger().log(java.util.logging.Level.WARNING,
+                        "WorldEdit shop-cleanup adapter unavailable", t);
+            }
+        }
+
         registerPluginMessagingChannels();
 
         startStatistics();
