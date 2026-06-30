@@ -139,7 +139,10 @@ public class ChestShop extends JavaPlugin {
                                 io.paradaux.chestshop.commands.BypassCommand.class,
                                 ItemInfo.class, ShopInfo.class, Version.class,
                                 io.paradaux.chestshop.commands.Metrics.class, Give.class,
-                                Toggle.class)
+                                Toggle.class,
+                                io.paradaux.chestshop.find.FindCommand.class)
+                        // Usher dialog handlers — the /find search flow (first Usher use).
+                        .dialogs(io.paradaux.chestshop.find.FindDialog.class)
                         // Bukkit entrypoints — Guice-constructed so each injects the
                         // services it needs (listener → service → persistence), and
                         // registered in one call via ListenerManager#registerAll (PAR-282).
