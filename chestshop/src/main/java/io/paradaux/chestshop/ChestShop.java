@@ -139,6 +139,27 @@ public class ChestShop extends JavaPlugin {
                                 ItemInfo.class, ShopInfo.class, Version.class,
                                 io.paradaux.chestshop.commands.Metrics.class, Give.class,
                                 Toggle.class)
+                        // Bukkit entrypoints — Guice-constructed so each injects the
+                        // services it needs (listener → service → persistence), and
+                        // registered in one call via ListenerManager#registerAll (PAR-282).
+                        .listeners(
+                                Dependencies.class,
+                                SignBreak.class,
+                                io.paradaux.chestshop.listeners.block.breaking.attached.PhysicsBreak.class,
+                                io.paradaux.chestshop.listeners.block.breaking.PaperBlockDestroyListener.class,
+                                ChestBreak.class,
+                                SignCreate.class,
+                                BlockPlace.class,
+                                io.paradaux.chestshop.listeners.block.SignBacksideProtector.class,
+                                MarketListener.class,
+                                PlayerConnect.class,
+                                PlayerInteract.class,
+                                PlayerInventory.class,
+                                PlayerTeleport.class,
+                                GarbageTextListener.class,
+                                RestrictedSign.class,
+                                StockCounterModule.class,
+                                ItemMoveListener.class)
                         .build();
         this.injector = com.google.inject.Guice.createInjector(hibernia,
                 new io.paradaux.chestshop.guice.ChestShopModule(),
@@ -161,13 +182,13 @@ public class ChestShop extends JavaPlugin {
 
         itemCodes.migrateIfNeeded();
 
-        if (!Dependencies.loadPlugins()) {
+        if (!injector.getInstance(Dependencies.class).loadPlugins()) {
             getServer().getPluginManager().disablePlugin(this);
             return;
         }
 
-        registerEvents();
-        registerFeatureListeners();
+        // Register every Bukkit listener bound via HiberniaModule.listeners(...) above.
+        injector.getInstance(io.paradaux.hibernia.framework.events.ListenerManager.class).registerAll();
         MarketHook.init();
 
         registerPluginMessagingChannels();
@@ -291,46 +312,6 @@ public class ChestShop extends JavaPlugin {
     }
 
     //////////////////    REGISTER EVENTS, SCHEDULER & STATS    ///////////////////////////
-    private void registerEvents() {
-        registerEvent(new Dependencies());
-
-        registerModules();
-
-        registerEvent(new SignBreak());
-        // Guice-instantiated so they inject the services they need instead of pulling
-        // them from the static ChestShop.<service>() locator (PAR-282).
-        registerEvent(injector.getInstance(SignCreate.class));
-        registerEvent(new ChestBreak());
-
-        registerEvent(new MarketListener());
-
-        registerEvent(new BlockPlace());
-        registerEvent(injector.getInstance(PlayerConnect.class));
-        registerEvent(injector.getInstance(PlayerInteract.class));
-        registerEvent(injector.getInstance(PlayerInventory.class));
-        registerEvent(new PlayerTeleport());
-
-        registerEvent(new GarbageTextListener());
-
-        registerEvent(new RestrictedSign());
-
-        if (!Properties.TURN_OFF_HOPPER_PROTECTION || Properties.USE_STOCK_COUNTER) {
-            registerEvent(new ItemMoveListener());
-        }
-    }
-
-    private void registerModules() {
-        registerEvent(new StockCounterModule());
-    }
-
-    private void registerFeatureListeners() {
-        // Feature listeners that used to live in the version-named adapter/
-        // classes, now in semantic homes (PAR-257). The getProvides() plugin
-        // aliasing (formerly Spigot_1_15_2) is folded into Dependencies.onEnable.
-        registerEvent(new io.paradaux.chestshop.listeners.block.breaking.PaperBlockDestroyListener());
-        registerEvent(new io.paradaux.chestshop.listeners.block.SignBacksideProtector());
-    }
-
     private void registerPluginMessagingChannels() {
         if (Properties.BUNGEECORD_MESSAGES) {
             getServer().getMessenger().registerOutgoingPluginChannel(this, "BungeeCord");

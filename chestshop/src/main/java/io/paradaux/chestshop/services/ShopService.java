@@ -60,13 +60,15 @@ public class ShopService {
     private final EconomyService economy;
     private final ItemService items;
     private final ProtectionService protection;
+    private final StockCounterModule stockCounter;
 
     @Inject
-    public ShopService(AccountService accounts, EconomyService economy, ItemService items, ProtectionService protection) {
+    public ShopService(AccountService accounts, EconomyService economy, ItemService items, ProtectionService protection, StockCounterModule stockCounter) {
         this.accounts = accounts;
         this.economy = economy;
         this.items = items;
         this.protection = protection;
+        this.stockCounter = stockCounter;
     }
 
     /**
@@ -102,7 +104,7 @@ public class ShopService {
         }
         // StockCounterModule ran @HIGH with the default ignoreCancelled=false, so it
         // fires regardless: it normalises the quantity line and seeds the stock counter.
-        StockCounterModule.onPreShopCreation(ctx);
+        stockCounter.onPreShopCreation(ctx);
         // HIGHEST — the name second pass (ignoreCancelled=true)
         if (!ctx.isCancelled()) {
             resolveName(ctx);

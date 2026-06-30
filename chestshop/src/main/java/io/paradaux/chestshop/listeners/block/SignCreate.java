@@ -29,12 +29,14 @@ public class SignCreate implements Listener {
     private final AccountService accounts;
     private final ItemService items;
     private final ShopService shops;
+    private final SignBreak signBreak;
 
     @Inject
-    public SignCreate(AccountService accounts, ItemService items, ShopService shops) {
+    public SignCreate(AccountService accounts, ItemService items, ShopService shops, SignBreak signBreak) {
         this.accounts = accounts;
         this.items = items;
         this.shops = shops;
+        this.signBreak = signBreak;
     }
 
     @EventHandler(ignoreCancelled = true)
@@ -67,7 +69,7 @@ public class SignCreate implements Listener {
         if (!items.validateSign(lines)) {
             // Check if a valid shop already existed previously
             if (ChestShopSign.isValid(sign)) {
-                SignBreak.sendShopDestroyedEvent(sign, event.getPlayer());
+                signBreak.sendShopDestroyedEvent(sign, event.getPlayer());
             }
             return;
         }

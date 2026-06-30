@@ -1,5 +1,6 @@
 package io.paradaux.chestshop.listeners.item;
 
+import com.google.inject.Inject;
 import io.paradaux.chestshop.configuration.Properties;
 import io.paradaux.chestshop.listeners.modules.StockCounterModule;
 import io.paradaux.chestshop.signs.ChestShopSign;
@@ -17,8 +18,15 @@ import static io.paradaux.chestshop.utils.ImplementationAdapter.getHolder;
  */
 public class ItemMoveListener implements Listener {
 
+    private final StockCounterModule stockCounter;
+
+    @Inject
+    public ItemMoveListener(StockCounterModule stockCounter) {
+        this.stockCounter = stockCounter;
+    }
+
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
-    public static void onItemMove(InventoryMoveItemEvent event) {
+    public void onItemMove(InventoryMoveItemEvent event) {
         InventoryHolder destinationHolder = getHolder(event.getDestination(), false);
 
         if (!Properties.TURN_OFF_HOPPER_PROTECTION && !(destinationHolder instanceof BlockState)) {
@@ -29,7 +37,7 @@ public class ItemMoveListener implements Listener {
             }
         }
         if (Properties.USE_STOCK_COUNTER && ChestShopSign.isShopBlock(destinationHolder)) {
-            StockCounterModule.updateCounterOnItemMoveEvent(event.getItem(), destinationHolder);
+            stockCounter.updateCounterOnItemMoveEvent(event.getItem(), destinationHolder);
         }
     }
 

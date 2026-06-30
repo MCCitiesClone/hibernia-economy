@@ -1,5 +1,10 @@
 package io.paradaux.chestshop;
 
+import com.google.inject.Inject;
+import com.google.inject.Singleton;
+import io.paradaux.chestshop.services.EconomyService;
+import io.paradaux.chestshop.services.ItemService;
+import io.paradaux.chestshop.services.ProtectionService;
 import io.paradaux.chestshop.utils.MaterialUtil;
 import io.paradaux.chestshop.configuration.Properties;
 import io.paradaux.chestshop.listeners.economy.EconomyAdapter;
@@ -26,14 +31,29 @@ import java.util.stream.Collectors;
 /**
  * @author Acrobot
  */
+@Singleton
 public class Dependencies implements Listener {
 
-    private static final Map<String, String> versions = new HashMap<>();
+    private final Map<String, String> versions = new HashMap<>();
 
-    private static boolean isLoaded(String plugin) {
+    private final ProtectionService protection;
+    private final ItemService items;
+    private final EconomyService economy;
+
+    @Inject
+    public Dependencies(ProtectionService protection, ItemService items, EconomyService economy) {
+        this.protection = protection;
+        this.items = items;
+        this.economy = economy;
+    }
+
+    private boolean isLoaded(String plugin) {
         return versions.containsKey(plugin.toLowerCase(Locale.ROOT));
     }
 
+    // Runs in onLoad() (before the Guice injector exists) so it stays static — it
+    // forces dependency static-init (e.g. WorldGuard flag registration) and touches
+    // no injected services.
     public static void initializePlugins() {
         PluginManager pluginManager = Bukkit.getPluginManager();
 
@@ -66,7 +86,7 @@ public class Dependencies implements Listener {
         ChestShop.getBukkitLogger().info(description.getName() + " version " + description.getVersion() + " loaded.");
     }
 
-    public static boolean loadPlugins() {
+    public boolean loadPlugins() {
         PluginManager pluginManager = Bukkit.getPluginManager();
 
         for (Dependency dependency : Dependency.values()) {
@@ -94,30 +114,30 @@ public class Dependencies implements Listener {
         return false;
     }
 
-    private static boolean loadEconomy() {
+    private boolean loadEconomy() {
         String plugin = "none";
 
-        EconomyAdapter economy = null;
+        EconomyAdapter economyAdapter = null;
 
         if (Bukkit.getPluginManager().getPlugin("Treasury") != null) {
             plugin = "Treasury";
-            economy = TreasuryListener.prepareListener();
+            economyAdapter = TreasuryListener.prepareListener(economy);
         }
 
-        if (economy == null) {
+        if (economyAdapter == null) {
             ChestShop.getBukkitLogger().severe("No Economy adapter found! You need to install Treasury!");
             return false;
         }
 
         ChestShop.getMetrics().addCustomChart(ChestShop.createStaticDrilldownStat("economyAdapter", plugin, Bukkit.getPluginManager().getPlugin(plugin).getDescription().getVersion()));
-        ChestShop.getMetrics().addCustomChart(ChestShop.createStaticDrilldownStat("economyPlugin", economy::getProviderInfo));
+        ChestShop.getMetrics().addCustomChart(ChestShop.createStaticDrilldownStat("economyPlugin", economyAdapter::getProviderInfo));
 
-        ChestShop.registerListener(economy);
+        ChestShop.registerListener(economyAdapter);
         ChestShop.getBukkitLogger().info(plugin + " loaded!");
         return true;
     }
 
-    public static boolean loadPlugin(String name, Plugin plugin) { //Really messy, right? But it's short and fast :)
+    public boolean loadPlugin(String name, Plugin plugin) { //Really messy, right? But it's short and fast :)
         if (isLoaded(name) || isLoaded(plugin.getName())) {
             return true;
         }
@@ -141,11 +161,11 @@ public class Dependencies implements Listener {
                 }
 
                 if (Properties.WORLDGUARD_USE_PROTECTION) {
-                    ChestShop.protection().setWorldGuardProtection(new WorldGuardProtection(plugin)::onProtectionCheck);
+                    protection.setWorldGuardProtection(new WorldGuardProtection(plugin)::onProtectionCheck);
                 }
 
                 if (Properties.WORLDGUARD_INTEGRATION) {
-                    ChestShop.protection().setWorldGuardBuilding(new WorldGuardBuilding(plugin)::canBuild);
+                    protection.setWorldGuardBuilding(new WorldGuardBuilding(plugin)::canBuild);
                 }
 
                 break;
@@ -154,7 +174,7 @@ public class Dependencies implements Listener {
                 if (!Properties.GRIEFPREVENTION_INTEGRATION) {
                     return false;
                 }
-                ChestShop.protection().setGriefPreventionBuilding(new GriefPrevenentionBuilding(plugin)::canBuild);
+                protection.setGriefPreventionBuilding(new GriefPrevenentionBuilding(plugin)::canBuild);
                 break;
 
             //Other plugins
@@ -162,7 +182,7 @@ public class Dependencies implements Listener {
                 // ItemBridge's resolvers are invoked directly by ItemService; flag the
                 // integration as available rather than registering a listener. This keeps
                 // the com.jojodmo.itembridge classes off the path unless the plugin is here.
-                ChestShop.items().enableItemBridge();
+                items.enableItemBridge();
                 break;
             case ShowItem:
                 MaterialUtil.Show.initialize(plugin);

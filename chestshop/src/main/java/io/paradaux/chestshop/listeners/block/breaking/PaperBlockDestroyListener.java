@@ -1,6 +1,7 @@
 package io.paradaux.chestshop.listeners.block.breaking;
 
 import com.destroystokyo.paper.event.block.BlockDestroyEvent;
+import com.google.inject.Inject;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -13,8 +14,15 @@ import org.bukkit.event.Listener;
  */
 public class PaperBlockDestroyListener implements Listener {
 
+    private final SignBreak signBreak;
+
+    @Inject
+    public PaperBlockDestroyListener(SignBreak signBreak) {
+        this.signBreak = signBreak;
+    }
+
     @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
-    public static void onSign(BlockDestroyEvent event) {
-        SignBreak.handlePhysicsBreak(event.getBlock());
+    public void onSign(BlockDestroyEvent event) {
+        signBreak.handlePhysicsBreak(event.getBlock());
     }
 }

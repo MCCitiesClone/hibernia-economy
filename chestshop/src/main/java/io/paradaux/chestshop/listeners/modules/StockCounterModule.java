@@ -1,5 +1,8 @@
 package io.paradaux.chestshop.listeners.modules;
 
+import com.google.inject.Inject;
+import com.google.inject.Singleton;
+import io.paradaux.chestshop.services.ItemService;
 import io.paradaux.chestshop.utils.InventoryUtil;
 import io.paradaux.chestshop.utils.MaterialUtil;
 import io.paradaux.chestshop.utils.QuantityUtil;
@@ -9,7 +12,6 @@ import io.paradaux.chestshop.events.PreShopCreationEvent;
 import io.paradaux.chestshop.events.TransactionEvent;
 import io.paradaux.chestshop.signs.ChestShopSign;
 import io.paradaux.chestshop.utils.uBlock;
-import org.bukkit.Bukkit;
 import org.bukkit.block.Block;
 import org.bukkit.block.Container;
 import org.bukkit.block.Sign;
@@ -30,11 +32,19 @@ import static io.paradaux.chestshop.signs.ChestShopSign.QUANTITY_LINE;
 /**
  * @author bricefrisco
  */
+@Singleton
 public class StockCounterModule implements Listener {
     private static final String PRICE_LINE_WITH_COUNT = "Q %d : C %d";
 
+    private final ItemService items;
+
+    @Inject
+    public StockCounterModule(ItemService items) {
+        this.items = items;
+    }
+
     // Invoked directly by ShopService#create (was a @HIGH PreShopCreationEvent listener).
-    public static void onPreShopCreation(PreShopCreationEvent event) {
+    public void onPreShopCreation(PreShopCreationEvent event) {
         int quantity;
         try {
             quantity = ChestShopSign.getQuantity(event.getSignLines());
@@ -66,7 +76,7 @@ public class StockCounterModule implements Listener {
     }
 
     @EventHandler
-    public static void onInventoryClose(InventoryCloseEvent event) {
+    public void onInventoryClose(InventoryCloseEvent event) {
         if (event.getInventory().getType() == InventoryType.ENDER_CHEST || event.getInventory().getLocation() == null) {
             return;
         }
@@ -98,7 +108,7 @@ public class StockCounterModule implements Listener {
     }
 
     // Invoked directly by TransactionService#process (was a @HIGH TransactionEvent listener).
-    public static void onTransaction(final TransactionEvent event) {
+    public void onTransaction(final TransactionEvent event) {
         String quantityLine = ChestShopSign.getQuantityLine(event.getSign());
         if (!Properties.USE_STOCK_COUNTER) {
             if (QuantityUtil.quantityLineContainsCounter(quantityLine)) {
@@ -130,7 +140,7 @@ public class StockCounterModule implements Listener {
      * @param chestShopInventory The inventory to search in
      * @param extraItems         The extra items to add in the search
      */
-    public static void updateCounterOnQuantityLine(Sign sign, Inventory chestShopInventory, ItemStack... extraItems) {
+    public void updateCounterOnQuantityLine(Sign sign, Inventory chestShopInventory, ItemStack... extraItems) {
         ItemStack itemTradedByShop = determineItemTradedByShop(sign);
         if (itemTradedByShop == null) {
             return;
@@ -166,14 +176,14 @@ public class StockCounterModule implements Listener {
         sign.update(true);
     }
 
-    public static void updateCounterOnItemMoveEvent(ItemStack toAdd, InventoryHolder destinationHolder) {
+    public void updateCounterOnItemMoveEvent(ItemStack toAdd, InventoryHolder destinationHolder) {
         Block shopBlock = ChestShopSign.getShopBlock(destinationHolder);
         Sign connectedSign = uBlock.getConnectedSign(shopBlock);
 
         updateCounterOnQuantityLine(connectedSign, destinationHolder.getInventory(), toAdd);
     }
 
-    public static void removeCounterFromQuantityLine(Sign sign) {
+    public void removeCounterFromQuantityLine(Sign sign) {
         int quantity;
         try {
             quantity = ChestShopSign.getQuantity(sign);
@@ -185,17 +195,17 @@ public class StockCounterModule implements Listener {
         sign.update(true);
     }
 
-    public static String getQuantityLineWithCounter(int amount, ItemStack itemTransacted, Inventory chestShopInventory) {
+    public String getQuantityLineWithCounter(int amount, ItemStack itemTransacted, Inventory chestShopInventory) {
         int numTransactionItemsInChest = InventoryUtil.getAmount(itemTransacted, chestShopInventory);
 
         return String.format(PRICE_LINE_WITH_COUNT, amount, numTransactionItemsInChest);
     }
 
-    public static ItemStack determineItemTradedByShop(Sign sign) {
+    public ItemStack determineItemTradedByShop(Sign sign) {
         return determineItemTradedByShop(ChestShopSign.getItem(sign));
     }
 
-    public static ItemStack determineItemTradedByShop(String material) {
-        return ChestShop.items().parse(material);
+    public ItemStack determineItemTradedByShop(String material) {
+        return items.parse(material);
     }
 }

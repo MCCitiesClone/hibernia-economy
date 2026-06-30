@@ -1,16 +1,23 @@
 package io.paradaux.chestshop.listeners.block.breaking.attached;
 
+import com.google.inject.Inject;
+import io.paradaux.chestshop.listeners.block.breaking.SignBreak;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockPhysicsEvent;
 
-import static io.paradaux.chestshop.listeners.block.breaking.SignBreak.handlePhysicsBreak;
-
 public class PhysicsBreak implements Listener {
 
+    private final SignBreak signBreak;
+
+    @Inject
+    public PhysicsBreak(SignBreak signBreak) {
+        this.signBreak = signBreak;
+    }
+
     @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
-    public static void onSign(BlockPhysicsEvent event) {
-        handlePhysicsBreak(event.getBlock());
+    public void onSign(BlockPhysicsEvent event) {
+        signBreak.handlePhysicsBreak(event.getBlock());
     }
 }

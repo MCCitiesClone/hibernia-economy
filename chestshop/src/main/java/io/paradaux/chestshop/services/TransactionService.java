@@ -96,12 +96,16 @@ public class TransactionService {
     private final EconomyService economy;
     private final ShopService shops;
     private final AccountService accounts;
+    private final SignBreak signBreak;
+    private final StockCounterModule stockCounter;
 
     @Inject
-    public TransactionService(EconomyService economy, ShopService shops, AccountService accounts) {
+    public TransactionService(EconomyService economy, ShopService shops, AccountService accounts, SignBreak signBreak, StockCounterModule stockCounter) {
         this.economy = economy;
         this.shops = shops;
         this.accounts = accounts;
+        this.signBreak = signBreak;
+        this.stockCounter = stockCounter;
     }
 
     private static final String BUY_LOG = "%1$s bought %2$s for %3$.2f from %4$s at %5$s";
@@ -191,7 +195,7 @@ public class TransactionService {
             return;
         }
         ctx.setCancelled(INVALID_SHOP);
-        SignBreak.sendShopDestroyedEvent(sign, ctx.getClient());
+        signBreak.sendShopDestroyedEvent(sign, ctx.getClient());
         sign.getBlock().breakNaturally();
     }
 
@@ -635,7 +639,7 @@ public class TransactionService {
         execute(event);
 
         // Runs regardless of cancellation (was @HIGH ignoreCancelled=false).
-        StockCounterModule.onTransaction(event);
+        stockCounter.onTransaction(event);
 
         if (event.isCancelled()) {
             return;

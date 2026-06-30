@@ -2,6 +2,7 @@ package io.paradaux.chestshop.listeners.economy.plugins;
 
 import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.listeners.economy.EconomyAdapter;
+import io.paradaux.chestshop.services.EconomyService;
 import io.paradaux.business.api.BusinessApi;
 import io.paradaux.treasury.api.TaxApi;
 import io.paradaux.treasury.model.economy.AccountType;
@@ -34,7 +35,7 @@ public class TreasuryListener extends EconomyAdapter {
      * @return A new TreasuryListener, or null if Treasury is not available
      */
     @Nullable
-    public static TreasuryListener prepareListener() {
+    public static TreasuryListener prepareListener(EconomyService economy) {
         if (Bukkit.getPluginManager().getPlugin("Treasury") == null) {
             return null;
         }
@@ -96,7 +97,7 @@ public class TreasuryListener extends EconomyAdapter {
         // Hand the live ledger handle + SYSTEM account + tax/business APIs to the
         // EconomyService — ChestShop's direct TreasuryApi/BusinessApi boundary that
         // replaced the currency + account event bus.
-        ChestShop.economy().bind(treasury, systemAccountId, taxApi, businessApi);
+        economy.bind(treasury, systemAccountId, taxApi, businessApi);
 
         return new TreasuryListener();
     }
