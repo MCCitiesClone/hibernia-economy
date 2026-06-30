@@ -1,7 +1,6 @@
 package io.paradaux.chestshop.commands;
 
 import io.paradaux.chestshop.AdminBypass;
-import io.paradaux.chestshop.Permission;
 import io.paradaux.chestshop.ChestShop;
 import io.paradaux.hibernia.framework.commander.annotations.Command;
 import io.paradaux.hibernia.framework.commander.annotations.Description;
@@ -18,7 +17,7 @@ import org.bukkit.entity.Player;
  * a route-level one would still execute-gate but would leak into completion.
  */
 @Command({"chestshop", "cs"})
-@io.paradaux.hibernia.framework.commander.annotations.Permission(Permission.Node.ADMIN)
+@io.paradaux.hibernia.framework.commander.annotations.Permission("ChestShop.admin")
 public class BypassCommand implements CommandHandler {
 
     @Route("bypass")

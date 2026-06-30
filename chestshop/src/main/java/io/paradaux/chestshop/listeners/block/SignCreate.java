@@ -15,7 +15,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.SignChangeEvent;
 
-import static io.paradaux.chestshop.Permission.OTHER_NAME_DESTROY;
+import static io.paradaux.chestshop.permission.Permissions.OTHER_NAME_DESTROY;
 
 /**
  * @author Acrobot

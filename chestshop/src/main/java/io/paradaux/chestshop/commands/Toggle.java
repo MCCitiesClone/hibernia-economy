@@ -2,7 +2,6 @@ package io.paradaux.chestshop.commands;
 
 import com.google.inject.Inject;
 import io.paradaux.chestshop.ChestShop;
-import io.paradaux.chestshop.Permission;
 import io.paradaux.chestshop.database.Account;
 import io.paradaux.chestshop.services.AccountService;
 import io.paradaux.hibernia.framework.commander.annotations.Command;
@@ -23,7 +22,7 @@ import java.util.logging.Level;
  * @author KingFaris10
  */
 @Command({"chestshop", "cs"})
-@io.paradaux.hibernia.framework.commander.annotations.Permission(Permission.Node.NOTIFY_TOGGLE)
+@io.paradaux.hibernia.framework.commander.annotations.Permission("ChestShop.toggle")
 public class Toggle implements CommandHandler {
 
     private final AccountService accounts;

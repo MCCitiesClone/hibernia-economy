@@ -1,7 +1,6 @@
 package io.paradaux.chestshop.commands;
 
 import com.google.inject.Inject;
-import io.paradaux.chestshop.Permission;
 import io.paradaux.chestshop.services.ItemService;
 import io.paradaux.chestshop.utils.InventoryUtil;
 import io.paradaux.chestshop.utils.MaterialUtil;
@@ -26,7 +25,7 @@ import java.util.Set;
  * @author Acrobot
  */
 @Command({"chestshop", "cs"})
-@io.paradaux.hibernia.framework.commander.annotations.Permission(Permission.Node.ADMIN)
+@io.paradaux.hibernia.framework.commander.annotations.Permission("ChestShop.admin")
 public class Give implements CommandHandler {
 
     private final ItemService items;

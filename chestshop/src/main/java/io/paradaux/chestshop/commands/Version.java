@@ -2,7 +2,6 @@ package io.paradaux.chestshop.commands;
 
 import com.google.inject.Inject;
 import io.paradaux.chestshop.ChestShop;
-import io.paradaux.chestshop.Permission;
 import io.paradaux.chestshop.services.ItemService;
 import io.paradaux.hibernia.framework.commander.annotations.Command;
 import io.paradaux.hibernia.framework.commander.annotations.Description;
@@ -16,7 +15,7 @@ import org.bukkit.command.CommandSender;
  * @author Acrobot
  */
 @Command({"chestshop", "cs"})
-@io.paradaux.hibernia.framework.commander.annotations.Permission(Permission.Node.ADMIN)
+@io.paradaux.hibernia.framework.commander.annotations.Permission("ChestShop.admin")
 public class Version implements CommandHandler {
 
     private final ItemService items;

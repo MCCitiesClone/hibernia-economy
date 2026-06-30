@@ -5,7 +5,7 @@ import com.google.inject.Singleton;
 import io.paradaux.business.api.BusinessApi;
 import io.paradaux.business.model.RolePermission;
 import io.paradaux.chestshop.ChestShop;
-import io.paradaux.chestshop.Permission;
+import io.paradaux.chestshop.permission.Permissions;
 import io.paradaux.chestshop.configuration.Properties;
 import io.paradaux.chestshop.database.Account;
 import io.paradaux.chestshop.events.TransactionEvent;
@@ -289,7 +289,7 @@ public class EconomyService {
         if (rate.compareTo(BigDecimal.ZERO) <= 0) {
             return BigDecimal.ZERO;
         }
-        if (initiator != null && Permission.has(initiator, Permission.NO_BUY_TAX)) {
+        if (initiator != null && Permissions.has(initiator, Permissions.NO_BUY_TAX)) {
             return BigDecimal.ZERO;
         }
         try {

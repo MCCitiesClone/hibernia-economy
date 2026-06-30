@@ -1,7 +1,6 @@
 package io.paradaux.chestshop.commands;
 
 import com.google.inject.Inject;
-import io.paradaux.chestshop.Permission;
 import io.paradaux.chestshop.listeners.modules.MetricsModule;
 import io.paradaux.chestshop.services.AccountService;
 import io.paradaux.hibernia.framework.commander.annotations.Command;
@@ -16,7 +15,7 @@ import org.bukkit.command.CommandSender;
  * @author Acrobot
  */
 @Command({"chestshop", "cs"})
-@io.paradaux.hibernia.framework.commander.annotations.Permission(Permission.Node.ADMIN)
+@io.paradaux.hibernia.framework.commander.annotations.Permission("ChestShop.admin")
 public class Metrics implements CommandHandler {
 
     private final AccountService accounts;

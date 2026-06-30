@@ -6,7 +6,7 @@ import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.google.inject.Singleton;
 import io.paradaux.chestshop.ChestShop;
-import io.paradaux.chestshop.Permission;
+import io.paradaux.chestshop.permission.Permissions;
 import io.paradaux.chestshop.configuration.Properties;
 import io.paradaux.chestshop.database.Account;
 import io.paradaux.chestshop.mappers.AccountMapper;
@@ -279,12 +279,12 @@ public class AccountService {
         return shortenedName;
     }
 
-    public boolean canUseName(Player player, Permission base, String name) {
+    public boolean canUseName(Player player, String base, String name) {
         if (ChestShopSign.isAdminShop(name)) {
-            if (Permission.has(player, Permission.ADMIN_SHOP)) {
+            if (Permissions.has(player, Permissions.ADMIN_SHOP)) {
                 return true;
             } else {
-                ChestShop.logDebug(player.getName() + " cannot use the name " + name + " as it's an admin shop and they don't have the permission " + Permission.ADMIN_SHOP);
+                ChestShop.logDebug(player.getName() + " cannot use the name " + name + " as it's an admin shop and they don't have the permission " + Permissions.ADMIN_SHOP);
                 return false;
             }
         }
@@ -294,11 +294,11 @@ public class AccountService {
         // For business accounts, skip permission-based shortcuts — access is controlled
         // solely by Treasury/Business via canAccess(). Only ChestShop admins bypass this.
         if (isBusinessAccount) {
-            if (Permission.has(player, Permission.ADMIN)) {
+            if (Permissions.has(player, Permissions.ADMIN)) {
                 return true;
             }
         } else {
-            if (Permission.otherName(player, base, name)) {
+            if (Permissions.otherName(player, base, name)) {
                 return true;
             }
         }
@@ -313,7 +313,7 @@ public class AccountService {
             ChestShop.logDebug(player.getName() + " cannot use the name " + name + " for a shop as no account with that name exists");
             return false;
         }
-        if (!isBusinessAccount && !account.getName().equalsIgnoreCase(name) && Permission.otherName(player, base, account.getName())) {
+        if (!isBusinessAccount && !account.getName().equalsIgnoreCase(name) && Permissions.otherName(player, base, account.getName())) {
             return true;
         }
         return canAccess(player, account);

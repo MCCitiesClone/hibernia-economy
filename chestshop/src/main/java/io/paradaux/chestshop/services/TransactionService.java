@@ -6,7 +6,7 @@ import com.google.common.collect.Table;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import io.paradaux.chestshop.ChestShop;
-import io.paradaux.chestshop.Permission;
+import io.paradaux.chestshop.permission.Permissions;
 import io.paradaux.chestshop.configuration.Properties;
 import io.paradaux.chestshop.database.Account;
 import io.paradaux.chestshop.economy.Economy;
@@ -263,7 +263,7 @@ public class TransactionService {
         boolean buy = ctx.getTransactionType() == BUY;
 
         String itemLine = ChestShopSign.getItem(ctx.getSign());
-        if (itemLine.contains("#") && Permission.hasPermissionSetFalse(client, (buy ? Permission.BUY_ID : Permission.SELL_ID) + itemLine)) {
+        if (itemLine.contains("#") && Permissions.hasPermissionSetFalse(client, (buy ? Permissions.BUY_ID : Permissions.SELL_ID) + itemLine)) {
             ctx.setCancelled(CLIENT_DOES_NOT_HAVE_PERMISSION);
             return;
         }
@@ -271,10 +271,10 @@ public class TransactionService {
         for (ItemStack stock : ctx.getStock()) {
             String matID = stock.getType().toString().toLowerCase(Locale.ROOT);
             boolean hasPerm = buy
-                    ? Permission.has(client, Permission.BUY) && !Permission.hasPermissionSetFalse(client, Permission.BUY_ID + matID)
-                            || Permission.has(client, Permission.BUY_ID + matID)
-                    : Permission.has(client, Permission.SELL) && !Permission.hasPermissionSetFalse(client, Permission.SELL_ID + matID)
-                            || Permission.has(client, Permission.SELL_ID + matID);
+                    ? Permissions.has(client, Permissions.BUY) && !Permissions.hasPermissionSetFalse(client, Permissions.BUY_ID + matID)
+                            || Permissions.has(client, Permissions.BUY_ID + matID)
+                    : Permissions.has(client, Permissions.SELL) && !Permissions.hasPermissionSetFalse(client, Permissions.SELL_ID + matID)
+                            || Permissions.has(client, Permissions.SELL_ID + matID);
             if (!hasPerm) {
                 ctx.setCancelled(CLIENT_DOES_NOT_HAVE_PERMISSION);
                 return;

@@ -8,7 +8,7 @@ import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.configuration.Properties;
 import io.paradaux.chestshop.economy.AdminInventory;
 import io.paradaux.chestshop.database.Account;
-import io.paradaux.chestshop.Permission;
+import io.paradaux.chestshop.permission.Permissions;
 import io.paradaux.chestshop.utils.uBlock;
 import org.bukkit.Bukkit;
 import org.bukkit.block.Block;
@@ -163,10 +163,10 @@ public class ChestShopSign {
     }
 
     public static boolean canAccess(Player player, Sign sign) {
-        return hasPermission(player, Permission.OTHER_NAME_ACCESS, sign);
+        return hasPermission(player, Permissions.OTHER_NAME_ACCESS, sign);
     }
 
-    public static boolean hasPermission(Player player, Permission base, Sign sign) {
+    public static boolean hasPermission(Player player, String base, Sign sign) {
         if (player == null) return false;
         if (sign == null) return true;
 

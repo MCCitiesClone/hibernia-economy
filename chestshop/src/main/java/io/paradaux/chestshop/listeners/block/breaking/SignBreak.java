@@ -30,7 +30,7 @@ import java.util.List;
 import static io.paradaux.chestshop.utils.ImplementationAdapter.getState;
 import static io.paradaux.chestshop.utils.BlockUtil.getAttachedBlock;
 import static io.paradaux.chestshop.utils.BlockUtil.isSign;
-import static io.paradaux.chestshop.Permission.OTHER_NAME_DESTROY;
+import static io.paradaux.chestshop.permission.Permissions.OTHER_NAME_DESTROY;
 
 /**
  * @author Acrobot

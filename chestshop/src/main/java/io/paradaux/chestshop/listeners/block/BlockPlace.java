@@ -1,7 +1,7 @@
 package io.paradaux.chestshop.listeners.block;
 
 import io.paradaux.chestshop.ChestShop;
-import io.paradaux.chestshop.Permission;
+import io.paradaux.chestshop.permission.Permissions;
 import io.paradaux.chestshop.Security;
 import io.paradaux.chestshop.signs.ChestShopSign;
 import io.paradaux.chestshop.utils.uBlock;
@@ -32,7 +32,7 @@ public class BlockPlace implements Listener {
 
         Player player = event.getPlayer();
 
-        if (Permission.has(player, Permission.ADMIN)) {
+        if (Permissions.has(player, Permissions.ADMIN)) {
             return;
         }
 

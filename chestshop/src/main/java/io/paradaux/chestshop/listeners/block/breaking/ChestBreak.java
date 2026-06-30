@@ -2,7 +2,7 @@ package io.paradaux.chestshop.listeners.block.breaking;
 
 import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.configuration.Properties;
-import io.paradaux.chestshop.Permission;
+import io.paradaux.chestshop.permission.Permissions;
 import io.paradaux.chestshop.signs.ChestShopSign;
 import io.paradaux.chestshop.utils.uBlock;
 import org.bukkit.block.Block;
@@ -54,7 +54,7 @@ public class ChestBreak implements Listener {
 
         Sign shopSign = uBlock.getConnectedSign(block);
         if (breaker != null) {
-            return  ChestShopSign.hasPermission(breaker, Permission.OTHER_NAME_DESTROY, shopSign);
+            return  ChestShopSign.hasPermission(breaker, Permissions.OTHER_NAME_DESTROY, shopSign);
         }
         return shopSign == null;
     }

@@ -1,7 +1,6 @@
 package io.paradaux.chestshop.commands;
 
 import com.google.inject.Inject;
-import io.paradaux.chestshop.Permission;
 import io.paradaux.chestshop.services.InfoService;
 import io.paradaux.chestshop.signs.ChestShopSign;
 import io.paradaux.chestshop.utils.uBlock;
@@ -20,7 +19,7 @@ import org.bukkit.entity.Player;
  * @author Phoenix616
  */
 @Command({"shopinfo", "sinfo", "shop"})
-@io.paradaux.hibernia.framework.commander.annotations.Permission(Permission.Node.SHOPINFO)
+@io.paradaux.hibernia.framework.commander.annotations.Permission("ChestShop.shopinfo")
 public class ShopInfo implements CommandHandler {
 
     private final InfoService info;

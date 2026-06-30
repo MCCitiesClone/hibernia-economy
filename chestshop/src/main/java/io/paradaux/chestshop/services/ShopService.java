@@ -3,7 +3,7 @@ package io.paradaux.chestshop.services;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import io.paradaux.chestshop.ChestShop;
-import io.paradaux.chestshop.Permission;
+import io.paradaux.chestshop.permission.Permissions;
 import io.paradaux.chestshop.configuration.Properties;
 import io.paradaux.chestshop.database.Account;
 import io.paradaux.chestshop.economy.Economy;
@@ -38,7 +38,7 @@ import java.math.BigDecimal;
 import java.util.Locale;
 import java.util.logging.Level;
 
-import static io.paradaux.chestshop.Permission.NOFEE;
+import static io.paradaux.chestshop.permission.Permissions.NOFEE;
 import static io.paradaux.chestshop.signs.ChestShopSign.AUTOFILL_CODE;
 
 /**
@@ -231,7 +231,7 @@ public class ShopService {
             return;
         }
         Player player = ctx.getPlayer();
-        if (Permission.has(player, Permission.ADMIN)) {
+        if (Permissions.has(player, Permissions.ADMIN)) {
             return;
         }
         if (!Security.canAccess(player, connectedContainer.getBlock())) {
@@ -244,7 +244,7 @@ public class ShopService {
         BigDecimal shopCreationPrice = Properties.SHOP_CREATION_PRICE;
         if (shopCreationPrice.compareTo(BigDecimal.ZERO) == 0
                 || ChestShopSign.isAdminShop(ctx.getSignLines())
-                || Permission.has(ctx.getPlayer(), NOFEE)) {
+                || Permissions.has(ctx.getPlayer(), NOFEE)) {
             return;
         }
         if (!economy.hasFunds(ctx.getPlayer().getUniqueId(), shopCreationPrice)) {
@@ -296,7 +296,7 @@ public class ShopService {
         Player player = ctx.getPlayer();
 
         if (ctx.getOwnerAccount() != null
-                && !accounts.canUseName(player, Permission.OTHER_NAME_CREATE, ctx.getOwnerAccount().getShortName())) {
+                && !accounts.canUseName(player, Permissions.OTHER_NAME_CREATE, ctx.getOwnerAccount().getShortName())) {
             ctx.setSignLine(ChestShopSign.NAME_LINE, "");
             ctx.setOutcome(CreationOutcome.NO_PERMISSION);
             return;
@@ -307,8 +307,8 @@ public class ShopService {
         ItemStack item = items.parse(itemLine);
 
         if (item == null) {
-            if (PriceUtil.hasBuyPrice(priceLine) && !Permission.has(player, Permission.SHOP_CREATION_BUY)
-                    || PriceUtil.hasSellPrice(priceLine) && !Permission.has(player, Permission.SHOP_CREATION_SELL)) {
+            if (PriceUtil.hasBuyPrice(priceLine) && !Permissions.has(player, Permissions.SHOP_CREATION_BUY)
+                    || PriceUtil.hasSellPrice(priceLine) && !Permissions.has(player, Permissions.SHOP_CREATION_SELL)) {
                 ctx.setOutcome(CreationOutcome.NO_PERMISSION);
             }
             return;
@@ -316,27 +316,27 @@ public class ShopService {
 
         String matID = item.getType().toString().toLowerCase(Locale.ROOT);
         String[] parts = itemLine.split("#", 2);
-        if (parts.length == 2 && Permission.hasPermissionSetFalse(player, Permission.SHOP_CREATION_ID + matID + "#" + parts[1])) {
+        if (parts.length == 2 && Permissions.hasPermissionSetFalse(player, Permissions.SHOP_CREATION_ID + matID + "#" + parts[1])) {
             ctx.setOutcome(CreationOutcome.NO_PERMISSION);
             return;
         }
 
         if (PriceUtil.hasBuyPrice(priceLine)) {
-            if (!canCreateForItem(player, Permission.SHOP_CREATION_BUY_ID + matID, matID, Permission.SHOP_CREATION_BUY)) {
+            if (!canCreateForItem(player, Permissions.SHOP_CREATION_BUY_ID + matID, matID, Permissions.SHOP_CREATION_BUY)) {
                 ctx.setOutcome(CreationOutcome.NO_PERMISSION);
             }
         } else if (PriceUtil.hasSellPrice(priceLine)) {
-            if (!canCreateForItem(player, Permission.SHOP_CREATION_SELL_ID + matID, matID, Permission.SHOP_CREATION_SELL)) {
+            if (!canCreateForItem(player, Permissions.SHOP_CREATION_SELL_ID + matID, matID, Permissions.SHOP_CREATION_SELL)) {
                 ctx.setOutcome(CreationOutcome.NO_PERMISSION);
             }
         }
     }
 
     /** Shared buy/sell creation-permission test for a specific material. */
-    private static boolean canCreateForItem(Player player, String perItemSideNode, String matID, Permission sideNode) {
-        return Permission.has(player, perItemSideNode)
-                || Permission.has(player, Permission.SHOP_CREATION)
-                || Permission.has(player, Permission.SHOP_CREATION_ID + matID) && Permission.has(player, sideNode);
+    private static boolean canCreateForItem(Player player, String perItemSideNode, String matID, String sideNode) {
+        return Permissions.has(player, perItemSideNode)
+                || Permissions.has(player, Permissions.SHOP_CREATION)
+                || Permissions.has(player, Permissions.SHOP_CREATION_ID + matID) && Permissions.has(player, sideNode);
     }
 
     /** Charge the creation fee (the former {@code ignoreCancelled=true} CreationFeeGetter step). */
@@ -361,7 +361,7 @@ public class ShopService {
         if (account == null || !account.getShortName().equalsIgnoreCase(name)) {
             account = null;
             try {
-                if (name.isEmpty() || !accounts.canUseName(player, Permission.OTHER_NAME_CREATE, name)) {
+                if (name.isEmpty() || !accounts.canUseName(player, Permissions.OTHER_NAME_CREATE, name)) {
                     account = accounts.getOrCreateAccount(player);
                 } else {
                     account = accounts.resolveAccount(name);
@@ -411,7 +411,7 @@ public class ShopService {
             failName(ctx);
             return;
         }
-        if (!Permission.has(player, Permission.ADMIN) && !accounts.canAccess(player, account)) {
+        if (!Permissions.has(player, Permissions.ADMIN) && !accounts.canAccess(player, account)) {
             ChestShop.message().send(player, "chestshop.BUSINESS_NO_CHESTSHOP_PERMISSION");
             failName(ctx);
             return;
@@ -573,7 +573,7 @@ public class ShopService {
 
         if (price.compareTo(BigDecimal.ZERO) == 0
                 || ChestShopSign.isAdminShop(signLines)
-                || Permission.has(player, NOFEE)) {
+                || Permissions.has(player, NOFEE)) {
             return true;
         }
 
@@ -595,7 +595,7 @@ public class ShopService {
     public void refundOnRemoval(Player destroyer, Sign sign) {
         BigDecimal refund = Properties.SHOP_REFUND_PRICE;
 
-        if (destroyer == null || Permission.has(destroyer, NOFEE) || refund.compareTo(BigDecimal.ZERO) == 0) {
+        if (destroyer == null || Permissions.has(destroyer, NOFEE) || refund.compareTo(BigDecimal.ZERO) == 0) {
             return;
         }
 

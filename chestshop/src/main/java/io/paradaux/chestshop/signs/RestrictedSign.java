@@ -3,7 +3,7 @@ package io.paradaux.chestshop.signs;
 import io.paradaux.chestshop.utils.BlockUtil;
 import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.events.PreTransactionEvent;
-import io.paradaux.chestshop.Permission;
+import io.paradaux.chestshop.permission.Permissions;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
@@ -17,7 +17,7 @@ import org.bukkit.event.block.SignChangeEvent;
 
 import static io.paradaux.chestshop.utils.ImplementationAdapter.getState;
 import static io.paradaux.chestshop.events.PreTransactionEvent.TransactionOutcome.SHOP_IS_RESTRICTED;
-import static io.paradaux.chestshop.Permission.ADMIN;
+import static io.paradaux.chestshop.permission.Permissions.ADMIN;
 
 /**
  * @author Acrobot
@@ -52,14 +52,14 @@ public class RestrictedSign implements Listener {
             }
             Block connectedSign = event.getBlock().getRelative(BlockFace.DOWN);
 
-            if (!Permission.has(player, ADMIN) || !ChestShopSign.isValid(connectedSign)) {
+            if (!Permissions.has(player, ADMIN) || !ChestShopSign.isValid(connectedSign)) {
                 dropSignAndCancelEvent(event);
                 return;
             }
 
             Sign sign = (Sign) getState(connectedSign, false);
 
-            if (!ChestShopSign.hasPermission(player, Permission.OTHER_NAME_DESTROY, sign)) {
+            if (!ChestShopSign.hasPermission(player, Permissions.OTHER_NAME_DESTROY, sign)) {
                 dropSignAndCancelEvent(event);
                 return;
             }
@@ -134,7 +134,7 @@ public class RestrictedSign implements Listener {
 
     public static boolean canDestroy(Player player, Sign sign) {
         Sign shopSign = getAssociatedSign(sign);
-        return ChestShopSign.hasPermission(player, Permission.OTHER_NAME_DESTROY, shopSign);
+        return ChestShopSign.hasPermission(player, Permissions.OTHER_NAME_DESTROY, shopSign);
     }
 
     public static Sign getAssociatedSign(Sign restricted) {
@@ -143,12 +143,12 @@ public class RestrictedSign implements Listener {
     }
 
     public static boolean hasPermission(Player p, String[] lines) {
-        if (Permission.has(p, ADMIN)) {
+        if (Permissions.has(p, ADMIN)) {
             return true;
         }
 
         for (String line : lines) {
-            if (Permission.has(p, Permission.GROUP + line)) {
+            if (Permissions.has(p, Permissions.GROUP + line)) {
                 return true;
             }
         }

@@ -7,7 +7,7 @@ import io.paradaux.chestshop.economy.AdminInventory;
 import io.paradaux.chestshop.database.Account;
 import io.paradaux.chestshop.events.PreTransactionEvent;
 import io.paradaux.chestshop.events.TransactionEvent;
-import io.paradaux.chestshop.Permission;
+import io.paradaux.chestshop.permission.Permissions;
 import io.paradaux.chestshop.Security;
 import io.paradaux.chestshop.signs.ChestShopSign;
 import io.paradaux.chestshop.utils.ItemUtil;
@@ -41,7 +41,7 @@ import static io.paradaux.chestshop.utils.BlockUtil.isSign;
 import static io.paradaux.chestshop.events.TransactionEvent.TransactionType;
 import static io.paradaux.chestshop.events.TransactionEvent.TransactionType.BUY;
 import static io.paradaux.chestshop.events.TransactionEvent.TransactionType.SELL;
-import static io.paradaux.chestshop.Permission.OTHER_NAME_CREATE;
+import static io.paradaux.chestshop.permission.Permissions.OTHER_NAME_CREATE;
 import static io.paradaux.chestshop.signs.ChestShopSign.*;
 import static org.bukkit.event.block.Action.LEFT_CLICK_BLOCK;
 import static org.bukkit.event.block.Action.RIGHT_CLICK_BLOCK;
@@ -73,7 +73,7 @@ public class PlayerInteract implements Listener {
             if (sign != null) {
 
                 if (!Security.canView(player, block, Properties.TURN_OFF_DEFAULT_PROTECTION_WHEN_PROTECTED_EXTERNALLY)) {
-                    if (Permission.has(player, Permission.SHOPINFO)) {
+                    if (Permissions.has(player, Permissions.SHOPINFO)) {
                         ChestShop.info().showShopInfo(player, sign);
                         event.setCancelled(true);
                     } else if (!Properties.TURN_OFF_DEFAULT_PROTECTION_WHEN_PROTECTED_EXTERNALLY) {
@@ -304,7 +304,7 @@ public class PlayerInteract implements Listener {
      */
     @Deprecated
     public static boolean canOpenOtherShops(Player player) {
-        return Permission.has(player, Permission.OTHER_NAME_ACCESS + ".*");
+        return Permissions.has(player, Permissions.OTHER_NAME_ACCESS + ".*");
     }
 
     private static void showChestGUI(Player player, Block signBlock, Sign sign) {

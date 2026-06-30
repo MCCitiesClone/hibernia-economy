@@ -1,7 +1,6 @@
 package io.paradaux.chestshop.commands;
 
 import com.google.inject.Inject;
-import io.paradaux.chestshop.Permission;
 import io.paradaux.chestshop.utils.MaterialUtil;
 import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.services.InfoService;
@@ -27,7 +26,7 @@ import java.util.logging.Level;
  * @author Acrobot
  */
 @Command({"iteminfo", "iinfo"})
-@io.paradaux.hibernia.framework.commander.annotations.Permission(Permission.Node.ITEMINFO)
+@io.paradaux.hibernia.framework.commander.annotations.Permission("ChestShop.iteminfo")
 public class ItemInfo implements CommandHandler {
 
     private final InfoService info;

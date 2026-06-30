@@ -1,7 +1,7 @@
 package io.paradaux.chestshop.plugins;
 
 import io.paradaux.chestshop.events.protection.ProtectionCheckEvent;
-import io.paradaux.chestshop.Permission;
+import io.paradaux.chestshop.permission.Permissions;
 import io.paradaux.chestshop.signs.ChestShopSign;
 import io.paradaux.chestshop.utils.uBlock;
 import org.bukkit.block.Block;
@@ -68,6 +68,6 @@ public class ChestShop {
     }
 
     private static boolean isShopMember(Player player, Sign sign) {
-        return ChestShopSign.hasPermission(player, Permission.OTHER_NAME_ACCESS, sign);
+        return ChestShopSign.hasPermission(player, Permissions.OTHER_NAME_ACCESS, sign);
     }
 }
