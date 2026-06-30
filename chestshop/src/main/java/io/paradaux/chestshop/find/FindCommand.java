@@ -1,6 +1,7 @@
 package io.paradaux.chestshop.find;
 
 import com.google.inject.Inject;
+import io.paradaux.chestshop.find.preview.PreviewHandler;
 import io.paradaux.chestshop.market.MarketHook;
 import io.paradaux.chestshop.market.MarketResyncService;
 import io.paradaux.chestshop.permission.Permissions;
@@ -39,16 +40,19 @@ public final class FindCommand implements CommandHandler {
     private final ItemCodeService itemCodes;
     private final ChestShopSign chestShopSign;
     private final MarketResyncService resync;
+    private final PreviewHandler previews;
     private final Message message;
 
     @Inject
     public FindCommand(DialogManager dialogs, ItemService items, ItemCodeService itemCodes,
-                       ChestShopSign chestShopSign, MarketResyncService resync, Message message) {
+                       ChestShopSign chestShopSign, MarketResyncService resync,
+                       PreviewHandler previews, Message message) {
         this.dialogs = dialogs;
         this.items = items;
         this.itemCodes = itemCodes;
         this.chestShopSign = chestShopSign;
         this.resync = resync;
+        this.previews = previews;
         this.message = message;
     }
 
@@ -100,6 +104,56 @@ public final class FindCommand implements CommandHandler {
         MarketHook.market().setShopVisibility(l.getWorld().getName(),
                 l.getBlockX(), l.getBlockY(), l.getBlockZ(), visible);
         message.send(player, "find.visibility-set", "value", visible ? "shown" : "hidden");
+    }
+
+    /**
+     * {@code /find toggle hologram <true|false>} — show or hide the floating item
+     * preview above the shop the player is looking at. Owner (or admin) only.
+     */
+    @Route("toggle hologram <visible>")
+    public void toggleHologram(@Sender CommandSender sender, @Arg("visible") boolean visible) {
+        if (!(sender instanceof Player player)) {
+            return;
+        }
+        Sign sign = targetShopSign(player);
+        if (sign == null) {
+            return;
+        }
+        if (!MarketHook.enabled()) {
+            message.send(player, "find.no-search");
+            return;
+        }
+        Location l = sign.getLocation();
+        String world = l.getWorld().getName();
+        MarketHook.market().setShopHologram(world, l.getBlockX(), l.getBlockY(), l.getBlockZ(), visible);
+        if (visible) {
+            String itemCode = ChestShopSign.getItem(sign);
+            ItemStack item = itemCode != null ? itemCodes.decode(itemCode) : null;
+            if (item != null) {
+                previews.render(world, l.getBlockX(), l.getBlockY(), l.getBlockZ(), item);
+            }
+        } else {
+            previews.destroy(world, l.getBlockX(), l.getBlockY(), l.getBlockZ());
+        }
+        message.send(player, "find.hologram-set", "value", visible ? "shown" : "hidden");
+    }
+
+    /**
+     * {@code /find toggle preview <true|false>} — whether this player sees shop
+     * holograms at all. Persisted per-player.
+     */
+    @Route("toggle preview <visible>")
+    public void togglePreview(@Sender CommandSender sender, @Arg("visible") boolean visible) {
+        if (!(sender instanceof Player player)) {
+            return;
+        }
+        if (!MarketHook.enabled()) {
+            message.send(player, "find.no-search");
+            return;
+        }
+        MarketHook.market().setPreviewPreference(player.getUniqueId(), visible);
+        previews.applyPreference(player, visible);
+        message.send(player, "find.preview-set", "value", visible ? "shown" : "hidden");
     }
 
     /**

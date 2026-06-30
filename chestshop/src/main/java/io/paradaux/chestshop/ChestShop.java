@@ -163,7 +163,8 @@ public class ChestShop extends JavaPlugin {
                                 GarbageTextListener.class,
                                 RestrictedSign.class,
                                 StockCounterModule.class,
-                                ItemMoveListener.class)
+                                ItemMoveListener.class,
+                                io.paradaux.chestshop.find.preview.PreviewListener.class)
                         .build();
         this.injector = com.google.inject.Guice.createInjector(hibernia,
                 new io.paradaux.chestshop.guice.ChestShopModule(),
