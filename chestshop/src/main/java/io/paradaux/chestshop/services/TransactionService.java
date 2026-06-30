@@ -9,7 +9,6 @@ import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.permission.Permissions;
 import io.paradaux.chestshop.configuration.Properties;
 import io.paradaux.chestshop.database.Account;
-import io.paradaux.chestshop.economy.Economy;
 import io.paradaux.chestshop.events.PreTransactionEvent;
 import io.paradaux.chestshop.events.ShopDestroyedEvent;
 import io.paradaux.chestshop.events.TransactionEvent;
@@ -376,7 +375,7 @@ public class TransactionService {
         UUID owner = ctx.getOwnerAccount().getUuid();
         BigDecimal pricePerItem = ctx.getExactPrice().divide(BigDecimal.valueOf(itemCount), MathContext.DECIMAL128);
 
-        if (Economy.isOwnerEconomicallyActive(ctx.getOwnerInventory())
+        if (economy.isOwnerEconomicallyActive(ctx.getOwnerInventory())
                 && !economy.hasFunds(owner, ctx.getExactPrice())) {
             BigDecimal walletMoney = economy.getBalance(owner);
             int amountAffordable = getAmountOfAffordableItems(walletMoney, pricePerItem);
@@ -588,7 +587,7 @@ public class TransactionService {
     private void sendShopLocationMessage(PreTransactionEvent ctx, String key, String actorPlaceholder) {
         Location loc = ctx.getSign().getLocation();
         sendMessageToOwner(ctx.getOwnerAccount(), key, new String[]{
-                "price", Economy.formatBalance(ctx.getExactPrice()),
+                "price", economy.format(ctx.getExactPrice()),
                 actorPlaceholder, ctx.getClient().getName(),
                 "world", loc.getWorld() != null ? loc.getWorld().getName() : "?", // ADT-140: world may be unloaded
                 "x", String.valueOf(loc.getBlockX()),
@@ -845,7 +844,7 @@ public class TransactionService {
     private void sendTradeMessage(Player player, String playerName, String key, TransactionEvent event, String... replacements) {
         Location loc = event.getSign().getLocation();
         Map<String, String> replacementMap = new LinkedHashMap<>();
-        replacementMap.put("price", Economy.formatBalance(event.getExactPrice()));
+        replacementMap.put("price", economy.format(event.getExactPrice()));
         replacementMap.put("world", loc.getWorld() != null ? loc.getWorld().getName() : "?"); // ADT-140: world may be unloaded
         replacementMap.put("x", String.valueOf(loc.getBlockX()));
         replacementMap.put("y", String.valueOf(loc.getBlockY()));

@@ -21,6 +21,7 @@ import org.bukkit.ChatColor;
 import org.bukkit.World;
 import org.bukkit.block.Sign;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
 import javax.annotation.Nullable;
@@ -88,6 +89,15 @@ public class EconomyService {
             ChestShop.getBukkitLogger().log(Level.WARNING, "Treasury: Could not format amount " + amount, e);
             return amount.toPlainString();
         }
+    }
+
+    /**
+     * Whether a shop with this owner inventory actually moves money: a normal (non-admin)
+     * shop always does; an admin shop only when a server-economy account is configured.
+     * (Was the static {@code Economy.isOwnerEconomicallyActive}.)
+     */
+    public boolean isOwnerEconomicallyActive(Inventory inventory) {
+        return !ChestShopSign.isAdminShop(inventory) || accounts.getServerEconomyAccount() != null;
     }
 
     /**

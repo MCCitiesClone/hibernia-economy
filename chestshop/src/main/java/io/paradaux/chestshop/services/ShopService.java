@@ -6,7 +6,6 @@ import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.permission.Permissions;
 import io.paradaux.chestshop.configuration.Properties;
 import io.paradaux.chestshop.database.Account;
-import io.paradaux.chestshop.economy.Economy;
 import io.paradaux.chestshop.events.PreShopCreationEvent;
 import io.paradaux.chestshop.events.ShopCreatedEvent;
 import io.paradaux.chestshop.events.ShopDestroyedEvent;
@@ -582,7 +581,7 @@ public class ShopService {
         }
 
         creditServerEconomy(price, player.getWorld());
-        ChestShop.message().send(player, "chestshop.SHOP_FEE_PAID", "amount", Economy.formatBalance(price));
+        ChestShop.message().send(player, "chestshop.SHOP_FEE_PAID", "amount", economy.format(price));
         return true;
     }
 
@@ -611,7 +610,7 @@ public class ShopService {
         economy.deposit(account.getUuid(), refund, sign.getWorld());
 
         debitServerEconomy(refund, sign.getWorld());
-        ChestShop.message().send(destroyer, "chestshop.SHOP_REFUNDED", "amount", Economy.formatBalance(refund));
+        ChestShop.message().send(destroyer, "chestshop.SHOP_REFUNDED", "amount", economy.format(refund));
     }
 
     /** Mirror a collected creation fee into the server-economy account, if one is configured. */
