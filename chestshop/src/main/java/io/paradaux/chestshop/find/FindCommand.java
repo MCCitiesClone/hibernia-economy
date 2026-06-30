@@ -2,6 +2,7 @@ package io.paradaux.chestshop.find;
 
 import com.google.inject.Inject;
 import io.paradaux.chestshop.market.MarketHook;
+import io.paradaux.chestshop.market.MarketResyncService;
 import io.paradaux.chestshop.permission.Permissions;
 import io.paradaux.chestshop.services.ItemCodeService;
 import io.paradaux.chestshop.services.ItemService;
@@ -37,15 +38,17 @@ public final class FindCommand implements CommandHandler {
     private final ItemService items;
     private final ItemCodeService itemCodes;
     private final ChestShopSign chestShopSign;
+    private final MarketResyncService resync;
     private final Message message;
 
     @Inject
     public FindCommand(DialogManager dialogs, ItemService items, ItemCodeService itemCodes,
-                       ChestShopSign chestShopSign, Message message) {
+                       ChestShopSign chestShopSign, MarketResyncService resync, Message message) {
         this.dialogs = dialogs;
         this.items = items;
         this.itemCodes = itemCodes;
         this.chestShopSign = chestShopSign;
+        this.resync = resync;
         this.message = message;
     }
 
@@ -97,6 +100,22 @@ public final class FindCommand implements CommandHandler {
         MarketHook.market().setShopVisibility(l.getWorld().getName(),
                 l.getBlockX(), l.getBlockY(), l.getBlockZ(), visible);
         message.send(player, "find.visibility-set", "value", visible ? "shown" : "hidden");
+    }
+
+    /**
+     * {@code /find resync <chunksPerTick>} — rebuild the shop registry from the
+     * loaded world (discovery + stock refresh + dead-shop cleanup). Admin only.
+     */
+    @Route("resync <chunks>")
+    public void resync(@Sender CommandSender sender, @Arg("chunks") int chunks) {
+        if (!(sender instanceof Player player)) {
+            return;
+        }
+        if (!player.hasPermission(Permissions.ADMIN)) {
+            message.send(player, "find.no-permission");
+            return;
+        }
+        resync.resync(player, chunks);
     }
 
     /** The valid, accessible ChestShop sign the player is looking at, or null (with a message sent). */
