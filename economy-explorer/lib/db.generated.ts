@@ -101,6 +101,11 @@ export interface ApiRateLimitOverride {
   updatedByBin: Generated<Buffer | null>;
 }
 
+export interface ChestshopPreviewPreference {
+  playerUuidBin: Buffer;
+  visible: Generated<number>;
+}
+
 export interface ChestshopSale {
   customerUuidBin: Buffer;
   direction: "BUY" | "SELL";
@@ -134,6 +139,8 @@ export interface ChestshopShop {
   buyPrice: Generated<Decimal | null>;
   createdAt: Generated<Date>;
   currentStock: Generated<number | null>;
+  estimatedCapacity: Generated<number | null>;
+  hologram: Generated<number>;
   isAdminShop: Generated<number>;
   itemCustom: Generated<number>;
   itemData: Generated<string | null>;
@@ -151,7 +158,9 @@ export interface ChestshopShop {
   signY: number;
   signZ: number;
   stockAt: Generated<Date | null>;
+  visible: Generated<number>;
   world: string;
+  worldUuid: Generated<Buffer | null>;
 }
 
 export interface EconomyPlayers {
@@ -429,6 +438,7 @@ export interface DB {
   accounts: Accounts;
   apiKeys: ApiKeys;
   apiRateLimitOverride: ApiRateLimitOverride;
+  chestshopPreviewPreference: ChestshopPreviewPreference;
   chestshopSale: ChestshopSale;
   chestshopShop: ChestshopShop;
   economyPlayers: EconomyPlayers;
