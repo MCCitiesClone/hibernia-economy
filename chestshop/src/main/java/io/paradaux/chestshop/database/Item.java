@@ -1,24 +1,20 @@
 package io.paradaux.chestshop.database;
 
-import com.j256.ormlite.field.DatabaseField;
-import com.j256.ormlite.table.DatabaseTable;
-
 /**
- * Mapping for enchanted items
+ * A row of the {@code items} table ({@code items.db}): an auto-increment id ↔ the
+ * serialized (Base64) item blob a shop references by a short code on its sign. A plain
+ * POJO mapped by {@link io.paradaux.chestshop.mappers.ItemCodeMapper} (MyBatis); the
+ * {@code id} is populated from the generated key on insert (PAR-282).
+ *
  * @author Andrzej Pomirski
  */
-@DatabaseTable(tableName = "items")
-@DatabaseFileName("items.db")
 public class Item {
 
-    @DatabaseField(canBeNull = false, generatedId = true)
     private int id;
-
-    @DatabaseField(columnName = "code", canBeNull = false, index = true)
     private String base64ItemCode;
 
     public Item() {
-        //empty constructor
+        // empty constructor, needed for MyBatis result mapping
     }
 
     public Item(String base64ItemCode) {
@@ -27,6 +23,11 @@ public class Item {
 
     public int getId() {
         return id;
+    }
+
+    /** Set by MyBatis from the generated key on insert. */
+    public void setId(int id) {
+        this.id = id;
     }
 
     public String getBase64ItemCode() {

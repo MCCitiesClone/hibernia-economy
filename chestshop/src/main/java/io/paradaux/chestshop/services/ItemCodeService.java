@@ -3,7 +3,8 @@ package io.paradaux.chestshop.services;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import io.paradaux.chestshop.ChestShop;
-import io.paradaux.chestshop.dao.ItemCodeRepository;
+import io.paradaux.chestshop.database.Item;
+import io.paradaux.chestshop.mappers.ItemCodeMapper;
 import io.paradaux.chestshop.utils.encoding.Base62;
 import io.paradaux.chestshop.utils.encoding.Base64;
 import org.bukkit.Material;
@@ -21,30 +22,28 @@ import org.yaml.snakeyaml.nodes.Tag;
 import java.io.File;
 import java.io.IOException;
 import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 
 /**
  * Owns the item-code <em>logic</em>: serialising an {@link ItemStack} to/from the
  * short Base62 code shops put on signs, the find-or-create that keeps the store
  * deduplicated, and the one-time re-serialisation when the server's item data
- * version changes. All persistence is delegated to {@link ItemCodeRepository}.
+ * version changes. All persistence is delegated to the {@link ItemCodeMapper}.
  *
  * <p>This is the service half of the {@code ItemDatabase} split: the old class
- * mixed YAML/Base64 encoding, find-or-create business rules, and raw ORMlite/SQLite
- * access in one place; that DB access now lives behind the repository, leaving this
- * a pure, testable service.
+ * mixed YAML/Base64 encoding, find-or-create business rules, and raw SQLite access in
+ * one place; that DB access now lives in the MyBatis mapper, leaving this a pure,
+ * testable service.
  */
 @Singleton
 public class ItemCodeService {
 
-    private final ItemCodeRepository repository;
+    private final ItemCodeMapper items;
     private final Yaml yaml = new Yaml(new YamlBukkitConstructor(), new YamlRepresenter(), new DumperOptions());
 
     @Inject
-    public ItemCodeService(ItemCodeRepository repository) {
-        this.repository = repository;
+    public ItemCodeService(ItemCodeMapper items) {
+        this.items = items;
     }
 
     /** Runs the one-time metadata re-serialisation if the server's data version advanced. */
@@ -93,7 +92,15 @@ public class ItemCodeService {
             }
             String blob = Base64.encodeObject(dumped);
 
-            int id = repository.findIdByBlob(blob).orElseGet(() -> repository.insert(blob));
+            Integer existing = items.findIdByBlob(blob);
+            int id;
+            if (existing != null) {
+                id = existing;
+            } else {
+                Item row = new Item(blob);
+                items.insert(row); // generated id set back onto the row
+                id = row.getId();
+            }
             return Base62.encode(id);
         } catch (IOException e) {
             ChestShop.getBukkitLogger().log(Level.SEVERE, "Unable to get code of item " + item, e);
@@ -104,15 +111,15 @@ public class ItemCodeService {
     /** The {@link ItemStack} a code refers to, or {@code null} if unknown/corrupt. */
     public ItemStack getFromCode(String code) {
         int id = Base62.decode(code);
-        Optional<String> blob = repository.findBlobById(id);
-        if (blob.isEmpty()) {
+        String blob = items.findBlobById(id);
+        if (blob == null) {
             return null;
         }
         try {
-            return yaml.loadAs((String) Base64.decodeToObject(blob.get()), ItemStack.class);
+            return yaml.loadAs((String) Base64.decodeToObject(blob), ItemStack.class);
         } catch (YAMLException e) {
             ChestShop.getBukkitLogger().log(Level.SEVERE,
-                    "YAML of the item with ID " + code + " (" + id + ") is corrupted: \n" + blob.get());
+                    "YAML of the item with ID " + code + " (" + id + ") is corrupted: \n" + blob);
         } catch (IOException | ClassNotFoundException e) {
             ChestShop.getBukkitLogger().log(Level.SEVERE, "Unable to load item with ID " + code + " (" + id + ")", e);
         } catch (StackOverflowError e) {
@@ -138,37 +145,43 @@ public class ItemCodeService {
         }
         ChestShop.getBukkitLogger().info("Updating Item Metadata database to data version " + newVersion + "...");
 
-        AtomicInteger seen = new AtomicInteger();
-        AtomicInteger updated = new AtomicInteger();
+        int seen = 0;
+        int updated = 0;
         long start = System.currentTimeMillis();
         try {
-            repository.forEach(stored -> {
-                seen.incrementAndGet();
+            // Stream the ids, then fetch + re-serialise each blob by id, so the whole
+            // store never has to be held in memory for the one-time migration.
+            for (int id : items.findAllIds()) {
+                seen++;
+                String blob = items.findBlobById(id);
+                if (blob == null) {
+                    continue;
+                }
                 try {
-                    String serialized = (String) Base64.decodeToObject(stored.blob());
+                    String serialized = (String) Base64.decodeToObject(blob);
                     // Cheap version sniff: re-serialise only items not already at newVersion.
                     if (previousVersion < 0 || !serialized.contains("\nv: " + newVersion + "\n")) {
                         try {
                             ItemStack itemStack = yaml.loadAs(serialized, ItemStack.class);
-                            repository.updateBlob(stored.id(), Base64.encodeObject(yaml.dump(itemStack)));
-                            updated.incrementAndGet();
+                            items.updateBlob(id, Base64.encodeObject(yaml.dump(itemStack)));
+                            updated++;
                         } catch (RuntimeException e) {
                             ChestShop.getBukkitLogger().log(Level.SEVERE, "YAML of the item with ID "
-                                    + Base62.encode(stored.id()) + " (" + stored.id() + ") is corrupted: \n"
+                                    + Base62.encode(id) + " (" + id + ") is corrupted: \n"
                                     + serialized + "\n" + e.getMessage());
                         }
                     }
                 } catch (IOException | ClassNotFoundException e) {
                     ChestShop.getBukkitLogger().log(Level.SEVERE, "Unable to convert item with ID "
-                            + Base62.encode(stored.id()) + " (" + stored.id() + ")", e);
+                            + Base62.encode(id) + " (" + id + ")", e);
                 } catch (StackOverflowError e) {
                     ChestShop.getBukkitLogger().log(Level.SEVERE, "Item with ID "
-                            + Base62.encode(stored.id()) + " (" + stored.id() + ") is corrupted. Sorry :(");
+                            + Base62.encode(id) + " (" + id + ") is corrupted. Sorry :(");
                 }
-                if (seen.get() % 1000 == 0) {
+                if (seen % 1000 == 0) {
                     ChestShop.getBukkitLogger().info("Checked " + seen + " items. Updated " + updated + "...");
                 }
-            });
+            }
         } catch (RuntimeException e) {
             ChestShop.getBukkitLogger().log(Level.SEVERE,
                     "Unable to update metadata version of all items from " + previousVersion + " to " + newVersion, e);

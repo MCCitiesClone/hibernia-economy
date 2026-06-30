@@ -7,7 +7,6 @@ import io.paradaux.chestshop.commands.ShopInfo;
 import io.paradaux.chestshop.commands.Toggle;
 import io.paradaux.chestshop.commands.Version;
 import io.paradaux.chestshop.configuration.Properties;
-import io.paradaux.chestshop.database.Migrations;
 import io.paradaux.chestshop.market.MarketHook;
 import io.paradaux.chestshop.market.MarketListener;
 import io.paradaux.chestshop.listeners.block.BlockPlace;
@@ -124,9 +123,6 @@ public class ChestShop extends JavaPlugin {
     public void onEnable() {
         bStats = new Metrics(this, 1109);
         turnOffDatabaseLogging();
-        if (!handleMigrations()) {
-            return;
-        }
 
         // HiberniaFramework DI: loads ChestShopConfiguration from config.yml (and
         // additively reconciles new default keys on upgrade). The framework also
@@ -145,7 +141,8 @@ public class ChestShop extends JavaPlugin {
                                 Toggle.class)
                         .build();
         this.injector = com.google.inject.Guice.createInjector(hibernia,
-                new io.paradaux.chestshop.guice.ChestShopModule());
+                new io.paradaux.chestshop.guice.ChestShopModule(),
+                new io.paradaux.chestshop.guice.DatabaseModule(loadFile("users.db"), loadFile("items.db")));
         this.configurationLoader = injector.getInstance(
                 io.paradaux.hibernia.framework.configurator.ConfigurationLoader.class);
         message = injector.getInstance(io.paradaux.hibernia.framework.i18n.Message.class);
@@ -243,39 +240,6 @@ public class ChestShop extends JavaPlugin {
         });
     }
 
-    private boolean handleMigrations() {
-        File versionFile = loadFile("version");
-        YamlConfiguration previousVersion = YamlConfiguration.loadConfiguration(versionFile);
-
-        if (previousVersion.get("version") == null) {
-            previousVersion.set("version", Migrations.CURRENT_DATABASE_VERSION);
-
-            try {
-                previousVersion.save(versionFile);
-            } catch (IOException e) {
-                getLogger().log(java.util.logging.Level.SEVERE, "Unable to save new database version " + Migrations.CURRENT_DATABASE_VERSION, e);
-            }
-        }
-
-        int lastVersion = previousVersion.getInt("version");
-        int newVersion = Migrations.migrate(lastVersion);
-
-        if (newVersion == -1) {
-            plugin.getLogger().log(java.util.logging.Level.SEVERE, "Error while migrating! ChestShop can not run with a broken/outdated database...");
-            plugin.getServer().getPluginManager().disablePlugin(this);
-            return false;
-        } else if (lastVersion != newVersion) {
-            previousVersion.set("version", newVersion);
-
-            try {
-                previousVersion.save(versionFile);
-            } catch (IOException e) {
-                getLogger().log(java.util.logging.Level.SEVERE, "Unable to save new database version " + newVersion, e);
-            }
-        }
-        return true;
-    }
-
     public static File loadFile(String string) {
         File file = new File(dataFolder, string);
 
@@ -316,7 +280,9 @@ public class ChestShop extends JavaPlugin {
             executorService.awaitTermination(15, TimeUnit.SECONDS);
         } catch (InterruptedException ignored) {}
 
-        io.paradaux.chestshop.database.DaoCreator.closeAll();
+        if (injector != null) {
+            injector.getInstance(io.paradaux.chestshop.database.ChestShopDatabases.class).close();
+        }
 
         if (handler != null) {
             handler.close();

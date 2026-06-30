@@ -125,9 +125,12 @@ dependencies {
     // --- bundled libraries (relocated + shaded into the plugin jar below).
     // `api` (rather than implementation) is harmless now that everything is one
     // module; kept so they stay on the runtime classpath that shadowJar bundles.
-    api("com.j256.ormlite:ormlite-jdbc:6.1")
+    // MyBatis (annotation-SQL persistence) over the existing SQLite database files —
+    // the same service→mapper layer the other plugins use, just not against MariaDB
+    // (PAR-282). The SQLite JDBC driver (org.sqlite.JDBC) is provided by the server at
+    // runtime, as it was for the old ORMlite layer.
+    implementation(libs.mybatis.core)
     api("org.bstats:bstats-bukkit:3.0.1")
-    api("javax.persistence:persistence-api:1.0")
 
     // Adventure is provided natively by Paper — NOT bundled or relocated (the old
     // bundled+relocated Adventure, plus the de.themoep MineDown/lang libraries, were
@@ -216,8 +219,6 @@ tasks.shadowJar {
 
     // Relocate shaded libraries so they don't clash with the server or other plugins.
     relocate("org.bstats", "io.paradaux.chestshop.Metrics.BStats")
-    relocate("com.j256.ormlite", "io.paradaux.chestshop.Libs.ORMlite")
-    relocate("javax.persistence", "io.paradaux.chestshop.Libs.javax.persistence")
     relocate("com.google.inject", "io.paradaux.chestshop.Libs.guice")
     relocate("javax.inject", "io.paradaux.chestshop.Libs.javaxinject")
     relocate("org.aopalliance", "io.paradaux.chestshop.Libs.aopalliance")

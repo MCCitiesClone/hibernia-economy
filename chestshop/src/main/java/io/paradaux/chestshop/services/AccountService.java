@@ -7,14 +7,15 @@ import com.google.inject.Singleton;
 import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.Permission;
 import io.paradaux.chestshop.configuration.Properties;
-import io.paradaux.chestshop.dao.AccountRepository;
 import io.paradaux.chestshop.database.Account;
+import io.paradaux.chestshop.mappers.AccountMapper;
 import io.paradaux.chestshop.players.PlayerDTO;
 import io.paradaux.chestshop.signs.ChestShopSign;
 import io.paradaux.chestshop.utils.NameUtil;
 import io.paradaux.chestshop.utils.NumberUtil;
 import io.paradaux.chestshop.utils.SimpleCache;
 import io.paradaux.chestshop.utils.encoding.Base62;
+import org.apache.ibatis.exceptions.PersistenceException;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
@@ -28,18 +29,17 @@ import java.util.logging.Level;
 /**
  * Owns the account <em>logic</em>: the username/UUID/short-name caches, get-or-create
  * resolution, shortened-name allocation, the admin and server-economy accounts, and
- * the name-access rules. All persistence is delegated to {@link AccountRepository}.
+ * the name-access rules. All persistence is delegated to the {@link AccountMapper}.
  *
  * <p>This is the service half of the {@code NameManager} split: the old static
- * God-class mixed raw ORMlite/SQLite access, caching, and these business rules in one
- * place. The DB access now lives behind the repository, leaving this a service the
- * thin {@link io.paradaux.chestshop.listeners.account.AccountListener} and the rest of
- * the plugin reach through {@link ChestShop#accounts()}.
+ * God-class mixed raw SQLite access, caching, and these business rules in one place.
+ * The DB access now lives in the MyBatis mapper, leaving this a service the rest of the
+ * plugin reaches through {@link ChestShop#accounts()}.
  */
 @Singleton
 public class AccountService {
 
-    private final AccountRepository repository;
+    private final AccountMapper accounts;
 
     private final Object accountsLock = new Object();
 
@@ -53,14 +53,14 @@ public class AccountService {
     private int uuidVersion = -1;
 
     @Inject
-    public AccountService(AccountRepository repository) {
-        this.repository = repository;
+    public AccountService(AccountMapper accounts) {
+        this.accounts = accounts;
     }
 
     public int getAccountCount() {
         try {
-            return NumberUtil.toInt(repository.count() - 1);
-        } catch (IllegalStateException e) {
+            return NumberUtil.toInt(accounts.count() - 1);
+        } catch (PersistenceException e) {
             return 0;
         }
     }
@@ -98,14 +98,14 @@ public class AccountService {
             synchronized (accountsLock) {
                 return uuidToAccount.get(uuid, () -> {
                     try {
-                        Account account = repository.findLatestByUuid(uuid).orElse(null);
+                        Account account = accounts.findLatestByUuid(uuid);
                         if (account != null) {
                             account.setUuid(uuid);
                             shortToAccount.put(account.getShortName(), account);
                             usernameToAccount.put(account.getName(), account);
                             return account;
                         }
-                    } catch (IllegalStateException e) {
+                    } catch (PersistenceException e) {
                         ChestShop.getBukkitLogger().log(Level.WARNING, "Error while getting account for " + uuid + ":", e);
                     }
                     throw new Exception("Could not find account for " + uuid);
@@ -127,13 +127,13 @@ public class AccountService {
             synchronized (accountsLock) {
                 return usernameToAccount.get(fullName, () -> {
                     try {
-                        Account account = repository.findLatestByName(fullName).orElse(null);
+                        Account account = accounts.findLatestByName(fullName);
                         if (account != null) {
                             account.setName(fullName);
                             shortToAccount.put(account.getShortName(), account);
                             return account;
                         }
-                    } catch (IllegalStateException e) {
+                    } catch (PersistenceException e) {
                         ChestShop.getBukkitLogger().log(Level.WARNING, "Error while getting account for " + fullName + ":", e);
                     }
                     throw new Exception("Could not find account for " + fullName);
@@ -157,12 +157,12 @@ public class AccountService {
             synchronized (accountsLock) {
                 account = shortToAccount.get(shortName, () -> {
                     try {
-                        Account a = repository.findByShortName(shortName).orElse(null);
+                        Account a = accounts.findByShortName(shortName);
                         if (a != null) {
                             a.setShortName(shortName);
                             return a;
                         }
-                    } catch (IllegalStateException e) {
+                    } catch (PersistenceException e) {
                         ChestShop.getBukkitLogger().log(Level.WARNING, "Error while getting account for " + shortName + ":", e);
                     }
                     throw new Exception("Could not find account for " + shortName);
@@ -220,8 +220,8 @@ public class AccountService {
         Account latestAccount;
         synchronized (accountsLock) {
             try {
-                latestAccount = repository.findByUuidAndName(uuid, player.getName()).orElse(null);
-            } catch (IllegalStateException e) {
+                latestAccount = accounts.findByUuidAndName(uuid, player.getName());
+            } catch (PersistenceException e) {
                 ChestShop.getBukkitLogger().log(Level.WARNING, "Error while searching for latest account of " + player.getName() + "/" + uuid + ":", e);
                 latestAccount = null;
             }
@@ -233,7 +233,7 @@ public class AccountService {
             latestAccount.setLastSeen(new Date());
             try {
                 storeAccount(latestAccount);
-            } catch (IllegalStateException e) {
+            } catch (PersistenceException e) {
                 ChestShop.getBukkitLogger().log(Level.WARNING, "Error while updating account " + latestAccount + ":", e);
                 return null;
             }
@@ -248,10 +248,10 @@ public class AccountService {
 
     /**
      * Store an account into the database.
-     * @throws IllegalStateException if the backing store could not be written
+     * @throws PersistenceException if the backing store could not be written
      */
     public void storeAccount(Account account) {
-        repository.save(account);
+        accounts.save(account);
     }
 
     /**
@@ -357,7 +357,7 @@ public class AccountService {
                 adminAccount = new Account(Properties.ADMIN_SHOP_NAME, UUID.nameUUIDFromBytes(("OfflinePlayer:" + Properties.ADMIN_SHOP_NAME).getBytes(Charsets.UTF_8)));
                 ChestShop.getBukkitLogger().log(Level.WARNING, "Your server appears to be ratelimited by Mojang and can't query UUID data from their API. If you run into issues with admin shops please report them!");
             }
-            repository.save(adminAccount);
+            accounts.save(adminAccount);
 
             if (!Properties.SERVER_ECONOMY_ACCOUNT.isEmpty()) {
                 serverEconomyAccount = getAccount(Properties.SERVER_ECONOMY_ACCOUNT);
@@ -376,7 +376,7 @@ public class AccountService {
                             " in order for the server economy account to work.");
                 }
             }
-        } catch (IllegalStateException e) {
+        } catch (PersistenceException e) {
             ChestShop.getBukkitLogger().log(Level.SEVERE, "Error while trying to setup accounts", e);
         }
     }

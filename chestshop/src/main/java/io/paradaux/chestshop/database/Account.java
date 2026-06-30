@@ -1,38 +1,28 @@
 package io.paradaux.chestshop.database;
 
 import io.paradaux.chestshop.utils.NameUtil;
-import com.j256.ormlite.field.DataType;
-import com.j256.ormlite.field.DatabaseField;
-import com.j256.ormlite.table.DatabaseTable;
 
 import java.util.Date;
 import java.util.UUID;
 
 /**
- * A mapping for an account
+ * A row of the {@code accounts} table ({@code users.db}): the username ↔ UUID ↔
+ * shortened-name mapping a shop sign resolves an owner against. A plain POJO mapped by
+ * {@link io.paradaux.chestshop.mappers.AccountMapper} (MyBatis); {@code lastSeen} is
+ * stored as epoch-millis and {@code uuid} as its string form (PAR-282).
+ *
  * @author Andrzej Pomirski (Acrobot)
  */
-@DatabaseTable(tableName = "accounts")
-@DatabaseFileName("users.db")
 public class Account {
 
-    @DatabaseField(index = true, canBeNull = false, uniqueCombo = true)
     private String name;
-
-    @DatabaseField(id = true, index = true, canBeNull = false)
     private String shortName;
-
-    @DatabaseField(index = true, canBeNull = false, uniqueCombo = true)
     private UUID uuid;
-
-    @DatabaseField(canBeNull = false, dataType = DataType.DATE_LONG, defaultValue = "0")
     private Date lastSeen;
-
-    @DatabaseField(canBeNull = false, dataType = DataType.BOOLEAN, defaultValue = "0")
     private boolean ignoreMessages;
 
     public Account() {
-        //empty constructor, needed for ORMLite
+        // empty constructor, needed for MyBatis result mapping
     }
 
     public Account(String name, UUID uuid) {
