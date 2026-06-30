@@ -450,16 +450,19 @@ public class TransactionService {
         }
     }
 
-    private BigDecimal scalePrice(BigDecimal pricePerItem, int count) {
+    // Package-private so the money-math is unit-testable directly (ADT-138): these
+    // are the exact spots where a scale/rounding/off-by-one slip would leak or
+    // destroy currency on a partial fill.
+    BigDecimal scalePrice(BigDecimal pricePerItem, int count) {
         return pricePerItem.multiply(new BigDecimal(count)).setScale(config.getPricePrecision(), RoundingMode.HALF_UP);
     }
 
     /** A positive per-item price that scales to zero means the partial amount is unaffordable. */
-    private static boolean roundedToZero(BigDecimal pricePerItem, BigDecimal scaled) {
+    static boolean roundedToZero(BigDecimal pricePerItem, BigDecimal scaled) {
         return pricePerItem.compareTo(BigDecimal.ZERO) > 0 && scaled.compareTo(BigDecimal.ZERO) == 0;
     }
 
-    private static int getAmountOfAffordableItems(BigDecimal walletMoney, BigDecimal pricePerItem) {
+    static int getAmountOfAffordableItems(BigDecimal walletMoney, BigDecimal pricePerItem) {
         return walletMoney.divide(pricePerItem, 0, RoundingMode.FLOOR).intValueExact();
     }
 
