@@ -1,10 +1,11 @@
 package io.paradaux.chestshop.commands;
 
+import com.google.inject.Inject;
 import io.paradaux.chestshop.Permission;
+import io.paradaux.chestshop.services.ItemService;
 import io.paradaux.chestshop.utils.InventoryUtil;
 import io.paradaux.chestshop.utils.MaterialUtil;
 import io.paradaux.chestshop.utils.NumberUtil;
-import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.utils.ItemUtil;
 import io.paradaux.hibernia.framework.commander.annotations.Command;
 import io.paradaux.hibernia.framework.commander.annotations.Description;
@@ -12,6 +13,7 @@ import io.paradaux.hibernia.framework.commander.annotations.GreedyArg;
 import io.paradaux.hibernia.framework.commander.annotations.Route;
 import io.paradaux.hibernia.framework.commander.annotations.Sender;
 import io.paradaux.hibernia.framework.commander.spi.CommandHandler;
+import io.paradaux.hibernia.framework.i18n.Message;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -26,6 +28,15 @@ import java.util.Set;
 @Command({"chestshop", "cs"})
 @io.paradaux.hibernia.framework.commander.annotations.Permission(Permission.Node.ADMIN)
 public class Give implements CommandHandler {
+
+    private final ItemService items;
+    private final Message message;
+
+    @Inject
+    public Give(ItemService items, Message message) {
+        this.items = items;
+        this.message = message;
+    }
 
     @Route("give <args>")
     @Description("Give a player an item by its ChestShop item code")
@@ -69,24 +80,24 @@ public class Give implements CommandHandler {
         }
 
         if (receiver == null) {
-            ChestShop.message().send(sender, "chestshop.PLAYER_NOT_FOUND");
+            message.send(sender, "chestshop.PLAYER_NOT_FOUND");
             return;
         }
 
         ItemStack item = getItem(args, disregardedIndexes);
 
         if (MaterialUtil.isEmpty(item)) {
-            ChestShop.message().send(sender, "chestshop.INCORRECT_ITEM_ID");
+            message.send(sender, "chestshop.INCORRECT_ITEM_ID");
             return;
         }
 
         item.setAmount(quantity);
         InventoryUtil.add(item, receiver.getInventory());
 
-        ChestShop.message().send(sender, "chestshop.ITEM_GIVEN", "prefix", "", "item", ItemUtil.getName(item), "player", receiver.getName());
+        message.send(sender, "chestshop.ITEM_GIVEN", "prefix", "", "item", ItemUtil.getName(item), "player", receiver.getName());
     }
 
-    private static ItemStack getItem(String[] arguments, Set<Integer> disregardedElements) {
+    private ItemStack getItem(String[] arguments, Set<Integer> disregardedElements) {
         StringBuilder builder = new StringBuilder(arguments.length * 5);
 
         for (int index = 0; index < arguments.length; ++index) {
@@ -97,6 +108,6 @@ public class Give implements CommandHandler {
             builder.append(arguments[index]).append(' ');
         }
 
-        return ChestShop.items().parse(builder.toString());
+        return items.parse(builder.toString());
     }
 }

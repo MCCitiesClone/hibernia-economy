@@ -337,6 +337,17 @@ public class AccountService {
         return false;
     }
 
+    /** Whether {@code player} has muted shop sale/stock notifications (the {@code /chestshop notify} toggle). */
+    public boolean isIgnoring(OfflinePlayer player) {
+        return player != null && getOrCreateAccount(player).isIgnoringMessages();
+    }
+
+    /** Whether the player with {@code playerId} has muted shop notifications. */
+    public boolean isIgnoring(UUID playerId) {
+        Account account = getAccount(playerId);
+        return account != null && account.isIgnoringMessages();
+    }
+
     public boolean isAdminShop(UUID uuid) {
         return adminAccount != null && uuid.equals(adminAccount.getUuid());
     }

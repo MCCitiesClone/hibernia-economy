@@ -1,7 +1,9 @@
 package io.paradaux.chestshop.commands;
 
+import com.google.inject.Inject;
 import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.Permission;
+import io.paradaux.chestshop.services.ItemService;
 import io.paradaux.hibernia.framework.commander.annotations.Command;
 import io.paradaux.hibernia.framework.commander.annotations.Description;
 import io.paradaux.hibernia.framework.commander.annotations.Route;
@@ -17,6 +19,13 @@ import org.bukkit.command.CommandSender;
 @io.paradaux.hibernia.framework.commander.annotations.Permission(Permission.Node.ADMIN)
 public class Version implements CommandHandler {
 
+    private final ItemService items;
+
+    @Inject
+    public Version(ItemService items) {
+        this.items = items;
+    }
+
     @Route("version")
     @Description("Show the ChestShop plugin version")
     public void version(@Sender CommandSender sender) {
@@ -29,7 +38,7 @@ public class Version implements CommandHandler {
         // Was the ChestShopReloadEvent fan-out: reload config (plugins/ChestShop) and the
         // item aliases (ItemAliasModule). Both run directly now.
         ChestShop.getPlugin().loadConfig();
-        ChestShop.items().reloadAliases();
+        items.reloadAliases();
         sender.sendMessage(ChatColor.DARK_GREEN + "The config was reloaded.");
     }
 }

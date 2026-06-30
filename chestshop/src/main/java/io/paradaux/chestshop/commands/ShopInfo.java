@@ -1,13 +1,15 @@
 package io.paradaux.chestshop.commands;
 
-import io.paradaux.chestshop.ChestShop;
+import com.google.inject.Inject;
 import io.paradaux.chestshop.Permission;
+import io.paradaux.chestshop.services.InfoService;
 import io.paradaux.chestshop.signs.ChestShopSign;
 import io.paradaux.chestshop.utils.uBlock;
 import io.paradaux.hibernia.framework.commander.annotations.Command;
 import io.paradaux.hibernia.framework.commander.annotations.Route;
 import io.paradaux.hibernia.framework.commander.annotations.Sender;
 import io.paradaux.hibernia.framework.commander.spi.CommandHandler;
+import io.paradaux.hibernia.framework.i18n.Message;
 import org.bukkit.ChatColor;
 import org.bukkit.block.Block;
 import org.bukkit.block.Sign;
@@ -20,6 +22,15 @@ import org.bukkit.entity.Player;
 @Command({"shopinfo", "sinfo", "shop"})
 @io.paradaux.hibernia.framework.commander.annotations.Permission(Permission.Node.SHOPINFO)
 public class ShopInfo implements CommandHandler {
+
+    private final InfoService info;
+    private final Message message;
+
+    @Inject
+    public ShopInfo(InfoService info, Message message) {
+        this.info = info;
+        this.message = message;
+    }
 
     @Route("")
     public void shopInfo(@Sender CommandSender sender) {
@@ -34,9 +45,9 @@ public class ShopInfo implements CommandHandler {
                 }
 
                 if (sign != null) {
-                    ChestShop.info().showShopInfo((Player) sender, sign);
+                    info.showShopInfo((Player) sender, sign);
                 } else {
-                    ChestShop.message().send(sender, "chestshop.NO_SHOP_FOUND");
+                    message.send(sender, "chestshop.NO_SHOP_FOUND");
                 }
             }
         } else {

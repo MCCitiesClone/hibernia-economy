@@ -1,61 +1,54 @@
 package io.paradaux.chestshop.commands;
 
+import com.google.inject.Inject;
 import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.Permission;
 import io.paradaux.chestshop.database.Account;
+import io.paradaux.chestshop.services.AccountService;
 import io.paradaux.hibernia.framework.commander.annotations.Command;
+import io.paradaux.hibernia.framework.commander.annotations.Description;
 import io.paradaux.hibernia.framework.commander.annotations.Route;
 import io.paradaux.hibernia.framework.commander.annotations.Sender;
 import io.paradaux.hibernia.framework.commander.spi.CommandHandler;
-import org.bukkit.Bukkit;
-import org.bukkit.OfflinePlayer;
+import io.paradaux.hibernia.framework.i18n.Message;
 import org.bukkit.entity.Player;
 
-import java.util.UUID;
 import java.util.logging.Level;
 
 /**
+ * {@code /chestshop notify} — toggle the player's shop sale/stock notifications. The
+ * "is this player ignoring notifications" query now lives on {@link AccountService}
+ * (it's account state); this command just flips and persists the flag.
+ *
  * @author KingFaris10
  */
 @Command({"chestshop", "cs"})
 @io.paradaux.hibernia.framework.commander.annotations.Permission(Permission.Node.NOTIFY_TOGGLE)
 public class Toggle implements CommandHandler {
 
+    private final AccountService accounts;
+    private final Message message;
+
+    @Inject
+    public Toggle(AccountService accounts, Message message) {
+        this.accounts = accounts;
+        this.message = message;
+    }
+
     @Route("notify")
-    @io.paradaux.hibernia.framework.commander.annotations.Description("Toggle shop sale notifications on/off")
+    @Description("Toggle shop sale notifications on/off")
     public void toggle(@Sender Player player) {
-        Account account = ChestShop.accounts().getOrCreateAccount(player);
+        Account account = accounts.getOrCreateAccount(player);
         account.setIgnoreMessages(!account.isIgnoringMessages());
 
-        if (account.isIgnoringMessages()) {
-            ChestShop.message().send(player, "chestshop.TOGGLE_MESSAGES_OFF");
-        } else {
-            ChestShop.message().send(player, "chestshop.TOGGLE_MESSAGES_ON");
-        }
+        message.send(player, account.isIgnoringMessages()
+                ? "chestshop.TOGGLE_MESSAGES_OFF" : "chestshop.TOGGLE_MESSAGES_ON");
 
         try {
-            ChestShop.accounts().storeAccount(account);
+            accounts.storeAccount(account);
         } catch (Exception e) {
             ChestShop.getBukkitLogger().log(Level.WARNING, "Error while updating account " + account + ":", e);
-            ChestShop.message().send(player, "chestshop.ERROR_OCCURRED", "error", "Unable to store account data.");
+            message.send(player, "chestshop.ERROR_OCCURRED", "error", "Unable to store account data.");
         }
     }
-
-    public static boolean isIgnoring(OfflinePlayer player) {
-        return player != null && ChestShop.accounts().getOrCreateAccount(player).isIgnoringMessages();
-    }
-
-    public static boolean isIgnoring(UUID playerId) {
-        Account account = ChestShop.accounts().getAccount(playerId);
-        return account != null && account.isIgnoringMessages();
-    }
-
-    /**
-     * @deprecated Use {@link #isIgnoring(UUID)}
-     */
-    @Deprecated
-    public static boolean isIgnoring(String playerName) {
-        return isIgnoring(Bukkit.getOfflinePlayer(playerName));
-    }
-
 }

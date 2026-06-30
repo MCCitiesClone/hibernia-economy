@@ -7,7 +7,6 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.Permission;
-import io.paradaux.chestshop.commands.Toggle;
 import io.paradaux.chestshop.configuration.Properties;
 import io.paradaux.chestshop.database.Account;
 import io.paradaux.chestshop.economy.Economy;
@@ -97,11 +96,13 @@ public class TransactionService {
 
     private final EconomyService economy;
     private final ShopService shops;
+    private final AccountService accounts;
 
     @Inject
-    public TransactionService(EconomyService economy, ShopService shops) {
+    public TransactionService(EconomyService economy, ShopService shops, AccountService accounts) {
         this.economy = economy;
         this.shops = shops;
+        this.accounts = accounts;
     }
 
     private static final String BUY_LOG = "%1$s bought %2$s for %3$.2f from %4$s at %5$s";
@@ -554,7 +555,7 @@ public class TransactionService {
             case CLIENT_DOES_NOT_HAVE_ENOUGH_MONEY -> message = "chestshop.NOT_ENOUGH_MONEY";
             case SHOP_DOES_NOT_HAVE_ENOUGH_MONEY -> message = "chestshop.NOT_ENOUGH_MONEY_SHOP";
             case NOT_ENOUGH_SPACE_IN_CHEST -> {
-                if (Properties.SHOW_MESSAGE_FULL_SHOP && !Properties.CSTOGGLE_TOGGLES_FULL_SHOP || !Toggle.isIgnoring(ctx.getOwnerAccount().getUuid())) {
+                if (Properties.SHOW_MESSAGE_FULL_SHOP && !Properties.CSTOGGLE_TOGGLES_FULL_SHOP || !accounts.isIgnoring(ctx.getOwnerAccount().getUuid())) {
                     sendShopLocationMessage(ctx, "chestshop.NOT_ENOUGH_SPACE_IN_YOUR_SHOP", "seller");
                 }
                 message = "chestshop.NOT_ENOUGH_SPACE_IN_CHEST";
@@ -562,7 +563,7 @@ public class TransactionService {
             case NOT_ENOUGH_SPACE_IN_INVENTORY -> message = "chestshop.NOT_ENOUGH_SPACE_IN_INVENTORY";
             case NOT_ENOUGH_STOCK_IN_INVENTORY -> message = "chestshop.NOT_ENOUGH_ITEMS_TO_SELL";
             case NOT_ENOUGH_STOCK_IN_CHEST -> {
-                if (Properties.SHOW_MESSAGE_OUT_OF_STOCK && !Properties.CSTOGGLE_TOGGLES_OUT_OF_STOCK || !Toggle.isIgnoring(ctx.getOwnerAccount().getUuid())) {
+                if (Properties.SHOW_MESSAGE_OUT_OF_STOCK && !Properties.CSTOGGLE_TOGGLES_OUT_OF_STOCK || !accounts.isIgnoring(ctx.getOwnerAccount().getUuid())) {
                     sendShopLocationMessage(ctx, "chestshop.NOT_ENOUGH_STOCK_IN_YOUR_SHOP", "buyer");
                 }
                 message = "chestshop.NOT_ENOUGH_STOCK";
@@ -833,7 +834,7 @@ public class TransactionService {
                     buy ? "owner" : "buyer", event.getOwnerAccount().getName());
         }
 
-        if (Properties.SHOW_TRANSACTION_INFORMATION_OWNER && !Toggle.isIgnoring(event.getOwnerAccount().getUuid())) {
+        if (Properties.SHOW_TRANSACTION_INFORMATION_OWNER && !accounts.isIgnoring(event.getOwnerAccount().getUuid())) {
             Player owner = Bukkit.getPlayer(event.getOwnerAccount().getUuid());
             sendTradeMessage(owner, event.getOwnerAccount().getName(),
                     buy ? "chestshop.SOMEBODY_BOUGHT_FROM_YOUR_SHOP" : "chestshop.SOMEBODY_SOLD_TO_YOUR_SHOP", event,
