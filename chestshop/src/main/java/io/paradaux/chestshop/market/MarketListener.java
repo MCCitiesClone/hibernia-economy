@@ -2,7 +2,6 @@ package io.paradaux.chestshop.market;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import io.paradaux.chestshop.utils.MaterialUtil;
 import io.paradaux.chestshop.events.ShopCreatedEvent;
 import io.paradaux.chestshop.events.ShopDestroyedEvent;
 import io.paradaux.chestshop.events.TransactionEvent;
@@ -42,10 +41,12 @@ import java.util.UUID;
 public class MarketListener implements Listener {
 
     private final MarketRecords records;
+    private final io.paradaux.chestshop.services.ItemCodeService itemCodes;
 
     @Inject
-    public MarketListener(MarketRecords records) {
+    public MarketListener(MarketRecords records, io.paradaux.chestshop.services.ItemCodeService itemCodes) {
         this.records = records;
+        this.itemCodes = itemCodes;
     }
 
     // Invoked directly by TransactionService#process (was a @MONITOR TransactionEvent listener).
@@ -77,7 +78,7 @@ public class MarketListener implements Listener {
         if (!MarketHook.enabled()) return;
         try {
             Sign sign = event.getSign();
-            ItemStack item = MaterialUtil.getItem(event.getSignLines()[ChestShopSign.ITEM_LINE]);
+            ItemStack item = itemCodes.decode(event.getSignLines()[ChestShopSign.ITEM_LINE]);
             if (item == null) return;
             boolean admin = ChestShopSign.isAdminShop(event.getSignLines());
             UUID ownerUuid = event.getOwnerAccount() != null ? event.getOwnerAccount().getUuid() : null;
@@ -115,7 +116,7 @@ public class MarketListener implements Listener {
             for (Sign sign : signs) {
                 if (ChestShopSign.isAdminShop(sign)) continue;
                 String itemName = ChestShopSign.getItem(sign);
-                ItemStack item = itemName != null ? MaterialUtil.getItem(itemName) : null;
+                ItemStack item = itemName != null ? itemCodes.decode(itemName) : null;
                 if (item == null) continue;
                 Location l = sign.getLocation();
                 market.updateShopStock(

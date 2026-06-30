@@ -2,6 +2,7 @@ package io.paradaux.chestshop.market;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
+import io.paradaux.chestshop.services.ItemCodeService;
 import io.paradaux.chestshop.services.ItemService;
 import io.paradaux.chestshop.utils.InventoryUtil;
 import io.paradaux.chestshop.utils.MaterialUtil;
@@ -40,10 +41,12 @@ final class MarketRecords {
     static final long BUSINESS_UUID_MSB = 0xC5B0000000000000L;
 
     private final ItemService items;
+    private final ItemCodeService itemCodes;
 
     @Inject
-    MarketRecords(ItemService items) {
+    MarketRecords(ItemService items, ItemCodeService itemCodes) {
         this.items = items;
+        this.itemCodes = itemCodes;
     }
 
     record Owner(Integer accountId, String type, Integer firmId, UUID ownerUuid, boolean admin) {}
@@ -111,7 +114,7 @@ final class MarketRecords {
     /** Stable grouping key — ChestShop's canonical (custom-aware) sign code. */
     String itemKey(ItemStack item) {
         String code = canonicalCode(item);
-        return code != null ? code : MaterialUtil.getSignName(item);
+        return code != null ? code : itemCodes.encode(item, MaterialUtil.MAXIMUM_SIGN_WIDTH);
     }
 
     /**
@@ -160,7 +163,7 @@ final class MarketRecords {
     }
 
     boolean isCustom(ItemStack item) {
-        String vanilla = MaterialUtil.getSignName(item);
+        String vanilla = itemCodes.encode(item, MaterialUtil.MAXIMUM_SIGN_WIDTH);
         String canonical = canonicalCode(item);
         // A provider (Nexo / ItemBridge) named it beyond the plain vanilla code.
         if (canonical != null && vanilla != null && !canonical.equalsIgnoreCase(vanilla)) {

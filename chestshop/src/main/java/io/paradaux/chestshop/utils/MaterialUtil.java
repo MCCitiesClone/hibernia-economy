@@ -223,97 +223,11 @@ public class MaterialUtil {
         return material;
     }
 
-    /**
-     * Get a list with item information
-     *
-     * @param items The items to get the information from
-     * @return The list, including the amount and names of the items
-     * @deprecated Use {@link io.paradaux.chestshop.services.ItemService#getItemList(ItemStack[])} instead!
-     */
-    @Deprecated
-    public static String getItemList(ItemStack[] items) {
-        Map<ItemStack, Integer> itemCounts = InventoryUtil.getItemCounts(items);
-
-        List<String> itemText = new ArrayList<>();
-
-        for (Map.Entry<ItemStack, Integer> entry : itemCounts.entrySet()) {
-            itemText.add(entry.getValue() + " " + getName(entry.getKey()));
-        }
-
-        return String.join(", ", itemText);
-    }
-
-    /**
-     * Returns item's name
-     * Use {@link io.paradaux.chestshop.services.ItemService#getName(ItemStack, int)} if you want to get name aliases too!
-     *
-     * @param itemStack ItemStack to name
-     * @return ItemStack's name
-     */
-    public static String getName(ItemStack itemStack) {
-        return getName(itemStack, 0);
-    }
-
-    /**
-     * Returns item's name
-     *
-     * @param itemStack     ItemStack to name
-     * @param showDataValue Should we also show the data value?
-     * @return ItemStack's name
-     * @deprecated Use {@link #getName(ItemStack, int)}
-     */
-    @Deprecated
-    public static String getName(ItemStack itemStack, boolean showDataValue) {
-        return getName(itemStack, 0);
-    }
-
-    /**
-     * Returns item's name, just like on the sign
-     * Use {@link io.paradaux.chestshop.services.ItemService#getSignName(ItemStack)} if you want to get name aliases too!
-     *
-     * @param itemStack ItemStack to name
-     * @return ItemStack's name
-     */
-    public static String getSignName(ItemStack itemStack) {
-        return getName(itemStack, MAXIMUM_SIGN_WIDTH);
-    }
-
-    /**
-     * Returns item's name, with a maximum width.
-     * Use {@link io.paradaux.chestshop.services.ItemService#getName(ItemStack, int)} if you want to get name aliases too!
-     *
-     * @param itemStack ItemStack to name
-     * @param maxWidth The max width that the name should have; 0 or below if it should be unlimited
-     * @return ItemStack's name
-     */
-    public static String getName(ItemStack itemStack, int maxWidth) {
-        String itemName = itemStack.getType().toString();
-
-        String durability = "";
-        ItemMeta meta = itemStack.getItemMeta();
-        if (meta instanceof Damageable) {
-            Damageable damageable = (Damageable) meta;
-            if (damageable.hasDamage()) {
-                durability = ":" + damageable.getDamage();
-            }
-        }
-
-        String metaData = "";
-        if (hasCustomData(itemStack)) {
-            metaData = "#" + Metadata.getItemCode(itemStack);
-        }
-
-        String code = StringUtil.capitalizeFirstLetter(itemName, '_');
-        if (maxWidth > 0) {
-            int codeWidth = getMinecraftStringWidth(code + durability + metaData);
-            if (codeWidth > maxWidth) {
-                int exceeding = codeWidth - maxWidth;
-                code = getShortenedName(code, getMinecraftStringWidth(code) - exceeding);
-            }
-        }
-
-        return code + durability + metaData;
-    }
+    // The item ↔ sign-code naming (getName/getItem/getSignName/getItemList/getMetadata)
+    // and the #code Metadata facade moved to ItemCodeService.encode/decode (PAR-282) — the
+    // canonical conversion is DB-backed, so it belongs in the service, not this pure util.
+    // The pure helpers it composes (getMaterial, getDurability, parseMetadata, hasCustomData,
+    // getShortenedName, equals, …) stay here.
 
     /**
      * Check whether the provided ItemStack has custom data (in the past called "ItemMeta"). This will ignore
@@ -322,7 +236,7 @@ public class MaterialUtil {
      * @param itemStack The ItemStack to check
      * @return Whether the item has custom data
      */
-    private static boolean hasCustomData(ItemStack itemStack) {
+    public static boolean hasCustomData(ItemStack itemStack) {
         if (!itemStack.hasItemMeta()) {
             return false;
         }
@@ -433,46 +347,6 @@ public class MaterialUtil {
     }
 
     /**
-     * Gives you an ItemStack from a String
-     *
-     * @param itemName Item name
-     * @return ItemStack
-     */
-    public static ItemStack getItem(String itemName) {
-        String[] split = itemName.split("[:#]");
-        for (int i = 0; i < split.length; i++) {
-            split[i] = split[i].trim();
-        }
-
-        Integer durability = getDurability(itemName);
-        // ItemService.parseMaterial ignores the (legacy) data value and just resolves the
-        // material name — call it directly instead of bouncing through the service locator.
-        Material material = getMaterial(split[0]);
-        if (material == null) {
-            return null;
-        }
-
-        ItemStack itemStack = new ItemStack(material);
-
-        ItemMeta meta = getMetadata(itemName);
-
-        if (durability != null) {
-            if (meta == null) {
-                meta = itemStack.getItemMeta();
-            }
-            if (meta instanceof Damageable) {
-                ((Damageable) meta).setDamage(durability);
-            }
-        }
-
-        if (meta != null) {
-            itemStack.setItemMeta(meta);
-        }
-
-        return itemStack;
-    }
-
-    /**
      * Returns the durability from a string
      *
      * @param itemName Item name
@@ -501,13 +375,14 @@ public class MaterialUtil {
     }
 
     /**
-     * Returns metadata from a string
+     * Extract the #code metadata token from an item string (the part after '#'), or
+     * {@code null} if none. Pure parsing — {@link io.paradaux.chestshop.services.ItemCodeService#decode}
+     * resolves the token to an {@link ItemMeta}.
      *
      * @param itemName Item name
-     * @return Metadata found
+     * @return Metadata token found
      */
-    @VisibleForTesting
-    static String parseMetadata(String itemName) {
+    public static String parseMetadata(String itemName) {
         Matcher m = METADATA.matcher(itemName);
 
         if (!m.find()) {
@@ -515,17 +390,6 @@ public class MaterialUtil {
         }
 
         return m.group().substring(1);
-    }
-
-    /**
-     * Returns metadata from a string
-     *
-     * @param itemName Item name
-     * @return Metadata found
-     */
-    public static ItemMeta getMetadata(String itemName) {
-        String group = parseMetadata(itemName);
-        return group != null ? Metadata.getFromCode(group) : null;
     }
 
     private static class EnumParser<E extends Enum<E>> {
@@ -576,45 +440,6 @@ public class MaterialUtil {
                 }
                 return null;
             }
-        }
-    }
-
-    /**
-     * The custom-item-code (#NNN) encoding — the one place MaterialUtil still reaches a
-     * service via the static {@code ChestShop.itemCodes()} locator (PAR-282). It is a
-     * deliberate boundary: this is the vendored, deeply-static item-naming util (its
-     * {@code getName}/{@code getItem} are called from dozens of static contexts), and the
-     * code lookup is DB-backed ({@link io.paradaux.chestshop.services.ItemCodeService} →
-     * {@code ItemCodeMapper}). Removing the locator would mean threading the service as a
-     * parameter through the whole naming graph — a service-as-param regression worse than
-     * one clearly-scoped accessor — or making MaterialUtil injectable, which its static
-     * call sites forbid. Everything else in the plugin is on constructor DI.
-     */
-    public static class Metadata {
-        /**
-         * Returns the ItemMeta represented by this code
-         *
-         * @param code Code representing the ItemMeta
-         * @return ItemMeta represented by code
-         */
-        public static ItemMeta getFromCode(String code) {
-            ItemStack item = ChestShop.itemCodes().getFromCode(code);
-
-            if (item == null) {
-                return null;
-            } else {
-                return item.getItemMeta();
-            }
-        }
-
-        /**
-         * Returns the code for this item
-         *
-         * @param item Item being represented
-         * @return Code representing the item
-         */
-        public static String getItemCode(ItemStack item) {
-            return ChestShop.itemCodes().getItemCode(item);
         }
     }
 

@@ -1,9 +1,10 @@
 package io.paradaux.chestshop.listeners.modules;
 
-import io.paradaux.chestshop.utils.MaterialUtil;
 import io.paradaux.chestshop.ChestShop;
+import io.paradaux.chestshop.services.ItemCodeService;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
+import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.inventory.ItemStack;
@@ -32,7 +33,11 @@ public class ItemAliasModule {
      */
     private BiMap<String, String> aliases;
 
-    public ItemAliasModule() {
+    private final ItemCodeService itemCodes;
+
+    @Inject
+    public ItemAliasModule(ItemCodeService itemCodes) {
+        this.itemCodes = itemCodes;
         load();
     }
 
@@ -103,7 +108,7 @@ public class ItemAliasModule {
                 }
             }
         }
-        return code != null ? MaterialUtil.getItem(code) : null;
+        return code != null ? itemCodes.decode(code) : null;
     }
 
     /**

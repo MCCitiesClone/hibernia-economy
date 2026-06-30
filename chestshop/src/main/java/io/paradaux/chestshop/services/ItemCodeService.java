@@ -5,6 +5,8 @@ import com.google.inject.Singleton;
 import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.database.Item;
 import io.paradaux.chestshop.mappers.ItemCodeMapper;
+import io.paradaux.chestshop.utils.MaterialUtil;
+import io.paradaux.chestshop.utils.StringUtil;
 import io.paradaux.chestshop.utils.encoding.Base62;
 import io.paradaux.chestshop.utils.encoding.Base64;
 import org.bukkit.Material;
@@ -126,6 +128,82 @@ public class ItemCodeService {
             ChestShop.getBukkitLogger().log(Level.SEVERE, "Item with ID " + code + " (" + id + ") is corrupted. Sorry :(");
         }
         return null;
+    }
+
+    // ---- canonical item ↔ sign-code (MATERIAL:durability#NNN) ----
+    // The vanilla (no ItemBridge/alias) conversion ChestShop puts on signs. The custom-data
+    // suffix (#NNN) round-trips through the item-code store above (getItemCode/getFromCode →
+    // ItemCodeMapper) — was the static MaterialUtil.getName/getItem reaching the DB via the
+    // ChestShop.itemCodes() locator (PAR-282). MaterialUtil keeps only the pure helpers.
+
+    /** The canonical sign string for {@code item} (material + durability + #code), within {@code maxWidth} (0 = unlimited). */
+    public String encode(ItemStack item, int maxWidth) {
+        String itemName = item.getType().toString();
+
+        String durability = "";
+        ItemMeta meta = item.getItemMeta();
+        if (meta instanceof Damageable damageable && damageable.hasDamage()) {
+            durability = ":" + damageable.getDamage();
+        }
+
+        String metaData = "";
+        if (MaterialUtil.hasCustomData(item)) {
+            metaData = "#" + getItemCode(item);
+        }
+
+        String code = StringUtil.capitalizeFirstLetter(itemName, '_');
+        if (maxWidth > 0) {
+            int codeWidth = StringUtil.getMinecraftStringWidth(code + durability + metaData);
+            if (codeWidth > maxWidth) {
+                int exceeding = codeWidth - maxWidth;
+                code = MaterialUtil.getShortenedName(code, StringUtil.getMinecraftStringWidth(code) - exceeding);
+            }
+        }
+
+        return code + durability + metaData;
+    }
+
+    /** The {@link ItemStack} for a canonical sign string (material + durability + #code), or {@code null}. */
+    public ItemStack decode(String itemName) {
+        String[] split = itemName.split("[:#]");
+        for (int i = 0; i < split.length; i++) {
+            split[i] = split[i].trim();
+        }
+
+        Integer durability = MaterialUtil.getDurability(itemName);
+        Material material = MaterialUtil.getMaterial(split[0]);
+        if (material == null) {
+            return null;
+        }
+
+        ItemStack itemStack = new ItemStack(material);
+
+        ItemMeta meta = metadataFromCode(itemName);
+
+        if (durability != null) {
+            if (meta == null) {
+                meta = itemStack.getItemMeta();
+            }
+            if (meta instanceof Damageable) {
+                ((Damageable) meta).setDamage(durability);
+            }
+        }
+
+        if (meta != null) {
+            itemStack.setItemMeta(meta);
+        }
+
+        return itemStack;
+    }
+
+    /** The {@link ItemMeta} encoded by the #code suffix of {@code itemName}, or {@code null} if none. */
+    private ItemMeta metadataFromCode(String itemName) {
+        String group = MaterialUtil.parseMetadata(itemName);
+        if (group == null) {
+            return null;
+        }
+        ItemStack item = getFromCode(group);
+        return item == null ? null : item.getItemMeta();
     }
 
     private int currentMetadataVersion() {

@@ -38,11 +38,13 @@ import static io.paradaux.chestshop.utils.StringUtil.getMinecraftStringWidth;
 public class ItemService {
 
     private final ItemAliasModule aliases;
+    private final ItemCodeService itemCodes;
     private volatile boolean itemBridgeEnabled = false;
 
     @Inject
-    public ItemService(ItemAliasModule aliases) {
+    public ItemService(ItemAliasModule aliases, ItemCodeService itemCodes) {
         this.aliases = aliases;
+        this.itemCodes = itemCodes;
     }
 
     /** Mark the ItemBridge custom-item integration as available (called when the plugin hooks). */
@@ -63,7 +65,7 @@ public class ItemService {
             item = alias;
         }
         if (item == null) {
-            item = MaterialUtil.getItem(itemString); // vanilla fallback
+            item = itemCodes.decode(itemString); // vanilla fallback
         }
         return item;
     }
@@ -72,7 +74,7 @@ public class ItemService {
     public String queryString(ItemStack item, int maxWidth) {
         String result = itemBridgeEnabled ? ItemBridge.queryString(item, maxWidth) : null;
         if (result == null) {
-            result = MaterialUtil.getName(item, maxWidth); // vanilla name
+            result = itemCodes.encode(item, maxWidth); // vanilla name
         }
         return aliases.applyAlias(result, maxWidth); // configured alias override
     }
