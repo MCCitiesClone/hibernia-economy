@@ -2,12 +2,11 @@ package io.paradaux.chestshop.listeners.modules;
 
 import io.paradaux.chestshop.utils.MaterialUtil;
 import io.paradaux.chestshop.ChestShop;
-import io.paradaux.chestshop.events.ItemParseEvent;
-import io.paradaux.chestshop.events.ItemStringQueryEvent;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.google.inject.Singleton;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.inventory.ItemStack;
 
 import java.io.File;
 import java.io.IOException;
@@ -73,13 +72,17 @@ public class ItemAliasModule {
         load();
     }
 
-    public void onItemParse(ItemParseEvent event) {
-        String code = aliases.inverse().get(event.getItemString());
+    /**
+     * Resolve a configured alias for {@code itemString} to an {@link ItemStack}, or
+     * {@code null} if no alias matches. Called by {@link io.paradaux.chestshop.services.ItemService#parse}.
+     */
+    public ItemStack resolveItem(String itemString) {
+        String code = aliases.inverse().get(itemString);
         if (code == null) {
-            String[] typeParts = event.getItemString().replaceAll("(?<!^)([A-Z1-9])", "_$1").toUpperCase(Locale.ROOT).split("[ _\\-]");
+            String[] typeParts = itemString.replaceAll("(?<!^)([A-Z1-9])", "_$1").toUpperCase(Locale.ROOT).split("[ _\\-]");
             int length = Short.MAX_VALUE;
             for (Map.Entry<String, String> entry : aliases.entrySet()) {
-                if (entry.getValue().length() < length && entry.getValue().toUpperCase(Locale.ROOT).startsWith(event.getItemString().toUpperCase(Locale.ROOT))) {
+                if (entry.getValue().length() < length && entry.getValue().toUpperCase(Locale.ROOT).startsWith(itemString.toUpperCase(Locale.ROOT))) {
                     length = (short) entry.getValue().length();
                     code = entry.getKey();
                 } else if (typeParts.length > 1) {
@@ -100,37 +103,39 @@ public class ItemAliasModule {
                 }
             }
         }
-        if (code != null) {
-            event.setItem(MaterialUtil.getItem(code));
-        }
+        return code != null ? MaterialUtil.getItem(code) : null;
     }
 
-    public void onItemStringQuery(ItemStringQueryEvent event) {
-        if (event.getItemString() != null) {
-            String newCode = null;
+    /**
+     * Apply a configured alias to {@code itemString}, returning the alias if one is
+     * configured and fits {@code maxWidth}, otherwise the input unchanged. Called by
+     * {@link io.paradaux.chestshop.services.ItemService#queryString}.
+     */
+    public String applyAlias(String itemString, int maxWidth) {
+        if (itemString == null) {
+            return null;
+        }
+        String newCode;
+        if (aliases.containsKey(itemString)) {
+            newCode = aliases.get(itemString);
+        } else if (!itemString.contains("#")) {
+            newCode = aliases.get(itemString.toLowerCase(Locale.ROOT));
+        } else {
+            String[] parts = itemString.split("#", 2);
+            String lowercaseCode = parts[0].toLowerCase(Locale.ROOT) + "#" + parts[1];
+            newCode = aliases.containsKey(lowercaseCode) ? aliases.get(lowercaseCode) : null;
+        }
 
-            if (aliases.containsKey(event.getItemString())) {
-                newCode = aliases.get(event.getItemString());
-            } else if (!event.getItemString().contains("#")) {
-                newCode = aliases.get(event.getItemString().toLowerCase(Locale.ROOT));
-            } else {
-                String[] parts = event.getItemString().split("#", 2);
-                String lowercaseCode = parts[0].toLowerCase(Locale.ROOT) + "#" + parts[1];
-                if (aliases.containsKey(lowercaseCode)) {
-                    newCode = aliases.get(lowercaseCode);
-                }
-            }
-
-            if (newCode != null) {
-                if (event.getMaxWidth() > 0) {
-                    int width = getMinecraftStringWidth(newCode);
-                    if (width > event.getMaxWidth()) {
-                        ChestShop.getBukkitLogger().warning("Can't use configured alias " + newCode + " as it's width (" + width + ") was wider than the allowed max width of " + event.getMaxWidth());
-                        return;
-                    }
-                }
-                event.setItemString(newCode);
+        if (newCode == null) {
+            return itemString;
+        }
+        if (maxWidth > 0) {
+            int width = getMinecraftStringWidth(newCode);
+            if (width > maxWidth) {
+                ChestShop.getBukkitLogger().warning("Can't use configured alias " + newCode + " as it's width (" + width + ") was wider than the allowed max width of " + maxWidth);
+                return itemString;
             }
         }
+        return newCode;
     }
 }

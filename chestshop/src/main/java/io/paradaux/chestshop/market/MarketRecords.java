@@ -77,13 +77,12 @@ final class MarketRecords {
     }
 
     // ── item identity ──────────────────────────────────────────────────────
-    // Route through ChestShop's event-backed ItemUtil rather than the raw
-    // Breeze MaterialUtil, so custom items resolve to their real code instead
-    // of the underlying vanilla material. ItemUtil.getName fires
-    // ItemStringQueryEvent — the same seam the server's custom-item bridge
-    // (e.g. the Nexo integration plugin) hooks to name/parse its items. When no
-    // provider claims the item, ItemUtil falls back to the vanilla code, so
-    // vanilla behaviour is unchanged.
+    // Route through ChestShop's ItemUtil rather than the raw Breeze MaterialUtil,
+    // so custom items resolve to their real code instead of the underlying vanilla
+    // material. ItemUtil.getName goes through ItemService.queryString — the same
+    // resolver the server's custom-item bridge (e.g. the Nexo integration plugin)
+    // hooks to name/parse its items. When no provider claims the item, it falls
+    // back to the vanilla code, so vanilla behaviour is unchanged.
 
     /**
      * ChestShop's canonical item code for this stack (custom-aware), or

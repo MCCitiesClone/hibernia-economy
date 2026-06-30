@@ -197,7 +197,8 @@ public class ChestShopSign {
     }
 
     /**
-     * @deprecated Use the {@link SignValidationEvent} instead!
+     * @deprecated Call {@code ChestShop.items().validateSign(...)}
+     *             ({@link io.paradaux.chestshop.services.ItemService#validateSign}) instead.
      */
     @Deprecated
     public static boolean isValidPreparedSign(String[] lines) {

@@ -1,8 +1,6 @@
 package io.paradaux.chestshop.plugins;
 
 import io.paradaux.chestshop.ChestShop;
-import io.paradaux.chestshop.events.ItemParseEvent;
-import io.paradaux.chestshop.events.ItemStringQueryEvent;
 import com.jojodmo.itembridge.ItemBridgeKey;
 import org.bukkit.inventory.ItemStack;
 
@@ -19,29 +17,29 @@ import static io.paradaux.chestshop.utils.StringUtil.getMinecraftStringWidth;
  */
 public class ItemBridge {
 
-    public static void onItemParse(ItemParseEvent event) {
-        if (event.getItem() == null) {
-            ItemStack item = com.jojodmo.itembridge.ItemBridge.getItemStack(event.getItemString());
-            if (item != null) {
-                event.setItem(item);
-            }
-        }
+    /** Resolve a custom-item string to an {@link ItemStack}, or {@code null} if ItemBridge doesn't know it. */
+    public static ItemStack parseItem(String itemString) {
+        return com.jojodmo.itembridge.ItemBridge.getItemStack(itemString);
     }
 
-    public static void onItemStringQuery(ItemStringQueryEvent event) {
-        ItemBridgeKey key = com.jojodmo.itembridge.ItemBridge.getItemKey(event.getItem());
-        // If namespace is "minecraft" then we ignore it and use our own logic
-        if (key != null && !"minecraft".equalsIgnoreCase(key.getNamespace())) {
-            String code = key.toString();
-            // Make sure the ItemBridge string is not too long as we can't parse shortened ones
-            if (event.getMaxWidth() > 0) {
-                int width = getMinecraftStringWidth(code);
-                if (width > event.getMaxWidth()) {
-                    ChestShop.logDebug("Can't use ItemBridge alias " + code + " as it's width (" + width + ") was wider than the allowed max width of " + event.getMaxWidth());
-                    return;
-                }
-            }
-            event.setItemString(key.toString());
+    /**
+     * The ItemBridge sign string for an item, or {@code null} if the item has no non-vanilla
+     * ItemBridge key or that key would be too wide for {@code maxWidth}.
+     */
+    public static String queryString(ItemStack item, int maxWidth) {
+        ItemBridgeKey key = com.jojodmo.itembridge.ItemBridge.getItemKey(item);
+        // A "minecraft" namespace means a vanilla item — ignore it and let our own logic name it.
+        if (key == null || "minecraft".equalsIgnoreCase(key.getNamespace())) {
+            return null;
         }
+        String code = key.toString();
+        if (maxWidth > 0) {
+            int width = getMinecraftStringWidth(code);
+            if (width > maxWidth) {
+                ChestShop.logDebug("Can't use ItemBridge alias " + code + " as it's width (" + width + ") was wider than the allowed max width of " + maxWidth);
+                return null;
+            }
+        }
+        return code;
     }
 }
