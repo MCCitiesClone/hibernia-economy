@@ -90,29 +90,6 @@ class NumberUtilTest {
 
     @ParameterizedTest
     @CsvSource({
-        "1.234, 1.24",     // rounds .234 → .24 (ceil at 2dp)
-        "1.0,   1.00",
-        "0.0,   0.0",
-        "1.999, 2.0",
-        "-1.234, -1.23",   // ceil-toward-positive-infinity
-    })
-    void roundUp_roundsToTwoDecimalsCeiling(double in, double expected) {
-        assertThat(NumberUtil.roundUp(in)).isCloseTo(expected, within(1e-9));
-    }
-
-    @ParameterizedTest
-    @CsvSource({
-        "1.999, 1.99",
-        "1.0,   1.00",
-        "1.234, 1.23",
-        "-1.234, -1.24",   // floor toward negative infinity
-    })
-    void roundDown_roundsToTwoDecimalsFloor(double in, double expected) {
-        assertThat(NumberUtil.roundDown(in)).isCloseTo(expected, within(1e-9));
-    }
-
-    @ParameterizedTest
-    @CsvSource({
         "0,    '00:00'",
         "59,   '00:59'",
         "60,   '01:00'",

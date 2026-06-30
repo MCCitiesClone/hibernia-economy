@@ -25,8 +25,6 @@ public class Properties {
     public static boolean DEBUG = false;
     public static boolean INCLUDE_SETTINGS_IN_METRICS = true;
     public static int CACHE_SIZE = 1000;
-    public static String DEFAULT_LANGUAGE = "en";
-    public static boolean USE_CLIENT_LOCALE = true;
     public static boolean STRIP_PRICE_COLORS = false;
     public static Set<Material> SHOP_CONTAINERS = EnumSet.of(Material.CHEST, Material.TRAPPED_CHEST, Material.BARREL);
     public static int SHOP_INTERACTION_INTERVAL = 250;
@@ -96,8 +94,6 @@ public class Properties {
         DEBUG = c.isDebug();
         INCLUDE_SETTINGS_IN_METRICS = c.isIncludeSettingsInMetrics();
         CACHE_SIZE = c.getCacheSize();
-        DEFAULT_LANGUAGE = c.getDefaultLanguage();
-        USE_CLIENT_LOCALE = c.isUseClientLocale();
         STRIP_PRICE_COLORS = c.isStripPriceColors();
         SHOP_CONTAINERS = c.getShopContainers();
         SHOP_INTERACTION_INTERVAL = c.getShopInteractionInterval();

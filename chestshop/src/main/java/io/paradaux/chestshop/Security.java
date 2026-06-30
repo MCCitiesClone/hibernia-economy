@@ -13,8 +13,6 @@ import org.bukkit.block.BlockFace;
 import org.bukkit.block.Sign;
 import org.bukkit.entity.Player;
 
-import java.util.UUID;
-
 import static io.paradaux.chestshop.utils.ImplementationAdapter.getState;
 
 /**
@@ -36,20 +34,6 @@ public class Security {
     public Security(ProtectionService protection, AccountService accounts) {
         this.protection = protection;
         this.accounts = accounts;
-    }
-
-    public boolean protect(Player player, Block block) {
-        return protect(player, block, player.getUniqueId());
-    }
-
-    public boolean protect(Player player, Block block, UUID protectionOwner) {
-        return protect(player, block, protectionOwner, Type.PRIVATE);
-    }
-
-    public boolean protect(Player player, Block block, UUID protectionOwner, Type type) {
-        // Block-level protection (LWC / LockettePro etc.) was removed (PAR-285), so no
-        // provider claims shop blocks — they are never independently protected.
-        return false;
     }
 
     public boolean canAccess(Player player, Block block) {
@@ -108,12 +92,5 @@ public class Security {
             }
         }
         return false;
-    }
-
-    public enum Type {
-        PUBLIC,
-        PRIVATE,
-        DONATION,
-        DISPLAY
     }
 }

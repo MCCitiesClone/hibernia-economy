@@ -342,36 +342,6 @@ public class InventoryUtil {
     }
 
     /**
-     * If items in arguments are similar, this function merges them into stacks of the same type
-     *
-     * @param items Items to merge
-     * @return Merged stack array
-     * @deprecated This produces items that are larger than the max stack size, use either {@link #getItemsStacked(ItemStack...)} or {@link #getItemCounts(ItemStack...)} instead
-     */
-    @Deprecated
-    public static ItemStack[] mergeSimilarStacks(ItemStack... items) {
-        if (items.length <= 1) {
-            return items;
-        }
-
-        List<ItemStack> itemList = new LinkedList<ItemStack>();
-
-        Iterating:
-        for (ItemStack item : items) {
-            for (ItemStack iStack : itemList) {
-                if (MaterialUtil.equals(item, iStack)) {
-                    iStack.setAmount(iStack.getAmount() + item.getAmount());
-                    continue Iterating;
-                }
-            }
-
-            itemList.add(item.clone());
-        }
-
-        return itemList.toArray(new ItemStack[0]);
-    }
-
-    /**
      * If items in arguments are similar, this function counts them
      *
      * @param items Items to count

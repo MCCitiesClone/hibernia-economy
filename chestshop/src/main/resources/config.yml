@@ -11,12 +11,6 @@ INCLUDE_SETTINGS_IN_METRICS: true
 # How large should the internal caches be?
 CACHE_SIZE: 1000
 
-# The default language when the client's language can't be found.
-DEFAULT_LANGUAGE: en
-
-# Should the plugin try to use a language file that matches the client's locale setting?
-USE_CLIENT_LOCALE: true
-
 # Should the plugin strip the colors from formatted price?
 STRIP_PRICE_COLORS: false
 

@@ -3,7 +3,6 @@ package io.paradaux.chestshop.utils;
 import org.bukkit.ChatColor;
 
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -43,26 +42,6 @@ public class StringUtil {
      */
     public static String capitalizeFirstLetter(String string) {
         return capitalizeFirstLetter(string, ' ');
-    }
-
-    /**
-     * Joins a String array
-     *
-     * @param array array to join
-     * @return Joined array
-     */
-    public static String joinArray(String[] array) {
-        return String.join(" ", array);
-    }
-
-    /**
-     * Joins an iterable
-     *
-     * @param array Iterable
-     * @return Joined iterable
-     */
-    public static String joinArray(Collection<String> array) {
-        return String.join(" ", array);
     }
 
     /**

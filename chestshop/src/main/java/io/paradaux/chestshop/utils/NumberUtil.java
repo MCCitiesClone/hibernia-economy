@@ -95,26 +95,6 @@ public class NumberUtil {
     }
 
     /**
-     * Rounds the number up to two decimal points (Can be inaccurate due to using decimal-points)
-     *
-     * @param number Number to round
-     * @return Rounded number
-     */
-    public static double roundUp(double number) {
-        return Math.ceil(number * 100) / 100;
-    }
-
-    /**
-     * Rounds the number down to two decimal points
-     *
-     * @param number Number to round
-     * @return Rounded number
-     */
-    public static double roundDown(double number) {
-        return Math.floor(number * 100) / 100;
-    }
-
-    /**
      * Converts the number (in seconds) to timer-like format, like 2:00 (minutes:seconds)
      *
      * @param number Number of seconds

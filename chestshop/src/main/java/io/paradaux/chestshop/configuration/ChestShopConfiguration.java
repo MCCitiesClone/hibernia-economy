@@ -42,12 +42,6 @@ public class ChestShopConfiguration {
     @ConfigurationValue(path = "CACHE_SIZE", defaultValue = "1000")
     private int cacheSize;
 
-    @ConfigurationValue(path = "DEFAULT_LANGUAGE", defaultValue = "en")
-    private String defaultLanguage;
-
-    @ConfigurationValue(path = "USE_CLIENT_LOCALE", defaultValue = "true")
-    private boolean useClientLocale;
-
     @ConfigurationValue(path = "STRIP_PRICE_COLORS", defaultValue = "false")
     private boolean stripPriceColors;
 

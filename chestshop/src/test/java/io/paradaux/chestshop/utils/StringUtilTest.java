@@ -38,14 +38,6 @@ class StringUtilTest {
         assertThat(StringUtil.capitalizeFirstLetter("")).isEqualTo("");
     }
 
-    // ── joinArray ─────────────────────────────────────────────────────────────
-
-    @Test
-    void joinArray_joinsCollectionWithSpaces() {
-        assertThat(StringUtil.joinArray(java.util.Arrays.asList("a", "b", "c"))).isEqualTo("a b c");
-        assertThat(StringUtil.joinArray(java.util.Collections.emptyList())).isEqualTo("");
-    }
-
     // ── stripColourCodes ──────────────────────────────────────────────────────
 
     @Test
