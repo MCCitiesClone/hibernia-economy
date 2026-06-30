@@ -267,6 +267,12 @@ public class AccountService {
      * @throws PersistenceException if the backing store could not be written
      */
     public void storeAccount(Account account) {
+        if (account.getLastSeen() == null) {
+            // lastSeen is NOT NULL in users.db. The per-player paths set it, but the
+            // admin-shop account is built without it — default it here so any account
+            // built without a lastSeen still persists instead of failing the insert.
+            account.setLastSeen(new Date());
+        }
         accounts.save(account);
     }
 
@@ -426,7 +432,7 @@ public class AccountService {
                 adminAccount = new Account(config.getAdminShopName(), UUID.nameUUIDFromBytes(("OfflinePlayer:" + config.getAdminShopName()).getBytes(Charsets.UTF_8)));
                 ChestShop.getBukkitLogger().log(Level.WARNING, "Your server appears to be ratelimited by Mojang and can't query UUID data from their API. If you run into issues with admin shops please report them!");
             }
-            accounts.save(adminAccount);
+            storeAccount(adminAccount);
 
             if (!config.getServerEconomyAccount().isEmpty()) {
                 serverEconomyAccount = getAccount(config.getServerEconomyAccount());

@@ -28,6 +28,7 @@ class AccountServiceTest {
     private static final class FakeAccountMapper implements AccountMapper {
         long count = 0;
         final Set<String> takenShortNames = new HashSet<>();
+        Account lastSaved;
 
         @Override public Account findLatestByUuid(UUID uuid) { return null; }
         @Override public Account findLatestByName(String name) { return null; }
@@ -37,7 +38,7 @@ class AccountServiceTest {
                     : null;
         }
         @Override public Account findByUuidAndName(UUID uuid, String name) { return null; }
-        @Override public void save(Account account) { count++; }
+        @Override public void save(Account account) { count++; lastSaved = account; }
         @Override public long count() { return count; }
     }
 
@@ -57,6 +58,30 @@ class AccountServiceTest {
         mapper.count = 5; // four players plus the always-present admin account
 
         assertThat(service.getAccountCount()).isEqualTo(4);
+    }
+
+    @Test
+    void storeAccount_defaultsLastSeen_whenMissing() {
+        // The admin-shop account is built without a lastSeen; users.db requires it
+        // NOT NULL, so storeAccount must default it rather than fail the insert.
+        Account account = new Account("AdminShop", "AdminShop", UUID.randomUUID());
+        assertThat(account.getLastSeen()).isNull();
+
+        service.storeAccount(account);
+
+        assertThat(mapper.lastSaved).isSameAs(account);
+        assertThat(mapper.lastSaved.getLastSeen()).isNotNull();
+    }
+
+    @Test
+    void storeAccount_keepsAnExistingLastSeen() {
+        Account account = new Account("Player", "Player", UUID.randomUUID());
+        java.util.Date when = new java.util.Date(1_000_000L);
+        account.setLastSeen(when);
+
+        service.storeAccount(account);
+
+        assertThat(mapper.lastSaved.getLastSeen()).isEqualTo(when);
     }
 
     @Test
