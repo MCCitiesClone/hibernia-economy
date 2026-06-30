@@ -1,5 +1,6 @@
 package io.paradaux.chestshop.listeners.player;
 
+import com.google.inject.Inject;
 import io.paradaux.chestshop.utils.*;
 import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.configuration.Properties;
@@ -9,9 +10,15 @@ import io.paradaux.chestshop.events.PreTransactionEvent;
 import io.paradaux.chestshop.events.TransactionEvent;
 import io.paradaux.chestshop.permission.Permissions;
 import io.paradaux.chestshop.Security;
+import io.paradaux.chestshop.services.AccountService;
+import io.paradaux.chestshop.services.EconomyService;
+import io.paradaux.chestshop.services.InfoService;
+import io.paradaux.chestshop.services.ItemService;
+import io.paradaux.chestshop.services.TransactionService;
 import io.paradaux.chestshop.signs.ChestShopSign;
 import io.paradaux.chestshop.utils.ItemUtil;
 import io.paradaux.chestshop.utils.uBlock;
+import io.paradaux.hibernia.framework.i18n.Message;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.GameMode;
@@ -59,8 +66,26 @@ public class PlayerInteract implements Listener {
      */
     private static final Map<Player, Long> LAST_TRADE_CLICK = new WeakHashMap<>();
 
+    private final TransactionService transactions;
+    private final InfoService info;
+    private final AccountService accounts;
+    private final EconomyService economy;
+    private final ItemService items;
+    private final Message message;
+
+    @Inject
+    public PlayerInteract(TransactionService transactions, InfoService info, AccountService accounts,
+                          EconomyService economy, ItemService items, Message message) {
+        this.transactions = transactions;
+        this.info = info;
+        this.accounts = accounts;
+        this.economy = economy;
+        this.items = items;
+        this.message = message;
+    }
+
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
-    public static void onInteract(PlayerInteractEvent event) {
+    public void onInteract(PlayerInteractEvent event) {
         Block block = event.getClickedBlock();
         if (block == null)
             return;
@@ -74,10 +99,10 @@ public class PlayerInteract implements Listener {
 
                 if (!Security.canView(player, block, Properties.TURN_OFF_DEFAULT_PROTECTION_WHEN_PROTECTED_EXTERNALLY)) {
                     if (Permissions.has(player, Permissions.SHOPINFO)) {
-                        ChestShop.info().showShopInfo(player, sign);
+                        info.showShopInfo(player, sign);
                         event.setCancelled(true);
                     } else if (!Properties.TURN_OFF_DEFAULT_PROTECTION_WHEN_PROTECTED_EXTERNALLY) {
-                        ChestShop.message().send(player, "chestshop.ACCESS_DENIED", "prefix", "");
+                        message.send(player, "chestshop.ACCESS_DENIED", "prefix", "");
                         event.setCancelled(true);
                     }
                 }
@@ -120,10 +145,10 @@ public class PlayerInteract implements Listener {
                         sign.update();
                     }
                 } else {
-                    ChestShop.message().send(player, "chestshop.NO_ITEM_IN_HAND");
+                    message.send(player, "chestshop.NO_ITEM_IN_HAND");
                 }
             } else {
-                ChestShop.message().send(player, "chestshop.ACCESS_DENIED");
+                message.send(player, "chestshop.ACCESS_DENIED");
             }
             return;
         }
@@ -154,7 +179,7 @@ public class PlayerInteract implements Listener {
                 return;
             }
             // don't allow owners or people with access to buy/sell at this shop
-            ChestShop.message().send(player, "chestshop.TRADE_DENIED_ACCESS_PERMS");
+            message.send(player, "chestshop.TRADE_DENIED_ACCESS_PERMS");
             if (action == RIGHT_CLICK_BLOCK) {
                 // don't allow editing
                 event.setCancelled(true);
@@ -169,7 +194,7 @@ public class PlayerInteract implements Listener {
         }
 
         if (Properties.CHECK_ACCESS_FOR_SHOP_USE && !Security.canAccess(player, block, true)) {
-            ChestShop.message().send(player, "chestshop.TRADE_DENIED");
+            message.send(player, "chestshop.TRADE_DENIED");
             return;
         }
 
@@ -190,30 +215,30 @@ public class PlayerInteract implements Listener {
         if (pEvent == null)
             return;
 
-        ChestShop.transactions().validate(pEvent);
+        transactions.validate(pEvent);
         if (pEvent.isCancelled())
             return;
 
         TransactionEvent tEvent = new TransactionEvent(pEvent, sign);
-        ChestShop.transactions().process(tEvent);
+        transactions.process(tEvent);
     }
 
-    private static PreTransactionEvent preparePreTransactionEvent(Sign sign, Player player, Action action) {
+    private PreTransactionEvent preparePreTransactionEvent(Sign sign, Player player, Action action) {
         String name = ChestShopSign.getOwner(sign);
         String prices = ChestShopSign.getPrice(sign);
         String material = ChestShopSign.getItem(sign);
 
-        Account account = ChestShop.accounts().resolveAccount(name);
+        Account account = accounts.resolveAccount(name);
         if (account == null) {
-            ChestShop.message().send(player, "chestshop.PLAYER_NOT_FOUND");
+            message.send(player, "chestshop.PLAYER_NOT_FOUND");
             return null;
         }
 
         boolean adminShop = ChestShopSign.isAdminShop(sign);
 
         // check if player exists in economy
-        if (!adminShop && !ChestShop.economy().hasAccount(account.getUuid())) {
-            ChestShop.message().send(player, "chestshop.NO_ECONOMY_ACCOUNT");
+        if (!adminShop && !economy.hasAccount(account.getUuid())) {
+            message.send(player, "chestshop.NO_ECONOMY_ACCOUNT");
             return null;
         }
 
@@ -223,9 +248,9 @@ public class PlayerInteract implements Listener {
         Container shopBlock = uBlock.findConnectedContainer(sign);
         Inventory ownerInventory = shopBlock != null ? shopBlock.getInventory() : null;
 
-        ItemStack item = ChestShop.items().parse(material);
+        ItemStack item = items.parse(material);
         if (item == null) {
-            ChestShop.message().send(player, "chestshop.INVALID_SHOP_DETECTED");
+            message.send(player, "chestshop.INVALID_SHOP_DETECTED");
             return null;
         }
 
@@ -235,7 +260,7 @@ public class PlayerInteract implements Listener {
         } catch (NumberFormatException ignored) {} // There is no quantity number on the sign
 
         if (amount < 1 || amount > Properties.MAX_SHOP_AMOUNT) {
-            ChestShop.message().send(player, "chestshop.INVALID_SHOP_PRICE");
+            message.send(player, "chestshop.INVALID_SHOP_PRICE");
             return null;
         }
 
@@ -307,11 +332,11 @@ public class PlayerInteract implements Listener {
         return Permissions.has(player, Permissions.OTHER_NAME_ACCESS + ".*");
     }
 
-    private static void showChestGUI(Player player, Block signBlock, Sign sign) {
+    private void showChestGUI(Player player, Block signBlock, Sign sign) {
         Container container = uBlock.findConnectedContainer(sign);
 
         if (container == null) {
-            ChestShop.message().send(player, "chestshop.NO_CHEST_DETECTED");
+            message.send(player, "chestshop.NO_CHEST_DETECTED");
             return;
         }
 

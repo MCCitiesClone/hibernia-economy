@@ -297,15 +297,17 @@ public class ChestShop extends JavaPlugin {
         registerModules();
 
         registerEvent(new SignBreak());
-        registerEvent(new SignCreate());
+        // Guice-instantiated so they inject the services they need instead of pulling
+        // them from the static ChestShop.<service>() locator (PAR-282).
+        registerEvent(injector.getInstance(SignCreate.class));
         registerEvent(new ChestBreak());
 
         registerEvent(new MarketListener());
 
         registerEvent(new BlockPlace());
-        registerEvent(new PlayerConnect());
-        registerEvent(new PlayerInteract());
-        registerEvent(new PlayerInventory());
+        registerEvent(injector.getInstance(PlayerConnect.class));
+        registerEvent(injector.getInstance(PlayerInteract.class));
+        registerEvent(injector.getInstance(PlayerInventory.class));
         registerEvent(new PlayerTeleport());
 
         registerEvent(new GarbageTextListener());

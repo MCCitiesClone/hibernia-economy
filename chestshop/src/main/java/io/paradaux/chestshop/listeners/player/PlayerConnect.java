@@ -1,5 +1,6 @@
 package io.paradaux.chestshop.listeners.player;
 
+import com.google.inject.Inject;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -8,31 +9,42 @@ import org.bukkit.event.player.PlayerQuitEvent;
 
 import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.players.PlayerDTO;
+import io.paradaux.chestshop.services.AccountService;
+import io.paradaux.chestshop.services.TransactionService;
 
 /**
  * @author Acrobot
  */
 public class PlayerConnect implements Listener {
 
+    private final AccountService accounts;
+    private final TransactionService transactions;
+
+    @Inject
+    public PlayerConnect(AccountService accounts, TransactionService transactions) {
+        this.accounts = accounts;
+        this.transactions = transactions;
+    }
+
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-    public static void onPlayerConnect(final PlayerJoinEvent event) {
-        if (ChestShop.accounts().getUuidVersion() < 0) {
-            ChestShop.accounts().setUuidVersion(event.getPlayer().getUniqueId().version());
+    public void onPlayerConnect(final PlayerJoinEvent event) {
+        if (accounts.getUuidVersion() < 0) {
+            accounts.setUuidVersion(event.getPlayer().getUniqueId().version());
         }
 
         final PlayerDTO playerDTO = new PlayerDTO(event.getPlayer());
 
         ChestShop.runInAsyncThread(() -> {
-            if (ChestShop.accounts().getAccount(playerDTO.getUniqueId()) != null) {
-                ChestShop.accounts().storeUsername(playerDTO);
+            if (accounts.getAccount(playerDTO.getUniqueId()) != null) {
+                accounts.storeUsername(playerDTO);
             }
         });
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
-    public static void onPlayerQuit(final PlayerQuitEvent event) {
+    public void onPlayerQuit(final PlayerQuitEvent event) {
         // Drop the player's notification-cooldown rows (owned by TransactionService since
         // the pre-transaction validators were folded into it).
-        ChestShop.transactions().clearNotificationCooldowns(event.getPlayer().getUniqueId());
+        transactions.clearNotificationCooldowns(event.getPlayer().getUniqueId());
     }
 }

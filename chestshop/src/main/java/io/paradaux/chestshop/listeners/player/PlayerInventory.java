@@ -1,11 +1,13 @@
 package io.paradaux.chestshop.listeners.player;
 
-import io.paradaux.chestshop.ChestShop;
+import com.google.inject.Inject;
 import io.paradaux.chestshop.configuration.Properties;
 import io.paradaux.chestshop.permission.Permissions;
 import io.paradaux.chestshop.Security;
+import io.paradaux.chestshop.services.InfoService;
 import io.paradaux.chestshop.signs.ChestShopSign;
 import io.paradaux.chestshop.utils.uBlock;
+import io.paradaux.hibernia.framework.i18n.Message;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
 import org.bukkit.block.DoubleChest;
@@ -27,8 +29,18 @@ import static io.paradaux.chestshop.utils.ImplementationAdapter.getRightSide;
  * @author Acrobot
  */
 public class PlayerInventory implements Listener {
+
+    private final InfoService info;
+    private final Message message;
+
+    @Inject
+    public PlayerInventory(InfoService info, Message message) {
+        this.info = info;
+        this.message = message;
+    }
+
     @EventHandler
-    public static void onInventoryOpen(InventoryOpenEvent event) {
+    public void onInventoryOpen(InventoryOpenEvent event) {
         if (!Properties.TURN_OFF_DEFAULT_PROTECTION_WHEN_PROTECTED_EXTERNALLY) {
             return;
         }
@@ -74,11 +86,11 @@ public class PlayerInventory implements Listener {
                 for (Block container : containers) {
                     Sign sign = uBlock.getConnectedSign(container);
                     if (sign != null) {
-                        ChestShop.info().showShopInfo((Player) event.getPlayer(), sign);
+                        info.showShopInfo((Player) event.getPlayer(), sign);
                     }
                 }
             } else {
-                ChestShop.message().send(event.getPlayer(), "chestshop.ACCESS_DENIED");
+                message.send(event.getPlayer(), "chestshop.ACCESS_DENIED");
             }
             event.setCancelled(true);
         }
