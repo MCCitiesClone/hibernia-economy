@@ -623,7 +623,7 @@ public class TransactionService {
 
         String itemList = items.getItemList(stock);
         if (player != null) {
-            if (Properties.SHOWITEM_MESSAGE && MaterialUtil.Show.sendMessage(player, key, stock, Collections.emptyMap(), replacements)) {
+            if (Properties.SHOWITEM_MESSAGE && MaterialUtil.Show.sendMessage(message, player, key, stock, Collections.emptyMap(), replacements)) {
                 return;
             }
             player.sendMessage(message.component(key, ChestShop.values(true, ImmutableMap.of("material", itemList, "item", itemList), replacements)));
@@ -865,7 +865,7 @@ public class TransactionService {
             replacementMap.put(replacements[i], replacements[i + 1]);
         }
 
-        if (Properties.SHOWITEM_MESSAGE && MaterialUtil.Show.sendMessage(player, playerName, key, event.getStock(), replacementMap)) {
+        if (Properties.SHOWITEM_MESSAGE && MaterialUtil.Show.sendMessage(message, player, playerName, key, event.getStock(), replacementMap)) {
             return;
         }
 

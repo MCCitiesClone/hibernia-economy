@@ -445,7 +445,9 @@ public class MaterialUtil {
         }
 
         Integer durability = getDurability(itemName);
-        Material material = ChestShop.items().parseMaterial(split[0], durability != null ? durability.shortValue() : 0);
+        // ItemService.parseMaterial ignores the (legacy) data value and just resolves the
+        // material name — call it directly instead of bouncing through the service locator.
+        Material material = getMaterial(split[0]);
         if (material == null) {
             return null;
         }
@@ -624,8 +626,8 @@ public class MaterialUtil {
          * @param message The raw message
          * @param stock   The items in stock
          */
-        public static boolean sendMessage(Player player, String key, ItemStack[] stock, Map<String, String> replacementMap, String... replacements) {
-            return sendMessage(player, player.getName(), key, stock, replacementMap, replacements);
+        public static boolean sendMessage(io.paradaux.hibernia.framework.i18n.Message message, Player player, String key, ItemStack[] stock, Map<String, String> replacementMap, String... replacements) {
+            return sendMessage(message, player, player.getName(), key, stock, replacementMap, replacements);
         }
 
         /**
@@ -636,8 +638,8 @@ public class MaterialUtil {
          * @param message       The raw message
          * @param stock         The items in stock
          */
-        public static boolean sendMessage(Player player, String playerName, String key, ItemStack[] stock, Map<String, String> replacementMap, String... replacements) {
-            return sendMessage(player, playerName, key, true, stock, replacementMap, replacements);
+        public static boolean sendMessage(io.paradaux.hibernia.framework.i18n.Message message, Player player, String playerName, String key, ItemStack[] stock, Map<String, String> replacementMap, String... replacements) {
+            return sendMessage(message, player, playerName, key, true, stock, replacementMap, replacements);
         }
 
         /**
@@ -649,7 +651,7 @@ public class MaterialUtil {
          * @param showPrefix    If the prefix should show
          * @param stock         The items in stock
          */
-        public static boolean sendMessage(Player player, String playerName, String key, boolean showPrefix, ItemStack[] stock, Map<String, String> replacementMap, String... replacements) {
+        public static boolean sendMessage(io.paradaux.hibernia.framework.i18n.Message message, Player player, String playerName, String key, boolean showPrefix, ItemStack[] stock, Map<String, String> replacementMap, String... replacements) {
             if (showItem == null) {
                 return false;
             }
@@ -676,7 +678,7 @@ public class MaterialUtil {
             // item (with its hover) is embedded without MineDown's Replacer.
             Map<String, Object> values = ChestShop.values(showPrefix, replacementMap, replacements);
             values.put("item", itemComponent.build());
-            Component component = ChestShop.message().component(key, values);
+            Component component = message.component(key, values);
             if (player != null) {
                 player.sendMessage(component);
                 return true;
