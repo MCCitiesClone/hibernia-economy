@@ -12,7 +12,7 @@ import io.paradaux.chestshop.utils.InventoryUtil;
 import io.paradaux.chestshop.utils.MaterialUtil;
 import io.paradaux.chestshop.utils.PriceUtil;
 import io.paradaux.chestshop.utils.StringUtil;
-import io.paradaux.chestshop.utils.uBlock;
+import io.paradaux.chestshop.utils.ShopBlockUtil;
 import net.kyori.adventure.text.Component;
 import org.bukkit.ChatColor;
 import org.bukkit.Color;
@@ -114,7 +114,7 @@ public class InfoService {
             return;
         }
 
-        Container shopBlock = uBlock.findConnectedContainer(sign);
+        Container shopBlock = ShopBlockUtil.findConnectedContainer(sign);
         String stock = shopBlock != null
                 ? String.valueOf(InventoryUtil.getAmount(item, shopBlock.getInventory()))
                 : "∞"; // Infinity symbol

@@ -21,6 +21,7 @@ import io.paradaux.chestshop.listeners.modules.MetricsModule;
 import io.paradaux.chestshop.listeners.modules.StockCounterModule;
 import io.paradaux.chestshop.listeners.player.*;
 import io.paradaux.chestshop.logging.FileFormatter;
+import io.paradaux.chestshop.plugins.Dependencies;
 import io.paradaux.chestshop.services.ItemCodeService;
 import io.paradaux.chestshop.signs.RestrictedSign;
 

@@ -14,24 +14,24 @@ import java.util.function.Consumer;
 /**
  * Owns shop/chest protection checks, replacing the {@code ProtectionCheckContext} and
  * {@code BuildPermissionContext} bus with direct, ordered calls. The vanilla shop-member
- * check ({@link io.paradaux.chestshop.plugins.ChestShop#onProtectionCheck}) always runs;
+ * check ({@link io.paradaux.chestshop.plugins.VanillaShopProtection#onProtectionCheck}) always runs;
  * the optional WorldGuard/GriefPrevention integrations run after it only when those
  * plugins are hooked and their config flags are on — {@code Dependencies} registers them
  * here as method references (so this service never names the {@code com.sk89q}/
  * {@code me.ryanhamshire} classes, keeping them off the call path when the plugin is
  * absent, exactly as the old conditional listener registration did).
  *
- * <p>{@code ProtectBlockEvent} had no handlers (the LWC/Lockette integrations were
- * removed), so block protection is unconditionally unavailable — {@link io.paradaux.chestshop.Security#protect}
- * always returns {@code false} and the event was dropped entirely.
+ * <p>Block-level protection (the LWC/Lockette integrations) was removed, so no provider
+ * ever claims shop blocks — they are never independently protected, and that event was
+ * dropped entirely.
  */
 @Singleton
 public class ProtectionService {
 
-    private final io.paradaux.chestshop.plugins.ChestShop vanillaProtection;
+    private final io.paradaux.chestshop.plugins.VanillaShopProtection vanillaProtection;
 
     @com.google.inject.Inject
-    public ProtectionService(io.paradaux.chestshop.plugins.ChestShop vanillaProtection) {
+    public ProtectionService(io.paradaux.chestshop.plugins.VanillaShopProtection vanillaProtection) {
         this.vanillaProtection = vanillaProtection;
     }
 

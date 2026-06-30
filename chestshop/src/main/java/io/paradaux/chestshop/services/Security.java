@@ -1,4 +1,4 @@
-package io.paradaux.chestshop;
+package io.paradaux.chestshop.services;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
@@ -7,7 +7,7 @@ import io.paradaux.chestshop.services.AccountService;
 import io.paradaux.chestshop.services.ProtectionService;
 import io.paradaux.chestshop.signs.ChestShopSign;
 import io.paradaux.chestshop.utils.BlockUtil;
-import io.paradaux.chestshop.utils.uBlock;
+import io.paradaux.chestshop.utils.ShopBlockUtil;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.Sign;
@@ -62,7 +62,7 @@ public class Security {
         for (BlockFace face : BLOCKS_AROUND) {
             Block block = sign.getRelative(face);
 
-            if (!uBlock.couldBeShopContainer(block)) {
+            if (!ShopBlockUtil.couldBeShopContainer(block)) {
                 continue;
             }
             if (!canAccess(player, block)) {

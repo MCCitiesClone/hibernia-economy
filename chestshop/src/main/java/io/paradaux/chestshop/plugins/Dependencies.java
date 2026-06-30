@@ -1,7 +1,8 @@
-package io.paradaux.chestshop;
+package io.paradaux.chestshop.plugins;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
+import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.services.EconomyService;
 import io.paradaux.chestshop.services.ItemService;
 import io.paradaux.chestshop.services.ProtectionService;
@@ -9,7 +10,6 @@ import io.paradaux.chestshop.utils.MaterialUtil;
 import io.paradaux.chestshop.configuration.Properties;
 import io.paradaux.chestshop.listeners.economy.EconomyAdapter;
 import io.paradaux.chestshop.listeners.economy.plugins.TreasuryListener;
-import io.paradaux.chestshop.plugins.*;
 import com.google.common.collect.ImmutableMap;
 import org.bstats.charts.DrilldownPie;
 import org.bukkit.Bukkit;

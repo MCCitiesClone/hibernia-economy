@@ -1,4 +1,4 @@
-package io.paradaux.chestshop.economy;
+package io.paradaux.chestshop.utils;
 
 import io.paradaux.chestshop.utils.MaterialUtil;
 import org.bukkit.inventory.ItemStack;

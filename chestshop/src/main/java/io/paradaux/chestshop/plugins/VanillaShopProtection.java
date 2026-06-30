@@ -6,7 +6,7 @@ import io.paradaux.chestshop.context.protection.ProtectionCheckContext;
 import io.paradaux.chestshop.permission.Permissions;
 import io.paradaux.chestshop.services.AccountService;
 import io.paradaux.chestshop.signs.ChestShopSign;
-import io.paradaux.chestshop.utils.uBlock;
+import io.paradaux.chestshop.utils.ShopBlockUtil;
 import org.bukkit.block.Block;
 import org.bukkit.block.Sign;
 import org.bukkit.entity.Player;
@@ -24,12 +24,12 @@ import static io.paradaux.chestshop.utils.BlockUtil.isSign;
  * @author Acrobot
  */
 @Singleton
-public class ChestShop {
+public class VanillaShopProtection {
 
     private final AccountService accounts;
 
     @Inject
-    public ChestShop(AccountService accounts) {
+    public VanillaShopProtection(AccountService accounts) {
         this.accounts = accounts;
     }
 
@@ -64,8 +64,8 @@ public class ChestShop {
             }
         }
 
-        if (uBlock.couldBeShopContainer(block)) {
-            Sign sign = uBlock.getConnectedSign(block);
+        if (ShopBlockUtil.couldBeShopContainer(block)) {
+            Sign sign = ShopBlockUtil.getConnectedSign(block);
 
             if (sign != null && !isShopMember(player, sign)) {
                 return false;
@@ -76,7 +76,7 @@ public class ChestShop {
     }
 
     private boolean canBeProtected(Block block) {
-        return isSign(block) || uBlock.couldBeShopContainer(block);
+        return isSign(block) || ShopBlockUtil.couldBeShopContainer(block);
     }
 
     private boolean isShopMember(Player player, Sign sign) {

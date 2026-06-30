@@ -3,10 +3,10 @@ package io.paradaux.chestshop.listeners.player;
 import com.google.inject.Inject;
 import io.paradaux.chestshop.configuration.Properties;
 import io.paradaux.chestshop.permission.Permissions;
-import io.paradaux.chestshop.Security;
+import io.paradaux.chestshop.services.Security;
 import io.paradaux.chestshop.services.InfoService;
 import io.paradaux.chestshop.signs.ChestShopSign;
-import io.paradaux.chestshop.utils.uBlock;
+import io.paradaux.chestshop.utils.ShopBlockUtil;
 import io.paradaux.hibernia.framework.i18n.Message;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
@@ -86,7 +86,7 @@ public class PlayerInventory implements Listener {
         if (!canAccess) {
             if (Permissions.has(player, Permissions.SHOPINFO)) {
                 for (Block container : containers) {
-                    Sign sign = uBlock.getConnectedSign(container);
+                    Sign sign = ShopBlockUtil.getConnectedSign(container);
                     if (sign != null) {
                         info.showShopInfo((Player) event.getPlayer(), sign);
                     }

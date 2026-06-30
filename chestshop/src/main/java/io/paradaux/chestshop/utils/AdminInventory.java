@@ -1,4 +1,4 @@
-package io.paradaux.chestshop.economy;
+package io.paradaux.chestshop.utils;
 
 import java.util.ArrayList;
 import java.util.Arrays;

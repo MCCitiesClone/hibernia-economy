@@ -4,19 +4,19 @@ import com.google.inject.Inject;
 import io.paradaux.chestshop.utils.*;
 import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.configuration.Properties;
-import io.paradaux.chestshop.economy.AdminInventory;
+import io.paradaux.chestshop.utils.AdminInventory;
 import io.paradaux.chestshop.database.Account;
 import io.paradaux.chestshop.context.PreTransactionContext;
 import io.paradaux.chestshop.context.TransactionContext;
 import io.paradaux.chestshop.permission.Permissions;
-import io.paradaux.chestshop.Security;
+import io.paradaux.chestshop.services.Security;
 import io.paradaux.chestshop.services.AccountService;
 import io.paradaux.chestshop.services.EconomyService;
 import io.paradaux.chestshop.services.InfoService;
 import io.paradaux.chestshop.services.ItemService;
 import io.paradaux.chestshop.services.TransactionService;
 import io.paradaux.chestshop.signs.ChestShopSign;
-import io.paradaux.chestshop.utils.uBlock;
+import io.paradaux.chestshop.utils.ShopBlockUtil;
 import io.paradaux.hibernia.framework.i18n.Message;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -94,8 +94,8 @@ public class PlayerInteract implements Listener {
         Action action = event.getAction();
         Player player = event.getPlayer();
 
-        if (Properties.USE_BUILT_IN_PROTECTION && uBlock.couldBeShopContainer(block)) {
-            Sign sign = uBlock.getConnectedSign(block);
+        if (Properties.USE_BUILT_IN_PROTECTION && ShopBlockUtil.couldBeShopContainer(block)) {
+            Sign sign = ShopBlockUtil.getConnectedSign(block);
             if (sign != null) {
 
                 if (!security.canView(player, block, Properties.TURN_OFF_DEFAULT_PROTECTION_WHEN_PROTECTED_EXTERNALLY)) {
@@ -246,7 +246,7 @@ public class PlayerInteract implements Listener {
         Action buy = Properties.REVERSE_BUTTONS ? LEFT_CLICK_BLOCK : RIGHT_CLICK_BLOCK;
         BigDecimal price = (action == buy ? PriceUtil.getExactBuyPrice(prices) : PriceUtil.getExactSellPrice(prices));
 
-        Container shopBlock = uBlock.findConnectedContainer(sign);
+        Container shopBlock = ShopBlockUtil.findConnectedContainer(sign);
         Inventory ownerInventory = shopBlock != null ? shopBlock.getInventory() : null;
 
         ItemStack item = items.parse(material);
@@ -334,7 +334,7 @@ public class PlayerInteract implements Listener {
     }
 
     private void showChestGUI(Player player, Block signBlock, Sign sign) {
-        Container container = uBlock.findConnectedContainer(sign);
+        Container container = ShopBlockUtil.findConnectedContainer(sign);
 
         if (container == null) {
             message.send(player, "chestshop.NO_CHEST_DETECTED");

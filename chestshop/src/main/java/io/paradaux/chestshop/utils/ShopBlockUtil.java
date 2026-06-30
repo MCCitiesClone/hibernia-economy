@@ -25,17 +25,17 @@ import static io.paradaux.chestshop.utils.ImplementationAdapter.getState;
 /**
  * @author Acrobot
  */
-public class uBlock {
+public class ShopBlockUtil {
     public static final BlockFace[] CHEST_EXTENSION_FACES = {BlockFace.EAST, BlockFace.NORTH, BlockFace.WEST, BlockFace.SOUTH};
     public static final BlockFace[] SHOP_FACES = {BlockFace.SELF, BlockFace.DOWN, BlockFace.UP, BlockFace.EAST, BlockFace.NORTH, BlockFace.WEST, BlockFace.SOUTH};
 
     public static Sign getConnectedSign(Block block) {
-        Sign sign = uBlock.findAnyNearbyShopSign(block);
+        Sign sign = ShopBlockUtil.findAnyNearbyShopSign(block);
 
         if (sign == null) {
             Block neighbor = findNeighbor(block);
             if (neighbor != null) {
-                sign = uBlock.findAnyNearbyShopSign(neighbor);
+                sign = ShopBlockUtil.findAnyNearbyShopSign(neighbor);
             }
         }
 
@@ -71,7 +71,7 @@ public class uBlock {
     private static Container findConnectedContainer(Location location, BlockFace signFace) {
         if (signFace != null) {
             Block faceBlock = location.clone().add(signFace.getModX(), signFace.getModY(), signFace.getModZ()).getBlock();
-            if (uBlock.couldBeShopContainer(faceBlock)) {
+            if (ShopBlockUtil.couldBeShopContainer(faceBlock)) {
                 return (Container) faceBlock.getState();
             }
         }
@@ -79,7 +79,7 @@ public class uBlock {
         for (BlockFace bf : SHOP_FACES) {
             if (bf != signFace) {
                 Block faceBlock = location.clone().add(bf.getModX(), bf.getModY(), bf.getModZ()).getBlock();
-                if (uBlock.couldBeShopContainer(faceBlock)) {
+                if (ShopBlockUtil.couldBeShopContainer(faceBlock)) {
                     return (Container) faceBlock.getState();
                 }
             }
@@ -102,11 +102,11 @@ public class uBlock {
             Block rightChest = ((BlockState) rightChestSide).getBlock();
 
             if (ChestShopSign.isShopBlock(leftChest)) {
-                result.addAll(uBlock.findConnectedShopSigns(leftChest));
+                result.addAll(ShopBlockUtil.findConnectedShopSigns(leftChest));
             }
 
             if (ChestShopSign.isShopBlock(rightChest)) {
-                result.addAll(uBlock.findConnectedShopSigns(rightChest));
+                result.addAll(ShopBlockUtil.findConnectedShopSigns(rightChest));
             }
         }
 
@@ -114,7 +114,7 @@ public class uBlock {
             Block chestBlock = ((BlockState) chestShopInventoryHolder).getBlock();
 
             if (ChestShopSign.isShopBlock(chestBlock)) {
-                result.addAll(uBlock.findConnectedShopSigns(chestBlock));
+                result.addAll(ShopBlockUtil.findConnectedShopSigns(chestBlock));
             }
         }
 

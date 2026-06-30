@@ -11,7 +11,7 @@ import io.paradaux.chestshop.configuration.Properties;
 import io.paradaux.chestshop.context.PreShopCreationContext;
 import io.paradaux.chestshop.context.TransactionContext;
 import io.paradaux.chestshop.signs.ChestShopSign;
-import io.paradaux.chestshop.utils.uBlock;
+import io.paradaux.chestshop.utils.ShopBlockUtil;
 import org.bukkit.block.Block;
 import org.bukkit.block.Container;
 import org.bukkit.block.Sign;
@@ -68,7 +68,7 @@ public class StockCounterModule implements Listener {
 
         ItemStack itemTradedByShop = determineItemTradedByShop(ChestShopSign.getItem(event.getSignLines()));
         if (itemTradedByShop != null) {
-            Container container = uBlock.findConnectedContainer(event.getSign());
+            Container container = ShopBlockUtil.findConnectedContainer(event.getSign());
             if (container != null) {
                 event.setSignLine(QUANTITY_LINE, getQuantityLineWithCounter(quantity, itemTradedByShop, container.getInventory()));
             }
@@ -82,11 +82,11 @@ public class StockCounterModule implements Listener {
         }
 
         InventoryHolder holder = getHolder(event.getInventory(), false);
-        if (!uBlock.couldBeShopContainer(holder)) {
+        if (!ShopBlockUtil.couldBeShopContainer(holder)) {
             return;
         }
 
-        for (Sign shopSign : uBlock.findConnectedShopSigns(holder)) {
+        for (Sign shopSign : ShopBlockUtil.findConnectedShopSigns(holder)) {
             if (!Properties.USE_STOCK_COUNTER
                     || (Properties.FORCE_UNLIMITED_ADMIN_SHOP && ChestShopSign.isAdminShop(shopSign))) {
                 if (QuantityUtil.quantityLineContainsCounter(ChestShopSign.getQuantityLine(shopSign))) {
@@ -129,7 +129,7 @@ public class StockCounterModule implements Listener {
             return;
         }
 
-        for (Sign shopSign : uBlock.findConnectedShopSigns( getHolder(event.getOwnerInventory(), false))) {
+        for (Sign shopSign : ShopBlockUtil.findConnectedShopSigns( getHolder(event.getOwnerInventory(), false))) {
             updateCounterOnQuantityLine(shopSign, event.getOwnerInventory());
         }
     }
@@ -178,7 +178,7 @@ public class StockCounterModule implements Listener {
 
     public void updateCounterOnItemMoveEvent(ItemStack toAdd, InventoryHolder destinationHolder) {
         Block shopBlock = ChestShopSign.getShopBlock(destinationHolder);
-        Sign connectedSign = uBlock.getConnectedSign(shopBlock);
+        Sign connectedSign = ShopBlockUtil.getConnectedSign(shopBlock);
 
         updateCounterOnQuantityLine(connectedSign, destinationHolder.getInventory(), toAdd);
     }

@@ -2,9 +2,9 @@ package io.paradaux.chestshop.listeners.block;
 
 import com.google.inject.Inject;
 import io.paradaux.chestshop.permission.Permissions;
-import io.paradaux.chestshop.Security;
+import io.paradaux.chestshop.services.Security;
 import io.paradaux.chestshop.signs.ChestShopSign;
-import io.paradaux.chestshop.utils.uBlock;
+import io.paradaux.chestshop.utils.ShopBlockUtil;
 import io.paradaux.hibernia.framework.i18n.Message;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -36,7 +36,7 @@ public class BlockPlace implements Listener {
     public void onContainerPlace(BlockPlaceEvent event) {
         Block placed = event.getBlockPlaced();
 
-        if (!uBlock.couldBeShopContainer(placed)) {
+        if (!ShopBlockUtil.couldBeShopContainer(placed)) {
             return;
         }
 
@@ -52,7 +52,7 @@ public class BlockPlace implements Listener {
             return;
         }
 
-        Block neighbor = uBlock.findNeighbor(placed);
+        Block neighbor = ShopBlockUtil.findNeighbor(placed);
 
         if (neighbor != null && !security.canAccess(event.getPlayer(), neighbor)) {
             message.send(event.getPlayer(), "chestshop.ACCESS_DENIED");
@@ -92,7 +92,7 @@ public class BlockPlace implements Listener {
         for (BlockFace face : searchDirections) {
             Block relative = placed.getRelative(face);
 
-            if (!uBlock.couldBeShopContainer(relative)) {
+            if (!ShopBlockUtil.couldBeShopContainer(relative)) {
                 continue;
             }
 

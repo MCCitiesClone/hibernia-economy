@@ -6,10 +6,10 @@ import io.paradaux.chestshop.utils.QuantityUtil;
 import io.paradaux.chestshop.utils.StringUtil;
 import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.configuration.Properties;
-import io.paradaux.chestshop.economy.AdminInventory;
+import io.paradaux.chestshop.utils.AdminInventory;
 import io.paradaux.chestshop.database.Account;
 import io.paradaux.chestshop.permission.Permissions;
-import io.paradaux.chestshop.utils.uBlock;
+import io.paradaux.chestshop.utils.ShopBlockUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
@@ -172,15 +172,15 @@ public class ChestShopSign {
             return false;
         }
 
-        return uBlock.getConnectedSign(chest) != null;
+        return ShopBlockUtil.getConnectedSign(chest) != null;
     }
 
     public static boolean isShopBlock(Block block) {
-        if (!uBlock.couldBeShopContainer(block)) {
+        if (!ShopBlockUtil.couldBeShopContainer(block)) {
             return false;
         }
 
-        return uBlock.getConnectedSign(block) != null;
+        return ShopBlockUtil.getConnectedSign(block) != null;
     }
 
     /**

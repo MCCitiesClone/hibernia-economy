@@ -6,7 +6,7 @@ import io.paradaux.chestshop.context.ShopCreatedContext;
 import io.paradaux.chestshop.context.ShopDestroyedContext;
 import io.paradaux.chestshop.context.TransactionContext;
 import io.paradaux.chestshop.signs.ChestShopSign;
-import io.paradaux.chestshop.utils.uBlock;
+import io.paradaux.chestshop.utils.ShopBlockUtil;
 import io.paradaux.treasury.api.MarketApi;
 import org.bukkit.Location;
 import org.bukkit.block.Sign;
@@ -109,7 +109,7 @@ public class MarketListener implements Listener {
         try {
             InventoryHolder holder = event.getInventory().getHolder();
             if (holder == null) return;
-            List<Sign> signs = uBlock.findConnectedShopSigns(holder);
+            List<Sign> signs = ShopBlockUtil.findConnectedShopSigns(holder);
             if (signs.isEmpty()) return;
             Inventory inv = event.getInventory();
             MarketApi market = MarketHook.market();

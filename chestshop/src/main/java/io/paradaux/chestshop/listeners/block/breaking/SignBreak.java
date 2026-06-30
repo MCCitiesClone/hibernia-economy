@@ -9,7 +9,7 @@ import io.paradaux.chestshop.context.ShopDestroyedContext;
 import io.paradaux.chestshop.services.AccountService;
 import io.paradaux.chestshop.services.ShopService;
 import io.paradaux.chestshop.signs.ChestShopSign;
-import io.paradaux.chestshop.utils.uBlock;
+import io.paradaux.chestshop.utils.ShopBlockUtil;
 import io.paradaux.hibernia.framework.i18n.Message;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -170,7 +170,7 @@ public class SignBreak implements Listener {
     }
 
     public void sendShopDestroyed(Sign sign, Player player) {
-        Container connectedContainer = uBlock.findConnectedContainer(sign.getBlock());
+        Container connectedContainer = ShopBlockUtil.findConnectedContainer(sign.getBlock());
 
         shops.onDestroyed(new ShopDestroyedContext(player, sign, connectedContainer));
     }

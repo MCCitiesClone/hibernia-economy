@@ -3,7 +3,7 @@ package io.paradaux.chestshop.commands;
 import com.google.inject.Inject;
 import io.paradaux.chestshop.services.InfoService;
 import io.paradaux.chestshop.signs.ChestShopSign;
-import io.paradaux.chestshop.utils.uBlock;
+import io.paradaux.chestshop.utils.ShopBlockUtil;
 import io.paradaux.hibernia.framework.commander.annotations.Command;
 import io.paradaux.hibernia.framework.commander.annotations.Route;
 import io.paradaux.hibernia.framework.commander.annotations.Sender;
@@ -39,8 +39,8 @@ public class ShopInfo implements CommandHandler {
                 Sign sign = null;
                 if (ChestShopSign.isValid(target)) {
                     sign = (Sign) target.getState();
-                } else if (uBlock.couldBeShopContainer(target)) {
-                    sign = uBlock.getConnectedSign(target);
+                } else if (ShopBlockUtil.couldBeShopContainer(target)) {
+                    sign = ShopBlockUtil.getConnectedSign(target);
                 }
 
                 if (sign != null) {

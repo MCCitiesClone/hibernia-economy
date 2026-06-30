@@ -4,7 +4,7 @@ import com.google.inject.Inject;
 import io.paradaux.chestshop.configuration.Properties;
 import io.paradaux.chestshop.permission.Permissions;
 import io.paradaux.chestshop.services.AccountService;
-import io.paradaux.chestshop.utils.uBlock;
+import io.paradaux.chestshop.utils.ShopBlockUtil;
 import io.paradaux.hibernia.framework.i18n.Message;
 import org.bukkit.block.Block;
 import org.bukkit.block.Sign;
@@ -59,11 +59,11 @@ public class ChestBreak implements Listener {
     }
 
     private boolean canBeBroken(Block block, Player breaker) {
-        if (!uBlock.couldBeShopContainer(block) || !Properties.USE_BUILT_IN_PROTECTION) {
+        if (!ShopBlockUtil.couldBeShopContainer(block) || !Properties.USE_BUILT_IN_PROTECTION) {
             return true;
         }
 
-        Sign shopSign = uBlock.getConnectedSign(block);
+        Sign shopSign = ShopBlockUtil.getConnectedSign(block);
         if (breaker != null) {
             return accounts.hasPermission(breaker, Permissions.OTHER_NAME_DESTROY, shopSign);
         }

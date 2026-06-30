@@ -24,7 +24,7 @@ import io.paradaux.chestshop.utils.InventoryUtil;
 import io.paradaux.chestshop.utils.LocationUtil;
 import io.paradaux.chestshop.utils.MaterialUtil;
 import io.paradaux.chestshop.utils.PriceUtil;
-import io.paradaux.chestshop.utils.uBlock;
+import io.paradaux.chestshop.utils.ShopBlockUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
@@ -771,7 +771,7 @@ public class TransactionService {
             return;
         }
 
-        Container connectedContainer = uBlock.findConnectedContainer(sign);
+        Container connectedContainer = ShopBlockUtil.findConnectedContainer(sign);
         shops.onDestroyed(new ShopDestroyedContext(null, sign, connectedContainer));
 
         Material signType = sign.getType();

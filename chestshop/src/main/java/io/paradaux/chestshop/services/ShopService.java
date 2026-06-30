@@ -10,7 +10,7 @@ import io.paradaux.chestshop.database.Account;
 import io.paradaux.chestshop.context.PreShopCreationContext;
 import io.paradaux.chestshop.context.ShopCreatedContext;
 import io.paradaux.chestshop.context.ShopDestroyedContext;
-import io.paradaux.chestshop.Security;
+import io.paradaux.chestshop.services.Security;
 import io.paradaux.chestshop.context.PreShopCreationContext.CreationOutcome;
 import io.paradaux.chestshop.listeners.modules.StockCounterModule;
 import io.paradaux.chestshop.market.MarketListener;
@@ -19,7 +19,7 @@ import io.paradaux.chestshop.utils.LocationUtil;
 import io.paradaux.chestshop.utils.MaterialUtil;
 import io.paradaux.chestshop.utils.PriceUtil;
 import io.paradaux.chestshop.utils.StringUtil;
-import io.paradaux.chestshop.utils.uBlock;
+import io.paradaux.chestshop.utils.ShopBlockUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
@@ -130,7 +130,7 @@ public class ShopService {
 
         if (item == null) {
             if (Properties.ALLOW_AUTO_ITEM_FILL && itemCode.equals(AUTOFILL_CODE)) {
-                Container container = uBlock.findConnectedContainer(ctx.getSign());
+                Container container = ShopBlockUtil.findConnectedContainer(ctx.getSign());
                 if (container != null) {
                     for (ItemStack stack : container.getInventory().getContents()) {
                         if (!MaterialUtil.isEmpty(stack)) {
@@ -229,7 +229,7 @@ public class ShopService {
     /** Require a backing chest (non-admin) the creator may access. */
     private void checkChest(PreShopCreationContext ctx) {
         String nameLine = ChestShopSign.getOwner(ctx.getSignLines());
-        Container connectedContainer = uBlock.findConnectedContainer(ctx.getSign().getBlock());
+        Container connectedContainer = ShopBlockUtil.findConnectedContainer(ctx.getSign().getBlock());
 
         if (connectedContainer == null) {
             if (!ChestShopSign.isAdminShop(nameLine)) {
@@ -282,7 +282,7 @@ public class ShopService {
             ctx.setOutcome(CreationOutcome.NO_PERMISSION_FOR_TERRAIN);
             return;
         }
-        Container connectedContainer = uBlock.findConnectedContainer(ctx.getSign().getBlock());
+        Container connectedContainer = ShopBlockUtil.findConnectedContainer(ctx.getSign().getBlock());
         Location containerLocation = connectedContainer != null ? connectedContainer.getLocation() : null;
         if (!protection.canBuild(player, containerLocation, ctx.getSign().getLocation())) {
             ctx.setOutcome(CreationOutcome.NO_PERMISSION_FOR_TERRAIN);
@@ -500,8 +500,8 @@ public class ShopService {
         }
 
         BlockFace shopBlockFace = null;
-        for (BlockFace face : uBlock.CHEST_EXTENSION_FACES) {
-            if (uBlock.couldBeShopContainer(signBlock.getRelative(face))) {
+        for (BlockFace face : ShopBlockUtil.CHEST_EXTENSION_FACES) {
+            if (ShopBlockUtil.couldBeShopContainer(signBlock.getRelative(face))) {
                 shopBlockFace = face;
                 break;
             }

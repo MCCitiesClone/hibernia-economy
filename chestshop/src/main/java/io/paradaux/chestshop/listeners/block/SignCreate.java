@@ -12,7 +12,7 @@ import io.paradaux.chestshop.services.AccountService;
 import io.paradaux.chestshop.services.ItemService;
 import io.paradaux.chestshop.services.ShopService;
 import io.paradaux.chestshop.signs.ChestShopSign;
-import io.paradaux.chestshop.utils.uBlock;
+import io.paradaux.chestshop.utils.ShopBlockUtil;
 import org.bukkit.block.Block;
 import org.bukkit.block.Sign;
 import org.bukkit.event.EventHandler;
@@ -92,7 +92,7 @@ public class SignCreate implements Listener {
             return;
         }
 
-        ShopCreatedContext postEvent = new ShopCreatedContext(preEvent.getPlayer(), preEvent.getSign(), uBlock.findConnectedContainer(preEvent.getSign()), preEvent.getSignLines(), preEvent.getOwnerAccount());
+        ShopCreatedContext postEvent = new ShopCreatedContext(preEvent.getPlayer(), preEvent.getSign(), ShopBlockUtil.findConnectedContainer(preEvent.getSign()), preEvent.getSignLines(), preEvent.getOwnerAccount());
         shops.onCreated(postEvent);
     }
 }

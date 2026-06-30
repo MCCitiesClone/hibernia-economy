@@ -34,8 +34,8 @@ public class Version implements CommandHandler {
     @Route("reload")
     @Description("Reload the ChestShop configuration")
     public void reload(@Sender CommandSender sender) {
-        // Was the ChestShopReloadEvent fan-out: reload config (plugins/ChestShop) and the
-        // item aliases (ItemAliasModule). Both run directly now.
+        // Was the ChestShopReloadEvent fan-out: reload the config and the item
+        // aliases (ItemAliasModule). Both run directly now.
         ChestShop.getPlugin().loadConfig();
         items.reloadAliases();
         sender.sendMessage(ChatColor.DARK_GREEN + "The config was reloaded.");
