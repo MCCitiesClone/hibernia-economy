@@ -22,6 +22,7 @@ import org.bukkit.inventory.InventoryHolder;
 
 import java.util.Locale;
 import java.util.Optional;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static io.paradaux.chestshop.utils.ImplementationAdapter.getState;
@@ -94,10 +95,68 @@ public class ChestShopSign {
 
     public static boolean isValid(String[] lines) {
         lines = StringUtil.stripColourCodes(lines);
-        return ChestShop.items().validateSign(lines)
+        return validateSign(lines)
                 && (getPrice(lines).toUpperCase(Locale.ROOT).contains("B")
                         || getPrice(lines).toUpperCase(Locale.ROOT).contains("S"))
                 && !getOwner(lines).isEmpty();
+    }
+
+    // Constant "name:id" disambiguation suffix (duplicate/too-long names) — compiled once.
+    private static final Pattern NAME_WITH_ID = Pattern.compile("^(.+):[A-Za-z0-9]+$");
+    // The valid-playername regex comes from config and can change on reload, so cache it
+    // by its source string rather than recompiling on every sign validation.
+    private static volatile String cachedPlayernameRegexp;
+    private static volatile Pattern cachedPlayernamePattern;
+
+    /**
+     * Whether the given sign lines form a structurally valid ChestShop sign (owner name,
+     * the three configured shop-sign line patterns, single-colon price line). Pure
+     * sign-format validation — was misplaced on {@code ItemService} behind the static
+     * {@code ChestShop.items()} locator (PAR-282).
+     */
+    public static boolean validateSign(String[] lines) {
+        String ownerName = getOwner(lines);
+
+        // Validate the owner as a player name unless it is blank (auto-filled), an admin
+        // shop, or a business token (B:<base36 id> / legacy b:<FirmName>) resolved elsewhere.
+        if (!isAdminShop(ownerName) && !ownerName.isEmpty()
+                && !ownerName.regionMatches(true, 0, "B:", 0, 2)) {
+            Matcher withId = NAME_WITH_ID.matcher(ownerName);
+            if (withId.matches()) {
+                // The name carries a disambiguation id — validate the part before the last ':'.
+                ownerName = withId.group(1);
+            }
+            if (!validNamePattern().matcher(ownerName).matches()) {
+                return false;
+            }
+        }
+
+        // The last three lines must each match one of the configured shop-sign patterns.
+        for (int i = 0; i < 3; i++) {
+            boolean matches = false;
+            for (Pattern pattern : SHOP_SIGN_PATTERN[i]) {
+                if (pattern.matcher(StringUtil.strip(StringUtil.stripColourCodes(lines[i + 1]))).matches()) {
+                    matches = true;
+                    break;
+                }
+            }
+            if (!matches) {
+                return false;
+            }
+        }
+
+        // A valid prepared sign has at most one ':' in the price line.
+        String priceLine = getPrice(lines);
+        return priceLine.indexOf(':') == priceLine.lastIndexOf(':');
+    }
+
+    private static Pattern validNamePattern() {
+        String regexp = Properties.VALID_PLAYERNAME_REGEXP;
+        if (!regexp.equals(cachedPlayernameRegexp)) {
+            cachedPlayernamePattern = Pattern.compile(regexp);
+            cachedPlayernameRegexp = regexp;
+        }
+        return cachedPlayernamePattern;
     }
 
     public static boolean isValid(Block sign) {
@@ -166,12 +225,11 @@ public class ChestShopSign {
     // AccountService (PAR-282) — they were ledger logic living on a sign util.
 
     /**
-     * @deprecated Call {@code ChestShop.items().validateSign(...)}
-     *             ({@link io.paradaux.chestshop.services.ItemService#validateSign}) instead.
+     * @deprecated Call {@link #validateSign(String[])} instead.
      */
     @Deprecated
     public static boolean isValidPreparedSign(String[] lines) {
-        return ChestShop.items().validateSign(lines);
+        return validateSign(lines);
     }
 
     /**

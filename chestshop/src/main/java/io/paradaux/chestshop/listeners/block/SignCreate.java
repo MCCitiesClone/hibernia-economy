@@ -66,7 +66,7 @@ public class SignCreate implements Listener {
 
         String[] lines = StringUtil.stripColourCodes(event.getLines());
 
-        if (!items.validateSign(lines)) {
+        if (!ChestShopSign.validateSign(lines)) {
             // Check if a valid shop already existed previously
             if (ChestShopSign.isValid(sign)) {
                 signBreak.sendShopDestroyedEvent(sign, event.getPlayer());
