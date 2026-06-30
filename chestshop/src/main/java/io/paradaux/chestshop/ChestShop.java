@@ -85,17 +85,14 @@ public class ChestShop extends JavaPlugin {
 
     private static Metrics bStats;
 
+    // Private references the plugin main class uses for its own enable-time orchestration
+    // (DB migration, account-cache load, BungeeCord message rendering). NOT a service
+    // locator — every other class injects its collaborators (PAR-282).
     private static io.paradaux.hibernia.framework.i18n.Message message;
+    private static ItemCodeService itemCodes;
+    private static io.paradaux.chestshop.services.AccountService accounts;
 
     private static File dataFolder;
-    private static ItemCodeService itemCodes;
-    private static io.paradaux.chestshop.services.ItemService items;
-    private static io.paradaux.chestshop.services.TransactionService transactions;
-    private static io.paradaux.chestshop.services.AccountService accounts;
-    private static io.paradaux.chestshop.services.ShopService shops;
-    private static io.paradaux.chestshop.services.EconomyService economy;
-    private static io.paradaux.chestshop.services.ProtectionService protection;
-    private static io.paradaux.chestshop.services.InfoService info;
 
     private static Logger logger;
     private static Logger shopLogger;
@@ -168,13 +165,7 @@ public class ChestShop extends JavaPlugin {
                 io.paradaux.hibernia.framework.configurator.ConfigurationLoader.class);
         message = injector.getInstance(io.paradaux.hibernia.framework.i18n.Message.class);
         itemCodes = injector.getInstance(io.paradaux.chestshop.services.ItemCodeService.class);
-        items = injector.getInstance(io.paradaux.chestshop.services.ItemService.class);
-        transactions = injector.getInstance(io.paradaux.chestshop.services.TransactionService.class);
         accounts = injector.getInstance(io.paradaux.chestshop.services.AccountService.class);
-        shops = injector.getInstance(io.paradaux.chestshop.services.ShopService.class);
-        economy = injector.getInstance(io.paradaux.chestshop.services.EconomyService.class);
-        protection = injector.getInstance(io.paradaux.chestshop.services.ProtectionService.class);
-        info = injector.getInstance(io.paradaux.chestshop.services.InfoService.class);
 
         injector.getInstance(io.paradaux.hibernia.framework.commander.CommandManager.class).registerAll();
 
@@ -202,7 +193,7 @@ public class ChestShop extends JavaPlugin {
         configurationLoader.reload();
         Properties.applyFrom(configurationLoader.getComponent(ChestShopConfiguration.class));
 
-        accounts().load();
+        accounts.load();
 
         if (handler != null) {
             shopLogger.removeHandler(handler);
@@ -345,7 +336,7 @@ public class ChestShop extends JavaPlugin {
         bStats.addCustomChart(createStaticDrilldownStat("versionJavaMc", javaVersion, serverVersion));
         bStats.addCustomChart(createStaticDrilldownStat("versionMcJava", serverVersion, javaVersion));
 
-        bStats.addCustomChart(new SingleLineChart("shopAccounts", () -> accounts().getAccountCount()));
+        bStats.addCustomChart(new SingleLineChart("shopAccounts", () -> accounts.getAccountCount()));
         bStats.addCustomChart(new MultiLineChart("transactionCount", () -> ImmutableMap.of(
                 "total", MetricsModule.getTotalTransactions(),
                 "buy", MetricsModule.getBuyTransactions(),
@@ -414,46 +405,10 @@ public class ChestShop extends JavaPlugin {
     }
 
     ///////////////////////////////////////////////////////////////////////////////
-
-    /** The item-code service (serialised-item ↔ sign-code store). */
-    public static ItemCodeService itemCodes() {
-        return itemCodes;
-    }
-
-    /** The item-resolution service (sign item/material string ↔ ItemStack, sign validation). */
-    public static io.paradaux.chestshop.services.ItemService items() {
-        return items;
-    }
-
-    /** The transaction service (atomic goods + money legs of a trade). */
-    public static io.paradaux.chestshop.services.TransactionService transactions() {
-        return transactions;
-    }
-
-    /** The account service (username ↔ UUID ↔ short-name store, caches, access rules). */
-    public static io.paradaux.chestshop.services.AccountService accounts() {
-        return accounts;
-    }
-
-    /** The shop service (shop-lifecycle money logic: creation fee, removal refund). */
-    public static io.paradaux.chestshop.services.ShopService shops() {
-        return shops;
-    }
-
-    /** The economy service (ChestShop's direct TreasuryApi boundary, replacing the currency event bus). */
-    public static io.paradaux.chestshop.services.EconomyService economy() {
-        return economy;
-    }
-
-    /** The protection service (shop/chest access + build checks, incl. WorldGuard/GriefPrevention). */
-    public static io.paradaux.chestshop.services.ProtectionService protection() {
-        return protection;
-    }
-
-    /** The info service (read-only /shopinfo and /iteminfo output). */
-    public static io.paradaux.chestshop.services.InfoService info() {
-        return info;
-    }
+    // The static ChestShop.<service>() locator is gone (PAR-282): every class takes its
+    // collaborators through constructor DI. The plugin main class keeps private references
+    // only for the few services it drives itself at enable time (migration, account load,
+    // BungeeCord message rendering).
 
     public static File getFolder() {
         return dataFolder;
@@ -497,11 +452,6 @@ public class ChestShop extends JavaPlugin {
         return bStats;
     }
 
-    /** The framework i18n bean used for all ChestShop player-facing messages. */
-    public static io.paradaux.hibernia.framework.i18n.Message message() {
-        return message;
-    }
-
     /**
      * Build a placeholder-value map for the framework {@link io.paradaux.hibernia.framework.i18n.Message}:
      * a base map plus key/value replacement pairs, optionally blanking {@code {prefix}}. Every ChestShop
@@ -531,7 +481,7 @@ public class ChestShop extends JavaPlugin {
     }
 
     public static void sendBungeeMessage(String playerName, String key, Map<String, String> replacementMap, String... replacements) {
-        sendBungeeMessage(playerName, message().component(key, values(true, replacementMap, replacements)));
+        sendBungeeMessage(playerName, message.component(key, values(true, replacementMap, replacements)));
     }
 
     public static void sendBungeeMessage(String playerName, String message) {
