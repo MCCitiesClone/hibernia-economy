@@ -55,7 +55,7 @@ public interface ShopQueryMapper {
     /** Active, owner-visible shops for an item — exact or fuzzy (substring) match. */
     @Select("""
             <script>
-            SELECT """ + SHOP_COLUMNS + """
+            SELECT\s""" + SHOP_COLUMNS + """
             FROM chestshop_shop s
             """ + OWNER_JOINS + """
             WHERE s.active = 1 AND s.visible = 1
@@ -76,7 +76,7 @@ public interface ShopQueryMapper {
      * (search visibility is separate from the hologram flag the caller honours).
      */
     @Select("""
-            SELECT """ + SHOP_COLUMNS + """
+            SELECT\s""" + SHOP_COLUMNS + """
             FROM chestshop_shop s
             """ + OWNER_JOINS + """
             WHERE s.active = 1
