@@ -21,7 +21,6 @@ import io.paradaux.chestshop.signs.ChestShopSign;
 import io.paradaux.chestshop.signs.RestrictedSign;
 import io.paradaux.chestshop.utils.ImplementationAdapter;
 import io.paradaux.chestshop.utils.InventoryUtil;
-import io.paradaux.chestshop.utils.ItemUtil;
 import io.paradaux.chestshop.utils.LocationUtil;
 import io.paradaux.chestshop.utils.MaterialUtil;
 import io.paradaux.chestshop.utils.PriceUtil;
@@ -100,15 +99,19 @@ public class TransactionService {
     private final SignBreak signBreak;
     private final StockCounterModule stockCounter;
     private final Message message;
+    private final ItemService items;
+    private final MarketListener market;
 
     @Inject
-    public TransactionService(EconomyService economy, ShopService shops, AccountService accounts, SignBreak signBreak, StockCounterModule stockCounter, Message message) {
+    public TransactionService(EconomyService economy, ShopService shops, AccountService accounts, SignBreak signBreak, StockCounterModule stockCounter, Message message, ItemService items, MarketListener market) {
         this.economy = economy;
         this.shops = shops;
         this.accounts = accounts;
         this.signBreak = signBreak;
         this.stockCounter = stockCounter;
         this.message = message;
+        this.items = items;
+        this.market = market;
     }
 
     private static final String BUY_LOG = "%1$s bought %2$s for %3$.2f from %4$s at %5$s";
@@ -610,7 +613,7 @@ public class TransactionService {
         }
 
         if (Properties.NOTIFICATION_MESSAGE_COOLDOWN > 0) {
-            String cacheKey = key + "|" + String.join(",", replacements) + "|" + ItemUtil.getItemList(stock);
+            String cacheKey = key + "|" + String.join(",", replacements) + "|" + items.getItemList(stock);
             Long last = notificationCooldowns.get(ownerAccount.getUuid(), cacheKey);
             if (last != null && last + Properties.NOTIFICATION_MESSAGE_COOLDOWN * 1000L > System.currentTimeMillis()) {
                 return;
@@ -618,14 +621,14 @@ public class TransactionService {
             notificationCooldowns.put(ownerAccount.getUuid(), cacheKey, System.currentTimeMillis());
         }
 
-        String items = ItemUtil.getItemList(stock);
+        String itemList = items.getItemList(stock);
         if (player != null) {
             if (Properties.SHOWITEM_MESSAGE && MaterialUtil.Show.sendMessage(player, key, stock, Collections.emptyMap(), replacements)) {
                 return;
             }
-            player.sendMessage(message.component(key, ChestShop.values(true, ImmutableMap.of("material", items, "item", items), replacements)));
+            player.sendMessage(message.component(key, ChestShop.values(true, ImmutableMap.of("material", itemList, "item", itemList), replacements)));
         } else {
-            ChestShop.sendBungeeMessage(ownerAccount.getName(), key, ImmutableMap.of("material", items, "item", items), replacements);
+            ChestShop.sendBungeeMessage(ownerAccount.getName(), key, ImmutableMap.of("material", itemList, "item", itemList), replacements);
         }
     }
 
@@ -651,7 +654,7 @@ public class TransactionService {
 
         // MONITOR reactions, in registration order.
         economy.migrateLegacyBusinessSign(event);
-        MarketListener.onTransaction(event);   // genuine market-DB sync — stays
+        market.onTransaction(event);   // genuine market-DB sync — stays
         logTransaction(event);                 // was @MONITOR TransactionLogger
         sendTransactionMessages(event);        // was @MONITOR TransactionMessageSender
         MetricsModule.onTransaction(event);    // genuine bStats counter — stays
@@ -816,14 +819,14 @@ public class TransactionService {
     private void logTransaction(TransactionEvent event) {
         String template = event.getTransactionType() == BUY ? BUY_LOG : SELL_LOG;
 
-        StringBuilder items = new StringBuilder(50);
+        StringBuilder itemList = new StringBuilder(50);
         for (Map.Entry<ItemStack, Integer> entry : InventoryUtil.getItemCounts(event.getStock()).entrySet()) {
-            items.append(entry.getValue()).append(' ').append(ItemUtil.getName(entry.getKey()));
+            itemList.append(entry.getValue()).append(' ').append(items.getName(entry.getKey()));
         }
 
         ChestShop.getShopLogger().info(String.format(template,
                 event.getClient().getName(),
-                items.toString(),
+                itemList.toString(),
                 event.getExactPrice(),
                 event.getOwnerAccount().getName(),
                 LocationUtil.locationToString(event.getSign().getLocation())));
@@ -867,10 +870,10 @@ public class TransactionService {
         }
 
         if (player != null) {
-            replacementMap.put("item", ItemUtil.getItemList(event.getStock()));
+            replacementMap.put("item", items.getItemList(event.getStock()));
             player.sendMessage(message.component(key, ChestShop.values(true, replacementMap)));
         } else if (playerName != null) {
-            replacementMap.put("item", ItemUtil.getItemList(event.getStock()));
+            replacementMap.put("item", items.getItemList(event.getStock()));
             ChestShop.sendBungeeMessage(playerName, key, replacementMap);
         }
     }

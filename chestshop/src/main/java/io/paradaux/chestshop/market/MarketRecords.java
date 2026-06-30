@@ -1,10 +1,12 @@
 package io.paradaux.chestshop.market;
 
+import com.google.inject.Inject;
+import com.google.inject.Singleton;
+import io.paradaux.chestshop.services.ItemService;
 import io.paradaux.chestshop.utils.InventoryUtil;
 import io.paradaux.chestshop.utils.MaterialUtil;
 import io.paradaux.chestshop.utils.PriceUtil;
 import io.paradaux.chestshop.signs.ChestShopSign;
-import io.paradaux.chestshop.utils.ItemUtil;
 import io.paradaux.business.api.BusinessApi;
 import io.paradaux.business.model.Firm;
 import io.paradaux.treasury.api.TreasuryApi;
@@ -28,19 +30,26 @@ import java.util.UUID;
  * Builds the MarketApi DTOs from ChestShop data: classifies the owning account
  * (personal / business firm / government / admin) via the Treasury + Business
  * APIs, and resolves the real item (incl. custom items) via ChestShop's own
- * item encoding. Pure helper — no state.
+ * item encoding. Injected so the custom-item resolution goes through {@link ItemService}
+ * rather than the static locator (PAR-282).
  */
+@Singleton
 final class MarketRecords {
 
     /** Mirrors ChestShop's synthetic-UUID scheme for business accounts: UUID(MSB, accountId). */
     static final long BUSINESS_UUID_MSB = 0xC5B0000000000000L;
 
-    private MarketRecords() {}
+    private final ItemService items;
+
+    @Inject
+    MarketRecords(ItemService items) {
+        this.items = items;
+    }
 
     record Owner(Integer accountId, String type, Integer firmId, UUID ownerUuid, boolean admin) {}
 
     /** Resolve the shop's owning account from the ChestShop owner-account UUID. */
-    static Owner ownerFromUuid(UUID ownerUuid, boolean adminShop) {
+    Owner ownerFromUuid(UUID ownerUuid, boolean adminShop) {
         if (adminShop || ownerUuid == null) {
             return new Owner(null, null, null, null, true);
         }
@@ -58,7 +67,7 @@ final class MarketRecords {
         return classify(accountId);
     }
 
-    static Owner classify(int accountId) {
+    Owner classify(int accountId) {
         io.paradaux.treasury.model.economy.Account acc = MarketHook.treasury().getAccountById(accountId);
         if (acc == null) {
             return new Owner(accountId, null, null, null, false);
@@ -79,7 +88,7 @@ final class MarketRecords {
     // ── item identity ──────────────────────────────────────────────────────
     // Route through ChestShop's ItemUtil rather than the raw Breeze MaterialUtil,
     // so custom items resolve to their real code instead of the underlying vanilla
-    // material. ItemUtil.getName goes through ItemService.queryString — the same
+    // material. items.getName goes through ItemService.queryString — the same
     // resolver the server's custom-item bridge (e.g. the Nexo integration plugin)
     // hooks to name/parse its items. When no provider claims the item, it falls
     // back to the vanilla code, so vanilla behaviour is unchanged.
@@ -89,9 +98,9 @@ final class MarketRecords {
      * {@code null} if it can't be round-tripped — width 0 means full, untruncated
      * fidelity (no sign-width shortening, which the markets DB doesn't need).
      */
-    private static String canonicalCode(ItemStack item) {
+    private String canonicalCode(ItemStack item) {
         try {
-            return ItemUtil.getName(item, 0);
+            return items.getName(item, 0);
         } catch (RuntimeException e) {
             // getName re-parses the code and throws if it doesn't round-trip
             // (e.g. provider present for query but not parse). Fall back below.
@@ -100,7 +109,7 @@ final class MarketRecords {
     }
 
     /** Stable grouping key — ChestShop's canonical (custom-aware) sign code. */
-    static String itemKey(ItemStack item) {
+    String itemKey(ItemStack item) {
         String code = canonicalCode(item);
         return code != null ? code : MaterialUtil.getSignName(item);
     }
@@ -114,7 +123,7 @@ final class MarketRecords {
      * Distinct from {@link #itemKey} — the key stays the stable code for
      * grouping, while this is just for display.
      */
-    static String itemName(ItemStack item) {
+    String itemName(ItemStack item) {
         if (item.hasItemMeta()) {
             ItemMeta meta = item.getItemMeta();
             if (meta != null && meta.hasDisplayName()) {
@@ -150,7 +159,7 @@ final class MarketRecords {
         return sb.length() > 0 ? sb.toString() : raw;
     }
 
-    static boolean isCustom(ItemStack item) {
+    boolean isCustom(ItemStack item) {
         String vanilla = MaterialUtil.getSignName(item);
         String canonical = canonicalCode(item);
         // A provider (Nexo / ItemBridge) named it beyond the plain vanilla code.
@@ -160,7 +169,7 @@ final class MarketRecords {
         return (vanilla != null && vanilla.contains("#")) || item.hasItemMeta();
     }
 
-    static String itemData(ItemStack item) {
+    String itemData(ItemStack item) {
         if (!isCustom(item)) return null;
         try {
             YamlConfiguration yc = new YamlConfiguration();
@@ -171,7 +180,7 @@ final class MarketRecords {
         }
     }
 
-    static int stockOf(ItemStack item, Inventory inventory) {
+    int stockOf(ItemStack item, Inventory inventory) {
         return inventory == null ? 0 : InventoryUtil.getAmount(item, inventory);
     }
 
@@ -180,7 +189,7 @@ final class MarketRecords {
     }
 
     // ── DTO builders ──
-    static ChestShopSaleRecord sale(Sign sign, ItemStack item, int quantity, UUID customer,
+    ChestShopSaleRecord sale(Sign sign, ItemStack item, int quantity, UUID customer,
                                     Owner owner, BigDecimal total, BigDecimal tax,
                                     String direction, Integer shopStock) {
         Location l = sign.getLocation();
@@ -196,7 +205,7 @@ final class MarketRecords {
                 owner.admin() ? null : shopStock);
     }
 
-    static ChestShopShopRecord shop(Sign sign, ItemStack item, Owner owner, Integer currentStock) {
+    ChestShopShopRecord shop(Sign sign, ItemStack item, Owner owner, Integer currentStock) {
         Location l = sign.getLocation();
         String priceLine = sign.getLine(ChestShopSign.PRICE_LINE);
         int batch;
@@ -214,7 +223,7 @@ final class MarketRecords {
                 batch, owner.admin() ? null : currentStock);
     }
 
-    static int totalAmount(ItemStack[] stock) {
+    int totalAmount(ItemStack[] stock) {
         return java.util.Arrays.stream(stock).filter(Objects::nonNull).mapToInt(ItemStack::getAmount).sum();
     }
 

@@ -9,7 +9,6 @@ import io.paradaux.hibernia.framework.i18n.Message;
 import io.paradaux.chestshop.database.Account;
 import io.paradaux.chestshop.signs.ChestShopSign;
 import io.paradaux.chestshop.utils.InventoryUtil;
-import io.paradaux.chestshop.utils.ItemUtil;
 import io.paradaux.chestshop.utils.MaterialUtil;
 import io.paradaux.chestshop.utils.PriceUtil;
 import io.paradaux.chestshop.utils.StringUtil;
@@ -121,7 +120,7 @@ public class InfoService {
                 : "∞"; // Infinity symbol
 
         Map<String, String> replacementMap = ImmutableMap.of(
-                "item", ItemUtil.getName(item),
+                "item", items.getName(item),
                 "stock", stock,
                 "owner", ownerName,
                 "prices", pricesLine,
@@ -189,7 +188,7 @@ public class InfoService {
      */
     public boolean sendItemName(CommandSender sender, ItemStack item, String messageKey) {
         try {
-            Map<String, String> replacementMap = ImmutableMap.of("item", ItemUtil.getName(item));
+            Map<String, String> replacementMap = ImmutableMap.of("item", items.getName(item));
             if (!Properties.SHOWITEM_MESSAGE || !(sender instanceof Player)
                     || !MaterialUtil.Show.sendMessage((Player) sender, sender.getName(), messageKey, false, new ItemStack[]{item}, replacementMap)) {
                 sender.sendMessage(message.component(messageKey, ChestShop.values(false, replacementMap)));

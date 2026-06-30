@@ -6,13 +6,20 @@ import io.paradaux.chestshop.configuration.Properties;
 import io.paradaux.chestshop.listeners.modules.ItemAliasModule;
 import io.paradaux.chestshop.plugins.ItemBridge;
 import io.paradaux.chestshop.signs.ChestShopSign;
+import io.paradaux.chestshop.utils.InventoryUtil;
 import io.paradaux.chestshop.utils.MaterialUtil;
 import io.paradaux.chestshop.utils.StringUtil;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import static io.paradaux.chestshop.utils.MaterialUtil.MAXIMUM_SIGN_WIDTH;
+import static io.paradaux.chestshop.utils.StringUtil.getMinecraftStringWidth;
 
 /**
  * Resolves the item/sign strings ChestShop puts on signs. Replaces the
@@ -83,6 +90,68 @@ public class ItemService {
     /** Resolve the material part of an item code (vanilla material lookup), or {@code null}. */
     public Material parseMaterial(String materialString, short data) {
         return MaterialUtil.getMaterial(materialString); // the legacy data value is ignored on modern materials
+    }
+
+    // ---- item display names (were the static ItemUtil helpers; PAR-282) ---------
+
+    /** A comma-joined "count name" list for a set of stacks (used in trade/give messages). */
+    public String getItemList(ItemStack[] items) {
+        Map<ItemStack, Integer> itemCounts = InventoryUtil.getItemCounts(items);
+
+        List<String> itemText = new ArrayList<>();
+        for (Map.Entry<ItemStack, Integer> entry : itemCounts.entrySet()) {
+            itemText.add(entry.getValue() + " " + getName(entry.getKey()));
+        }
+
+        return String.join(", ", itemText);
+    }
+
+    /** The item's full (untruncated) ChestShop name/code. */
+    public String getName(ItemStack itemStack) {
+        return getName(itemStack, 0);
+    }
+
+    /**
+     * The item's ChestShop name/code, constrained to {@code maxWidth} pixels (0 = unlimited).
+     * Throws {@link IllegalArgumentException} if a width-shortened code no longer round-trips
+     * back to the same item.
+     */
+    public String getName(ItemStack itemStack, int maxWidth) {
+        String code = queryString(itemStack, maxWidth);
+        if (code != null) {
+            if (maxWidth > 0) {
+                int codeWidth = getMinecraftStringWidth(code);
+                if (codeWidth > maxWidth) {
+                    int exceeding = codeWidth - maxWidth;
+
+                    int poundIndex = code.indexOf('#');
+                    int colonIndex = code.indexOf(':');
+                    String material = code;
+                    String rest = "";
+                    if (poundIndex > 0 && (colonIndex < 0 || poundIndex < colonIndex)) {
+                        material = code.substring(0, poundIndex);
+                        rest = code.substring(poundIndex);
+                    } else if (colonIndex > 0 && (poundIndex < 0 || colonIndex < poundIndex)) {
+                        material = code.substring(0, colonIndex);
+                        rest = code.substring(colonIndex);
+                    }
+                    code = MaterialUtil.getShortenedName(material, getMinecraftStringWidth(material) - exceeding) + rest;
+                }
+            }
+
+            ItemStack codeItem = parse(code);
+            if (!MaterialUtil.equals(itemStack, codeItem)) {
+                throw new IllegalArgumentException("Cannot generate code for item " + itemStack
+                        + " with maximum length of " + maxWidth
+                        + " (code " + code + " results in item " + codeItem + ")");
+            }
+        }
+        return code;
+    }
+
+    /** The item's name as it appears on a sign (constrained to the sign width). */
+    public String getSignName(ItemStack itemStack) {
+        return getName(itemStack, MAXIMUM_SIGN_WIDTH);
     }
 
     /** Whether the given sign lines form a valid ChestShop sign. */

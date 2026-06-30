@@ -16,7 +16,6 @@ import io.paradaux.chestshop.services.InfoService;
 import io.paradaux.chestshop.services.ItemService;
 import io.paradaux.chestshop.services.TransactionService;
 import io.paradaux.chestshop.signs.ChestShopSign;
-import io.paradaux.chestshop.utils.ItemUtil;
 import io.paradaux.chestshop.utils.uBlock;
 import io.paradaux.hibernia.framework.i18n.Message;
 import org.bukkit.Bukkit;
@@ -128,7 +127,7 @@ public class PlayerInteract implements Listener {
                     event.setCancelled(true);
                     String itemCode;
                     try {
-                        itemCode = ItemUtil.getSignName(item);
+                        itemCode = items.getSignName(item);
                     } catch (IllegalArgumentException e) {
                         player.sendMessage(ChatColor.RED + "Error while generating shop sign item name. Please contact an admin or take a look at the console/log!");
                         io.paradaux.chestshop.ChestShop.getPlugin().getLogger().log(Level.SEVERE, "Error while generating shop sign item name", e);

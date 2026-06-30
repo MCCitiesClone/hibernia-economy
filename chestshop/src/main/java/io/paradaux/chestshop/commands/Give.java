@@ -5,7 +5,6 @@ import io.paradaux.chestshop.services.ItemService;
 import io.paradaux.chestshop.utils.InventoryUtil;
 import io.paradaux.chestshop.utils.MaterialUtil;
 import io.paradaux.chestshop.utils.NumberUtil;
-import io.paradaux.chestshop.utils.ItemUtil;
 import io.paradaux.hibernia.framework.commander.annotations.Command;
 import io.paradaux.hibernia.framework.commander.annotations.Description;
 import io.paradaux.hibernia.framework.commander.annotations.GreedyArg;
@@ -93,7 +92,7 @@ public class Give implements CommandHandler {
         item.setAmount(quantity);
         InventoryUtil.add(item, receiver.getInventory());
 
-        message.send(sender, "chestshop.ITEM_GIVEN", "prefix", "", "item", ItemUtil.getName(item), "player", receiver.getName());
+        message.send(sender, "chestshop.ITEM_GIVEN", "prefix", "", "item", items.getName(item), "player", receiver.getName());
     }
 
     private ItemStack getItem(String[] arguments, Set<Integer> disregardedElements) {

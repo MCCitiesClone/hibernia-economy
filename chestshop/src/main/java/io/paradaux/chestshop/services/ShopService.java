@@ -15,7 +15,6 @@ import io.paradaux.chestshop.events.PreShopCreationEvent.CreationOutcome;
 import io.paradaux.chestshop.listeners.modules.StockCounterModule;
 import io.paradaux.chestshop.market.MarketListener;
 import io.paradaux.chestshop.signs.ChestShopSign;
-import io.paradaux.chestshop.utils.ItemUtil;
 import io.paradaux.chestshop.utils.LocationUtil;
 import io.paradaux.chestshop.utils.MaterialUtil;
 import io.paradaux.chestshop.utils.PriceUtil;
@@ -64,9 +63,10 @@ public class ShopService {
     private final StockCounterModule stockCounter;
     private final Message message;
     private final Security security;
+    private final MarketListener market;
 
     @Inject
-    public ShopService(AccountService accounts, EconomyService economy, ItemService items, ProtectionService protection, StockCounterModule stockCounter, Message message, Security security) {
+    public ShopService(AccountService accounts, EconomyService economy, ItemService items, ProtectionService protection, StockCounterModule stockCounter, Message message, Security security, MarketListener market) {
         this.accounts = accounts;
         this.economy = economy;
         this.items = items;
@@ -74,6 +74,7 @@ public class ShopService {
         this.stockCounter = stockCounter;
         this.message = message;
         this.security = security;
+        this.market = market;
     }
 
     /**
@@ -149,7 +150,7 @@ public class ShopService {
             }
         }
 
-        itemCode = ItemUtil.getSignName(item);
+        itemCode = items.getSignName(item);
         if (StringUtil.getMinecraftStringWidth(itemCode) > MaterialUtil.MAXIMUM_SIGN_WIDTH) {
             ctx.setOutcome(CreationOutcome.INVALID_ITEM);
             return;
@@ -468,7 +469,7 @@ public class ShopService {
         stickSignToChest(event);   // was @NORMAL SignSticker
         sendCreatedMessage(event); // was @MONITOR MessageSender
         logCreation(event);        // was @MONITOR ShopCreationLogger
-        MarketListener.onShopCreated(event); // genuine market-DB sync — stays
+        market.onShopCreated(event); // genuine market-DB sync — stays
     }
 
     /**
@@ -479,7 +480,7 @@ public class ShopService {
     public void onDestroyed(ShopDestroyedEvent event) {
         refundOnRemoval(event.getDestroyer(), event.getSign());
         logRemoval(event);                     // was @MONITOR ShopRemovalLogger
-        MarketListener.onShopDestroyed(event); // genuine market-DB sync — stays
+        market.onShopDestroyed(event); // genuine market-DB sync — stays
     }
 
     // ---- post-creation reactions (were the postshopcreation listeners) ----------

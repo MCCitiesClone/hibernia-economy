@@ -6,7 +6,6 @@ import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.services.InfoService;
 import io.paradaux.chestshop.services.ItemInfoLines;
 import io.paradaux.chestshop.services.ItemService;
-import io.paradaux.chestshop.utils.ItemUtil;
 import io.paradaux.hibernia.framework.commander.annotations.Command;
 import io.paradaux.hibernia.framework.commander.annotations.GreedyArg;
 import io.paradaux.hibernia.framework.commander.annotations.Route;
@@ -65,7 +64,7 @@ public class ItemInfo implements CommandHandler {
         if (!info.sendItemName(sender, item, "chestshop.iteminfo_fullname")) return;
 
         try {
-            message.send(sender, "chestshop.iteminfo_shopname", "prefix", "", "item", ItemUtil.getSignName(item));
+            message.send(sender, "chestshop.iteminfo_shopname", "prefix", "", "item", items.getSignName(item));
         } catch (IllegalArgumentException e) {
             sender.sendMessage(ChatColor.RED + "Error while generating shop sign name. Please contact an admin or take a look at the console/log!");
             ChestShop.getPlugin().getLogger().log(Level.SEVERE, "Error while generating shop sign item name", e);

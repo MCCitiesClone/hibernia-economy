@@ -3,7 +3,6 @@ package io.paradaux.chestshop.utils;
 import io.paradaux.chestshop.utils.SimpleCache;
 import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.configuration.Properties;
-import io.paradaux.chestshop.utils.ItemUtil;
 import de.themoep.ShowItem.api.ShowItem;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
@@ -229,7 +228,7 @@ public class MaterialUtil {
      *
      * @param items The items to get the information from
      * @return The list, including the amount and names of the items
-     * @deprecated Use {@link ItemUtil#getItemList(ItemStack[])} instead!
+     * @deprecated Use {@link io.paradaux.chestshop.services.ItemService#getItemList(ItemStack[])} instead!
      */
     @Deprecated
     public static String getItemList(ItemStack[] items) {
@@ -246,7 +245,7 @@ public class MaterialUtil {
 
     /**
      * Returns item's name
-     * Use {@link ItemUtil#getName(ItemStack, int)} if you want to get name aliases too!
+     * Use {@link io.paradaux.chestshop.services.ItemService#getName(ItemStack, int)} if you want to get name aliases too!
      *
      * @param itemStack ItemStack to name
      * @return ItemStack's name
@@ -270,7 +269,7 @@ public class MaterialUtil {
 
     /**
      * Returns item's name, just like on the sign
-     * Use {@link ItemUtil#getSignName(ItemStack)} if you want to get name aliases too!
+     * Use {@link io.paradaux.chestshop.services.ItemService#getSignName(ItemStack)} if you want to get name aliases too!
      *
      * @param itemStack ItemStack to name
      * @return ItemStack's name
@@ -281,7 +280,7 @@ public class MaterialUtil {
 
     /**
      * Returns item's name, with a maximum width.
-     * Use {@link ItemUtil#getName(ItemStack, int)} if you want to get name aliases too!
+     * Use {@link io.paradaux.chestshop.services.ItemService#getName(ItemStack, int)} if you want to get name aliases too!
      *
      * @param itemStack ItemStack to name
      * @param maxWidth The max width that the name should have; 0 or below if it should be unlimited

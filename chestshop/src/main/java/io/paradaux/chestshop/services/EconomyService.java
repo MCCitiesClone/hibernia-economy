@@ -10,7 +10,6 @@ import io.paradaux.chestshop.configuration.Properties;
 import io.paradaux.chestshop.database.Account;
 import io.paradaux.chestshop.events.TransactionEvent;
 import io.paradaux.chestshop.signs.ChestShopSign;
-import io.paradaux.chestshop.utils.ItemUtil;
 import io.paradaux.treasury.api.TaxApi;
 import io.paradaux.treasury.api.TreasuryApi;
 import io.paradaux.treasury.model.economy.AccountType;
@@ -62,10 +61,12 @@ public class EconomyService {
     @Nullable private volatile BusinessApi businessApi;
 
     private final AccountService accounts;
+    private final ItemService items;
 
     @Inject
-    public EconomyService(AccountService accounts) {
+    public EconomyService(AccountService accounts, ItemService items) {
         this.accounts = accounts;
+        this.items = items;
     }
 
     /** Wire the resolved Treasury handle + SYSTEM account + tax/business APIs in once available (enable time). */
@@ -339,7 +340,7 @@ public class EconomyService {
         return BigDecimal.valueOf(pct).divide(BigDecimal.valueOf(100), 6, RoundingMode.HALF_UP);
     }
 
-    private static String buildTransferMessage(TransactionEvent txn) {
+    private String buildTransferMessage(TransactionEvent txn) {
         int totalItems = Arrays.stream(txn.getStock()).mapToInt(ItemStack::getAmount).sum();
         String itemName = transferItemName(txn);
         String ownerName = txn.getOwnerAccount().getName();
@@ -359,11 +360,11 @@ public class EconomyService {
         return prefix + itemName + suffix;
     }
 
-    private static String transferItemName(TransactionEvent txn) {
+    private String transferItemName(TransactionEvent txn) {
         ItemStack[] stock = txn.getStock();
         if (stock != null && stock.length > 0 && stock[0] != null) {
             try {
-                String code = ItemUtil.getName(stock[0], 0);
+                String code = items.getName(stock[0], 0);
                 if (code != null && !code.isBlank()) {
                     return code;
                 }
