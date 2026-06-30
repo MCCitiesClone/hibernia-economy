@@ -1,12 +1,13 @@
 package io.paradaux.chestshop.commands;
 
+import com.google.inject.Inject;
 import io.paradaux.chestshop.AdminBypass;
-import io.paradaux.chestshop.ChestShop;
 import io.paradaux.hibernia.framework.commander.annotations.Command;
 import io.paradaux.hibernia.framework.commander.annotations.Description;
 import io.paradaux.hibernia.framework.commander.annotations.Route;
 import io.paradaux.hibernia.framework.commander.annotations.Sender;
 import io.paradaux.hibernia.framework.commander.spi.CommandHandler;
+import io.paradaux.hibernia.framework.i18n.Message;
 import org.bukkit.entity.Player;
 
 /**
@@ -20,13 +21,20 @@ import org.bukkit.entity.Player;
 @io.paradaux.hibernia.framework.commander.annotations.Permission("ChestShop.admin")
 public class BypassCommand implements CommandHandler {
 
+    private final Message message;
+
+    @Inject
+    public BypassCommand(Message message) {
+        this.message = message;
+    }
+
     @Route("bypass")
     @Description("Toggle your own admin bypass — off lets you play as a normal customer")
     public void bypass(@Sender Player player) {
         if (AdminBypass.toggle(player)) {
-            ChestShop.message().send(player, "chestshop.BYPASS_OFF");
+            message.send(player, "chestshop.BYPASS_OFF");
         } else {
-            ChestShop.message().send(player, "chestshop.BYPASS_ON");
+            message.send(player, "chestshop.BYPASS_ON");
         }
     }
 }

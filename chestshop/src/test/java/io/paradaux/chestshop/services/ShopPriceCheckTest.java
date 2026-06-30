@@ -20,7 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 class ShopPriceCheckTest {
 
-    private final ShopService shops = new ShopService(null, null, null, null, null);
+    private final ShopService shops = new ShopService(null, null, null, null, null, null);
 
     static String[] getPriceString(String prices) {
         return new String[]{null, null, prices, null};

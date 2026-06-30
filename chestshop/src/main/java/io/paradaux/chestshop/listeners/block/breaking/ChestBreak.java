@@ -1,10 +1,11 @@
 package io.paradaux.chestshop.listeners.block.breaking;
 
-import io.paradaux.chestshop.ChestShop;
+import com.google.inject.Inject;
 import io.paradaux.chestshop.configuration.Properties;
 import io.paradaux.chestshop.permission.Permissions;
 import io.paradaux.chestshop.signs.ChestShopSign;
 import io.paradaux.chestshop.utils.uBlock;
+import io.paradaux.hibernia.framework.i18n.Message;
 import org.bukkit.block.Block;
 import org.bukkit.block.Sign;
 import org.bukkit.entity.Player;
@@ -18,11 +19,19 @@ import org.bukkit.event.entity.EntityExplodeEvent;
  * @author Acrobot
  */
 public class ChestBreak implements Listener {
+
+    private final Message message;
+
+    @Inject
+    public ChestBreak(Message message) {
+        this.message = message;
+    }
+
     @EventHandler(ignoreCancelled = true)
-    public static void onChestBreak(BlockBreakEvent event) {
+    public void onChestBreak(BlockBreakEvent event) {
         if (!canBeBroken(event.getBlock(), event.getPlayer())) {
             event.setCancelled(true);
-            ChestShop.message().send(event.getPlayer(), "chestshop.ACCESS_DENIED");
+            message.send(event.getPlayer(), "chestshop.ACCESS_DENIED");
         }
     }
 

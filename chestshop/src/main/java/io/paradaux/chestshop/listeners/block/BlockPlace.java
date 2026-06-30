@@ -1,10 +1,11 @@
 package io.paradaux.chestshop.listeners.block;
 
-import io.paradaux.chestshop.ChestShop;
+import com.google.inject.Inject;
 import io.paradaux.chestshop.permission.Permissions;
 import io.paradaux.chestshop.Security;
 import io.paradaux.chestshop.signs.ChestShopSign;
 import io.paradaux.chestshop.utils.uBlock;
+import io.paradaux.hibernia.framework.i18n.Message;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
@@ -22,8 +23,15 @@ import java.util.List;
  */
 public class BlockPlace implements Listener {
 
+    private final Message message;
+
+    @Inject
+    public BlockPlace(Message message) {
+        this.message = message;
+    }
+
     @EventHandler(ignoreCancelled = true)
-    public static void onContainerPlace(BlockPlaceEvent event) {
+    public void onContainerPlace(BlockPlaceEvent event) {
         Block placed = event.getBlockPlaced();
 
         if (!uBlock.couldBeShopContainer(placed)) {
@@ -37,7 +45,7 @@ public class BlockPlace implements Listener {
         }
 
         if (!Security.canAccess(player, placed)) {
-            ChestShop.message().send(event.getPlayer(), "chestshop.ACCESS_DENIED");
+            message.send(event.getPlayer(), "chestshop.ACCESS_DENIED");
             event.setCancelled(true);
             return;
         }
@@ -45,14 +53,14 @@ public class BlockPlace implements Listener {
         Block neighbor = uBlock.findNeighbor(placed);
 
         if (neighbor != null && !Security.canAccess(event.getPlayer(), neighbor)) {
-            ChestShop.message().send(event.getPlayer(), "chestshop.ACCESS_DENIED");
+            message.send(event.getPlayer(), "chestshop.ACCESS_DENIED");
             event.setCancelled(true);
         }
 
     }
 
     @EventHandler(ignoreCancelled = true)
-    public static void onPlaceAgainstSign(BlockPlaceEvent event) {
+    public void onPlaceAgainstSign(BlockPlaceEvent event) {
         Block against = event.getBlockAgainst();
 
         if (!ChestShopSign.isValid(against)) {
@@ -63,7 +71,7 @@ public class BlockPlace implements Listener {
     }
 
     @EventHandler(ignoreCancelled = true)
-    public static void onHopperDropperPlace(BlockPlaceEvent event) {
+    public void onHopperDropperPlace(BlockPlaceEvent event) {
         Block placed = event.getBlockPlaced();
 
         List<BlockFace> searchDirections = new ArrayList<>();
@@ -87,7 +95,7 @@ public class BlockPlace implements Listener {
             }
 
             if (!Security.canAccess(event.getPlayer(), relative)) {
-                ChestShop.message().send(event.getPlayer(), "chestshop.ACCESS_DENIED");
+                message.send(event.getPlayer(), "chestshop.ACCESS_DENIED");
                 event.setCancelled(true);
                 return;
             }

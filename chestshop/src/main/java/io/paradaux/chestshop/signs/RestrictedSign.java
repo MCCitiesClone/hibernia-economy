@@ -1,9 +1,10 @@
 package io.paradaux.chestshop.signs;
 
+import com.google.inject.Inject;
 import io.paradaux.chestshop.utils.BlockUtil;
-import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.events.PreTransactionEvent;
 import io.paradaux.chestshop.permission.Permissions;
+import io.paradaux.hibernia.framework.i18n.Message;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
@@ -25,6 +26,13 @@ import static io.paradaux.chestshop.permission.Permissions.ADMIN;
 public class RestrictedSign implements Listener {
     private static final BlockFace[] SIGN_CONNECTION_FACES = {BlockFace.SELF, BlockFace.UP, BlockFace.EAST, BlockFace.WEST, BlockFace.NORTH, BlockFace.SOUTH};
 
+    private final Message message;
+
+    @Inject
+    public RestrictedSign(Message message) {
+        this.message = message;
+    }
+
     @EventHandler(ignoreCancelled = true)
     public static void onBlockDestroy(BlockBreakEvent event) {
         Block destroyed = event.getBlock();
@@ -40,13 +48,13 @@ public class RestrictedSign implements Listener {
     }
 
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
-    public static void onSignChange(SignChangeEvent event) {
+    public void onSignChange(SignChangeEvent event) {
         String[] lines = event.getLines();
         Player player = event.getPlayer();
 
         if (isRestricted(lines)) {
             if (!hasPermission(player, lines)) {
-                ChestShop.message().send(player, "chestshop.ACCESS_DENIED");
+                message.send(player, "chestshop.ACCESS_DENIED");
                 dropSignAndCancelEvent(event);
                 return;
             }
@@ -64,7 +72,7 @@ public class RestrictedSign implements Listener {
                 return;
             }
 
-            ChestShop.message().send(player, "chestshop.RESTRICTED_SIGN_CREATED");
+            message.send(player, "chestshop.RESTRICTED_SIGN_CREATED");
         }
     }
 

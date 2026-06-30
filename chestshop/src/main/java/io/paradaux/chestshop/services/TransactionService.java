@@ -8,6 +8,7 @@ import com.google.inject.Singleton;
 import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.permission.Permissions;
 import io.paradaux.chestshop.configuration.Properties;
+import io.paradaux.hibernia.framework.i18n.Message;
 import io.paradaux.chestshop.database.Account;
 import io.paradaux.chestshop.events.PreTransactionEvent;
 import io.paradaux.chestshop.events.ShopDestroyedEvent;
@@ -98,14 +99,16 @@ public class TransactionService {
     private final AccountService accounts;
     private final SignBreak signBreak;
     private final StockCounterModule stockCounter;
+    private final Message message;
 
     @Inject
-    public TransactionService(EconomyService economy, ShopService shops, AccountService accounts, SignBreak signBreak, StockCounterModule stockCounter) {
+    public TransactionService(EconomyService economy, ShopService shops, AccountService accounts, SignBreak signBreak, StockCounterModule stockCounter, Message message) {
         this.economy = economy;
         this.shops = shops;
         this.accounts = accounts;
         this.signBreak = signBreak;
         this.stockCounter = stockCounter;
+        this.message = message;
     }
 
     private static final String BUY_LOG = "%1$s bought %2$s for %3$.2f from %4$s at %5$s";
@@ -550,41 +553,41 @@ public class TransactionService {
             return;
         }
 
-        String message = null;
+        String messageKey = null;
         switch (ctx.getTransactionOutcome()) {
-            case SHOP_DOES_NOT_BUY_THIS_ITEM -> message = "chestshop.NO_SELLING_HERE";
-            case SHOP_DOES_NOT_SELL_THIS_ITEM -> message = "chestshop.NO_BUYING_HERE";
-            case CLIENT_DOES_NOT_HAVE_PERMISSION -> message = "chestshop.NO_PERMISSION";
-            case CLIENT_DOES_NOT_HAVE_ENOUGH_MONEY -> message = "chestshop.NOT_ENOUGH_MONEY";
-            case SHOP_DOES_NOT_HAVE_ENOUGH_MONEY -> message = "chestshop.NOT_ENOUGH_MONEY_SHOP";
+            case SHOP_DOES_NOT_BUY_THIS_ITEM -> messageKey = "chestshop.NO_SELLING_HERE";
+            case SHOP_DOES_NOT_SELL_THIS_ITEM -> messageKey = "chestshop.NO_BUYING_HERE";
+            case CLIENT_DOES_NOT_HAVE_PERMISSION -> messageKey = "chestshop.NO_PERMISSION";
+            case CLIENT_DOES_NOT_HAVE_ENOUGH_MONEY -> messageKey = "chestshop.NOT_ENOUGH_MONEY";
+            case SHOP_DOES_NOT_HAVE_ENOUGH_MONEY -> messageKey = "chestshop.NOT_ENOUGH_MONEY_SHOP";
             case NOT_ENOUGH_SPACE_IN_CHEST -> {
                 if (Properties.SHOW_MESSAGE_FULL_SHOP && !Properties.CSTOGGLE_TOGGLES_FULL_SHOP || !accounts.isIgnoring(ctx.getOwnerAccount().getUuid())) {
                     sendShopLocationMessage(ctx, "chestshop.NOT_ENOUGH_SPACE_IN_YOUR_SHOP", "seller");
                 }
-                message = "chestshop.NOT_ENOUGH_SPACE_IN_CHEST";
+                messageKey = "chestshop.NOT_ENOUGH_SPACE_IN_CHEST";
             }
-            case NOT_ENOUGH_SPACE_IN_INVENTORY -> message = "chestshop.NOT_ENOUGH_SPACE_IN_INVENTORY";
-            case NOT_ENOUGH_STOCK_IN_INVENTORY -> message = "chestshop.NOT_ENOUGH_ITEMS_TO_SELL";
+            case NOT_ENOUGH_SPACE_IN_INVENTORY -> messageKey = "chestshop.NOT_ENOUGH_SPACE_IN_INVENTORY";
+            case NOT_ENOUGH_STOCK_IN_INVENTORY -> messageKey = "chestshop.NOT_ENOUGH_ITEMS_TO_SELL";
             case NOT_ENOUGH_STOCK_IN_CHEST -> {
                 if (Properties.SHOW_MESSAGE_OUT_OF_STOCK && !Properties.CSTOGGLE_TOGGLES_OUT_OF_STOCK || !accounts.isIgnoring(ctx.getOwnerAccount().getUuid())) {
                     sendShopLocationMessage(ctx, "chestshop.NOT_ENOUGH_STOCK_IN_YOUR_SHOP", "buyer");
                 }
-                message = "chestshop.NOT_ENOUGH_STOCK";
+                messageKey = "chestshop.NOT_ENOUGH_STOCK";
             }
-            case CLIENT_DEPOSIT_FAILED -> message = "chestshop.CLIENT_DEPOSIT_FAILED";
+            case CLIENT_DEPOSIT_FAILED -> messageKey = "chestshop.CLIENT_DEPOSIT_FAILED";
             case SHOP_DEPOSIT_FAILED -> {
                 sendMessageToOwner(ctx.getOwnerAccount(), "chestshop.CLIENT_DEPOSIT_FAILED", new String[0]);
-                message = "chestshop.SHOP_DEPOSIT_FAILED";
+                messageKey = "chestshop.SHOP_DEPOSIT_FAILED";
             }
-            case SHOP_IS_RESTRICTED -> message = "chestshop.ACCESS_DENIED";
-            case INVALID_SHOP -> message = "chestshop.INVALID_SHOP_DETECTED";
-            case INVALID_CLIENT_NAME -> message = "chestshop.INVALID_CLIENT_NAME";
-            case CREATIVE_MODE_PROTECTION -> message = "chestshop.TRADE_DENIED_CREATIVE_MODE";
+            case SHOP_IS_RESTRICTED -> messageKey = "chestshop.ACCESS_DENIED";
+            case INVALID_SHOP -> messageKey = "chestshop.INVALID_SHOP_DETECTED";
+            case INVALID_CLIENT_NAME -> messageKey = "chestshop.INVALID_CLIENT_NAME";
+            case CREATIVE_MODE_PROTECTION -> messageKey = "chestshop.TRADE_DENIED_CREATIVE_MODE";
             default -> { }
         }
 
-        if (message != null) {
-            ChestShop.message().send(ctx.getClient(), message);
+        if (messageKey != null) {
+            message.send(ctx.getClient(), messageKey);
         }
     }
 
@@ -620,7 +623,7 @@ public class TransactionService {
             if (Properties.SHOWITEM_MESSAGE && MaterialUtil.Show.sendMessage(player, key, stock, Collections.emptyMap(), replacements)) {
                 return;
             }
-            player.sendMessage(ChestShop.message().component(key, ChestShop.values(true, ImmutableMap.of("material", items, "item", items), replacements)));
+            player.sendMessage(message.component(key, ChestShop.values(true, ImmutableMap.of("material", items, "item", items), replacements)));
         } else {
             ChestShop.sendBungeeMessage(ownerAccount.getName(), key, ImmutableMap.of("material", items, "item", items), replacements);
         }
@@ -865,7 +868,7 @@ public class TransactionService {
 
         if (player != null) {
             replacementMap.put("item", ItemUtil.getItemList(event.getStock()));
-            player.sendMessage(ChestShop.message().component(key, ChestShop.values(true, replacementMap)));
+            player.sendMessage(message.component(key, ChestShop.values(true, replacementMap)));
         } else if (playerName != null) {
             replacementMap.put("item", ItemUtil.getItemList(event.getStock()));
             ChestShop.sendBungeeMessage(playerName, key, replacementMap);

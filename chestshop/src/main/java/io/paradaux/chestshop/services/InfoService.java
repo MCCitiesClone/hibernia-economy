@@ -5,6 +5,7 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.configuration.Properties;
+import io.paradaux.hibernia.framework.i18n.Message;
 import io.paradaux.chestshop.database.Account;
 import io.paradaux.chestshop.signs.ChestShopSign;
 import io.paradaux.chestshop.utils.InventoryUtil;
@@ -70,12 +71,14 @@ public class InfoService {
     private final AccountService accounts;
     private final EconomyService economy;
     private final ItemService items;
+    private final Message message;
 
     @Inject
-    public InfoService(AccountService accounts, EconomyService economy, ItemService items) {
+    public InfoService(AccountService accounts, EconomyService economy, ItemService items, Message message) {
         this.accounts = accounts;
         this.economy = economy;
         this.items = items;
+        this.message = message;
     }
 
     // ---- /shopinfo -------------------------------------------------------------
@@ -83,7 +86,7 @@ public class InfoService {
     /** Render the {@code /shopinfo} (or middle-click) output for a shop sign. */
     public void showShopInfo(Player sender, Sign sign) {
         if (!ChestShopSign.isValid(sign)) {
-            ChestShop.message().send(sender, "chestshop.INVALID_SHOP_DETECTED");
+            message.send(sender, "chestshop.INVALID_SHOP_DETECTED");
             return;
         }
 
@@ -92,14 +95,14 @@ public class InfoService {
         try {
             amount = ChestShopSign.getQuantity(sign);
         } catch (NumberFormatException notANumber) {
-            ChestShop.message().send(sender, "chestshop.INVALID_SHOP_DETECTED");
+            message.send(sender, "chestshop.INVALID_SHOP_DETECTED");
             return;
         }
         String pricesLine = ChestShopSign.getPrice(sign);
 
         Account account = accounts.resolveAccount(nameLine);
         if (account == null) {
-            ChestShop.message().send(sender, "chestshop.INVALID_SHOP_DETECTED");
+            message.send(sender, "chestshop.INVALID_SHOP_DETECTED");
             return;
         }
 
@@ -108,7 +111,7 @@ public class InfoService {
 
         ItemStack item = items.parse(ChestShopSign.getItem(sign));
         if (item == null || amount < 1) {
-            ChestShop.message().send(sender, "chestshop.INVALID_SHOP_DETECTED");
+            message.send(sender, "chestshop.INVALID_SHOP_DETECTED");
             return;
         }
 
@@ -126,7 +129,7 @@ public class InfoService {
         );
         if (!Properties.SHOWITEM_MESSAGE
                 || !MaterialUtil.Show.sendMessage(sender, sender.getName(), "chestshop.shopinfo", false, new ItemStack[]{item}, replacementMap)) {
-            sender.sendMessage(ChestShop.message().component("chestshop.shopinfo", ChestShop.values(false, replacementMap)));
+            sender.sendMessage(message.component("chestshop.shopinfo", ChestShop.values(false, replacementMap)));
         }
 
         BigDecimal buyPrice = PriceUtil.getExactBuyPrice(pricesLine);
@@ -138,13 +141,13 @@ public class InfoService {
         }
 
         if (!buyPrice.equals(PriceUtil.NO_PRICE)) {
-            ChestShop.message().send(sender, "chestshop.shopinfo_buy", "prefix", "",
+            message.send(sender, "chestshop.shopinfo_buy", "prefix", "",
                     "amount", String.valueOf(amount),
                     "price", economy.format(buyPrice)
             );
         }
         if (!sellPrice.equals(PriceUtil.NO_PRICE)) {
-            ChestShop.message().send(sender, "chestshop.shopinfo_sell", "prefix", "",
+            message.send(sender, "chestshop.shopinfo_sell", "prefix", "",
                     "amount", String.valueOf(amount),
                     "price", economy.format(sellPrice)
             );
@@ -155,7 +158,7 @@ public class InfoService {
 
     /** Accumulate the {@code /iteminfo} lines for an item, in the former contributor order. */
     public ItemInfoLines collectItemInfo(CommandSender sender, ItemStack item) {
-        ItemInfoLines lines = new ItemInfoLines(sender, item);
+        ItemInfoLines lines = new ItemInfoLines(sender, item, message);
         // Basic info lines (were ItemInfoListener @NORMAL), in declaration order.
         addRepairCost(lines);
         addEnchantment(lines);
@@ -189,7 +192,7 @@ public class InfoService {
             Map<String, String> replacementMap = ImmutableMap.of("item", ItemUtil.getName(item));
             if (!Properties.SHOWITEM_MESSAGE || !(sender instanceof Player)
                     || !MaterialUtil.Show.sendMessage((Player) sender, sender.getName(), messageKey, false, new ItemStack[]{item}, replacementMap)) {
-                sender.sendMessage(ChestShop.message().component(messageKey, ChestShop.values(false, replacementMap)));
+                sender.sendMessage(message.component(messageKey, ChestShop.values(false, replacementMap)));
             }
         } catch (IllegalArgumentException e) {
             sender.sendMessage(ChatColor.RED + "Error while generating full name. Please contact an admin or take a look at the console/log!");

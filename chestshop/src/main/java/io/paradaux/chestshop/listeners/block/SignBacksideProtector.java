@@ -1,9 +1,10 @@
 package io.paradaux.chestshop.listeners.block;
 
-import io.paradaux.chestshop.ChestShop;
+import com.google.inject.Inject;
 import io.paradaux.chestshop.signs.ChestShopSign;
 import io.paradaux.chestshop.utils.BlockUtil;
 import io.paradaux.chestshop.utils.ImplementationAdapter;
+import io.paradaux.hibernia.framework.i18n.Message;
 import org.bukkit.block.Block;
 import org.bukkit.block.Sign;
 import org.bukkit.block.sign.Side;
@@ -19,8 +20,15 @@ import org.bukkit.event.block.SignChangeEvent;
  */
 public class SignBacksideProtector implements Listener {
 
+    private final Message message;
+
+    @Inject
+    public SignBacksideProtector(Message message) {
+        this.message = message;
+    }
+
     @EventHandler(ignoreCancelled = true, priority = EventPriority.LOW)
-    public static void onSignChange(SignChangeEvent event) {
+    public void onSignChange(SignChangeEvent event) {
         Block signBlock = event.getBlock();
 
         if (!BlockUtil.isSign(signBlock)) {
@@ -31,7 +39,7 @@ public class SignBacksideProtector implements Listener {
             Sign sign = (Sign) ImplementationAdapter.getState(signBlock, false);
             if (ChestShopSign.isValid(sign)) {
                 event.setCancelled(true);
-                ChestShop.message().send(event.getPlayer(), "chestshop.CANNOT_CHANGE_SIGN_BACKSIDE");
+                message.send(event.getPlayer(), "chestshop.CANNOT_CHANGE_SIGN_BACKSIDE");
             }
         }
     }

@@ -1,6 +1,7 @@
 package io.paradaux.chestshop.services;
 
 import io.paradaux.chestshop.ChestShop;
+import io.paradaux.hibernia.framework.i18n.Message;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.command.CommandSender;
@@ -28,11 +29,13 @@ public final class ItemInfoLines {
 
     private final CommandSender sender;
     private final ItemStack item;
+    private final Message message;
     private final Map<String, Component> messages = new LinkedHashMap<>();
 
-    public ItemInfoLines(CommandSender sender, ItemStack item) {
+    public ItemInfoLines(CommandSender sender, ItemStack item, Message message) {
         this.sender = sender;
         this.item = item;
+        this.message = message;
     }
 
     /** @return the CommandSender who initiated the {@code /iteminfo} call. */
@@ -56,6 +59,10 @@ public final class ItemInfoLines {
         messages.put(key, render(key, args));
     }
 
+    private Component render(String key, String... args) {
+        return message.component(key, ChestShop.values(false, null, args));
+    }
+
     public void addRawMessage(String key, Component message) {
         messages.put(key, message);
     }
@@ -69,9 +76,5 @@ public final class ItemInfoLines {
     /** @return the accumulated lines as ordered key → pre-rendered {@link Component} entries. */
     public Collection<Map.Entry<String, Component>> getMessages() {
         return messages.entrySet();
-    }
-
-    private static Component render(String key, String... args) {
-        return ChestShop.message().component(key, ChestShop.values(false, null, args));
     }
 }

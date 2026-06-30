@@ -5,6 +5,7 @@ import com.google.inject.Singleton;
 import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.permission.Permissions;
 import io.paradaux.chestshop.configuration.Properties;
+import io.paradaux.hibernia.framework.i18n.Message;
 import io.paradaux.chestshop.database.Account;
 import io.paradaux.chestshop.events.PreShopCreationEvent;
 import io.paradaux.chestshop.events.ShopCreatedEvent;
@@ -61,14 +62,16 @@ public class ShopService {
     private final ItemService items;
     private final ProtectionService protection;
     private final StockCounterModule stockCounter;
+    private final Message message;
 
     @Inject
-    public ShopService(AccountService accounts, EconomyService economy, ItemService items, ProtectionService protection, StockCounterModule stockCounter) {
+    public ShopService(AccountService accounts, EconomyService economy, ItemService items, ProtectionService protection, StockCounterModule stockCounter, Message message) {
         this.accounts = accounts;
         this.economy = economy;
         this.items = items;
         this.protection = protection;
         this.stockCounter = stockCounter;
+        this.message = message;
     }
 
     /**
@@ -402,18 +405,18 @@ public class ShopService {
         }
 
         if (Bukkit.getPluginManager().getPlugin("Treasury") == null) {
-            ChestShop.message().send(player, "chestshop.TREASURY_REQUIRED");
+            message.send(player, "chestshop.TREASURY_REQUIRED");
             failName(ctx);
             return;
         }
         Account account = accounts.resolveAccount(name);
         if (account == null) {
-            ChestShop.message().send(player, "chestshop.BUSINESS_ACCOUNT_NOT_FOUND");
+            message.send(player, "chestshop.BUSINESS_ACCOUNT_NOT_FOUND");
             failName(ctx);
             return;
         }
         if (!Permissions.has(player, Permissions.ADMIN) && !accounts.canAccess(player, account)) {
-            ChestShop.message().send(player, "chestshop.BUSINESS_NO_CHESTSHOP_PERMISSION");
+            message.send(player, "chestshop.BUSINESS_NO_CHESTSHOP_PERMISSION");
             failName(ctx);
             return;
         }
@@ -432,7 +435,7 @@ public class ShopService {
         if (!ctx.isCancelled()) {
             return;
         }
-        String message = switch (ctx.getOutcome()) {
+        String messageKey = switch (ctx.getOutcome()) {
             case UNKNOWN_PLAYER -> "chestshop.PLAYER_NOT_FOUND";
             case INVALID_ITEM -> "chestshop.INCORRECT_ITEM_ID";
             case INVALID_PRICE -> "chestshop.INVALID_SHOP_PRICE";
@@ -446,8 +449,8 @@ public class ShopService {
             case ITEM_AUTOFILL -> "chestshop.CLICK_TO_AUTOFILL_ITEM";
             default -> null;
         };
-        if (message != null) {
-            ChestShop.message().send(ctx.getPlayer(), message);
+        if (messageKey != null) {
+            message.send(ctx.getPlayer(), messageKey);
         }
     }
 
@@ -525,7 +528,7 @@ public class ShopService {
 
     /** Notify the creator that their shop was made. */
     private void sendCreatedMessage(ShopCreatedEvent event) {
-        ChestShop.message().send(event.getPlayer(), "chestshop.SHOP_CREATED");
+        message.send(event.getPlayer(), "chestshop.SHOP_CREATED");
     }
 
     /** Write a shop-creation line to the shop log (off the main thread). */
@@ -583,7 +586,7 @@ public class ShopService {
         }
 
         creditServerEconomy(price, player.getWorld());
-        ChestShop.message().send(player, "chestshop.SHOP_FEE_PAID", "amount", economy.format(price));
+        message.send(player, "chestshop.SHOP_FEE_PAID", "amount", economy.format(price));
         return true;
     }
 
@@ -612,7 +615,7 @@ public class ShopService {
         economy.deposit(account.getUuid(), refund, sign.getWorld());
 
         debitServerEconomy(refund, sign.getWorld());
-        ChestShop.message().send(destroyer, "chestshop.SHOP_REFUNDED", "amount", economy.format(refund));
+        message.send(destroyer, "chestshop.SHOP_REFUNDED", "amount", economy.format(refund));
     }
 
     /** Mirror a collected creation fee into the server-economy account, if one is configured. */
