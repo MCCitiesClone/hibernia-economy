@@ -34,11 +34,12 @@ public class PlayerConnect implements Listener {
 
         final PlayerDTO playerDTO = new PlayerDTO(event.getPlayer());
 
-        ChestShop.runInAsyncThread(() -> {
-            if (accounts.getAccount(playerDTO.getUniqueId()) != null) {
-                accounts.storeUsername(playerDTO);
-            }
-        });
+        // Register (create or refresh) the player's name↔UUID row on every join, as
+        // upstream ChestShop does. Only updating pre-existing rows left brand-new
+        // players unresolvable: a sign owned by a player who has joined but never
+        // created a shop (so getOrCreateAccount never ran) resolves to "Player not
+        // found", breaking that player's shops until they happen to create one.
+        ChestShop.runInAsyncThread(() -> accounts.storeUsername(playerDTO));
     }
 
     @EventHandler(priority = EventPriority.MONITOR)
