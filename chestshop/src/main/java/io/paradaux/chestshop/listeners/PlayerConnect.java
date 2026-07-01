@@ -1,4 +1,4 @@
-package io.paradaux.chestshop.listeners.player;
+package io.paradaux.chestshop.listeners;
 
 import com.google.inject.Inject;
 import org.bukkit.event.EventHandler;

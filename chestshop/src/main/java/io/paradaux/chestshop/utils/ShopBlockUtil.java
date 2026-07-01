@@ -1,6 +1,5 @@
 package io.paradaux.chestshop.utils;
 
-import io.paradaux.chestshop.utils.BlockUtil;
 import io.paradaux.chestshop.configuration.ChestShopConfiguration;
 import io.paradaux.chestshop.signs.ChestShopSign;
 import com.google.inject.Inject;

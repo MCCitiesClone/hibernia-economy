@@ -1,4 +1,4 @@
-package io.paradaux.chestshop.listeners.modules;
+package io.paradaux.chestshop.listeners;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;

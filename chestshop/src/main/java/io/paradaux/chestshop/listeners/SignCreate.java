@@ -1,4 +1,4 @@
-package io.paradaux.chestshop.listeners.block;
+package io.paradaux.chestshop.listeners;
 
 import com.google.inject.Inject;
 import io.paradaux.chestshop.utils.BlockUtil;
@@ -7,7 +7,6 @@ import io.paradaux.chestshop.utils.StringUtil;
 import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.context.PreShopCreationContext;
 import io.paradaux.chestshop.context.ShopCreatedContext;
-import io.paradaux.chestshop.listeners.block.breaking.SignBreak;
 import io.paradaux.chestshop.services.AccountService;
 import io.paradaux.chestshop.services.ItemService;
 import io.paradaux.chestshop.services.ShopService;

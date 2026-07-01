@@ -1,7 +1,6 @@
-package io.paradaux.chestshop.listeners.block.breaking.attached;
+package io.paradaux.chestshop.listeners;
 
 import com.google.inject.Inject;
-import io.paradaux.chestshop.listeners.block.breaking.SignBreak;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;

@@ -8,17 +8,20 @@ import io.paradaux.chestshop.commands.Toggle;
 import io.paradaux.chestshop.commands.Version;
 import io.paradaux.chestshop.market.MarketHook;
 import io.paradaux.chestshop.market.MarketListener;
-import io.paradaux.chestshop.listeners.block.BlockPlace;
-import io.paradaux.chestshop.listeners.block.breaking.ChestBreak;
-import io.paradaux.chestshop.listeners.block.breaking.SignBreak;
-import io.paradaux.chestshop.listeners.block.SignCreate;
+import io.paradaux.chestshop.listeners.BlockPlace;
+import io.paradaux.chestshop.listeners.ChestBreak;
+import io.paradaux.chestshop.listeners.SignBreak;
+import io.paradaux.chestshop.listeners.SignCreate;
 import io.paradaux.chestshop.economy.EconomyProvider;
 import io.paradaux.chestshop.listeners.GarbageTextListener;
-import io.paradaux.chestshop.listeners.item.ItemMoveListener;
-import io.paradaux.chestshop.listeners.modules.ItemAliasModule;
-import io.paradaux.chestshop.listeners.modules.MetricsModule;
-import io.paradaux.chestshop.listeners.modules.StockCounterModule;
-import io.paradaux.chestshop.listeners.player.*;
+import io.paradaux.chestshop.listeners.ItemMoveListener;
+import io.paradaux.chestshop.services.ItemAliasModule;
+import io.paradaux.chestshop.services.MetricsModule;
+import io.paradaux.chestshop.listeners.StockCounterModule;
+import io.paradaux.chestshop.listeners.PlayerConnect;
+import io.paradaux.chestshop.listeners.PlayerInteract;
+import io.paradaux.chestshop.listeners.PlayerInventory;
+import io.paradaux.chestshop.listeners.PlayerTeleport;
 import io.paradaux.chestshop.logging.FileFormatter;
 import io.paradaux.chestshop.plugins.Dependencies;
 import io.paradaux.chestshop.services.ItemCodeService;
@@ -149,12 +152,12 @@ public class ChestShop extends JavaPlugin {
                         .listeners(
                                 Dependencies.class,
                                 SignBreak.class,
-                                io.paradaux.chestshop.listeners.block.breaking.attached.PhysicsBreak.class,
-                                io.paradaux.chestshop.listeners.block.breaking.PaperBlockDestroyListener.class,
+                                io.paradaux.chestshop.listeners.PhysicsBreak.class,
+                                io.paradaux.chestshop.listeners.PaperBlockDestroyListener.class,
                                 ChestBreak.class,
                                 SignCreate.class,
                                 BlockPlace.class,
-                                io.paradaux.chestshop.listeners.block.SignBacksideProtector.class,
+                                io.paradaux.chestshop.listeners.SignBacksideProtector.class,
                                 MarketListener.class,
                                 PlayerConnect.class,
                                 PlayerInteract.class,

@@ -1,7 +1,7 @@
 package io.paradaux.chestshop.commands;
 
 import com.google.inject.Inject;
-import io.paradaux.chestshop.listeners.modules.MetricsModule;
+import io.paradaux.chestshop.services.MetricsModule;
 import io.paradaux.chestshop.services.AccountService;
 import io.paradaux.hibernia.framework.commander.annotations.Command;
 import io.paradaux.hibernia.framework.commander.annotations.Description;

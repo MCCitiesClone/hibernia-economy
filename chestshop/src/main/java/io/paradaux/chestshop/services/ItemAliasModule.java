@@ -1,7 +1,6 @@
-package io.paradaux.chestshop.listeners.modules;
+package io.paradaux.chestshop.services;
 
 import io.paradaux.chestshop.ChestShop;
-import io.paradaux.chestshop.services.ItemCodeService;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.google.inject.Inject;

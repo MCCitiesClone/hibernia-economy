@@ -1,4 +1,4 @@
-package io.paradaux.chestshop.listeners.block;
+package io.paradaux.chestshop.listeners;
 
 import com.google.inject.Inject;
 import io.paradaux.chestshop.permission.Permissions;

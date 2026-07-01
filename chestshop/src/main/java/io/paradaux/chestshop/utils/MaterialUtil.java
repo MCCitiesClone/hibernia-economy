@@ -1,6 +1,5 @@
 package io.paradaux.chestshop.utils;
 
-import io.paradaux.chestshop.utils.SimpleCache;
 import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.configuration.ChestShopConfiguration;
 import com.google.inject.Inject;

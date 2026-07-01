@@ -6,7 +6,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.ListIterator;
 
-import io.paradaux.chestshop.utils.MaterialUtil;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.entity.HumanEntity;
