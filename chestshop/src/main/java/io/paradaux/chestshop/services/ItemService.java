@@ -4,6 +4,7 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import io.paradaux.chestshop.listeners.modules.ItemAliasModule;
 import io.paradaux.chestshop.plugins.ItemBridge;
+import io.paradaux.chestshop.plugins.Nexo;
 import io.paradaux.chestshop.utils.InventoryUtil;
 import io.paradaux.chestshop.utils.MaterialUtil;
 import org.bukkit.Material;
@@ -42,6 +43,7 @@ public class ItemService {
     private final MaterialUtil materialUtil;
     private final InventoryUtil inventoryUtil;
     private volatile boolean itemBridgeEnabled = false;
+    private volatile boolean nexoEnabled = false;
 
     @Inject
     public ItemService(ItemAliasModule aliases, ItemCodeService itemCodes, MaterialUtil materialUtil, InventoryUtil inventoryUtil) {
@@ -56,15 +58,27 @@ public class ItemService {
         this.itemBridgeEnabled = true;
     }
 
-    /** Reload the configurable item aliases from disk (on {@code /chestshop reload}). */
-    public void reloadAliases() {
-        aliases.reload();
+    /** Mark the Nexo custom-item integration as available + load nexo.yml (called when the plugin hooks). */
+    public void enableNexo() {
+        Nexo.init(itemCodes);
+        this.nexoEnabled = true;
     }
 
-    /** Parse a sign item string into an {@link ItemStack} (ItemBridge / alias / vanilla material), or {@code null}. */
+    /** Reload the configurable item aliases (and Nexo's nexo.yml, if hooked) from disk (on {@code /chestshop reload}). */
+    public void reloadAliases() {
+        aliases.reload();
+        if (nexoEnabled) {
+            Nexo.reload();
+        }
+    }
+
+    /** Parse a sign item string into an {@link ItemStack} (Nexo / ItemBridge / alias / vanilla material), or {@code null}. */
     public ItemStack parse(String itemString) {
-        ItemStack item = itemBridgeEnabled ? ItemBridge.parseItem(itemString) : null;
-        ItemStack alias = aliases.resolveItem(itemString); // a configured alias overrides an ItemBridge match
+        ItemStack item = nexoEnabled ? Nexo.parseItem(itemString) : null;
+        if (item == null && itemBridgeEnabled) {
+            item = ItemBridge.parseItem(itemString);
+        }
+        ItemStack alias = aliases.resolveItem(itemString); // a configured alias overrides a custom-item match
         if (alias != null) {
             item = alias;
         }
@@ -74,9 +88,12 @@ public class ItemService {
         return item;
     }
 
-    /** The sign string for an item (ItemBridge key / vanilla name / configured alias), within {@code maxWidth}. */
+    /** The sign string for an item (Nexo / ItemBridge key / vanilla name / configured alias), within {@code maxWidth}. */
     public String queryString(ItemStack item, int maxWidth) {
-        String result = itemBridgeEnabled ? ItemBridge.queryString(item, maxWidth) : null;
+        String result = nexoEnabled ? Nexo.queryString(item, maxWidth) : null;
+        if (result == null && itemBridgeEnabled) {
+            result = ItemBridge.queryString(item, maxWidth);
+        }
         if (result == null) {
             result = itemCodes.encode(item, maxWidth); // vanilla name
         }

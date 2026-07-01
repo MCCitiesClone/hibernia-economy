@@ -42,6 +42,7 @@ repositories {
     maven("https://s01.oss.sonatype.org/content/repositories/snapshots/")
     maven("https://repo.paradaux.io/releases")
     maven("https://repo.paradaux.io/snapshots")
+    maven("https://repo.nexomc.com/releases") // Nexo (custom-item integration)
 }
 // plugin.yml's ${bukkit.plugin.version} token resolves to the plain monorepo
 // version. (The old Jenkins/manual build-number + timestamp suffix was removed.)
@@ -107,6 +108,7 @@ dependencies {
     compileOnly("com.sk89q.worldguard:worldguard-bukkit:7.1.0-SNAPSHOT") { isTransitive = false }
     compileOnly("com.github.TechFortress:GriefPrevention:16.12.0") { isTransitive = false }
     compileOnly("com.github.jojodmo:ItemBridge:b0054538c1") { isTransitive = false }
+    compileOnly("com.nexomc:nexo:1.15.0") { isTransitive = false }
     compileOnly("de.themoep.showitem:api:1.6.3") { isTransitive = false }
     // Direct project dependencies on the in-repo API modules (ADT stale-chestshop-substitution-comment):
     // this is a single Gradle build (settings.gradle.kts include(...)), NOT a composite with

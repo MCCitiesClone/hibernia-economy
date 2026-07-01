@@ -183,6 +183,12 @@ public class Dependencies implements Listener {
                 // the com.jojodmo.itembridge classes off the path unless the plugin is here.
                 items.enableItemBridge();
                 break;
+            case Nexo:
+                // Native Nexo/ItemsAdder custom-item support (ported from NexoUtilities).
+                // Like ItemBridge, its resolvers are invoked directly by ItemService, keeping
+                // the com.nexomc.nexo classes off the path unless the plugin is here.
+                items.enableNexo();
+                break;
             case ShowItem:
                 MaterialUtil.Show.initialize(plugin);
                 break;
@@ -200,6 +206,7 @@ public class Dependencies implements Listener {
         GriefPrevention,
 
         ItemBridge,
+        Nexo,
 
         ShowItem
     }
