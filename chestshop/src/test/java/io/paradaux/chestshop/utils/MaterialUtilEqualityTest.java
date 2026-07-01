@@ -1,6 +1,6 @@
 package io.paradaux.chestshop.utils;
 
-import io.paradaux.chestshop.configuration.ChestShopConfiguration;
+import io.paradaux.chestshop.model.config.ChestShopConfiguration;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;

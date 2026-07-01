@@ -1,7 +1,7 @@
 package io.paradaux.chestshop.utils;
 
 import io.paradaux.chestshop.ChestShop;
-import io.paradaux.chestshop.configuration.ChestShopConfiguration;
+import io.paradaux.chestshop.model.config.ChestShopConfiguration;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.google.inject.Singleton;

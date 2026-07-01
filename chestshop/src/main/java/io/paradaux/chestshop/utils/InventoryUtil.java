@@ -9,7 +9,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-import io.paradaux.chestshop.configuration.ChestShopConfiguration;
+import io.paradaux.chestshop.model.config.ChestShopConfiguration;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;

@@ -6,7 +6,7 @@ import io.paradaux.business.api.BusinessApi;
 import io.paradaux.business.model.RolePermission;
 import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.permission.Permissions;
-import io.paradaux.chestshop.configuration.ChestShopConfiguration;
+import io.paradaux.chestshop.model.config.ChestShopConfiguration;
 import io.paradaux.chestshop.model.Account;
 import io.paradaux.chestshop.context.TransactionContext;
 import io.paradaux.chestshop.signs.ChestShopSign;

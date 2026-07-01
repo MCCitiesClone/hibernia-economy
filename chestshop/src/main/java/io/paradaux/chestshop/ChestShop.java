@@ -1,6 +1,6 @@
 package io.paradaux.chestshop;
 
-import io.paradaux.chestshop.configuration.ChestShopConfiguration;
+import io.paradaux.chestshop.model.config.ChestShopConfiguration;
 import io.paradaux.chestshop.commands.Give;
 import io.paradaux.chestshop.commands.ItemInfo;
 import io.paradaux.chestshop.commands.ShopInfo;
@@ -22,7 +22,7 @@ import io.paradaux.chestshop.listeners.PlayerConnect;
 import io.paradaux.chestshop.listeners.PlayerInteract;
 import io.paradaux.chestshop.listeners.PlayerInventory;
 import io.paradaux.chestshop.listeners.PlayerTeleport;
-import io.paradaux.chestshop.logging.FileFormatter;
+import io.paradaux.chestshop.utils.FileFormatter;
 import io.paradaux.chestshop.plugins.Dependencies;
 import io.paradaux.chestshop.services.ItemCodeService;
 import io.paradaux.chestshop.signs.RestrictedSign;
@@ -137,7 +137,7 @@ public class ChestShop extends JavaPlugin {
         // render from messages.properties via ChestShop.message().
         io.paradaux.hibernia.framework.guice.HiberniaModule hibernia =
                 io.paradaux.hibernia.framework.guice.HiberniaModule.forPlugin(this)
-                        .scanConfiguration("io.paradaux.chestshop.configuration")
+                        .scanConfiguration("io.paradaux.chestshop.model.config")
                         .handlers(io.paradaux.chestshop.commands.ChestShopCommand.class,
                                 io.paradaux.chestshop.commands.BypassCommand.class,
                                 ItemInfo.class, ShopInfo.class, Version.class,

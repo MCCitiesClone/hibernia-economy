@@ -1,4 +1,4 @@
-package io.paradaux.chestshop.logging;
+package io.paradaux.chestshop.utils;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;

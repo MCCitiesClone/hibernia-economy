@@ -7,7 +7,7 @@ import io.paradaux.chestshop.utils.InventoryUtil;
 import io.paradaux.chestshop.utils.MaterialUtil;
 import io.paradaux.chestshop.utils.QuantityUtil;
 import io.paradaux.chestshop.ChestShop;
-import io.paradaux.chestshop.configuration.ChestShopConfiguration;
+import io.paradaux.chestshop.model.config.ChestShopConfiguration;
 import io.paradaux.chestshop.context.PreShopCreationContext;
 import io.paradaux.chestshop.context.TransactionContext;
 import io.paradaux.chestshop.signs.ChestShopSign;

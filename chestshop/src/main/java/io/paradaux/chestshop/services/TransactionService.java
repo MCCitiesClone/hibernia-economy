@@ -7,7 +7,7 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.permission.Permissions;
-import io.paradaux.chestshop.configuration.ChestShopConfiguration;
+import io.paradaux.chestshop.model.config.ChestShopConfiguration;
 import io.paradaux.hibernia.framework.i18n.Message;
 import io.paradaux.chestshop.model.Account;
 import io.paradaux.chestshop.context.PreTransactionContext;

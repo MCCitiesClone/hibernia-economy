@@ -7,7 +7,7 @@ import io.paradaux.chestshop.services.EconomyService;
 import io.paradaux.chestshop.services.ItemService;
 import io.paradaux.chestshop.services.ProtectionService;
 import io.paradaux.chestshop.utils.MaterialUtil;
-import io.paradaux.chestshop.configuration.ChestShopConfiguration;
+import io.paradaux.chestshop.model.config.ChestShopConfiguration;
 import io.paradaux.chestshop.economy.EconomyProvider;
 import io.paradaux.chestshop.economy.TreasuryEconomyProvider;
 import com.google.common.collect.ImmutableMap;

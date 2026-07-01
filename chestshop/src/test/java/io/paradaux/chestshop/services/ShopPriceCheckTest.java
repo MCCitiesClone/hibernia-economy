@@ -1,6 +1,6 @@
 package io.paradaux.chestshop.services;
 
-import io.paradaux.chestshop.configuration.ChestShopConfiguration;
+import io.paradaux.chestshop.model.config.ChestShopConfiguration;
 import io.paradaux.chestshop.context.PreShopCreationContext;
 import io.paradaux.chestshop.signs.ChestShopSign;
 import io.paradaux.chestshop.utils.PriceUtil;

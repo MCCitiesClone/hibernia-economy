@@ -1,6 +1,6 @@
 package io.paradaux.chestshop.services;
 
-import io.paradaux.chestshop.configuration.ChestShopConfiguration;
+import io.paradaux.chestshop.model.config.ChestShopConfiguration;
 import io.paradaux.chestshop.context.TransactionContext;
 import io.paradaux.chestshop.utils.InventoryUtil;
 import org.bukkit.inventory.Inventory;

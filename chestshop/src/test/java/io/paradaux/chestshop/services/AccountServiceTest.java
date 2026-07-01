@@ -1,9 +1,9 @@
 package io.paradaux.chestshop.services;
 
-import io.paradaux.chestshop.configuration.ChestShopConfiguration;
+import io.paradaux.chestshop.model.config.ChestShopConfiguration;
 import io.paradaux.chestshop.model.Account;
 import io.paradaux.chestshop.mappers.AccountMapper;
-import io.paradaux.chestshop.players.PlayerDTO;
+import io.paradaux.chestshop.model.PlayerDTO;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

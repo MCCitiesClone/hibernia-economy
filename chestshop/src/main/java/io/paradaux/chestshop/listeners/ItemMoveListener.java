@@ -1,7 +1,7 @@
 package io.paradaux.chestshop.listeners;
 
 import com.google.inject.Inject;
-import io.paradaux.chestshop.configuration.ChestShopConfiguration;
+import io.paradaux.chestshop.model.config.ChestShopConfiguration;
 import io.paradaux.chestshop.signs.ChestShopSign;
 import org.bukkit.block.BlockState;
 import org.bukkit.event.EventHandler;

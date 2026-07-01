@@ -1,6 +1,6 @@
 package io.paradaux.chestshop.services;
 
-import io.paradaux.chestshop.configuration.ChestShopConfiguration;
+import io.paradaux.chestshop.model.config.ChestShopConfiguration;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;

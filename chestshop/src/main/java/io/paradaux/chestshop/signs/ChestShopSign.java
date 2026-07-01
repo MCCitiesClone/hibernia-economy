@@ -5,7 +5,7 @@ import io.paradaux.chestshop.utils.ImplementationAdapter;
 import io.paradaux.chestshop.utils.QuantityUtil;
 import io.paradaux.chestshop.utils.StringUtil;
 import io.paradaux.chestshop.ChestShop;
-import io.paradaux.chestshop.configuration.ChestShopConfiguration;
+import io.paradaux.chestshop.model.config.ChestShopConfiguration;
 import io.paradaux.chestshop.utils.AdminInventory;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;

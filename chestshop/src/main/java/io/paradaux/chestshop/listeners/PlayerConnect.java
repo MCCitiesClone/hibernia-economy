@@ -8,7 +8,7 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 
 import io.paradaux.chestshop.ChestShop;
-import io.paradaux.chestshop.players.PlayerDTO;
+import io.paradaux.chestshop.model.PlayerDTO;
 import io.paradaux.chestshop.services.AccountService;
 import io.paradaux.chestshop.services.TransactionService;
 

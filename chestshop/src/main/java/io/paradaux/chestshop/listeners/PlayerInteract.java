@@ -3,7 +3,7 @@ package io.paradaux.chestshop.listeners;
 import com.google.inject.Inject;
 import io.paradaux.chestshop.utils.*;
 import io.paradaux.chestshop.ChestShop;
-import io.paradaux.chestshop.configuration.ChestShopConfiguration;
+import io.paradaux.chestshop.model.config.ChestShopConfiguration;
 import io.paradaux.chestshop.utils.AdminInventory;
 import io.paradaux.chestshop.model.Account;
 import io.paradaux.chestshop.context.PreTransactionContext;

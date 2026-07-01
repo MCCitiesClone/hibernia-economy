@@ -1,4 +1,4 @@
-package io.paradaux.chestshop.configuration;
+package io.paradaux.chestshop.model.config;
 
 import io.paradaux.chestshop.ChestShop;
 import io.paradaux.hibernia.framework.configurator.annotations.ConfigurationComponent;

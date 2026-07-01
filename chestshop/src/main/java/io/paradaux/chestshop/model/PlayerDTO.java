@@ -1,4 +1,4 @@
-package io.paradaux.chestshop.players;
+package io.paradaux.chestshop.model;
 
 import org.bukkit.entity.Player;
 
