@@ -42,7 +42,7 @@ class TransactionServiceTest {
         inventoryUtil = mock(InventoryUtil.class);
         ChestShopConfiguration config = mock(ChestShopConfiguration.class);
         service = new TransactionService(null, null, null, null, null, null, null, null,
-                config, null, null, inventoryUtil, null);
+                config, null, null, inventoryUtil, null, null);
     }
 
     @Test

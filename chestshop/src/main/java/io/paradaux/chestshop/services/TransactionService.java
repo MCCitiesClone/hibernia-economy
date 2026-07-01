@@ -22,6 +22,7 @@ import io.paradaux.chestshop.utils.ImplementationAdapter;
 import io.paradaux.chestshop.utils.InventoryUtil;
 import io.paradaux.chestshop.utils.LocationUtil;
 import io.paradaux.chestshop.utils.MaterialUtil;
+import io.paradaux.chestshop.plugins.ShowItemHook;
 import io.paradaux.chestshop.utils.PriceUtil;
 import io.paradaux.chestshop.utils.ShopBlockUtil;
 import org.bukkit.Bukkit;
@@ -105,10 +106,11 @@ public class TransactionService {
     private final ShopBlockUtil shopBlockUtil;
     private final InventoryUtil inventoryUtil;
     private final MaterialUtil materialUtil;
+    private final ShowItemHook showItem;
 
     @Inject
     public TransactionService(EconomyService economy, ShopService shops, AccountService accounts, SignBreak signBreak, StockCounterModule stockCounter, Message message, ItemService items, MarketListener market,
-                              ChestShopConfiguration config, ChestShopSign chestShopSign, ShopBlockUtil shopBlockUtil, InventoryUtil inventoryUtil, MaterialUtil materialUtil) {
+                              ChestShopConfiguration config, ChestShopSign chestShopSign, ShopBlockUtil shopBlockUtil, InventoryUtil inventoryUtil, MaterialUtil materialUtil, ShowItemHook showItem) {
         this.economy = economy;
         this.shops = shops;
         this.accounts = accounts;
@@ -122,6 +124,7 @@ public class TransactionService {
         this.shopBlockUtil = shopBlockUtil;
         this.inventoryUtil = inventoryUtil;
         this.materialUtil = materialUtil;
+        this.showItem = showItem;
     }
 
     private static final String BUY_LOG = "%1$s bought %2$s for %3$.2f from %4$s at %5$s";
@@ -654,7 +657,7 @@ public class TransactionService {
 
         String itemList = items.getItemList(stock);
         if (player != null) {
-            if (config.isShowitemMessage() && materialUtil.show().sendMessage(message, player, key, stock, Collections.emptyMap(), replacements)) {
+            if (config.isShowitemMessage() && showItem.sendMessage(message, player, key, stock, Collections.emptyMap(), replacements)) {
                 return;
             }
             player.sendMessage(message.component(key, ChestShop.values(true, ImmutableMap.of("material", itemList, "item", itemList), replacements)));
@@ -918,7 +921,7 @@ public class TransactionService {
             replacementMap.put(replacements[i], replacements[i + 1]);
         }
 
-        if (config.isShowitemMessage() && materialUtil.show().sendMessage(message, player, playerName, key, event.getStock(), replacementMap)) {
+        if (config.isShowitemMessage() && showItem.sendMessage(message, player, playerName, key, event.getStock(), replacementMap)) {
             return;
         }
 

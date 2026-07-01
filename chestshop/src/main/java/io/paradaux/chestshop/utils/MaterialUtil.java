@@ -3,33 +3,22 @@ package io.paradaux.chestshop.utils;
 import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.model.config.ChestShopConfiguration;
 import com.google.inject.Inject;
-import com.google.inject.Provider;
 import com.google.inject.Singleton;
-import de.themoep.ShowItem.api.ShowItem;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.TextComponent;
-import net.kyori.adventure.text.serializer.gson.GsonComponentSerializer;
-import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.configuration.file.YamlConstructor;
 import org.bukkit.configuration.file.YamlRepresenter;
-import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.plugin.Plugin;
-import org.jetbrains.annotations.VisibleForTesting;
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.nodes.Tag;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.logging.Level;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -81,22 +70,11 @@ public class MaterialUtil {
     private static final Yaml YAML = new Yaml(new YamlBukkitConstructor(), new YamlRepresenter(), new DumperOptions());
 
     private final ChestShopConfiguration config;
-    // Lazy to break the MaterialUtil ↔ InventoryUtil construction cycle (Show#sendMessage
-    // counts items through InventoryUtil; InventoryUtil#equals comparisons come back here).
-    private final Provider<InventoryUtil> inventoryUtil;
-    private final Show show;
 
     @Inject
-    public MaterialUtil(ChestShopConfiguration config, Provider<InventoryUtil> inventoryUtil) {
+    public MaterialUtil(ChestShopConfiguration config) {
         this.config = config;
-        this.inventoryUtil = inventoryUtil;
         this.materialCache = new SimpleCache<>(config.getCacheSize());
-        this.show = new Show(inventoryUtil);
-    }
-
-    /** The ShowItem hover/icon message facade (its {@code showItem} hook is process-wide). */
-    public Show show() {
-        return show;
     }
 
     private static class YamlBukkitConstructor extends YamlConstructor {
@@ -465,94 +443,4 @@ public class MaterialUtil {
         }
     }
 
-    public static class Show {
-        private static ShowItem showItem = null;
-
-        // Lazy: see the MaterialUtil ↔ InventoryUtil cycle note above.
-        private final Provider<InventoryUtil> inventoryUtil;
-
-        private Show(Provider<InventoryUtil> inventoryUtil) {
-            this.inventoryUtil = inventoryUtil;
-        }
-
-        /**
-         * Lets the class know that it's safe to use the ShowItem methods now
-         *
-         * @param plugin
-         */
-        public static void initialize(Plugin plugin) {
-            showItem = (ShowItem) plugin;
-        }
-
-        /**
-         * Send a message with hover info and icons
-         *
-         * @param player  The player to send the message to
-         * @param message The raw message
-         * @param stock   The items in stock
-         */
-        public boolean sendMessage(io.paradaux.hibernia.framework.i18n.Message message, Player player, String key, ItemStack[] stock, Map<String, String> replacementMap, String... replacements) {
-            return sendMessage(message, player, player.getName(), key, stock, replacementMap, replacements);
-        }
-
-        /**
-         * Send a message with hover info and icons
-         *
-         * @param player        The player to send the message to
-         * @param playerName    The name of the player in case he is offline and bungee messages are enabled
-         * @param message       The raw message
-         * @param stock         The items in stock
-         */
-        public boolean sendMessage(io.paradaux.hibernia.framework.i18n.Message message, Player player, String playerName, String key, ItemStack[] stock, Map<String, String> replacementMap, String... replacements) {
-            return sendMessage(message, player, playerName, key, true, stock, replacementMap, replacements);
-        }
-
-        /**
-         * Send a message with hover info and icons
-         *
-         * @param player        The player to send the message to
-         * @param playerName    The name of the player in case he is offline and bungee messages are enabled
-         * @param message       The raw message
-         * @param showPrefix    If the prefix should show
-         * @param stock         The items in stock
-         */
-        public boolean sendMessage(io.paradaux.hibernia.framework.i18n.Message message, Player player, String playerName, String key, boolean showPrefix, ItemStack[] stock, Map<String, String> replacementMap, String... replacements) {
-            if (showItem == null) {
-                return false;
-            }
-
-            TextComponent.Builder itemComponent = Component.text();
-            for (Map.Entry<ItemStack, Integer> entry : inventoryUtil.get().getItemCounts(stock).entrySet()) {
-                try {
-                    ItemStack item = entry.getKey();
-                    if (item == null || item.getType() == Material.AIR || entry.getValue() <= 0) {
-                        continue;
-                    }
-                    if (entry.getValue() < item.getMaxStackSize()) {
-                        item.setAmount(entry.getValue());
-                    }
-                    itemComponent.append(GsonComponentSerializer.gson().deserialize(showItem.getItemConverter().createComponent(item, Level.FINE).toJsonString(player)));
-                } catch (Exception e) {
-                    ChestShop.getPlugin().getLogger().log(Level.WARNING, "Error while trying to send message '" + key + "' to player " + player.getName() + ": " + e.getMessage());
-                    return false;
-                }
-            }
-
-            // Render through the framework Message with the built item icon passed as
-            // the {item} placeholder value: a ComponentLike renders inline, so the
-            // item (with its hover) is embedded without MineDown's Replacer.
-            Map<String, Object> values = ChestShop.values(showPrefix, replacementMap, replacements);
-            values.put("item", itemComponent.build());
-            Component component = message.component(key, values);
-            if (player != null) {
-                player.sendMessage(component);
-                return true;
-            } else if (playerName != null) {
-                ChestShop.sendBungeeMessage(playerName, component);
-                return true;
-            }
-
-            return true;
-        }
-    }
 }

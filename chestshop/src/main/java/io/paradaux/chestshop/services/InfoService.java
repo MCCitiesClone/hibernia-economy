@@ -10,6 +10,7 @@ import io.paradaux.chestshop.model.Account;
 import io.paradaux.chestshop.signs.ChestShopSign;
 import io.paradaux.chestshop.utils.InventoryUtil;
 import io.paradaux.chestshop.utils.MaterialUtil;
+import io.paradaux.chestshop.plugins.ShowItemHook;
 import io.paradaux.chestshop.utils.PriceUtil;
 import io.paradaux.chestshop.utils.StringUtil;
 import io.paradaux.chestshop.utils.ShopBlockUtil;
@@ -76,11 +77,12 @@ public class InfoService {
     private final ShopBlockUtil shopBlockUtil;
     private final InventoryUtil inventoryUtil;
     private final MaterialUtil materialUtil;
+    private final ShowItemHook showItem;
 
     @Inject
     public InfoService(AccountService accounts, EconomyService economy, ItemService items, Message message,
                        ChestShopConfiguration config, ChestShopSign chestShopSign, ShopBlockUtil shopBlockUtil,
-                       InventoryUtil inventoryUtil, MaterialUtil materialUtil) {
+                       InventoryUtil inventoryUtil, MaterialUtil materialUtil, ShowItemHook showItem) {
         this.accounts = accounts;
         this.economy = economy;
         this.items = items;
@@ -90,6 +92,7 @@ public class InfoService {
         this.shopBlockUtil = shopBlockUtil;
         this.inventoryUtil = inventoryUtil;
         this.materialUtil = materialUtil;
+        this.showItem = showItem;
     }
 
     // ---- /shopinfo -------------------------------------------------------------
@@ -139,7 +142,7 @@ public class InfoService {
                 "quantity", String.valueOf(amount)
         );
         if (!config.isShowitemMessage()
-                || !materialUtil.show().sendMessage(message, sender, sender.getName(), "chestshop.shopinfo", false, new ItemStack[]{item}, replacementMap)) {
+                || !showItem.sendMessage(message, sender, sender.getName(), "chestshop.shopinfo", false, new ItemStack[]{item}, replacementMap)) {
             sender.sendMessage(message.component("chestshop.shopinfo", ChestShop.values(false, replacementMap)));
         }
 
@@ -202,7 +205,7 @@ public class InfoService {
         try {
             Map<String, String> replacementMap = ImmutableMap.of("item", items.getName(item));
             if (!config.isShowitemMessage() || !(sender instanceof Player)
-                    || !materialUtil.show().sendMessage(message, (Player) sender, sender.getName(), messageKey, false, new ItemStack[]{item}, replacementMap)) {
+                    || !showItem.sendMessage(message, (Player) sender, sender.getName(), messageKey, false, new ItemStack[]{item}, replacementMap)) {
                 sender.sendMessage(message.component(messageKey, ChestShop.values(false, replacementMap)));
             }
         } catch (IllegalArgumentException e) {

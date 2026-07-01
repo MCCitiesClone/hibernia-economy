@@ -34,7 +34,7 @@ class MaterialUtilEqualityTest {
         ChestShopConfiguration config = mock(ChestShopConfiguration.class);
         lenient().when(config.getCacheSize()).thenReturn(1000);
         lenient().when(config.getExcludedItemAttributes()).thenReturn(new LinkedHashSet<>());
-        materialUtil = new MaterialUtil(config, () -> null);
+        materialUtil = new MaterialUtil(config);
     }
 
     @Test
