@@ -82,9 +82,12 @@ public final class Nexo {
     private static volatile Map<String, String> aliasToFullCode = Map.of();
     private static volatile Map<String, String> fullCodeToAlias = Map.of();
     private static volatile boolean preferAlias = true;
-    private static volatile String fallbackFormat = "nexo:%s";
+    // Defaults match DemocracyCraft's NexoUtilities production config: the sign shows the
+    // BARE nexo id (no "nexo:" prefix) because ChestShop's item-line pattern rejects colons,
+    // and a bare id on a sign is accepted as a nexo id.
+    private static volatile String fallbackFormat = "%s";
     private static volatile int signMaxChars = 15;
-    private static volatile boolean acceptBareIds = false;
+    private static volatile boolean acceptBareIds = true;
     private static volatile boolean supportItemsAdder = true;
 
     /** Wire the item database and load {@code nexo.yml} (called from Dependencies when Nexo hooks). */
@@ -103,10 +106,10 @@ public final class Nexo {
                     + "display.preferAlias / fallbackFormat / signMaxChars control the sign text.\n"
                     + "input.acceptBareIds lets players type an id without the nexo: prefix.");
             cfg.addDefault("aliases.example_alias", "example_nexo_id");
-            cfg.addDefault("input.acceptBareIds", false);
+            cfg.addDefault("input.acceptBareIds", true);
             cfg.addDefault("input.supportItemsAdder", true);
             cfg.addDefault("display.preferAlias", true);
-            cfg.addDefault("display.fallbackFormat", "nexo:%s");
+            cfg.addDefault("display.fallbackFormat", "%s");
             cfg.addDefault("display.signMaxChars", 15);
             cfg.options().copyDefaults(true);
             try {
@@ -145,9 +148,9 @@ public final class Nexo {
         fullCodeToAlias = Collections.unmodifiableMap(newFullCodeToAlias);
 
         preferAlias = cfg.getBoolean("display.preferAlias", true);
-        fallbackFormat = cfg.getString("display.fallbackFormat", "nexo:%s");
+        fallbackFormat = cfg.getString("display.fallbackFormat", "%s");
         signMaxChars = Math.max(1, cfg.getInt("display.signMaxChars", 15));
-        acceptBareIds = cfg.getBoolean("input.acceptBareIds", false);
+        acceptBareIds = cfg.getBoolean("input.acceptBareIds", true);
         supportItemsAdder = cfg.getBoolean("input.supportItemsAdder", true);
         baseItemCache.clear();
     }
