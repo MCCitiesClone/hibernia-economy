@@ -73,14 +73,23 @@ Numbers accept `K` and `M` shorthand: `1.5K` = 1,500, `2M` = 2,000,000.
 The item being traded, e.g. `DIAMOND` or `OAK_PLANKS`. Use `?` to fill it in from the
 item you're holding when you place the sign.
 
+**Custom items** (from the **Nexo** item plugin) go on this line too — as a short item
+id or configured nickname (e.g. `ruby_gem`) rather than a vanilla material name. The
+simplest way is to hold the item and use `?`, which encodes it correctly; `/iteminfo`
+shows the exact text otherwise. Custom items trade identically to vanilla ones. (Item ids
+appear *bare*, without a `nexo:` prefix, because a colon isn't allowed on the item line.)
+See [Selling custom items](/docs/guides/chestshop-basics#selling-custom-items).
+
 > [!TIP]
 > Not sure what an item is called? Hold it and run `/iteminfo`. You can also look one up
 > by name — e.g. `/iteminfo log`.
 
 > [!NOTE]
-> A buy-and-sell shop needs **items in the chest** to sell to players and **money in
-> the owner's balance** to buy from them. If one side runs dry, that side pauses until
-> it's topped up.
+> **Partial trades.** A trade isn't all-or-nothing: if the shop can't cover the full
+> quantity, it serves **as much as it can** and charges/pays only for that — a customer
+> gets the 12 items left in a chest that advertises 64, or as many as their money covers.
+> A side stops only when it reaches **zero** (no stock, no room, or the customer can't
+> afford one item). Controlled by `ALLOW_PARTIAL_TRANSACTIONS` (on).
 
 ## Commands
 

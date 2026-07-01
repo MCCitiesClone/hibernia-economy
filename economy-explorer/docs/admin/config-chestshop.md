@@ -70,6 +70,29 @@ related flags are all **off** on the live server (shops can be built anywhere al
 normal build perms). Turn these on if you want to restrict shop creation to claims or
 regions.
 
+## Custom items (Nexo)
+
+Support for **Nexo** custom items is **built into ChestShop** — no companion plugin is
+needed (this was previously a separate `NexoUtilities` plugin). ChestShop hooks Nexo
+automatically when it's present (`Nexo` is a softdepend); the integration classes stay
+dormant when it isn't. ItemsAdder items are also recognised (by their persistent-data id).
+
+Configuration lives in `plugins/ChestShop/nexo.yml`, generated on first run:
+
+| Key | Default | What it does |
+|---|---|---|
+| `aliases.<name>` | *(example)* | Map a short **alias → nexo id** (e.g. `bnug: bunny_nugget`), or an **`ItemName#code` → alias** for a specific variant. Players can then type the alias on the item line. |
+| `display.preferAlias` | `true` | Prefer showing a configured alias over the raw id on signs. |
+| `display.fallbackFormat` | `%s` | Sign text when no alias applies. **Keep `%s`** — it writes the **bare id**. ChestShop's item-line pattern rejects colons, so a `nexo:%s` form would fail sign validation and the shop wouldn't create. |
+| `display.signMaxChars` | `15` | Max characters an alias may use before falling back to the id. |
+| `input.acceptBareIds` | `true` | Accept a bare nexo id on the item line (no `nexo:` prefix). **Keep on** — it's what lets bare ids from `fallbackFormat: %s` round-trip. |
+| `input.supportItemsAdder` | `true` | Also detect ItemsAdder items. |
+
+> [!NOTE]
+> Players don't touch `nexo.yml` — they just hold the item and use `?`, or type its id.
+> Aliases are an admin convenience for nicer/shorter sign text. See
+> [Selling custom items](/docs/guides/chestshop-basics#selling-custom-items).
+
 ## DemocracyCraft-specific behaviour (not config)
 
 These are fork behaviours with no config key — worth knowing they exist:
@@ -79,5 +102,7 @@ These are fork behaviours with no config key — worth knowing they exist:
 - **Firm shops** — a `B:<code>` owner line routes a shop to a Treasury business account,
   gated by the firm's `CHESTSHOP` role permission. Legacy `b:<FirmName>` signs self-heal
   to the new format on first trade.
+- **Native custom items** — Nexo/ItemsAdder support is compiled into ChestShop (see
+  [Custom items](#custom-items-nexo)); no separate bridge plugin required.
 - **Market analytics** — every trade is recorded to Treasury's market API, which is what
   feeds this Explorer's Market pages. On whenever the API is present.
