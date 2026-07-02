@@ -1,10 +1,10 @@
 package io.paradaux.chestshop.listeners;
 
+import io.paradaux.chestshop.services.InventoryService;
 import io.paradaux.chestshop.services.MaterialService;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import io.paradaux.chestshop.services.ItemService;
-import io.paradaux.chestshop.utils.InventoryUtil;
 import io.paradaux.chestshop.utils.QuantityUtil;
 import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.model.config.ChestShopConfiguration;
@@ -40,17 +40,17 @@ public class StockCounterModule implements Listener {
     private final ChestShopConfiguration config;
     private final ChestShopSign chestShopSign;
     private final ShopBlockUtil shopBlockUtil;
-    private final InventoryUtil inventoryUtil;
+    private final InventoryService inventoryService;
     private final MaterialService materialService;
 
     @Inject
     public StockCounterModule(ItemService items, ChestShopConfiguration config, ChestShopSign chestShopSign,
-                              ShopBlockUtil shopBlockUtil, InventoryUtil inventoryUtil, MaterialService materialService) {
+                              ShopBlockUtil shopBlockUtil, InventoryService inventoryService, MaterialService materialService) {
         this.items = items;
         this.config = config;
         this.chestShopSign = chestShopSign;
         this.shopBlockUtil = shopBlockUtil;
-        this.inventoryUtil = inventoryUtil;
+        this.inventoryService = inventoryService;
         this.materialService = materialService;
     }
 
@@ -164,7 +164,7 @@ public class StockCounterModule implements Listener {
             return;
         }
 
-        int numTradedItemsInChest = inventoryUtil.getAmount(itemTradedByShop, chestShopInventory);
+        int numTradedItemsInChest = inventoryService.getAmount(itemTradedByShop, chestShopInventory);
 
         for (ItemStack extraStack : extraItems) {
             if (!materialService.equals(extraStack, itemTradedByShop)) {
@@ -207,7 +207,7 @@ public class StockCounterModule implements Listener {
     }
 
     public String getQuantityLineWithCounter(int amount, ItemStack itemTransacted, Inventory chestShopInventory) {
-        int numTransactionItemsInChest = inventoryUtil.getAmount(itemTransacted, chestShopInventory);
+        int numTransactionItemsInChest = inventoryService.getAmount(itemTransacted, chestShopInventory);
 
         return String.format(PRICE_LINE_WITH_COUNT, amount, numTransactionItemsInChest);
     }

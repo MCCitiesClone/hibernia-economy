@@ -8,7 +8,7 @@ import io.paradaux.chestshop.services.ItemCodeService;
 import io.paradaux.chestshop.services.ShopService;
 import io.paradaux.chestshop.services.TransactionService;
 import io.paradaux.chestshop.signs.ChestShopSign;
-import io.paradaux.chestshop.utils.InventoryUtil;
+import io.paradaux.chestshop.services.InventoryService;
 import io.paradaux.chestshop.services.MaterialService;
 import io.paradaux.chestshop.utils.ShopBlockUtil;
 
@@ -37,7 +37,7 @@ public class ChestShopModule extends AbstractModule {
         // stateless helpers stay static on the utils/*Util classes. The remaining
         // ShopBlockUtil↔ChestShopSign construction cycle is broken with Provider<>.
         bind(MaterialService.class).in(Singleton.class);
-        bind(InventoryUtil.class).in(Singleton.class);
+        bind(InventoryService.class).in(Singleton.class);
         bind(ShopBlockUtil.class).in(Singleton.class);
         bind(ChestShopSign.class).in(Singleton.class);
     }

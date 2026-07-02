@@ -1,10 +1,10 @@
 package io.paradaux.chestshop.plugins;
 
+import io.paradaux.chestshop.services.InventoryService;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import de.themoep.ShowItem.api.ShowItem;
 import io.paradaux.chestshop.ChestShop;
-import io.paradaux.chestshop.utils.InventoryUtil;
 import io.paradaux.hibernia.framework.i18n.Message;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
@@ -39,11 +39,11 @@ public class ShowItemHook {
     // sendMessage() (guarded by the null check) defers that load to when it's actually here.
     private static Plugin showItem = null;
 
-    private final InventoryUtil inventoryUtil;
+    private final InventoryService inventoryService;
 
     @Inject
-    public ShowItemHook(InventoryUtil inventoryUtil) {
-        this.inventoryUtil = inventoryUtil;
+    public ShowItemHook(InventoryService inventoryService) {
+        this.inventoryService = inventoryService;
     }
 
     /** Record the hooked ShowItem plugin (process-wide) once it's available. */
@@ -65,7 +65,7 @@ public class ShowItemHook {
         }
 
         TextComponent.Builder itemComponent = Component.text();
-        for (Map.Entry<ItemStack, Integer> entry : inventoryUtil.getItemCounts(stock).entrySet()) {
+        for (Map.Entry<ItemStack, Integer> entry : inventoryService.getItemCounts(stock).entrySet()) {
             try {
                 ItemStack item = entry.getKey();
                 if (item == null || item.getType() == Material.AIR || entry.getValue() <= 0) {

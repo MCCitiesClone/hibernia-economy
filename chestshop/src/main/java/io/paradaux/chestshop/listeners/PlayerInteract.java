@@ -1,5 +1,6 @@
 package io.paradaux.chestshop.listeners;
 
+import io.paradaux.chestshop.services.InventoryService;
 import io.paradaux.chestshop.services.MaterialService;
 import com.google.inject.Inject;
 import io.paradaux.chestshop.utils.*;
@@ -76,14 +77,14 @@ public class PlayerInteract implements Listener {
     private final ChestShopConfiguration config;
     private final ChestShopSign chestShopSign;
     private final ShopBlockUtil shopBlockUtil;
-    private final InventoryUtil inventoryUtil;
+    private final InventoryService inventoryService;
     private final MaterialService materialService;
 
     @Inject
     public PlayerInteract(TransactionService transactions, InfoService info, AccountService accounts,
                           EconomyService economy, ItemService items, Message message, Security security,
                           ChestShopConfiguration config, ChestShopSign chestShopSign, ShopBlockUtil shopBlockUtil,
-                          InventoryUtil inventoryUtil, MaterialService materialService) {
+                          InventoryService inventoryService, MaterialService materialService) {
         this.transactions = transactions;
         this.info = info;
         this.accounts = accounts;
@@ -94,7 +95,7 @@ public class PlayerInteract implements Listener {
         this.config = config;
         this.chestShopSign = chestShopSign;
         this.shopBlockUtil = shopBlockUtil;
-        this.inventoryUtil = inventoryUtil;
+        this.inventoryService = inventoryService;
         this.materialService = materialService;
     }
 
@@ -280,20 +281,20 @@ public class PlayerInteract implements Listener {
 
         BigDecimal pricePerItem = price.divide(BigDecimal.valueOf(amount), MathContext.DECIMAL128);
         if (config.isShiftSellsInStacks() && player.isSneaking() && !price.equals(PriceUtil.NO_PRICE) && isAllowedForShift(action == buy)) {
-            int newAmount = adminShop ? inventoryUtil.getMaxStackSize(item) : getStackAmount(item, ownerInventory, player, action);
+            int newAmount = adminShop ? inventoryService.getMaxStackSize(item) : getStackAmount(item, ownerInventory, player, action);
             if (newAmount > 0) {
                 price = pricePerItem.multiply(BigDecimal.valueOf(newAmount)).setScale(config.getPricePrecision(), RoundingMode.HALF_UP);
                 amount = newAmount;
             }
         } else if (config.isShiftSellsEverything() && player.isSneaking() && !price.equals(PriceUtil.NO_PRICE) && isAllowedForShift(action == buy)) {
             if (action != buy) {
-                int newAmount = inventoryUtil.getAmount(item, player.getInventory());
+                int newAmount = inventoryService.getAmount(item, player.getInventory());
                 if (newAmount > 0) {
                     price = pricePerItem.multiply(BigDecimal.valueOf(newAmount)).setScale(config.getPricePrecision(), RoundingMode.HALF_UP);
                     amount = newAmount;
                 }
             } else if (!adminShop && ownerInventory != null) {
-                int newAmount = inventoryUtil.getAmount(item, ownerInventory);
+                int newAmount = inventoryService.getAmount(item, ownerInventory);
                 if (newAmount > 0) {
                     price = pricePerItem.multiply(BigDecimal.valueOf(newAmount)).setScale(config.getPricePrecision(), RoundingMode.HALF_UP);
                     amount = newAmount;
@@ -303,7 +304,7 @@ public class PlayerInteract implements Listener {
 
         item.setAmount(amount);
 
-        ItemStack[] items = inventoryUtil.getItemsStacked(item);
+        ItemStack[] items = inventoryService.getItemsStacked(item);
 
         // Create virtual admin inventory if
         // - it's an admin shop
@@ -331,10 +332,10 @@ public class PlayerInteract implements Listener {
         Action buy = config.isReverseButtons() ? LEFT_CLICK_BLOCK : RIGHT_CLICK_BLOCK;
         Inventory checkedInventory = (action == buy ? inventory : player.getInventory());
 
-        if (checkedInventory.containsAtLeast(item, inventoryUtil.getMaxStackSize(item))) {
-            return inventoryUtil.getMaxStackSize(item);
+        if (checkedInventory.containsAtLeast(item, inventoryService.getMaxStackSize(item))) {
+            return inventoryService.getMaxStackSize(item);
         } else {
-            return inventoryUtil.getAmount(item, checkedInventory);
+            return inventoryService.getAmount(item, checkedInventory);
         }
     }
 

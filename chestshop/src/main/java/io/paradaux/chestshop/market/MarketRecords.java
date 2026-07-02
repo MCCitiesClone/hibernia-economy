@@ -1,10 +1,10 @@
 package io.paradaux.chestshop.market;
 
+import io.paradaux.chestshop.services.InventoryService;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import io.paradaux.chestshop.services.ItemCodeService;
 import io.paradaux.chestshop.services.ItemService;
-import io.paradaux.chestshop.utils.InventoryUtil;
 import io.paradaux.chestshop.utils.MaterialUtil;
 import io.paradaux.chestshop.utils.PriceUtil;
 import io.paradaux.chestshop.signs.ChestShopSign;
@@ -42,13 +42,13 @@ final class MarketRecords {
 
     private final ItemService items;
     private final ItemCodeService itemCodes;
-    private final InventoryUtil inventoryUtil;
+    private final InventoryService inventoryService;
 
     @Inject
-    MarketRecords(ItemService items, ItemCodeService itemCodes, InventoryUtil inventoryUtil) {
+    MarketRecords(ItemService items, ItemCodeService itemCodes, InventoryService inventoryService) {
         this.items = items;
         this.itemCodes = itemCodes;
-        this.inventoryUtil = inventoryUtil;
+        this.inventoryService = inventoryService;
     }
 
     record Owner(Integer accountId, String type, Integer firmId, UUID ownerUuid, boolean admin) {}
@@ -186,12 +186,12 @@ final class MarketRecords {
     }
 
     int stockOf(ItemStack item, Inventory inventory) {
-        return inventory == null ? 0 : inventoryUtil.getAmount(item, inventory);
+        return inventory == null ? 0 : inventoryService.getAmount(item, inventory);
     }
 
     /** Remaining free space for the item in the container; null if unknown (no inventory). */
     Integer capacityOf(ItemStack item, Inventory inventory) {
-        return inventory == null ? null : inventoryUtil.getRemainingCapacity(item, inventory);
+        return inventory == null ? null : inventoryService.getRemainingCapacity(item, inventory);
     }
 
     private static BigDecimal nonNegativeOrNull(BigDecimal v) {

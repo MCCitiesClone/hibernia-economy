@@ -4,7 +4,6 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import io.paradaux.chestshop.plugins.ItemBridge;
 import io.paradaux.chestshop.plugins.Nexo;
-import io.paradaux.chestshop.utils.InventoryUtil;
 import io.paradaux.chestshop.utils.MaterialUtil;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
@@ -40,16 +39,16 @@ public class ItemService {
     private final ItemAliasModule aliases;
     private final ItemCodeService itemCodes;
     private final MaterialService materialService;
-    private final InventoryUtil inventoryUtil;
+    private final InventoryService inventoryService;
     private volatile boolean itemBridgeEnabled = false;
     private volatile boolean nexoEnabled = false;
 
     @Inject
-    public ItemService(ItemAliasModule aliases, ItemCodeService itemCodes, MaterialService materialService, InventoryUtil inventoryUtil) {
+    public ItemService(ItemAliasModule aliases, ItemCodeService itemCodes, MaterialService materialService, InventoryService inventoryService) {
         this.aliases = aliases;
         this.itemCodes = itemCodes;
         this.materialService = materialService;
-        this.inventoryUtil = inventoryUtil;
+        this.inventoryService = inventoryService;
     }
 
     /** Mark the ItemBridge custom-item integration as available (called when the plugin hooks). */
@@ -108,7 +107,7 @@ public class ItemService {
 
     /** A comma-joined "count name" list for a set of stacks (used in trade/give messages). */
     public String getItemList(ItemStack[] items) {
-        Map<ItemStack, Integer> itemCounts = inventoryUtil.getItemCounts(items);
+        Map<ItemStack, Integer> itemCounts = inventoryService.getItemCounts(items);
 
         List<String> itemText = new ArrayList<>();
         for (Map.Entry<ItemStack, Integer> entry : itemCounts.entrySet()) {

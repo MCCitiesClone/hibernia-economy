@@ -8,7 +8,6 @@ import io.paradaux.chestshop.model.config.ChestShopConfiguration;
 import io.paradaux.hibernia.framework.i18n.Message;
 import io.paradaux.chestshop.model.Account;
 import io.paradaux.chestshop.signs.ChestShopSign;
-import io.paradaux.chestshop.utils.InventoryUtil;
 import io.paradaux.chestshop.plugins.ShowItemHook;
 import io.paradaux.chestshop.utils.PriceUtil;
 import io.paradaux.chestshop.utils.StringUtil;
@@ -74,13 +73,13 @@ public class InfoService {
     private final ChestShopConfiguration config;
     private final ChestShopSign chestShopSign;
     private final ShopBlockUtil shopBlockUtil;
-    private final InventoryUtil inventoryUtil;
+    private final InventoryService inventoryService;
     private final ShowItemHook showItem;
 
     @Inject
     public InfoService(AccountService accounts, EconomyService economy, ItemService items, Message message,
                        ChestShopConfiguration config, ChestShopSign chestShopSign, ShopBlockUtil shopBlockUtil,
-                       InventoryUtil inventoryUtil, ShowItemHook showItem) {
+                       InventoryService inventoryService, ShowItemHook showItem) {
         this.accounts = accounts;
         this.economy = economy;
         this.items = items;
@@ -88,7 +87,7 @@ public class InfoService {
         this.config = config;
         this.chestShopSign = chestShopSign;
         this.shopBlockUtil = shopBlockUtil;
-        this.inventoryUtil = inventoryUtil;
+        this.inventoryService = inventoryService;
         this.showItem = showItem;
     }
 
@@ -128,7 +127,7 @@ public class InfoService {
 
         Container shopBlock = shopBlockUtil.findConnectedContainer(sign);
         String stock = shopBlock != null
-                ? String.valueOf(inventoryUtil.getAmount(item, shopBlock.getInventory()))
+                ? String.valueOf(inventoryService.getAmount(item, shopBlock.getInventory()))
                 : "∞"; // Infinity symbol
 
         Map<String, String> replacementMap = ImmutableMap.of(

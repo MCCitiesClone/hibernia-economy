@@ -1,8 +1,8 @@
 package io.paradaux.chestshop.commands;
 
+import io.paradaux.chestshop.services.InventoryService;
 import com.google.inject.Inject;
 import io.paradaux.chestshop.services.ItemService;
-import io.paradaux.chestshop.utils.InventoryUtil;
 import io.paradaux.chestshop.utils.MaterialUtil;
 import io.paradaux.chestshop.utils.NumberUtil;
 import io.paradaux.hibernia.framework.commander.annotations.Command;
@@ -29,13 +29,13 @@ public class Give implements CommandHandler {
 
     private final ItemService items;
     private final Message message;
-    private final InventoryUtil inventoryUtil;
+    private final InventoryService inventoryService;
 
     @Inject
-    public Give(ItemService items, Message message, InventoryUtil inventoryUtil) {
+    public Give(ItemService items, Message message, InventoryService inventoryService) {
         this.items = items;
         this.message = message;
-        this.inventoryUtil = inventoryUtil;
+        this.inventoryService = inventoryService;
     }
 
     @Route("give <args>")
@@ -92,7 +92,7 @@ public class Give implements CommandHandler {
         }
 
         item.setAmount(quantity);
-        inventoryUtil.add(item, receiver.getInventory());
+        inventoryService.add(item, receiver.getInventory());
 
         message.send(sender, "chestshop.ITEM_GIVEN", "prefix", "", "item", items.getName(item), "player", receiver.getName());
     }

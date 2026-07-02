@@ -103,13 +103,13 @@ public class TransactionService {
     private final ChestShopConfiguration config;
     private final ChestShopSign chestShopSign;
     private final ShopBlockUtil shopBlockUtil;
-    private final InventoryUtil inventoryUtil;
+    private final InventoryService inventoryService;
     private final MaterialService materialService;
     private final ShowItemHook showItem;
 
     @Inject
     public TransactionService(EconomyService economy, ShopService shops, AccountService accounts, SignBreak signBreak, StockCounterModule stockCounter, Message message, ItemService items, MarketListener market,
-                              ChestShopConfiguration config, ChestShopSign chestShopSign, ShopBlockUtil shopBlockUtil, InventoryUtil inventoryUtil, MaterialService materialService, ShowItemHook showItem) {
+                              ChestShopConfiguration config, ChestShopSign chestShopSign, ShopBlockUtil shopBlockUtil, InventoryService inventoryService, MaterialService materialService, ShowItemHook showItem) {
         this.economy = economy;
         this.shops = shops;
         this.accounts = accounts;
@@ -121,7 +121,7 @@ public class TransactionService {
         this.config = config;
         this.chestShopSign = chestShopSign;
         this.shopBlockUtil = shopBlockUtil;
-        this.inventoryUtil = inventoryUtil;
+        this.inventoryService = inventoryService;
         this.materialService = materialService;
         this.showItem = showItem;
     }
@@ -279,7 +279,7 @@ public class TransactionService {
                 ctx.setCancelled(CLIENT_DOES_NOT_HAVE_ENOUGH_MONEY);
                 return;
             }
-            if (!inventoryUtil.hasItems(ctx.getStock(), ctx.getOwnerInventory())) {
+            if (!inventoryService.hasItems(ctx.getStock(), ctx.getOwnerInventory())) {
                 ctx.setCancelled(NOT_ENOUGH_STOCK_IN_CHEST);
             }
         } else {
@@ -287,7 +287,7 @@ public class TransactionService {
                 ctx.setCancelled(SHOP_DOES_NOT_HAVE_ENOUGH_MONEY);
                 return;
             }
-            if (!inventoryUtil.hasItems(ctx.getStock(), ctx.getClientInventory())) {
+            if (!inventoryService.hasItems(ctx.getStock(), ctx.getClientInventory())) {
                 ctx.setCancelled(NOT_ENOUGH_STOCK_IN_INVENTORY);
             }
         }
@@ -327,11 +327,11 @@ public class TransactionService {
             return;
         }
         if (ctx.getTransactionType() == SELL) {
-            if (!inventoryUtil.fits(ctx.getStock(), ctx.getOwnerInventory())) {
+            if (!inventoryService.fits(ctx.getStock(), ctx.getOwnerInventory())) {
                 ctx.setCancelled(NOT_ENOUGH_SPACE_IN_CHEST);
             }
         } else {
-            if (!inventoryUtil.fits(ctx.getStock(), ctx.getClientInventory())) {
+            if (!inventoryService.fits(ctx.getStock(), ctx.getClientInventory())) {
                 ctx.setCancelled(NOT_ENOUGH_SPACE_IN_INVENTORY);
             }
         }
@@ -366,7 +366,7 @@ public class TransactionService {
             ctx.setStock(getCountedItemStack(ctx.getStock(), amountAffordable));
         }
 
-        if (!inventoryUtil.hasItems(ctx.getStock(), ctx.getOwnerInventory())) {
+        if (!inventoryService.hasItems(ctx.getStock(), ctx.getOwnerInventory())) {
             ItemStack[] itemsHad = getItems(ctx.getStock(), ctx.getOwnerInventory());
             int possessed = InventoryUtil.countItems(itemsHad);
             if (possessed <= 0) {
@@ -382,7 +382,7 @@ public class TransactionService {
             ctx.setStock(itemsHad);
         }
 
-        if (!inventoryUtil.fits(ctx.getStock(), ctx.getClientInventory())) {
+        if (!inventoryService.fits(ctx.getStock(), ctx.getClientInventory())) {
             ItemStack[] itemsFit = getItemsThatFit(ctx.getStock(), ctx.getClientInventory());
             int possessed = InventoryUtil.countItems(itemsFit);
             if (possessed <= 0) {
@@ -432,7 +432,7 @@ public class TransactionService {
             ctx.setStock(getCountedItemStack(ctx.getStock(), amountAffordable));
         }
 
-        if (!inventoryUtil.hasItems(ctx.getStock(), ctx.getClientInventory())) {
+        if (!inventoryService.hasItems(ctx.getStock(), ctx.getClientInventory())) {
             ItemStack[] itemsHad = getItems(ctx.getStock(), ctx.getClientInventory());
             int possessed = InventoryUtil.countItems(itemsHad);
             if (possessed <= 0) {
@@ -448,7 +448,7 @@ public class TransactionService {
             ctx.setStock(itemsHad);
         }
 
-        if (!inventoryUtil.fits(ctx.getStock(), ctx.getOwnerInventory())) {
+        if (!inventoryService.fits(ctx.getStock(), ctx.getOwnerInventory())) {
             ItemStack[] itemsFit = getItemsThatFit(ctx.getStock(), ctx.getOwnerInventory());
             int possessed = InventoryUtil.countItems(itemsFit);
             if (possessed <= 0) {
@@ -487,9 +487,9 @@ public class TransactionService {
 
     private ItemStack[] getItems(ItemStack[] stock, Inventory inventory) {
         List<ItemStack> toReturn = new LinkedList<>();
-        for (Map.Entry<ItemStack, Integer> entry : inventoryUtil.getItemCounts(stock).entrySet()) {
-            int amount = inventoryUtil.getAmount(entry.getKey(), inventory);
-            Collections.addAll(toReturn, inventoryUtil.getItemStacked(entry.getKey(), Math.min(amount, entry.getValue())));
+        for (Map.Entry<ItemStack, Integer> entry : inventoryService.getItemCounts(stock).entrySet()) {
+            int amount = inventoryService.getAmount(entry.getKey(), inventory);
+            Collections.addAll(toReturn, inventoryService.getItemStacked(entry.getKey(), Math.min(amount, entry.getValue())));
         }
         return toReturn.toArray(new ItemStack[0]);
     }
@@ -512,7 +512,7 @@ public class TransactionService {
             }
 
             boolean added = false;
-            int maxStackSize = inventoryUtil.getMaxStackSize(stack);
+            int maxStackSize = inventoryService.getMaxStackSize(stack);
             for (ItemStack iStack : stacks) {
                 if (iStack.getAmount() < maxStackSize && materialService.equals(toAdd, iStack)) {
                     int newAmount = iStack.getAmount() + toAdd.getAmount();
@@ -528,7 +528,7 @@ public class TransactionService {
             }
 
             if (!added) {
-                Collections.addAll(stacks, inventoryUtil.getItemsStacked(toAdd));
+                Collections.addAll(stacks, inventoryService.getItemsStacked(toAdd));
             }
             if (left <= 0) {
                 break;
@@ -541,10 +541,10 @@ public class TransactionService {
         List<ItemStack> resultStock = new LinkedList<>();
         int emptySlots = InventoryUtil.countEmpty(inventory);
 
-        for (Map.Entry<ItemStack, Integer> entry : inventoryUtil.getItemCounts(stock).entrySet()) {
+        for (Map.Entry<ItemStack, Integer> entry : inventoryService.getItemCounts(stock).entrySet()) {
             ItemStack item = entry.getKey();
             int amount = entry.getValue();
-            int maxStackSize = inventoryUtil.getMaxStackSize(item);
+            int maxStackSize = inventoryService.getMaxStackSize(item);
             int free = 0;
             for (ItemStack itemInInventory : inventory.getContents()) {
                 if (materialService.equals(item, itemInInventory) && itemInInventory != null) {
@@ -569,7 +569,7 @@ public class TransactionService {
                     amount = free;
                 }
             }
-            Collections.addAll(resultStock, inventoryUtil.getItemStacked(item, amount));
+            Collections.addAll(resultStock, inventoryService.getItemStacked(item, amount));
         }
         return resultStock.toArray(new ItemStack[0]);
     }
@@ -753,8 +753,8 @@ public class TransactionService {
         int leftOver = 0;
         for (ItemStack item : items) {
             leftOver += config.isStackTo64()
-                    ? inventoryUtil.transfer(item, source, target, 64)
-                    : inventoryUtil.transfer(item, source, target);
+                    ? inventoryService.transfer(item, source, target, 64)
+                    : inventoryService.transfer(item, source, target);
         }
 
         if (leftOver > 0) {
@@ -824,7 +824,7 @@ public class TransactionService {
         Material signType = sign.getType();
         sign.getBlock().setType(Material.AIR);
 
-        if (config.isRemoveEmptyChests() && !ChestShopSign.isAdminShop(ownerInventory) && inventoryUtil.isEmpty(ownerInventory)) {
+        if (config.isRemoveEmptyChests() && !ChestShopSign.isAdminShop(ownerInventory) && InventoryUtil.isEmpty(ownerInventory)) {
             if (connectedContainer != null) {
                 connectedContainer.getBlock().setType(Material.AIR);
             }
@@ -851,7 +851,7 @@ public class TransactionService {
                     }
                 }
                 return true;
-            } else if (!inventoryUtil.hasItems(stock, inventory)) {
+            } else if (!inventoryService.hasItems(stock, inventory)) {
                 return true;
             }
         }
@@ -867,7 +867,7 @@ public class TransactionService {
         String template = event.getTransactionType() == BUY ? BUY_LOG : SELL_LOG;
 
         StringBuilder itemList = new StringBuilder(50);
-        for (Map.Entry<ItemStack, Integer> entry : inventoryUtil.getItemCounts(event.getStock()).entrySet()) {
+        for (Map.Entry<ItemStack, Integer> entry : inventoryService.getItemCounts(event.getStock()).entrySet()) {
             itemList.append(entry.getValue()).append(' ').append(items.getName(entry.getKey()));
         }
 
