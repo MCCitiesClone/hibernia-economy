@@ -21,8 +21,8 @@ import io.paradaux.business.services.FirmPlayerService;
 import io.paradaux.business.services.FirmService;
 import io.paradaux.business.services.FirmStaffService;
 import io.paradaux.business.services.FirmTransactionService;
-import io.paradaux.business.utils.resolvers.FirmName;
-import io.paradaux.business.utils.resolvers.OnlineFirmName;
+import io.paradaux.business.commands.resolvers.FirmName;
+import io.paradaux.business.commands.resolvers.OnlineFirmName;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 

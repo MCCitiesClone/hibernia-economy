@@ -1,4 +1,4 @@
-package io.paradaux.business.utils.resolvers;
+package io.paradaux.business.commands.resolvers;
 
 /**
  * A firm-name command argument whose tab-completion suggests firms with an employee

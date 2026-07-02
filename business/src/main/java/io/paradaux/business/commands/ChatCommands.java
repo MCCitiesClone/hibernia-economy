@@ -8,7 +8,7 @@ import io.paradaux.hibernia.framework.i18n.Message;
 import io.paradaux.business.chat.FirmChatService;
 import io.paradaux.business.model.Firm;
 import io.paradaux.business.services.FirmService;
-import io.paradaux.business.utils.resolvers.FirmName;
+import io.paradaux.business.commands.resolvers.FirmName;
 import org.bukkit.entity.Player;
 
 import java.util.Optional;

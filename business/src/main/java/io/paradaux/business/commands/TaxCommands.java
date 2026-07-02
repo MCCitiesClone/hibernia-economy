@@ -10,7 +10,7 @@ import io.paradaux.business.model.config.BalanceTaxConfiguration;
 import io.paradaux.business.services.FirmPropertyService;
 import io.paradaux.business.services.FirmService;
 import io.paradaux.business.services.FirmTransactionService;
-import io.paradaux.business.utils.resolvers.FirmName;
+import io.paradaux.business.commands.resolvers.FirmName;
 import io.paradaux.treasury.api.TreasuryApi;
 import org.bukkit.entity.Player;
 

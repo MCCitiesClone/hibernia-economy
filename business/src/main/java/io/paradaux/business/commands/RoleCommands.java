@@ -9,7 +9,7 @@ import io.paradaux.hibernia.framework.i18n.Message;
 import io.paradaux.business.model.FirmRole;
 import io.paradaux.business.model.FirmRolePermission;
 import io.paradaux.business.services.FirmRoleService;
-import io.paradaux.business.utils.resolvers.FirmName;
+import io.paradaux.business.commands.resolvers.FirmName;
 import org.bukkit.entity.Player;
 
 import java.util.List;

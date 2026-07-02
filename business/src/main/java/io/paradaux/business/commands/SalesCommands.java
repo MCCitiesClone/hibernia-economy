@@ -13,7 +13,7 @@ import io.paradaux.business.model.config.FirmConfiguration;
 import io.paradaux.business.services.FirmSalesNotificationService;
 import io.paradaux.business.services.FirmService;
 import io.paradaux.business.services.FirmStaffService;
-import io.paradaux.business.utils.resolvers.FirmName;
+import io.paradaux.business.commands.resolvers.FirmName;
 import io.paradaux.treasury.api.SalesQueryApi;
 import io.paradaux.treasury.api.TreasuryApi;
 import io.paradaux.treasury.api.market.SaleRow;
