@@ -20,7 +20,6 @@ import io.paradaux.chestshop.services.ItemService;
 import io.paradaux.chestshop.services.TransactionService;
 import io.paradaux.chestshop.signs.ChestShopSign;
 import io.paradaux.hibernia.framework.i18n.Message;
-import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.GameMode;
 import org.bukkit.block.Block;
@@ -337,14 +336,6 @@ public class PlayerInteract implements Listener {
         } else {
             return inventoryService.getAmount(item, checkedInventory);
         }
-    }
-
-    /**
-     * @deprecated Use {@link ChestShopSign#hasPermission(Player, Permission, Sign)} with {@link Permission#OTHER_NAME_ACCESS}
-     */
-    @Deprecated
-    public static boolean canOpenOtherShops(Player player) {
-        return Permissions.has(player, Permissions.OTHER_NAME_ACCESS + ".*");
     }
 
     private void showChestGUI(Player player, Block signBlock, Sign sign) {

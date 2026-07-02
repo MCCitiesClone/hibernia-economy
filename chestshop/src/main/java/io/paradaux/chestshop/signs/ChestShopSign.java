@@ -9,16 +9,11 @@ import io.paradaux.chestshop.model.config.ChestShopConfiguration;
 import io.paradaux.chestshop.utils.AdminInventory;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import io.paradaux.chestshop.model.Account;
-import io.paradaux.chestshop.permission.Permissions;
 import io.paradaux.chestshop.utils.ShopBlockUtil;
-import org.bukkit.Bukkit;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
-import org.bukkit.block.Chest;
 import org.bukkit.block.DoubleChest;
 import org.bukkit.block.Sign;
-import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 
@@ -192,13 +187,6 @@ public class ChestShopSign {
     // canAccess / hasPermission / isOwner (the account-access predicates) moved to
     // AccountService (PAR-282) — they were ledger logic living on a sign util.
 
-    /**
-     * @deprecated Call {@link #validateSign(String[])} instead.
-     */
-    @Deprecated
-    public boolean isValidPreparedSign(String[] lines) {
-        return validateSign(lines);
-    }
 
     /**
      * Get the owner string of a shop sign

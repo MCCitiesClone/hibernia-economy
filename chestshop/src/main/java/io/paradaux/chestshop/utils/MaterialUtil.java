@@ -33,15 +33,6 @@ public final class MaterialUtil {
     public static final Pattern DURABILITY = Pattern.compile(":\\d+");
     public static final Pattern METADATA = Pattern.compile("#[0-9a-zA-Z]+");
 
-    @Deprecated
-    public static final boolean LONG_NAME = true;
-    @Deprecated
-    public static final boolean SHORT_NAME = false;
-    /**
-     * @deprecated Use {@link MaterialUtil#MAXIMUM_SIGN_WIDTH}
-     */
-    @Deprecated
-    public static final short MAXIMUM_SIGN_LETTERS = 15;
     // 15 dashes fit on one sign line with the default resource pack:
     public static final int MAXIMUM_SIGN_WIDTH = (short) getMinecraftStringWidth("---------------");
 

@@ -11,7 +11,6 @@ import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.BlockState;
-import org.bukkit.block.Chest;
 import org.bukkit.block.Container;
 import org.bukkit.block.DoubleChest;
 import org.bukkit.block.Sign;
@@ -203,42 +202,12 @@ public class ShopBlockService {
                     || (holder instanceof DoubleChest && couldBeShopContainer(getLeftSide((DoubleChest) holder, false)));
     }
 
-    /**
-     * @deprecated Use {@link #isShopBlock(Block)}
-     */
-    @Deprecated
-    public boolean isShopChest(Block chest) {
-        if (!BlockUtil.isChest(chest)) {
-            return false;
-        }
-
-        return getConnectedSign(chest) != null;
-    }
-
     public boolean isShopBlock(Block block) {
         if (!couldBeShopContainer(block)) {
             return false;
         }
 
         return getConnectedSign(block) != null;
-    }
-
-    /**
-     * @deprecated Use {@link #isShopBlock(InventoryHolder)}
-     */
-    @Deprecated
-    public boolean isShopChest(InventoryHolder holder) {
-        if (!BlockUtil.isChest(holder)) {
-            return false;
-        }
-
-        if (holder instanceof DoubleChest) {
-            return isShopChest(((DoubleChest) holder).getLocation().getBlock());
-        } else if (holder instanceof Chest) {
-            return isShopChest(((Chest) holder).getBlock());
-        } else {
-            return false;
-        }
     }
 
     public boolean isShopBlock(InventoryHolder holder) {

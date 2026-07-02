@@ -6,73 +6,56 @@ import org.bukkit.block.DoubleChest;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 
-import java.util.function.BiFunction;
+/**
+ * Thin, named accessor for Paper's snapshot/non-snapshot inventory + block-state reads.
+ * Formerly reflectively probed for the {@code getHolder(boolean)}/{@code getState(boolean)}
+ * overloads and fell back to the snapshot-only API on servers lacking them; ChestShop now
+ * targets the Paper 1.21.11 API where those overloads always exist, so it calls them directly
+ * (the reflection + the {@code utils/compat/} indirection were removed — PAR-297). Kept as a
+ * single named seam for "pass {@code useSnapshot=false} to read the live container".
+ */
+public final class ImplementationAdapter {
 
-public class ImplementationAdapter {
-
-    private static BiFunction<Inventory, Boolean, InventoryHolder> HOLDER_PROVIDER;
-    private static BiFunction<DoubleChest, Boolean, InventoryHolder> LEFT_HOLDER_PROVIDER;
-    private static BiFunction<DoubleChest, Boolean, InventoryHolder> RIGHT_HOLDER_PROVIDER;
-    private static BiFunction<Block, Boolean, BlockState> STATE_PROVIDER;
-
-    static {
-        try {
-            Inventory.class.getMethod("getHolder", boolean.class);
-            Class c = Class.forName("io.paradaux.chestshop.utils.compat.NonSnapshotInventoryHolder");
-            HOLDER_PROVIDER = (BiFunction<Inventory, Boolean, InventoryHolder>) c.getDeclaredField("PROVIDER").get(null);
-            LEFT_HOLDER_PROVIDER = (BiFunction<DoubleChest, Boolean, InventoryHolder>) c.getDeclaredField("LEFT_PROVIDER").get(null);
-            RIGHT_HOLDER_PROVIDER = (BiFunction<DoubleChest, Boolean, InventoryHolder>) c.getDeclaredField("RIGHT_PROVIDER").get(null);
-        } catch (NoSuchMethodException | ClassNotFoundException | NoSuchFieldException | IllegalAccessException e) {
-            HOLDER_PROVIDER = (inventory, useSnapshot) -> inventory.getHolder();
-            LEFT_HOLDER_PROVIDER = (doubleChest, useSnapshot) -> doubleChest.getLeftSide();
-            RIGHT_HOLDER_PROVIDER = (doubleChest, useSnapshot) -> doubleChest.getRightSide();
-        }
-        try {
-            Block.class.getMethod("getState", boolean.class);
-            Class c = Class.forName("io.paradaux.chestshop.utils.compat.NonSnapshotState");
-            STATE_PROVIDER = (BiFunction<Block, Boolean, BlockState>) c.getDeclaredField("PROVIDER").get(null);
-        } catch (NoSuchMethodException | ClassNotFoundException | NoSuchFieldException | IllegalAccessException e) {
-            STATE_PROVIDER = (block, useSnapshot) -> block.getState();
-        }
+    private ImplementationAdapter() {
     }
 
     /**
      * Get the inventory's holder.
      * @param inventory     The inventory
-     * @param useSnapshot   Whether or not the holder should be a snapshot (if possible)
+     * @param useSnapshot   Whether the holder should be a snapshot
      * @return The inventory's holder
      */
     public static InventoryHolder getHolder(Inventory inventory, boolean useSnapshot) {
-        return HOLDER_PROVIDER.apply(inventory, useSnapshot);
+        return inventory.getHolder(useSnapshot);
     }
 
     /**
-     * Get the a DoubleChest's left side
+     * Get a DoubleChest's left side
      * @param doubleChest   The DoubleChest
-     * @param useSnapshot   Whether or not the holder should be a snapshot (if possible)
+     * @param useSnapshot   Whether the holder should be a snapshot
      * @return The left side's holder
      */
     public static InventoryHolder getLeftSide(DoubleChest doubleChest, boolean useSnapshot) {
-        return LEFT_HOLDER_PROVIDER.apply(doubleChest, useSnapshot);
+        return doubleChest.getLeftSide(useSnapshot);
     }
 
     /**
-     * Get the a DoubleChest's right side
+     * Get a DoubleChest's right side
      * @param doubleChest   The DoubleChest
-     * @param useSnapshot   Whether or not the holder should be a snapshot (if possible)
-     * @return The left right's holder
+     * @param useSnapshot   Whether the holder should be a snapshot
+     * @return The right side's holder
      */
     public static InventoryHolder getRightSide(DoubleChest doubleChest, boolean useSnapshot) {
-        return RIGHT_HOLDER_PROVIDER.apply(doubleChest, useSnapshot);
+        return doubleChest.getRightSide(useSnapshot);
     }
 
     /**
      * Get a block state
      * @param block         The block to get the state from
-     * @param useSnapshot   Whether or not the state should be a snapshot (if possible)
+     * @param useSnapshot   Whether the state should be a snapshot
      * @return The block's state
      */
     public static BlockState getState(Block block, boolean useSnapshot) {
-        return STATE_PROVIDER.apply(block, useSnapshot);
+        return block.getState(useSnapshot);
     }
 }
