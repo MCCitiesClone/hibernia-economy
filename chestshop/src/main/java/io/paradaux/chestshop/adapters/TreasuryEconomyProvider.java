@@ -11,7 +11,6 @@ import io.paradaux.treasury.api.TreasuryApi;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.RegisteredServiceProvider;
 
-import javax.annotation.Nullable;
 import java.util.List;
 import java.util.UUID;
 import java.util.logging.Level;
@@ -19,14 +18,16 @@ import java.util.logging.Level;
 /**
  * Treasury economy provider for ChestShop.
  *
- * <p>This provider is now only responsible for advertising the active provider
- * ({@link #getProviderInfo()}) and, at enable time, resolving the Treasury (and
+ * <p>This provider is now only responsible for resolving, at enable time, resolving the Treasury (and
  * optional Business) handles and binding them to {@link io.paradaux.chestshop.services.EconomyService}
  * via {@link #prepare(EconomyService)}. All ledger access — account resolution, access
  * checks, balances, settlement and legacy business-sign migration — runs through that
  * single {@link TreasuryApi}/{@link BusinessApi} boundary.
  */
-public class TreasuryEconomyProvider extends EconomyProvider {
+public final class TreasuryEconomyProvider {
+
+    private TreasuryEconomyProvider() {
+    }
 
 
     /**
@@ -34,17 +35,16 @@ public class TreasuryEconomyProvider extends EconomyProvider {
      *
      * @return A new TreasuryEconomyProvider, or null if Treasury is not available
      */
-    @Nullable
-    public static TreasuryEconomyProvider prepare(EconomyService economy, BusinessAccountService businessAccounts) {
+    public static boolean prepare(EconomyService economy, BusinessAccountService businessAccounts) {
         if (Bukkit.getPluginManager().getPlugin("Treasury") == null) {
-            return null;
+            return false;
         }
 
         RegisteredServiceProvider<TreasuryApi> rsp =
                 Bukkit.getServicesManager().getRegistration(TreasuryApi.class);
         if (rsp == null) {
             ChestShop.getBukkitLogger().warning("Treasury plugin found but TreasuryApi service not registered!");
-            return null;
+            return false;
         }
 
         TreasuryApi treasury = rsp.getProvider();
@@ -65,7 +65,7 @@ public class TreasuryEconomyProvider extends EconomyProvider {
             }
         } catch (Exception e) {
             ChestShop.getBukkitLogger().log(Level.SEVERE, "Failed to initialize Treasury SYSTEM account!", e);
-            return null;
+            return false;
         }
 
         ChestShop.getBukkitLogger().info("Treasury SYSTEM account initialized (ID: " + systemAccountId + ")");
@@ -100,12 +100,7 @@ public class TreasuryEconomyProvider extends EconomyProvider {
         economy.bind(treasury, systemAccountId, taxApi);
         businessAccounts.bind(treasury, businessApi);
 
-        return new TreasuryEconomyProvider();
+        return true;
     }
 
-    @Override
-    @Nullable
-    public ProviderInfo getProviderInfo() {
-        return new ProviderInfo("Treasury", Bukkit.getPluginManager().getPlugin("Treasury").getDescription().getVersion());
-    }
 }

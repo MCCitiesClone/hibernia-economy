@@ -8,7 +8,6 @@ import io.paradaux.chestshop.services.EconomyService;
 import io.paradaux.chestshop.services.ItemService;
 import io.paradaux.chestshop.services.ProtectionService;
 import io.paradaux.chestshop.model.config.ChestShopConfiguration;
-import io.paradaux.chestshop.adapters.EconomyProvider;
 import io.paradaux.chestshop.adapters.TreasuryEconomyProvider;
 import org.bukkit.Bukkit;
 import org.bukkit.event.EventHandler;
@@ -108,14 +107,14 @@ public class Dependencies implements Listener {
     private boolean loadEconomy() {
         String plugin = "none";
 
-        EconomyProvider economyProvider = null;
+        boolean economyLoaded = false;
 
         if (Bukkit.getPluginManager().getPlugin("Treasury") != null) {
             plugin = "Treasury";
-            economyProvider = TreasuryEconomyProvider.prepare(economy, businessAccounts);
+            economyLoaded = TreasuryEconomyProvider.prepare(economy, businessAccounts);
         }
 
-        if (economyProvider == null) {
+        if (!economyLoaded) {
             ChestShop.getBukkitLogger().severe("No Economy provider found! You need to install Treasury!");
             return false;
         }
