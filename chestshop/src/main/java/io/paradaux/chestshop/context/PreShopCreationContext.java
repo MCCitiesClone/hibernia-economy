@@ -18,11 +18,14 @@ import javax.annotation.Nullable;
  */
 public class PreShopCreationContext {
 
-    private Player creator;
-    @Nullable private Account ownerAccount = null;
+    // Immutable creation inputs.
+    private final Player creator;
+    private final Sign sign;
 
+    // Computed by the creation steps: the outcome, the resolved owner account, and the
+    // rewritten sign lines (owner-name/business-token resolution, autofill).
+    @Nullable private Account ownerAccount = null;
     private CreationOutcome outcome = CreationOutcome.SHOP_CREATED_SUCCESSFULLY;
-    private Sign sign;
     private String[] signLines;
 
     public PreShopCreationContext(Player creator, Sign sign, String[] signLines) {
@@ -69,24 +72,6 @@ public class PreShopCreationContext {
      */
     public void setOutcome(CreationOutcome outcome) {
         this.outcome = outcome;
-    }
-
-    /**
-     * Sets the shop's creator
-     *
-     * @param creator Shop's creator
-     */
-    public void setCreator(Player creator) {
-        this.creator = creator;
-    }
-
-    /**
-     * Sets the sign attached to the shop
-     *
-     * @param sign Shop sign
-     */
-    public void setSign(Sign sign) {
-        this.sign = sign;
     }
 
     /**

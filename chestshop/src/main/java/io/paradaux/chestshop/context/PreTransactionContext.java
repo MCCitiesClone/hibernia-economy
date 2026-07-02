@@ -12,29 +12,30 @@ import static io.paradaux.chestshop.context.PreTransactionContext.TransactionOut
 import static io.paradaux.chestshop.context.TransactionContext.TransactionType;
 
 /**
- * The mutable carrier threaded through the pre-transaction validation steps run by
- * {@link io.paradaux.chestshop.services.TransactionService#validate}. Formerly a
- * Bukkit event fired to a pipeline of priority-ordered validators; those validators
- * are now invoked directly as ordered service steps, so this is a plain
- * transaction-validation context — they read/mutate its outcome, stock and price.
+ * Carrier threaded through the ordered pre-transaction validation steps run by
+ * {@link io.paradaux.chestshop.services.TransactionService#validate}. The trade inputs
+ * (client, owner account, inventories, sign, type) are immutable; the steps only compute
+ * the {@linkplain #getTransactionOutcome() outcome}, optionally resize the
+ * {@linkplain #getStock() stock}/{@linkplain #getExactPrice() price} for a partial fill,
+ * and flag a {@linkplain #isRejectedAsFreeShop() free-shop rejection}. Formerly a Bukkit
+ * event fired to a pipeline of priority-ordered validators (PAR-282).
  *
  * @author Acrobot
  */
 public class PreTransactionContext {
 
+    // Immutable trade inputs (from TransactionService#prepare).
     private final Player client;
-    private Account ownerAccount;
-
+    private final Account ownerAccount;
     private final TransactionType transactionType;
     private final Sign sign;
+    private final Inventory ownerInventory;
+    private final Inventory clientInventory;
 
-    private Inventory ownerInventory;
-    private Inventory clientInventory;
-
+    // The only state the validation steps compute: the outcome (verdict), an optional
+    // partial-fill resize of the stock + price, and the deferred free-shop rejection flag.
     private ItemStack[] items;
-
     private BigDecimal exactPrice;
-
     private TransactionOutcome transactionOutcome = TRANSACTION_SUCCESSFUL;
 
     // Set by the (side-effect-free) free-shop validation step when a legacy price-0 shop
@@ -121,37 +122,10 @@ public class PreTransactionContext {
     }
 
     /**
-     * Sets the shop's owner
-     *
-     * @param ownerAccount Account of the shop owner
-     */
-    public void setOwnerAccount(Account ownerAccount) {
-        this.ownerAccount = ownerAccount;
-    }
-
-    /**
      * @return Owner's inventory
      */
     public Inventory getOwnerInventory() {
         return ownerInventory;
-    }
-
-    /**
-     * Sets the owner's inventory
-     *
-     * @param ownerInventory Onwer's inventory
-     */
-    public void setOwnerInventory(Inventory ownerInventory) {
-        this.ownerInventory = ownerInventory;
-    }
-
-    /**
-     * Sets the client's inventory
-     *
-     * @param clientInventory Client's inventory
-     */
-    public void setClientInventory(Inventory clientInventory) {
-        this.clientInventory = clientInventory;
     }
 
     /**
