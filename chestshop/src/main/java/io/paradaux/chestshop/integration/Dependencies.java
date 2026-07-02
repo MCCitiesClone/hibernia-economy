@@ -10,8 +10,6 @@ import io.paradaux.chestshop.services.ProtectionService;
 import io.paradaux.chestshop.model.config.ChestShopConfiguration;
 import io.paradaux.chestshop.economy.EconomyProvider;
 import io.paradaux.chestshop.economy.TreasuryEconomyProvider;
-import com.google.common.collect.ImmutableMap;
-import org.bstats.charts.DrilldownPie;
 import org.bukkit.Bukkit;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -21,12 +19,10 @@ import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.PluginManager;
 
-import java.util.AbstractMap;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.logging.Level;
-import java.util.stream.Collectors;
 
 /**
  * @author Acrobot
@@ -106,17 +102,7 @@ public class Dependencies implements Listener {
             }
         }
 
-        if (loadEconomy()) {
-            Map<String, Map<String, Integer>> map = versions.entrySet().stream()
-                    .map(e -> new AbstractMap.SimpleEntry<String, Map<String, Integer>>(e.getKey(), ImmutableMap.of(e.getValue(), 1)))
-                    .collect(Collectors.toMap(
-                            AbstractMap.SimpleEntry::getKey,
-                            AbstractMap.SimpleEntry::getValue
-                    ));
-            ChestShop.getMetrics().addCustomChart(new DrilldownPie("dependencies", () -> map));
-            return true;
-        }
-        return false;
+        return loadEconomy();
     }
 
     private boolean loadEconomy() {
@@ -133,9 +119,6 @@ public class Dependencies implements Listener {
             ChestShop.getBukkitLogger().severe("No Economy provider found! You need to install Treasury!");
             return false;
         }
-
-        ChestShop.getMetrics().addCustomChart(ChestShop.createStaticDrilldownStat("economyAdapter", plugin, Bukkit.getPluginManager().getPlugin(plugin).getDescription().getVersion()));
-        ChestShop.getMetrics().addCustomChart(ChestShop.createStaticDrilldownStat("economyPlugin", economyProvider::getProviderInfo));
 
         ChestShop.getBukkitLogger().info(plugin + " loaded!");
         return true;
@@ -180,20 +163,11 @@ public class Dependencies implements Listener {
                 break;
 
             //Other plugins
-            case ItemBridge:
-                // ItemBridge's resolvers are invoked directly by ItemService; flag the
-                // integration as available rather than registering a listener. This keeps
-                // the com.jojodmo.itembridge classes off the path unless the plugin is here.
-                items.enableItemBridge();
-                break;
             case Nexo:
                 // Native Nexo/ItemsAdder custom-item support (ported from NexoUtilities).
-                // Like ItemBridge, its resolvers are invoked directly by ItemService, keeping
-                // the com.nexomc.nexo classes off the path unless the plugin is here.
+                // Its resolvers are invoked directly by ItemService, keeping the
+                // com.nexomc.nexo classes off the path unless the plugin is here.
                 items.enableNexo();
-                break;
-            case ShowItem:
-                ShowItemHook.initialize(plugin);
                 break;
         }
 
@@ -207,11 +181,7 @@ public class Dependencies implements Listener {
     private enum Dependency {
         WorldGuard,
         GriefPrevention,
-
-        ItemBridge,
-        Nexo,
-
-        ShowItem
+        Nexo
     }
 
     @EventHandler(priority = EventPriority.MONITOR)

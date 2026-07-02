@@ -146,7 +146,7 @@ public class ItemCodeService {
     }
 
     // ---- canonical item ↔ sign-code (MATERIAL:durability#NNN) ----
-    // The vanilla (no ItemBridge/alias) conversion ChestShop puts on signs. The custom-data
+    // The vanilla (no custom-item/alias) conversion ChestShop puts on signs. The custom-data
     // suffix (#NNN) round-trips through the item-code store above (getItemCode/getFromCode →
     // ItemCodeMapper) — was the static MaterialUtil.getName/getItem reaching the DB via the
     // ChestShop.itemCodes() locator (PAR-282). MaterialUtil keeps only the pure helpers.

@@ -33,7 +33,7 @@ import static io.paradaux.chestshop.utils.StringUtil.getMinecraftStringWidth;
  * Native <a href="https://nexomc.com/">Nexo</a> (and ItemsAdder) custom-item support for
  * ChestShop signs — ported from the old DemocracyCraft {@code NexoUtilities} plugin
  * (its {@code ChestShopItemListener} + {@code ItemManager} + {@code AliasManager}) into
- * ChestShop directly. Mirrors {@link ItemBridge}: the {@code com.nexomc.nexo} classes are
+ * ChestShop directly. Like the former ItemBridge hook, the {@code com.nexomc.nexo} classes are
  * only touched by methods that {@link io.paradaux.chestshop.services.ItemService} calls
  * once the Nexo plugin is hooked ({@link #init}), so they stay off the call path when Nexo
  * is absent.

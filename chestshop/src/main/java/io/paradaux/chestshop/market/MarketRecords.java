@@ -167,7 +167,7 @@ final class MarketRecords {
     boolean isCustom(ItemStack item) {
         String vanilla = itemCodes.encode(item, MaterialUtil.MAXIMUM_SIGN_WIDTH);
         String canonical = canonicalCode(item);
-        // A provider (Nexo / ItemBridge) named it beyond the plain vanilla code.
+        // A provider (Nexo) named it beyond the plain vanilla code.
         if (canonical != null && vanilla != null && !canonical.equalsIgnoreCase(vanilla)) {
             return true;
         }

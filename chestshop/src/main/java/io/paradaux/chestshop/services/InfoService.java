@@ -9,7 +9,6 @@ import io.paradaux.chestshop.model.config.ChestShopConfiguration;
 import io.paradaux.hibernia.framework.i18n.Message;
 import io.paradaux.chestshop.model.Account;
 import io.paradaux.chestshop.signs.ChestShopSign;
-import io.paradaux.chestshop.integration.ShowItemHook;
 import io.paradaux.chestshop.utils.PriceUtil;
 import io.paradaux.chestshop.utils.StringUtil;
 import net.kyori.adventure.text.Component;
@@ -74,12 +73,11 @@ public class InfoService {
     private final ChestShopSign chestShopSign;
     private final ShopBlockService shopBlockService;
     private final InventoryService inventoryService;
-    private final ShowItemHook showItem;
 
     @Inject
     public InfoService(AccountService accounts, EconomyService economy, ItemService items, Message message,
                        ChestShopConfiguration config, ChestShopSign chestShopSign, ShopBlockService shopBlockService,
-                       InventoryService inventoryService, ShowItemHook showItem) {
+                       InventoryService inventoryService) {
         this.accounts = accounts;
         this.economy = economy;
         this.items = items;
@@ -88,7 +86,6 @@ public class InfoService {
         this.chestShopSign = chestShopSign;
         this.shopBlockService = shopBlockService;
         this.inventoryService = inventoryService;
-        this.showItem = showItem;
     }
 
     // ---- /shopinfo -------------------------------------------------------------
@@ -137,10 +134,7 @@ public class InfoService {
                 "prices", pricesLine,
                 "quantity", String.valueOf(amount)
         );
-        if (!config.isShowitemMessage()
-                || !showItem.sendMessage(message, sender, "chestshop.shopinfo", false, new ItemStack[]{item}, replacementMap)) {
-            sender.sendMessage(message.component("chestshop.shopinfo", Messages.values(false, replacementMap)));
-        }
+        sender.sendMessage(message.component("chestshop.shopinfo", Messages.values(false, replacementMap)));
 
         BigDecimal buyPrice = PriceUtil.getExactBuyPrice(pricesLine);
         BigDecimal sellPrice = PriceUtil.getExactSellPrice(pricesLine);
@@ -191,7 +185,7 @@ public class InfoService {
     }
 
     /**
-     * Send an item's name to the player, using the ShowItem hover form when available
+     * Send an item's name to the player, as a plain message
      * and configured, else a plain {@code messages.properties} line. Shared by the
      * {@code /iteminfo} command and the cross-bow projectile contributor.
      *
@@ -200,10 +194,7 @@ public class InfoService {
     public boolean sendItemName(CommandSender sender, ItemStack item, String messageKey) {
         try {
             Map<String, String> replacementMap = ImmutableMap.of("item", items.getName(item));
-            if (!config.isShowitemMessage() || !(sender instanceof Player)
-                    || !showItem.sendMessage(message, (Player) sender, messageKey, false, new ItemStack[]{item}, replacementMap)) {
-                sender.sendMessage(message.component(messageKey, Messages.values(false, replacementMap)));
-            }
+            sender.sendMessage(message.component(messageKey, Messages.values(false, replacementMap)));
         } catch (IllegalArgumentException e) {
             sender.sendMessage(ChatColor.RED + "Error while generating full name. Please contact an admin or take a look at the console/log!");
             ChestShop.getPlugin().getLogger().log(Level.SEVERE, "Error while generating full item name", e);

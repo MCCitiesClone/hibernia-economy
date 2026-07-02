@@ -28,7 +28,6 @@ import io.paradaux.chestshop.signs.RestrictedSign;
 import io.paradaux.chestshop.utils.ImplementationAdapter;
 import io.paradaux.chestshop.utils.InventoryUtil;
 import io.paradaux.chestshop.utils.LocationUtil;
-import io.paradaux.chestshop.integration.ShowItemHook;
 import io.paradaux.chestshop.utils.PriceUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
@@ -84,7 +83,7 @@ import static io.paradaux.chestshop.utils.PriceUtil.NO_PRICE;
  *
  * <p>The money leg settles directly through {@link ChestShop#economy()} (a single
  * buyer→seller {@code TreasuryApi} transfer); the goods are reversed if it fails, so a
- * trade is all-or-nothing. The genuine cross-cutting hooks (market-DB sync, bStats,
+ * trade is all-or-nothing. The genuine cross-cutting hooks (market-DB sync,
  * stock counter) and the cross-plugin sign listener {@code RestrictedSign} stay.
  */
 @Singleton
@@ -111,11 +110,10 @@ public class TransactionService {
     private final ShopBlockService shopBlockService;
     private final InventoryService inventoryService;
     private final MaterialService materialService;
-    private final ShowItemHook showItem;
 
     @Inject
     public TransactionService(EconomyService economy, ShopService shops, AccountService accounts, SignBreak signBreak, StockCounterModule stockCounter, Message message, ItemService items, MarketListener market,
-                              ChestShopConfiguration config, ChestShopSign chestShopSign, ShopBlockService shopBlockService, InventoryService inventoryService, MaterialService materialService, ShowItemHook showItem) {
+                              ChestShopConfiguration config, ChestShopSign chestShopSign, ShopBlockService shopBlockService, InventoryService inventoryService, MaterialService materialService) {
         this.economy = economy;
         this.shops = shops;
         this.accounts = accounts;
@@ -129,7 +127,6 @@ public class TransactionService {
         this.shopBlockService = shopBlockService;
         this.inventoryService = inventoryService;
         this.materialService = materialService;
-        this.showItem = showItem;
     }
 
     private static final String BUY_LOG = "%1$s bought %2$s for %3$.2f from %4$s at %5$s";
@@ -771,9 +768,6 @@ public class TransactionService {
             notificationCooldowns.put(ownerAccount.getUuid(), cacheKey, System.currentTimeMillis());
         }
 
-        if (config.isShowitemMessage() && showItem.sendMessage(message, player, key, stock, Collections.emptyMap(), replacements)) {
-            return;
-        }
         String itemList = items.getItemList(stock);
         player.sendMessage(message.component(key, Messages.values(true, ImmutableMap.of("material", itemList, "item", itemList), replacements)));
     }
@@ -817,7 +811,7 @@ public class TransactionService {
         market.onTransaction(event);   // genuine market-DB sync — stays
         logTransaction(event);                 // was @MONITOR TransactionLogger
         sendTransactionMessages(event);        // was @MONITOR TransactionMessageSender
-        MetricsModule.onTransaction(event);    // genuine bStats counter — stays
+        MetricsModule.onTransaction(event);    // updates the /csmetrics transaction counters
     }
 
     /**
@@ -1035,10 +1029,6 @@ public class TransactionService {
 
         if (player == null) {
             return; // recipient isn't on this server — nothing to notify
-        }
-
-        if (config.isShowitemMessage() && showItem.sendMessage(message, player, key, event.getStock(), replacementMap)) {
-            return;
         }
 
         replacementMap.put("item", items.getItemList(event.getStock()));

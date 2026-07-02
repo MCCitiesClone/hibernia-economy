@@ -12,10 +12,8 @@ import io.paradaux.chestshop.listeners.BlockPlace;
 import io.paradaux.chestshop.listeners.ChestBreak;
 import io.paradaux.chestshop.listeners.SignBreak;
 import io.paradaux.chestshop.listeners.SignCreate;
-import io.paradaux.chestshop.economy.EconomyProvider;
 import io.paradaux.chestshop.listeners.GarbageTextListener;
 import io.paradaux.chestshop.listeners.ItemMoveListener;
-import io.paradaux.chestshop.services.MetricsModule;
 import io.paradaux.chestshop.listeners.StockCounterModule;
 import io.paradaux.chestshop.listeners.PlayerConnect;
 import io.paradaux.chestshop.listeners.PlayerInteract;
@@ -26,7 +24,6 @@ import io.paradaux.chestshop.integration.Dependencies;
 import io.paradaux.chestshop.services.ItemCodeService;
 import io.paradaux.chestshop.signs.RestrictedSign;
 
-import com.google.common.collect.ImmutableMap;
 
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
@@ -37,15 +34,7 @@ import org.apache.logging.log4j.core.config.LoggerConfig;
 import org.apache.logging.log4j.core.filter.AbstractFilter;
 import org.apache.logging.log4j.message.Message;
 
-import org.bstats.bukkit.Metrics;
-import org.bstats.charts.AdvancedBarChart;
-import org.bstats.charts.DrilldownPie;
-import org.bstats.charts.MultiLineChart;
-import org.bstats.charts.SimpleBarChart;
-import org.bstats.charts.SimplePie;
-import org.bstats.charts.SingleLineChart;
 import org.bukkit.Bukkit;
-import org.bukkit.Material;
 import org.bukkit.Server;
 import org.bukkit.event.Event;
 import org.bukkit.event.Listener;
@@ -54,18 +43,12 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import java.util.jar.JarFile;
 import java.util.logging.FileHandler;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
 
 /**
  * Main file of the plugin
@@ -78,7 +61,6 @@ public class ChestShop extends JavaPlugin {
     private static PluginDescriptionFile description;
     private static final ExecutorService executorService = Executors.newCachedThreadPool();
 
-    private static Metrics bStats;
 
     // Instance references the plugin main class resolves at enable for its own
     // orchestration (DB migration, account-cache load). Not a service locator — every
@@ -116,7 +98,6 @@ public class ChestShop extends JavaPlugin {
 
     @Override
     public void onEnable() {
-        bStats = new Metrics(this, 1109);
         turnOffDatabaseLogging();
 
         // HiberniaFramework DI: loads ChestShopConfiguration from config.yml (and
@@ -197,7 +178,6 @@ public class ChestShop extends JavaPlugin {
         }
 
 
-        startStatistics();
     }
 
     public void loadConfig() {
@@ -316,98 +296,9 @@ public class ChestShop extends JavaPlugin {
         }
     }
 
-    //////////////////    REGISTER EVENTS, SCHEDULER & STATS    ///////////////////////////
+    //////////////////    REGISTER EVENTS & SCHEDULER    ///////////////////////////
     public void registerEvent(Listener listener) {
         getServer().getPluginManager().registerEvents(listener, this);
-    }
-
-    private void startStatistics() {
-        try (JarFile jarFile = new JarFile(this.getFile())) {
-            String dist = jarFile.getManifest().getMainAttributes().getValue("Distribution-Type");
-            bStats.addCustomChart(new SimplePie("distributionType", () -> dist));
-        } catch (IOException ignored) {}
-
-        String serverVersion = getServer().getBukkitVersion().split("-")[0];
-        bStats.addCustomChart(createStaticDrilldownStat("versionMcSelf", serverVersion, getDescription().getVersion()));
-        bStats.addCustomChart(createStaticDrilldownStat("versionSelfMc", getDescription().getVersion(), serverVersion));
-
-        bStats.addCustomChart(createStaticDrilldownStat("serverTypeVersionSelf", getServer().getName(), getDescription().getVersion()));
-        bStats.addCustomChart(createStaticDrilldownStat("versionSelfServerType", getDescription().getVersion(), getServer().getName()));
-
-        bStats.addCustomChart(createStaticDrilldownStat("versionMcServerType", serverVersion, getServer().getName()));
-        bStats.addCustomChart(createStaticDrilldownStat("serverTypeVersionMc", getServer().getName(), serverVersion));
-
-        String javaVersion = System.getProperty("java.version");
-        bStats.addCustomChart(createStaticDrilldownStat("versionJavaSelf", javaVersion, getDescription().getVersion()));
-        bStats.addCustomChart(createStaticDrilldownStat("versionSelfJava", getDescription().getVersion(), javaVersion));
-
-        bStats.addCustomChart(createStaticDrilldownStat("versionJavaMc", javaVersion, serverVersion));
-        bStats.addCustomChart(createStaticDrilldownStat("versionMcJava", serverVersion, javaVersion));
-
-        bStats.addCustomChart(new SingleLineChart("shopAccounts", () -> accounts.getAccountCount()));
-        bStats.addCustomChart(new MultiLineChart("transactionCount", () -> ImmutableMap.of(
-                "total", MetricsModule.getTotalTransactions(),
-                "buy", MetricsModule.getBuyTransactions(),
-                "sell", MetricsModule.getSellTransactions()
-        )));
-        bStats.addCustomChart(new MultiLineChart("itemCount", () -> ImmutableMap.of(
-                "total", MetricsModule.getTotalItemsCount(),
-                "buy", MetricsModule.getSoldItemsCount(),
-                "sell", MetricsModule.getBoughtItemsCount()
-        )));
-
-        bStats.addCustomChart(new SimplePie("includeSettingsInMetrics", () -> config.isIncludeSettingsInMetrics() ? "enabled" : "disabled"));
-        if (!config.isIncludeSettingsInMetrics()) return;
-
-        bStats.addCustomChart(new SimplePie("ensure-correct-playerid", () -> config.isEnsureCorrectPlayerid() ? "enabled" : "disabled"));
-        bStats.addCustomChart(new SimplePie("allow-sign-chest-open", () -> config.isAllowSignChestOpen() ? "enabled" : "disabled"));
-        bStats.addCustomChart(new SimplePie("uses-server-economy-account", () -> !config.getServerEconomyAccount().isEmpty() ? "enabled" : "disabled"));
-        bStats.addCustomChart(new SimplePie("uses-server-economy-account-uuid", () -> !config.getServerEconomyAccountUuid().equals(new UUID(0, 0)) ? "enabled" : "disabled"));
-        bStats.addCustomChart(new SimplePie("allow-partial-transactions", () -> config.isAllowPartialTransactions() ? "enabled" : "disabled"));
-        bStats.addCustomChart(new SimplePie("allow-multiple-shops-at-one-block", () -> config.isAllowMultipleShopsAtOneBlock() ? "enabled" : "disabled"));
-        bStats.addCustomChart(new SimplePie("allow-partial-transactions", () -> config.isAllowPartialTransactions() ? "enabled" : "disabled"));
-        bStats.addCustomChart(new SimplePie("log-to-console", () -> config.isLogToConsole() ? "enabled" : "disabled"));
-        bStats.addCustomChart(new SimplePie("log-to-file", () -> config.isLogToFile() ? "enabled" : "disabled"));
-
-        bStats.addCustomChart(new AdvancedBarChart("pluginProperties", () -> {
-            Map<String, int[]> map = new LinkedHashMap<>();
-            map.put("ensure-correct-playerid", getChartArray(config.isEnsureCorrectPlayerid()));
-            map.put("reverse-buttons", getChartArray(config.isReverseButtons()));
-            map.put("shift-sells-in-stacks", getChartArray(config.isShiftSellsInStacks()));
-            map.put("shift-sells-everything", getChartArray(config.isShiftSellsEverything()));
-            map.put("allow-sign-chest-open", getChartArray(!config.isAllowSignChestOpen()));
-            map.put("sign-dying", getChartArray(!config.isSignDying()));
-            map.put("remove-empty-shops", getChartArray(!config.isRemoveEmptyShops()));
-            map.put("remove-empty-chests", getChartArray(!config.isRemoveEmptyChests()));
-            map.put("uses-server-economy-account", getChartArray(!config.getServerEconomyAccount().isEmpty()));
-            map.put("uses-server-economy-account-uuid", getChartArray(!config.getServerEconomyAccountUuid().equals(new UUID(0, 0))));
-            map.put("allow-multiple-shops-at-one-block", getChartArray(config.isAllowMultipleShopsAtOneBlock()));
-            map.put("allow-partial-transactions", getChartArray(config.isAllowPartialTransactions()));
-            map.put("log-to-console", getChartArray(config.isLogToConsole()));
-            map.put("log-to-file", getChartArray(config.isLogToFile()));
-            return map;
-        }));
-        bStats.addCustomChart(new SimpleBarChart("shopContainers",
-                () -> config.getShopContainers().stream().map(Material::name).collect(Collectors.toMap(k -> k, k -> 1))));
-    }
-
-    public static DrilldownPie createStaticDrilldownStat(String statId, String value1, String value2) {
-        final Map<String, Map<String, Integer>> map = ImmutableMap.of(value1, ImmutableMap.of(value2, 1));
-        return new DrilldownPie(statId, () -> map);
-    }
-
-    public static DrilldownPie createStaticDrilldownStat(String statId, Callable<EconomyProvider.ProviderInfo> callableProviderInfo) {
-        return new DrilldownPie(statId, () -> {
-            EconomyProvider.ProviderInfo providerInfo = callableProviderInfo.call();
-            if (providerInfo == null) {
-                return ImmutableMap.of();
-            }
-            return ImmutableMap.of(providerInfo.getName(), ImmutableMap.of(providerInfo.getVersion(), 1));
-        });
-    }
-
-    private int[] getChartArray(boolean value) {
-        return new int[]{!value ? 1 : 0, value ? 0 : 1};
     }
 
     ///////////////////////////////////////////////////////////////////////////////
@@ -453,9 +344,6 @@ public class ChestShop extends JavaPlugin {
         return plugin;
     }
 
-    public static Metrics getMetrics() {
-        return bStats;
-    }
 
     public static <E extends Event> E callEvent(E event) {
         Bukkit.getPluginManager().callEvent(event);

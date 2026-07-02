@@ -37,9 +37,6 @@ public class ChestShopConfiguration {
     @ConfigurationValue(path = "DEBUG", defaultValue = "false")
     private boolean debug;
 
-    @ConfigurationValue(path = "INCLUDE_SETTINGS_IN_METRICS", defaultValue = "true")
-    private boolean includeSettingsInMetrics;
-
     @ConfigurationValue(path = "CACHE_SIZE", defaultValue = "1000")
     private int cacheSize;
 
@@ -204,9 +201,6 @@ public class ChestShopConfiguration {
 
     @ConfigurationValue(path = "GRIEFPREVENTION_INTEGRATION", defaultValue = "false")
     private boolean griefpreventionIntegration;
-
-    @ConfigurationValue(path = "SHOWITEM_MESSAGE", defaultValue = "true")
-    private boolean showitemMessage;
 
     @ConfigurationValue(path = "USE_STOCK_COUNTER", defaultValue = "false")
     private boolean useStockCounter;

@@ -5,8 +5,8 @@ import io.paradaux.chestshop.context.TransactionContext;
 import org.bukkit.inventory.ItemStack;
 
 /**
- * Rolling buy/sell transaction + item counters surfaced by the {@code /csmetrics}
- * command and bStats. Formerly a {@code @MONITOR(ignoreCancelled=true)}
+ * Rolling buy/sell transaction + item counters surfaced by the {@code /csmetrics} command.
+ * Formerly a {@code @MONITOR(ignoreCancelled=true)}
  * {@link TransactionContext} listener; {@link #onTransaction} is now invoked directly by
  * {@link io.paradaux.chestshop.services.TransactionService#process}.
  *

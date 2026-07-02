@@ -132,7 +132,6 @@ dependencies {
     // (PAR-282). The SQLite JDBC driver (org.sqlite.JDBC) is provided by the server at
     // runtime, as it was for the old ORMlite layer.
     implementation(libs.mybatis.core)
-    api("org.bstats:bstats-bukkit:3.0.1")
 
     // Adventure is provided natively by Paper — NOT bundled or relocated (the old
     // bundled+relocated Adventure, plus the de.themoep MineDown/lang libraries, were
@@ -221,7 +220,6 @@ tasks.shadowJar {
     // in a whitelist is fragile; this mirrors treasury/business.)
 
     // Relocate shaded libraries so they don't clash with the server or other plugins.
-    relocate("org.bstats", "io.paradaux.chestshop.Metrics.BStats")
     relocate("com.google.inject", "io.paradaux.chestshop.Libs.guice")
     relocate("javax.inject", "io.paradaux.chestshop.Libs.javaxinject")
     relocate("org.aopalliance", "io.paradaux.chestshop.Libs.aopalliance")

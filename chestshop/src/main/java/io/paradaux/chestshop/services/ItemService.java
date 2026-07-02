@@ -2,7 +2,6 @@ package io.paradaux.chestshop.services;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import io.paradaux.chestshop.integration.ItemBridge;
 import io.paradaux.chestshop.integration.Nexo;
 import io.paradaux.chestshop.utils.MaterialUtil;
 import org.bukkit.Material;
@@ -21,17 +20,17 @@ import static io.paradaux.chestshop.utils.StringUtil.getMinecraftStringWidth;
  * {@code SignValidationEvent} carriers and their resolver "listeners" with direct,
  * ordered service methods (PAR-282). The resolution order is unchanged:
  * <ul>
- *   <li>{@link #parse}: ItemBridge (if hooked) → configured alias → vanilla material
- *       (the alias step overrides an ItemBridge match, as before);</li>
- *   <li>{@link #queryString}: ItemBridge key (if hooked) → vanilla name → alias override;</li>
+ *   <li>{@link #parse}: Nexo (if hooked) → configured alias → vanilla material
+ *       (the alias step overrides a custom-item match, as before);</li>
+ *   <li>{@link #queryString}: Nexo key (if hooked) → vanilla name → alias override;</li>
  *   <li>{@link #parseMaterial}: a single resolver.</li>
  * </ul>
  *
  * <p>Sign-format validation is pure and lives on {@code ChestShopSign.validateSign}.</p>
  *
- * <p>The optional ItemBridge integration (a softdepend) is only invoked once that plugin
- * is hooked ({@link #enableItemBridge()} is called from {@code Dependencies}), keeping the
- * {@code com.jojodmo.itembridge} classes off the call path when the plugin is absent.
+ * <p>The optional Nexo custom-item integration (a softdepend) is only invoked once that
+ * plugin is hooked ({@link #enableNexo()} is called from {@code Dependencies}), keeping the
+ * {@code com.nexomc.nexo} classes off the call path when the plugin is absent.
  */
 @Singleton
 public class ItemService {
@@ -40,7 +39,6 @@ public class ItemService {
     private final ItemCodeService itemCodes;
     private final MaterialService materialService;
     private final InventoryService inventoryService;
-    private volatile boolean itemBridgeEnabled = false;
     private volatile boolean nexoEnabled = false;
 
     @Inject
@@ -49,11 +47,6 @@ public class ItemService {
         this.itemCodes = itemCodes;
         this.materialService = materialService;
         this.inventoryService = inventoryService;
-    }
-
-    /** Mark the ItemBridge custom-item integration as available (called when the plugin hooks). */
-    public void enableItemBridge() {
-        this.itemBridgeEnabled = true;
     }
 
     /** Mark the Nexo custom-item integration as available + load nexo.yml (called when the plugin hooks). */
@@ -70,12 +63,9 @@ public class ItemService {
         }
     }
 
-    /** Parse a sign item string into an {@link ItemStack} (Nexo / ItemBridge / alias / vanilla material), or {@code null}. */
+    /** Parse a sign item string into an {@link ItemStack} (Nexo / alias / vanilla material), or {@code null}. */
     public ItemStack parse(String itemString) {
         ItemStack item = nexoEnabled ? Nexo.parseItem(itemString) : null;
-        if (item == null && itemBridgeEnabled) {
-            item = ItemBridge.parseItem(itemString);
-        }
         ItemStack alias = aliases.resolveItem(itemString); // a configured alias overrides a custom-item match
         if (alias != null) {
             item = alias;
@@ -86,12 +76,9 @@ public class ItemService {
         return item;
     }
 
-    /** The sign string for an item (Nexo / ItemBridge key / vanilla name / configured alias), within {@code maxWidth}. */
+    /** The sign string for an item (Nexo / vanilla name / configured alias), within {@code maxWidth}. */
     public String queryString(ItemStack item, int maxWidth) {
         String result = nexoEnabled ? Nexo.queryString(item, maxWidth) : null;
-        if (result == null && itemBridgeEnabled) {
-            result = ItemBridge.queryString(item, maxWidth);
-        }
         if (result == null) {
             result = itemCodes.encode(item, maxWidth); // vanilla name
         }
