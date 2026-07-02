@@ -2,7 +2,6 @@ package io.paradaux.chestshop.services;
 
 import io.paradaux.chestshop.model.config.ChestShopConfiguration;
 import io.paradaux.chestshop.context.TransactionContext;
-import io.paradaux.chestshop.services.InventoryService;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.junit.jupiter.api.BeforeEach;

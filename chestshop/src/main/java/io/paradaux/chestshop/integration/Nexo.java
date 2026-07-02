@@ -1,4 +1,4 @@
-package io.paradaux.chestshop.plugins;
+package io.paradaux.chestshop.integration;
 
 import com.nexomc.nexo.api.NexoItems;
 import com.nexomc.nexo.items.ItemBuilder;

@@ -1,4 +1,4 @@
-package io.paradaux.chestshop.plugins;
+package io.paradaux.chestshop.integration;
 
 import io.paradaux.chestshop.services.InventoryService;
 import com.google.inject.Inject;

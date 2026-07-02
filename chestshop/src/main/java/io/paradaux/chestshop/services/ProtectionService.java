@@ -14,7 +14,7 @@ import java.util.function.Consumer;
 /**
  * Owns shop/chest protection checks, replacing the {@code ProtectionCheckContext} and
  * {@code BuildPermissionContext} bus with direct, ordered calls. The vanilla shop-member
- * check ({@link io.paradaux.chestshop.plugins.VanillaShopProtection#onProtectionCheck}) always runs;
+ * check ({@link io.paradaux.chestshop.integration.VanillaShopProtection#onProtectionCheck}) always runs;
  * the optional WorldGuard/GriefPrevention integrations run after it only when those
  * plugins are hooked and their config flags are on — {@code Dependencies} registers them
  * here as method references (so this service never names the {@code com.sk89q}/
@@ -28,10 +28,10 @@ import java.util.function.Consumer;
 @Singleton
 public class ProtectionService {
 
-    private final io.paradaux.chestshop.plugins.VanillaShopProtection vanillaProtection;
+    private final io.paradaux.chestshop.integration.VanillaShopProtection vanillaProtection;
 
     @com.google.inject.Inject
-    public ProtectionService(io.paradaux.chestshop.plugins.VanillaShopProtection vanillaProtection) {
+    public ProtectionService(io.paradaux.chestshop.integration.VanillaShopProtection vanillaProtection) {
         this.vanillaProtection = vanillaProtection;
     }
 

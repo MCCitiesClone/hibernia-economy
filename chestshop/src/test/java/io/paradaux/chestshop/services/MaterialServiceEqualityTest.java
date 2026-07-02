@@ -1,7 +1,6 @@
 package io.paradaux.chestshop.services;
 
 import io.paradaux.chestshop.utils.MaterialUtil;
-import io.paradaux.chestshop.services.MaterialService;
 import io.paradaux.chestshop.model.config.ChestShopConfiguration;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;

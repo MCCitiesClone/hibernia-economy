@@ -21,7 +21,7 @@ import io.paradaux.chestshop.signs.RestrictedSign;
 import io.paradaux.chestshop.utils.ImplementationAdapter;
 import io.paradaux.chestshop.utils.InventoryUtil;
 import io.paradaux.chestshop.utils.LocationUtil;
-import io.paradaux.chestshop.plugins.ShowItemHook;
+import io.paradaux.chestshop.integration.ShowItemHook;
 import io.paradaux.chestshop.utils.PriceUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;

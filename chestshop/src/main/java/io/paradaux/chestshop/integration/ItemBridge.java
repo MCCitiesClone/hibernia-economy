@@ -1,4 +1,4 @@
-package io.paradaux.chestshop.plugins;
+package io.paradaux.chestshop.integration;
 
 import io.paradaux.chestshop.ChestShop;
 import com.jojodmo.itembridge.ItemBridgeKey;

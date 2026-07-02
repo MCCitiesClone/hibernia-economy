@@ -8,7 +8,7 @@ import io.paradaux.chestshop.model.config.ChestShopConfiguration;
 import io.paradaux.hibernia.framework.i18n.Message;
 import io.paradaux.chestshop.model.Account;
 import io.paradaux.chestshop.signs.ChestShopSign;
-import io.paradaux.chestshop.plugins.ShowItemHook;
+import io.paradaux.chestshop.integration.ShowItemHook;
 import io.paradaux.chestshop.utils.PriceUtil;
 import io.paradaux.chestshop.utils.StringUtil;
 import net.kyori.adventure.text.Component;

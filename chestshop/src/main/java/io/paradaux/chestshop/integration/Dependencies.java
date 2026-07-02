@@ -1,4 +1,4 @@
-package io.paradaux.chestshop.plugins;
+package io.paradaux.chestshop.integration;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;

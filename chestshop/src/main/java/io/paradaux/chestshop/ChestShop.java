@@ -23,7 +23,7 @@ import io.paradaux.chestshop.listeners.PlayerInteract;
 import io.paradaux.chestshop.listeners.PlayerInventory;
 import io.paradaux.chestshop.listeners.PlayerTeleport;
 import io.paradaux.chestshop.utils.FileFormatter;
-import io.paradaux.chestshop.plugins.Dependencies;
+import io.paradaux.chestshop.integration.Dependencies;
 import io.paradaux.chestshop.services.ItemCodeService;
 import io.paradaux.chestshop.signs.RestrictedSign;
 

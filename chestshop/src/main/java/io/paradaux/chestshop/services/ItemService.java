@@ -2,8 +2,8 @@ package io.paradaux.chestshop.services;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import io.paradaux.chestshop.plugins.ItemBridge;
-import io.paradaux.chestshop.plugins.Nexo;
+import io.paradaux.chestshop.integration.ItemBridge;
+import io.paradaux.chestshop.integration.Nexo;
 import io.paradaux.chestshop.utils.MaterialUtil;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
