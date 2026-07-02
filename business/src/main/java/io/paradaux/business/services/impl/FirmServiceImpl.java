@@ -20,7 +20,7 @@ import io.paradaux.business.services.FirmAreaShopService;
 import io.paradaux.business.services.FirmService;
 import io.paradaux.business.services.FirmStaffService;
 import io.paradaux.business.utils.NameValidator;
-import io.paradaux.business.utils.RoleUtils;
+import io.paradaux.business.model.FirmRoleDefaults;
 import io.paradaux.business.model.FirmAccount;
 import io.paradaux.treasury.api.TreasuryApi;
 import io.paradaux.treasury.model.economy.Account;
@@ -140,12 +140,12 @@ public class FirmServiceImpl implements FirmService {
             firm.setDefaultAccountId(account.getAccountId());
 
             // Add the default roles
-            for (FirmRole role : RoleUtils.getDefaultRoles(firm.getFirmId())) {
+            for (FirmRole role : FirmRoleDefaults.getDefaultRoles(firm.getFirmId())) {
                 roles.insertRole(role);
             }
 
             // Add the default permissions for every role
-            for (FirmRolePermission permission : RoleUtils.getDefaultPermissions(firm.getFirmId())) {
+            for (FirmRolePermission permission : FirmRoleDefaults.getDefaultPermissions(firm.getFirmId())) {
                 roles.addRolePermission(permission);
             }
 

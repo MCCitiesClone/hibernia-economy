@@ -1,12 +1,9 @@
-package io.paradaux.business.utils;
+package io.paradaux.business.model;
 
-import io.paradaux.business.model.FirmRole;
-import io.paradaux.business.model.FirmRolePermission;
-import io.paradaux.business.model.RolePermission;
 
 import java.util.List;
 
-public class RoleUtils {
+public class FirmRoleDefaults {
 
     public static List<FirmRole> getDefaultRoles(Integer firmId) {
         return List.of(
