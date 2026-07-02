@@ -1,8 +1,8 @@
 package io.paradaux.chestshop.services;
 
 import com.google.inject.Singleton;
-import io.paradaux.chestshop.context.protection.BuildPermissionContext;
-import io.paradaux.chestshop.context.protection.ProtectionCheckContext;
+import io.paradaux.chestshop.model.BuildPermissionContext;
+import io.paradaux.chestshop.model.ProtectionCheckContext;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;

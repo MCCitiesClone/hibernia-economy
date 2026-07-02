@@ -1,7 +1,7 @@
 package io.paradaux.chestshop.integration;
 
 import io.paradaux.chestshop.model.config.ChestShopConfiguration;
-import io.paradaux.chestshop.context.protection.BuildPermissionContext;
+import io.paradaux.chestshop.model.BuildPermissionContext;
 import com.sk89q.worldedit.bukkit.BukkitAdapter;
 import com.sk89q.worldguard.WorldGuard;
 import com.sk89q.worldguard.bukkit.WorldGuardPlugin;

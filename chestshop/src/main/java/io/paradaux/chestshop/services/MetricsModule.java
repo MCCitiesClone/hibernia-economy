@@ -1,7 +1,7 @@
 package io.paradaux.chestshop.services;
 
 import io.paradaux.chestshop.utils.NumberUtil;
-import io.paradaux.chestshop.context.TransactionContext;
+import io.paradaux.chestshop.model.TransactionContext;
 import org.bukkit.inventory.ItemStack;
 
 /**

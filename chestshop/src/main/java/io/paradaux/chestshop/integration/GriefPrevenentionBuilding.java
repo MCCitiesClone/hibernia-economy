@@ -1,6 +1,6 @@
 package io.paradaux.chestshop.integration;
 
-import io.paradaux.chestshop.context.protection.BuildPermissionContext;
+import io.paradaux.chestshop.model.BuildPermissionContext;
 import me.ryanhamshire.GriefPrevention.GriefPrevention;
 import org.bukkit.plugin.Plugin;
 

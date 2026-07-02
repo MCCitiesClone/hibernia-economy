@@ -1,4 +1,4 @@
-package io.paradaux.chestshop.context.protection;
+package io.paradaux.chestshop.model;
 
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;

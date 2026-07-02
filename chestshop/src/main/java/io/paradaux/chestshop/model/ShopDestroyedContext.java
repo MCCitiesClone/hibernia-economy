@@ -1,4 +1,4 @@
-package io.paradaux.chestshop.context;
+package io.paradaux.chestshop.model;
 
 import org.bukkit.block.Container;
 import org.bukkit.block.Sign;

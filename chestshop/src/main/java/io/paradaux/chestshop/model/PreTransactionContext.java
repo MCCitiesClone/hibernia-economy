@@ -1,6 +1,5 @@
-package io.paradaux.chestshop.context;
+package io.paradaux.chestshop.model;
 
-import io.paradaux.chestshop.model.Account;
 import org.bukkit.block.Sign;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
@@ -8,8 +7,8 @@ import org.bukkit.inventory.ItemStack;
 
 import java.math.BigDecimal;
 
-import static io.paradaux.chestshop.context.PreTransactionContext.TransactionOutcome.TRANSACTION_SUCCESSFUL;
-import static io.paradaux.chestshop.context.TransactionContext.TransactionType;
+import static io.paradaux.chestshop.model.PreTransactionContext.TransactionOutcome.TRANSACTION_SUCCESSFUL;
+import static io.paradaux.chestshop.model.TransactionContext.TransactionType;
 
 /**
  * Carrier threaded through the ordered pre-transaction validation steps run by

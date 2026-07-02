@@ -2,7 +2,7 @@ package io.paradaux.chestshop.signs;
 
 import com.google.inject.Inject;
 import io.paradaux.chestshop.utils.BlockUtil;
-import io.paradaux.chestshop.context.PreTransactionContext;
+import io.paradaux.chestshop.model.PreTransactionContext;
 import io.paradaux.chestshop.permission.Permissions;
 import io.paradaux.chestshop.services.AccountService;
 import io.paradaux.hibernia.framework.i18n.Message;
@@ -18,7 +18,7 @@ import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.SignChangeEvent;
 
 import static io.paradaux.chestshop.utils.ImplementationAdapter.getState;
-import static io.paradaux.chestshop.context.PreTransactionContext.TransactionOutcome.SHOP_IS_RESTRICTED;
+import static io.paradaux.chestshop.model.PreTransactionContext.TransactionOutcome.SHOP_IS_RESTRICTED;
 import static io.paradaux.chestshop.permission.Permissions.ADMIN;
 
 /**

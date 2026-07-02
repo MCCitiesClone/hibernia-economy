@@ -1,7 +1,7 @@
 package io.paradaux.chestshop.integration;
 
 import io.paradaux.chestshop.utils.BlockUtil;
-import io.paradaux.chestshop.context.protection.ProtectionCheckContext;
+import io.paradaux.chestshop.model.ProtectionCheckContext;
 import com.sk89q.worldedit.bukkit.BukkitAdapter;
 import com.sk89q.worldedit.util.Location;
 import com.sk89q.worldedit.world.World;

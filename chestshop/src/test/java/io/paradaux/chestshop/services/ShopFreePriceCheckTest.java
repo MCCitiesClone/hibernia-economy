@@ -1,7 +1,7 @@
 package io.paradaux.chestshop.services;
 
 import io.paradaux.chestshop.model.config.ChestShopConfiguration;
-import io.paradaux.chestshop.context.PreShopCreationContext;
+import io.paradaux.chestshop.model.PreShopCreationContext;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 

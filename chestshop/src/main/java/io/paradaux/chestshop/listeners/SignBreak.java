@@ -6,7 +6,7 @@ import com.google.inject.Singleton;
 import io.paradaux.chestshop.utils.BlockUtil;
 import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.model.config.ChestShopConfiguration;
-import io.paradaux.chestshop.context.ShopDestroyedContext;
+import io.paradaux.chestshop.model.ShopDestroyedContext;
 import io.paradaux.chestshop.services.AccountService;
 import io.paradaux.chestshop.services.ShopService;
 import io.paradaux.chestshop.signs.ChestShopSign;
