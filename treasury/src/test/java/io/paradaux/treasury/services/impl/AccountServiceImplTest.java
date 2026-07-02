@@ -2,8 +2,8 @@ package io.paradaux.treasury.services.impl;
 
 import io.paradaux.treasury.mappers.AccountMapper;
 import io.paradaux.treasury.mappers.MembershipMapper;
-import io.paradaux.treasury.utils.AccountRedirectCache;
-import io.paradaux.treasury.utils.PersonalAccountCache;
+import io.paradaux.treasury.services.cache.AccountRedirectCache;
+import io.paradaux.treasury.services.cache.PersonalAccountCache;
 import io.paradaux.treasury.model.config.EconomyConfiguration;
 import io.paradaux.treasury.model.economy.Account;
 import io.paradaux.treasury.model.economy.AccountBalance;

@@ -1,4 +1,4 @@
-package io.paradaux.treasury.utils;
+package io.paradaux.treasury.services.cache;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;

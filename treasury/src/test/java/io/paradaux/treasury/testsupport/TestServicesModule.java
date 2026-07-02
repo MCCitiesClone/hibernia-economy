@@ -30,9 +30,9 @@ import io.paradaux.treasury.services.impl.GovServiceImpl;
 import io.paradaux.treasury.services.impl.PlayerDirectoryServiceImpl;
 import io.paradaux.treasury.services.impl.LedgerServiceImpl;
 import io.paradaux.treasury.services.impl.MembershipServiceImpl;
-import io.paradaux.treasury.utils.AccountRedirectCache;
-import io.paradaux.treasury.utils.PersonalAccountCache;
-import io.paradaux.treasury.utils.PluginSystemAccountCache;
+import io.paradaux.treasury.services.cache.AccountRedirectCache;
+import io.paradaux.treasury.services.cache.PersonalAccountCache;
+import io.paradaux.treasury.services.cache.PluginSystemAccountCache;
 
 /**
  * Wires the production service implementations against test configurations.

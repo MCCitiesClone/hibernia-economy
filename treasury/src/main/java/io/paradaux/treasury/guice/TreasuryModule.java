@@ -18,9 +18,9 @@ import io.paradaux.treasury.model.config.SalaryConfiguration;
 import io.paradaux.treasury.model.config.SourceIncomeTaxConfiguration;
 import io.paradaux.treasury.services.*;
 import io.paradaux.treasury.services.impl.*;
-import io.paradaux.treasury.utils.AccountRedirectCache;
-import io.paradaux.treasury.utils.PersonalAccountCache;
-import io.paradaux.treasury.utils.PluginSystemAccountCache;
+import io.paradaux.treasury.services.cache.AccountRedirectCache;
+import io.paradaux.treasury.services.cache.PersonalAccountCache;
+import io.paradaux.treasury.services.cache.PluginSystemAccountCache;
 import net.luckperms.api.LuckPerms;
 import org.bukkit.Server;
 
