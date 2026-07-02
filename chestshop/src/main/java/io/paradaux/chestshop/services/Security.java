@@ -3,7 +3,6 @@ package io.paradaux.chestshop.services;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import io.paradaux.chestshop.model.config.ChestShopConfiguration;
-import io.paradaux.chestshop.signs.ChestShopSign;
 import io.paradaux.chestshop.utils.BlockUtil;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;

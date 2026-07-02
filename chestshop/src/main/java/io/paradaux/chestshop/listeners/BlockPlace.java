@@ -4,7 +4,7 @@ import io.paradaux.chestshop.services.ShopBlockService;
 import com.google.inject.Inject;
 import io.paradaux.chestshop.permission.Permissions;
 import io.paradaux.chestshop.services.Security;
-import io.paradaux.chestshop.signs.ChestShopSign;
+import io.paradaux.chestshop.services.ChestShopSign;
 import io.paradaux.chestshop.utils.ShopBlockUtil;
 import io.paradaux.hibernia.framework.i18n.Message;
 import org.bukkit.Material;

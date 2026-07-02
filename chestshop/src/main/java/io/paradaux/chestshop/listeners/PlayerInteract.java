@@ -14,7 +14,7 @@ import io.paradaux.chestshop.services.AccountService;
 import io.paradaux.chestshop.services.InfoService;
 import io.paradaux.chestshop.services.ItemService;
 import io.paradaux.chestshop.services.TransactionService;
-import io.paradaux.chestshop.signs.ChestShopSign;
+import io.paradaux.chestshop.services.ChestShopSign;
 import io.paradaux.hibernia.framework.i18n.Message;
 import org.bukkit.ChatColor;
 import org.bukkit.GameMode;
@@ -38,7 +38,7 @@ import java.util.logging.Level;
 import static io.paradaux.chestshop.utils.ImplementationAdapter.getState;
 import static io.paradaux.chestshop.utils.BlockUtil.isSign;
 import static io.paradaux.chestshop.permission.Permissions.OTHER_NAME_CREATE;
-import static io.paradaux.chestshop.signs.ChestShopSign.*;
+import static io.paradaux.chestshop.services.ChestShopSign.*;
 import static org.bukkit.event.block.Action.LEFT_CLICK_BLOCK;
 import static org.bukkit.event.block.Action.RIGHT_CLICK_BLOCK;
 

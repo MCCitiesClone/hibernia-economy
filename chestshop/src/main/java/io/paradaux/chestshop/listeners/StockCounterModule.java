@@ -11,7 +11,7 @@ import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.model.config.ChestShopConfiguration;
 import io.paradaux.chestshop.model.PreShopCreationContext;
 import io.paradaux.chestshop.model.TransactionContext;
-import io.paradaux.chestshop.signs.ChestShopSign;
+import io.paradaux.chestshop.services.ChestShopSign;
 import org.bukkit.block.Block;
 import org.bukkit.block.Container;
 import org.bukkit.block.Sign;
@@ -26,7 +26,7 @@ import org.bukkit.inventory.ItemStack;
 import java.util.IllegalFormatException;
 
 import static io.paradaux.chestshop.utils.ImplementationAdapter.getHolder;
-import static io.paradaux.chestshop.signs.ChestShopSign.QUANTITY_LINE;
+import static io.paradaux.chestshop.services.ChestShopSign.QUANTITY_LINE;
 
 
 /**

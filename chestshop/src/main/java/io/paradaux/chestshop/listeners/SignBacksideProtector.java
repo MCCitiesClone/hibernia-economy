@@ -1,7 +1,7 @@
 package io.paradaux.chestshop.listeners;
 
 import com.google.inject.Inject;
-import io.paradaux.chestshop.signs.ChestShopSign;
+import io.paradaux.chestshop.services.ChestShopSign;
 import io.paradaux.chestshop.utils.BlockUtil;
 import io.paradaux.chestshop.utils.ImplementationAdapter;
 import io.paradaux.hibernia.framework.i18n.Message;

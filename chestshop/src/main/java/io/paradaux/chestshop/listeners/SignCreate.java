@@ -11,7 +11,7 @@ import io.paradaux.chestshop.model.ShopCreatedContext;
 import io.paradaux.chestshop.services.AccountService;
 import io.paradaux.chestshop.services.ItemService;
 import io.paradaux.chestshop.services.ShopService;
-import io.paradaux.chestshop.signs.ChestShopSign;
+import io.paradaux.chestshop.services.ChestShopSign;
 import org.bukkit.block.Block;
 import org.bukkit.block.Sign;
 import org.bukkit.event.EventHandler;

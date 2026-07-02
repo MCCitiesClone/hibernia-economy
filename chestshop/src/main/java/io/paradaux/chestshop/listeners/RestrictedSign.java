@@ -1,5 +1,6 @@
-package io.paradaux.chestshop.signs;
+package io.paradaux.chestshop.listeners;
 
+import io.paradaux.chestshop.services.ChestShopSign;
 import com.google.inject.Inject;
 import io.paradaux.chestshop.utils.BlockUtil;
 import io.paradaux.chestshop.model.PreTransactionContext;

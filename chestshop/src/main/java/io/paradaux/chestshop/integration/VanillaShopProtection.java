@@ -6,7 +6,7 @@ import com.google.inject.Singleton;
 import io.paradaux.chestshop.model.ProtectionCheckContext;
 import io.paradaux.chestshop.permission.Permissions;
 import io.paradaux.chestshop.services.AccountService;
-import io.paradaux.chestshop.signs.ChestShopSign;
+import io.paradaux.chestshop.services.ChestShopSign;
 import org.bukkit.block.Block;
 import org.bukkit.block.Sign;
 import org.bukkit.entity.Player;

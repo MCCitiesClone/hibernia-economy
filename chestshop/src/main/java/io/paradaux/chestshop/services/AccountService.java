@@ -10,7 +10,6 @@ import io.paradaux.chestshop.model.config.ChestShopConfiguration;
 import io.paradaux.chestshop.model.Account;
 import io.paradaux.chestshop.mappers.AccountMapper;
 import io.paradaux.chestshop.model.PlayerDTO;
-import io.paradaux.chestshop.signs.ChestShopSign;
 import io.paradaux.chestshop.utils.NameUtil;
 import io.paradaux.chestshop.utils.NumberUtil;
 import io.paradaux.chestshop.utils.SimpleCache;

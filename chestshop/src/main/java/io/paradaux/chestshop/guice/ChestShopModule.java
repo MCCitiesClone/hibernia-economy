@@ -8,7 +8,7 @@ import io.paradaux.chestshop.services.EconomyService;
 import io.paradaux.chestshop.services.ItemCodeService;
 import io.paradaux.chestshop.services.ShopService;
 import io.paradaux.chestshop.services.TransactionService;
-import io.paradaux.chestshop.signs.ChestShopSign;
+import io.paradaux.chestshop.services.ChestShopSign;
 import io.paradaux.chestshop.services.InventoryService;
 import io.paradaux.chestshop.services.MaterialService;
 import io.paradaux.chestshop.services.ShopBlockService;

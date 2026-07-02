@@ -3,7 +3,7 @@ package io.paradaux.chestshop.commands;
 import io.paradaux.chestshop.services.ShopBlockService;
 import com.google.inject.Inject;
 import io.paradaux.chestshop.services.InfoService;
-import io.paradaux.chestshop.signs.ChestShopSign;
+import io.paradaux.chestshop.services.ChestShopSign;
 import io.paradaux.hibernia.framework.commander.annotations.Command;
 import io.paradaux.hibernia.framework.commander.annotations.Route;
 import io.paradaux.hibernia.framework.commander.annotations.Sender;

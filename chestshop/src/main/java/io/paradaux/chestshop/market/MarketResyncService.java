@@ -6,7 +6,7 @@ import com.google.inject.Singleton;
 import io.paradaux.chestshop.model.Account;
 import io.paradaux.chestshop.services.AccountService;
 import io.paradaux.chestshop.services.ItemCodeService;
-import io.paradaux.chestshop.signs.ChestShopSign;
+import io.paradaux.chestshop.services.ChestShopSign;
 import io.paradaux.hibernia.framework.i18n.Message;
 import io.paradaux.treasury.api.market.ShopLocation;
 import org.bukkit.Chunk;

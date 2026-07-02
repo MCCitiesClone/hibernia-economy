@@ -6,7 +6,7 @@ import io.paradaux.chestshop.model.config.ChestShopConfiguration;
 import io.paradaux.chestshop.permission.Permissions;
 import io.paradaux.chestshop.services.Security;
 import io.paradaux.chestshop.services.InfoService;
-import io.paradaux.chestshop.signs.ChestShopSign;
+import io.paradaux.chestshop.services.ChestShopSign;
 import io.paradaux.hibernia.framework.i18n.Message;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;

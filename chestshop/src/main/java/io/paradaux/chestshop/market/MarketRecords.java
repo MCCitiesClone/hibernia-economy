@@ -7,7 +7,7 @@ import io.paradaux.chestshop.services.ItemCodeService;
 import io.paradaux.chestshop.services.ItemService;
 import io.paradaux.chestshop.utils.MaterialUtil;
 import io.paradaux.chestshop.utils.PriceUtil;
-import io.paradaux.chestshop.signs.ChestShopSign;
+import io.paradaux.chestshop.services.ChestShopSign;
 import io.paradaux.business.api.BusinessApi;
 import io.paradaux.business.model.Firm;
 import io.paradaux.treasury.api.TreasuryApi;

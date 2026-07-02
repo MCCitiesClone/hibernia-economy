@@ -1,4 +1,4 @@
-package io.paradaux.chestshop.signs;
+package io.paradaux.chestshop.services;
 
 import io.paradaux.chestshop.utils.BlockUtil;
 import io.paradaux.chestshop.utils.ImplementationAdapter;

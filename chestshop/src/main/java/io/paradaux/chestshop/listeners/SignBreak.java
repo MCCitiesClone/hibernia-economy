@@ -9,7 +9,7 @@ import io.paradaux.chestshop.model.config.ChestShopConfiguration;
 import io.paradaux.chestshop.model.ShopDestroyedContext;
 import io.paradaux.chestshop.services.AccountService;
 import io.paradaux.chestshop.services.ShopService;
-import io.paradaux.chestshop.signs.ChestShopSign;
+import io.paradaux.chestshop.services.ChestShopSign;
 import io.paradaux.hibernia.framework.i18n.Message;
 import org.bukkit.Material;
 import org.bukkit.block.Block;

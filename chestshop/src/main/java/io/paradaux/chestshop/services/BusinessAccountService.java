@@ -5,7 +5,6 @@ import io.paradaux.business.api.BusinessApi;
 import io.paradaux.business.model.RolePermission;
 import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.model.Account;
-import io.paradaux.chestshop.signs.ChestShopSign;
 import io.paradaux.chestshop.utils.BusinessAccountUtil;
 import io.paradaux.treasury.api.TreasuryApi;
 import org.bukkit.entity.Player;

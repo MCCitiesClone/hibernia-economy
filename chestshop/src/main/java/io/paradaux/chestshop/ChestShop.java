@@ -22,7 +22,7 @@ import io.paradaux.chestshop.listeners.PlayerTeleport;
 import io.paradaux.chestshop.utils.FileFormatter;
 import io.paradaux.chestshop.integration.Dependencies;
 import io.paradaux.chestshop.services.ItemCodeService;
-import io.paradaux.chestshop.signs.RestrictedSign;
+import io.paradaux.chestshop.listeners.RestrictedSign;
 
 
 import org.apache.logging.log4j.Level;

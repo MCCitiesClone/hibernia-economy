@@ -9,7 +9,6 @@ import io.paradaux.chestshop.permission.Permissions;
 import io.paradaux.chestshop.model.config.ChestShopConfiguration;
 import io.paradaux.chestshop.model.Account;
 import io.paradaux.chestshop.model.TransactionContext;
-import io.paradaux.chestshop.signs.ChestShopSign;
 import io.paradaux.treasury.api.TaxApi;
 import io.paradaux.treasury.api.TreasuryApi;
 import io.paradaux.treasury.model.economy.AccountType;

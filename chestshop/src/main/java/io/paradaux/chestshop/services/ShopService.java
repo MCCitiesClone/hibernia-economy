@@ -13,7 +13,6 @@ import io.paradaux.chestshop.model.ShopDestroyedContext;
 import io.paradaux.chestshop.model.PreShopCreationContext.CreationOutcome;
 import io.paradaux.chestshop.listeners.StockCounterModule;
 import io.paradaux.chestshop.market.MarketListener;
-import io.paradaux.chestshop.signs.ChestShopSign;
 import io.paradaux.chestshop.utils.LocationUtil;
 import io.paradaux.chestshop.utils.MaterialUtil;
 import io.paradaux.chestshop.utils.PriceUtil;
@@ -37,7 +36,7 @@ import java.util.Locale;
 import java.util.logging.Level;
 
 import static io.paradaux.chestshop.permission.Permissions.NOFEE;
-import static io.paradaux.chestshop.signs.ChestShopSign.AUTOFILL_CODE;
+import static io.paradaux.chestshop.services.ChestShopSign.AUTOFILL_CODE;
 
 /**
  * Owns the whole shop lifecycle: creation validation ({@link #create}), the post-creation

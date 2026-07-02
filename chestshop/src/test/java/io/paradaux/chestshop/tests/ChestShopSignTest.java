@@ -1,14 +1,14 @@
 package io.paradaux.chestshop.tests;
 
-import io.paradaux.chestshop.signs.ChestShopSign;
+import io.paradaux.chestshop.services.ChestShopSign;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.regex.Pattern;
 
-import static io.paradaux.chestshop.signs.ChestShopSign.ITEM_LINE;
-import static io.paradaux.chestshop.signs.ChestShopSign.PRICE_LINE;
-import static io.paradaux.chestshop.signs.ChestShopSign.QUANTITY_LINE;
+import static io.paradaux.chestshop.services.ChestShopSign.ITEM_LINE;
+import static io.paradaux.chestshop.services.ChestShopSign.PRICE_LINE;
+import static io.paradaux.chestshop.services.ChestShopSign.QUANTITY_LINE;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 

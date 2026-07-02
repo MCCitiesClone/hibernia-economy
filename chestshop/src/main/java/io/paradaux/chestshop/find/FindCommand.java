@@ -7,7 +7,7 @@ import io.paradaux.chestshop.market.MarketResyncService;
 import io.paradaux.chestshop.permission.Permissions;
 import io.paradaux.chestshop.services.ItemCodeService;
 import io.paradaux.chestshop.services.ItemService;
-import io.paradaux.chestshop.signs.ChestShopSign;
+import io.paradaux.chestshop.services.ChestShopSign;
 import io.paradaux.chestshop.utils.MaterialUtil;
 import io.paradaux.hibernia.framework.commander.annotations.Arg;
 import io.paradaux.hibernia.framework.commander.annotations.Command;
