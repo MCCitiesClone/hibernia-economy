@@ -3,7 +3,6 @@ package io.paradaux.chestshop.services;
 import com.google.common.base.Charsets;
 import com.google.common.base.Preconditions;
 import com.google.inject.Inject;
-import com.google.inject.Provider;
 import com.google.inject.Singleton;
 import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.permission.Permissions;
@@ -42,9 +41,9 @@ import java.util.logging.Level;
 public class AccountService {
 
     private final AccountMapper accounts;
-    // Lazy to break the AccountService ↔ EconomyService construction cycle (business
-    // name resolution / firm access checks delegate to the economy service).
-    private final Provider<EconomyService> economy;
+    // Business-account resolution / firm access checks delegate to the leaf
+    // BusinessAccountService (no cycle — it depends on no other ChestShop service).
+    private final BusinessAccountService businessAccounts;
 
     private final Object accountsLock = new Object();
 
@@ -61,10 +60,10 @@ public class AccountService {
     private int uuidVersion = -1;
 
     @Inject
-    public AccountService(AccountMapper accounts, Provider<EconomyService> economy,
+    public AccountService(AccountMapper accounts, BusinessAccountService businessAccounts,
                           ChestShopConfiguration config, ChestShopSign chestShopSign) {
         this.accounts = accounts;
-        this.economy = economy;
+        this.businessAccounts = businessAccounts;
         this.config = config;
         this.chestShopSign = chestShopSign;
         this.usernameToAccount = new SimpleCache<>(config.getCacheSize());
@@ -194,7 +193,7 @@ public class AccountService {
      * Replaces the {@code AccountQueryEvent} dispatch.
      */
     public Account resolveAccount(String name) {
-        Account business = economy.get().resolveBusinessAccount(name);
+        Account business = businessAccounts.resolveBusinessAccount(name);
         if (business != null) {
             return business;
         }
@@ -342,7 +341,7 @@ public class AccountService {
      * the {@code AccountAccessEvent} dispatch.
      */
     public boolean canAccess(Player player, Account account) {
-        if (economy.get().canAccessBusinessAccount(player, account)) {
+        if (businessAccounts.canAccessBusinessAccount(player, account)) {
             return true;
         }
         if (player.getUniqueId().equals(account.getUuid())) {

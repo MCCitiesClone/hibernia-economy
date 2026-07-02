@@ -3,6 +3,7 @@ package io.paradaux.chestshop.plugins;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import io.paradaux.chestshop.ChestShop;
+import io.paradaux.chestshop.services.BusinessAccountService;
 import io.paradaux.chestshop.services.EconomyService;
 import io.paradaux.chestshop.services.ItemService;
 import io.paradaux.chestshop.services.ProtectionService;
@@ -38,13 +39,16 @@ public class Dependencies implements Listener {
     private final ProtectionService protection;
     private final ItemService items;
     private final EconomyService economy;
+    private final BusinessAccountService businessAccounts;
     private final ChestShopConfiguration config;
 
     @Inject
-    public Dependencies(ProtectionService protection, ItemService items, EconomyService economy, ChestShopConfiguration config) {
+    public Dependencies(ProtectionService protection, ItemService items, EconomyService economy,
+                        BusinessAccountService businessAccounts, ChestShopConfiguration config) {
         this.protection = protection;
         this.items = items;
         this.economy = economy;
+        this.businessAccounts = businessAccounts;
         this.config = config;
     }
 
@@ -122,7 +126,7 @@ public class Dependencies implements Listener {
 
         if (Bukkit.getPluginManager().getPlugin("Treasury") != null) {
             plugin = "Treasury";
-            economyProvider = TreasuryEconomyProvider.prepare(economy);
+            economyProvider = TreasuryEconomyProvider.prepare(economy, businessAccounts);
         }
 
         if (economyProvider == null) {

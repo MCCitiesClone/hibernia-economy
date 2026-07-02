@@ -3,6 +3,7 @@ package io.paradaux.chestshop.guice;
 import com.google.inject.AbstractModule;
 import com.google.inject.Singleton;
 import io.paradaux.chestshop.services.AccountService;
+import io.paradaux.chestshop.services.BusinessAccountService;
 import io.paradaux.chestshop.services.EconomyService;
 import io.paradaux.chestshop.services.ItemCodeService;
 import io.paradaux.chestshop.services.ShopService;
@@ -30,6 +31,7 @@ public class ChestShopModule extends AbstractModule {
         bind(AccountService.class).in(Singleton.class);
         bind(ShopService.class).in(Singleton.class);
         bind(EconomyService.class).in(Singleton.class);
+        bind(BusinessAccountService.class).in(Singleton.class);
         // The stateful, config-backed material/inventory/block logic, split out of the
         // former static-util classes into @Singleton services routed through
         // ChestShopConfiguration (PAR-282). Bound explicitly so the single shared

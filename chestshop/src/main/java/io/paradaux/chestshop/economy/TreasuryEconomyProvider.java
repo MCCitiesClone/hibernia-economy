@@ -1,7 +1,9 @@
 package io.paradaux.chestshop.economy;
 
 import io.paradaux.chestshop.ChestShop;
+import io.paradaux.chestshop.services.BusinessAccountService;
 import io.paradaux.chestshop.services.EconomyService;
+import io.paradaux.chestshop.utils.BusinessAccountUtil;
 import io.paradaux.business.api.BusinessApi;
 import io.paradaux.treasury.api.TaxApi;
 import io.paradaux.treasury.model.economy.AccountType;
@@ -26,7 +28,6 @@ import java.util.logging.Level;
  */
 public class TreasuryEconomyProvider extends EconomyProvider {
 
-    static final UUID CHESTSHOP_SYSTEM_UUID = new UUID(0xC5B0FFFFFFFFFFFEL, 0xFFFFFFFFFFFFFFFEL);
 
     /**
      * Attempt to initialize the Treasury economy provider.
@@ -34,7 +35,7 @@ public class TreasuryEconomyProvider extends EconomyProvider {
      * @return A new TreasuryEconomyProvider, or null if Treasury is not available
      */
     @Nullable
-    public static TreasuryEconomyProvider prepare(EconomyService economy) {
+    public static TreasuryEconomyProvider prepare(EconomyService economy, BusinessAccountService businessAccounts) {
         if (Bukkit.getPluginManager().getPlugin("Treasury") == null) {
             return null;
         }
@@ -52,12 +53,12 @@ public class TreasuryEconomyProvider extends EconomyProvider {
         int systemAccountId;
         try {
             List<io.paradaux.treasury.model.economy.Account> systemAccounts =
-                    treasury.getAccountsByTypeAndOwner(AccountType.SYSTEM, CHESTSHOP_SYSTEM_UUID);
+                    treasury.getAccountsByTypeAndOwner(AccountType.SYSTEM, BusinessAccountUtil.CHESTSHOP_SYSTEM_UUID);
             if (systemAccounts != null && !systemAccounts.isEmpty()) {
                 systemAccountId = systemAccounts.get(0).getAccountId();
             } else {
                 io.paradaux.treasury.model.economy.Account systemAccount =
-                        treasury.createAccount(AccountType.SYSTEM, CHESTSHOP_SYSTEM_UUID, "ChestShop System");
+                        treasury.createAccount(AccountType.SYSTEM, BusinessAccountUtil.CHESTSHOP_SYSTEM_UUID, "ChestShop System");
                 systemAccount.setAllowOverdraft(true);
                 treasury.updateAccount(systemAccount);
                 systemAccountId = systemAccount.getAccountId();
@@ -96,7 +97,8 @@ public class TreasuryEconomyProvider extends EconomyProvider {
         // Hand the live ledger handle + SYSTEM account + tax/business APIs to the
         // EconomyService — ChestShop's direct TreasuryApi/BusinessApi boundary that
         // replaced the currency + account event bus.
-        economy.bind(treasury, systemAccountId, taxApi, businessApi);
+        economy.bind(treasury, systemAccountId, taxApi);
+        businessAccounts.bind(treasury, businessApi);
 
         return new TreasuryEconomyProvider();
     }

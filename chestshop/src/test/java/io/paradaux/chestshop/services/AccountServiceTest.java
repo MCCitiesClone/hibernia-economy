@@ -50,7 +50,7 @@ class AccountServiceTest {
         ChestShopConfiguration config = mock(ChestShopConfiguration.class);
         when(config.getCacheSize()).thenReturn(128);
         mapper = new FakeAccountMapper();
-        service = new AccountService(mapper, () -> null, config, null);
+        service = new AccountService(mapper, null, config, null);
     }
 
     @Test
