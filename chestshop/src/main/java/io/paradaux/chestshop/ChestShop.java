@@ -1,11 +1,12 @@
 package io.paradaux.chestshop;
 
+import io.paradaux.chestshop.dialogs.FindDialog;
 import io.paradaux.chestshop.model.config.ChestShopConfiguration;
-import io.paradaux.chestshop.commands.Give;
-import io.paradaux.chestshop.commands.ItemInfo;
-import io.paradaux.chestshop.commands.ShopInfo;
-import io.paradaux.chestshop.commands.Toggle;
-import io.paradaux.chestshop.commands.Version;
+import io.paradaux.chestshop.commands.GiveCommand;
+import io.paradaux.chestshop.commands.ItemInfoCommand;
+import io.paradaux.chestshop.commands.ShopInfoCommand;
+import io.paradaux.chestshop.commands.ToggleCommand;
+import io.paradaux.chestshop.commands.VersionCommand;
 import io.paradaux.chestshop.services.MarketHook;
 import io.paradaux.chestshop.listeners.MarketListener;
 import io.paradaux.chestshop.listeners.BlockPlace;
@@ -112,12 +113,12 @@ public class ChestShop extends JavaPlugin {
                         .scanConfiguration("io.paradaux.chestshop.model.config")
                         .handlers(io.paradaux.chestshop.commands.ChestShopCommand.class,
                                 io.paradaux.chestshop.commands.BypassCommand.class,
-                                ItemInfo.class, ShopInfo.class, Version.class,
-                                io.paradaux.chestshop.commands.Metrics.class, Give.class,
-                                Toggle.class,
-                                io.paradaux.chestshop.find.FindCommand.class)
+                                ItemInfoCommand.class, ShopInfoCommand.class, VersionCommand.class,
+                                io.paradaux.chestshop.commands.MetricsCommand.class, GiveCommand.class,
+                                ToggleCommand.class,
+                                io.paradaux.chestshop.commands.FindCommand.class)
                         // Usher dialog handlers — the /find search flow (first Usher use).
-                        .dialogs(io.paradaux.chestshop.find.FindDialog.class)
+                        .dialogs(io.paradaux.chestshop.dialogs.FindDialog.class)
                         // Bukkit entrypoints — Guice-constructed so each injects the
                         // services it needs (listener → service → persistence), and
                         // registered in one call via ListenerManager#registerAll (PAR-282).
@@ -139,7 +140,7 @@ public class ChestShop extends JavaPlugin {
                                 RestrictedSign.class,
                                 StockCounterModule.class,
                                 ItemMoveListener.class,
-                                io.paradaux.chestshop.find.preview.PreviewListener.class)
+                                io.paradaux.chestshop.listeners.PreviewListener.class)
                         .build();
         this.injector = com.google.inject.Guice.createInjector(hibernia,
                 new io.paradaux.chestshop.guice.ChestShopModule(),
@@ -170,7 +171,7 @@ public class ChestShop extends JavaPlugin {
         if (getServer().getPluginManager().getPlugin("WorldEdit") != null
                 || getServer().getPluginManager().getPlugin("FastAsyncWorldEdit") != null) {
             try {
-                new io.paradaux.chestshop.find.integration.WorldEditShopCleanup(this).register();
+                new io.paradaux.chestshop.listeners.WorldEditShopCleanup(this).register();
             } catch (Throwable t) {
                 getBukkitLogger().log(java.util.logging.Level.WARNING,
                         "WorldEdit shop-cleanup adapter unavailable", t);

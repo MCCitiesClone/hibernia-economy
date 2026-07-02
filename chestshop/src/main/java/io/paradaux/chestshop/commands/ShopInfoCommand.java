@@ -20,7 +20,7 @@ import org.bukkit.entity.Player;
  */
 @Command({"shopinfo", "sinfo", "shop"})
 @io.paradaux.hibernia.framework.commander.annotations.Permission("ChestShop.shopinfo")
-public class ShopInfo implements CommandHandler {
+public class ShopInfoCommand implements CommandHandler {
 
     private final InfoService info;
     private final Message message;
@@ -28,7 +28,7 @@ public class ShopInfo implements CommandHandler {
     private final ShopBlockService shopBlockService;
 
     @Inject
-    public ShopInfo(InfoService info, Message message, ChestShopSign chestShopSign, ShopBlockService shopBlockService) {
+    public ShopInfoCommand(InfoService info, Message message, ChestShopSign chestShopSign, ShopBlockService shopBlockService) {
         this.info = info;
         this.message = message;
         this.chestShopSign = chestShopSign;

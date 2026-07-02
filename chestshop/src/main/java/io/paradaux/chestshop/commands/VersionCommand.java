@@ -16,12 +16,12 @@ import org.bukkit.command.CommandSender;
  */
 @Command({"chestshop", "cs"})
 @io.paradaux.hibernia.framework.commander.annotations.Permission("ChestShop.admin")
-public class Version implements CommandHandler {
+public class VersionCommand implements CommandHandler {
 
     private final ItemService items;
 
     @Inject
-    public Version(ItemService items) {
+    public VersionCommand(ItemService items) {
         this.items = items;
     }
 

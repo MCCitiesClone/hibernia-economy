@@ -1,4 +1,4 @@
-package io.paradaux.chestshop.find;
+package io.paradaux.chestshop.model;
 
 /**
  * What a shop offers, derived purely from which sign prices are set (mirrors the

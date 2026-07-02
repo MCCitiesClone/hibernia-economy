@@ -1,4 +1,4 @@
-package io.paradaux.chestshop.find;
+package io.paradaux.chestshop.model;
 
 /** Sort order for a {@link ShopAttribute}. */
 public enum SortDirection {

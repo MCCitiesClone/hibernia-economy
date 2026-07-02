@@ -1,4 +1,4 @@
-package io.paradaux.chestshop.find.integration;
+package io.paradaux.chestshop.listeners;
 
 import com.sk89q.worldedit.EditSession;
 import com.sk89q.worldedit.WorldEdit;

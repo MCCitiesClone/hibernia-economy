@@ -26,14 +26,14 @@ import java.util.logging.Level;
  */
 @Command({"iteminfo", "iinfo"})
 @io.paradaux.hibernia.framework.commander.annotations.Permission("ChestShop.iteminfo")
-public class ItemInfo implements CommandHandler {
+public class ItemInfoCommand implements CommandHandler {
 
     private final InfoService info;
     private final ItemService items;
     private final Message message;
 
     @Inject
-    public ItemInfo(InfoService info, ItemService items, Message message) {
+    public ItemInfoCommand(InfoService info, ItemService items, Message message) {
         this.info = info;
         this.items = items;
         this.message = message;

@@ -1,5 +1,10 @@
-package io.paradaux.chestshop.find;
+package io.paradaux.chestshop.dialogs;
 
+import io.paradaux.chestshop.services.ShopFinderService;
+import io.paradaux.chestshop.model.FoundShop;
+import io.paradaux.chestshop.model.SortDirection;
+import io.paradaux.chestshop.model.ShopType;
+import io.paradaux.chestshop.model.ShopAttribute;
 import com.google.inject.Inject;
 import io.paradaux.hibernia.framework.i18n.Message;
 import io.paradaux.hibernia.framework.usher.ButtonSpec;

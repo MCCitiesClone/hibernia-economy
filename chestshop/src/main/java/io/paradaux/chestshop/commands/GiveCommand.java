@@ -25,14 +25,14 @@ import java.util.Set;
  */
 @Command({"chestshop", "cs"})
 @io.paradaux.hibernia.framework.commander.annotations.Permission("ChestShop.admin")
-public class Give implements CommandHandler {
+public class GiveCommand implements CommandHandler {
 
     private final ItemService items;
     private final Message message;
     private final InventoryService inventoryService;
 
     @Inject
-    public Give(ItemService items, Message message, InventoryService inventoryService) {
+    public GiveCommand(ItemService items, Message message, InventoryService inventoryService) {
         this.items = items;
         this.message = message;
         this.inventoryService = inventoryService;

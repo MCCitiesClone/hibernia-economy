@@ -1,5 +1,6 @@
-package io.paradaux.chestshop.find.preview;
+package io.paradaux.chestshop.listeners;
 
+import io.paradaux.chestshop.services.PreviewHandler;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import io.paradaux.chestshop.services.MarketHook;

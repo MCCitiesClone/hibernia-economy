@@ -1,8 +1,9 @@
-package io.paradaux.chestshop.find;
+package io.paradaux.chestshop.services;
 
+import io.paradaux.chestshop.dialogs.FindState;
+import io.paradaux.chestshop.model.FoundShop;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import io.paradaux.chestshop.services.MarketHook;
 import io.paradaux.treasury.api.ShopQueryApi;
 import io.paradaux.treasury.api.market.ShopResult;
 import io.paradaux.treasury.api.market.ShopSearchQuery;

@@ -1,4 +1,4 @@
-package io.paradaux.chestshop.find;
+package io.paradaux.chestshop.model;
 
 import java.util.Comparator;
 

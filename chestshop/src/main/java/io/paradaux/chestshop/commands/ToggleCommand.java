@@ -23,13 +23,13 @@ import java.util.logging.Level;
  */
 @Command({"chestshop", "cs"})
 @io.paradaux.hibernia.framework.commander.annotations.Permission("ChestShop.toggle")
-public class Toggle implements CommandHandler {
+public class ToggleCommand implements CommandHandler {
 
     private final AccountService accounts;
     private final Message message;
 
     @Inject
-    public Toggle(AccountService accounts, Message message) {
+    public ToggleCommand(AccountService accounts, Message message) {
         this.accounts = accounts;
         this.message = message;
     }

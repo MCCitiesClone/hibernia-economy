@@ -1,5 +1,9 @@
-package io.paradaux.chestshop.find;
+package io.paradaux.chestshop.dialogs;
 
+import io.paradaux.chestshop.model.FoundShop;
+import io.paradaux.chestshop.model.SortDirection;
+import io.paradaux.chestshop.model.ShopType;
+import io.paradaux.chestshop.model.ShopAttribute;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;

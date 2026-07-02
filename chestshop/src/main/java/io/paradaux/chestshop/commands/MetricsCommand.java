@@ -16,13 +16,13 @@ import org.bukkit.command.CommandSender;
  */
 @Command({"chestshop", "cs"})
 @io.paradaux.hibernia.framework.commander.annotations.Permission("ChestShop.admin")
-public class Metrics implements CommandHandler {
+public class MetricsCommand implements CommandHandler {
 
     private final AccountService accounts;
     private final Message message;
 
     @Inject
-    public Metrics(AccountService accounts, Message message) {
+    public MetricsCommand(AccountService accounts, Message message) {
         this.accounts = accounts;
         this.message = message;
     }

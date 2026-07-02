@@ -1,7 +1,9 @@
-package io.paradaux.chestshop.find;
+package io.paradaux.chestshop.commands;
 
+import io.paradaux.chestshop.dialogs.FindDialog;
+import io.paradaux.chestshop.dialogs.FindState;
 import com.google.inject.Inject;
-import io.paradaux.chestshop.find.preview.PreviewHandler;
+import io.paradaux.chestshop.services.PreviewHandler;
 import io.paradaux.chestshop.services.MarketHook;
 import io.paradaux.chestshop.services.MarketResyncService;
 import io.paradaux.chestshop.utils.Permissions;
