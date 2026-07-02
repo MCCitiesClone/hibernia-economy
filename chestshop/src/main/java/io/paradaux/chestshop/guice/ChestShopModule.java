@@ -2,6 +2,12 @@ package io.paradaux.chestshop.guice;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Singleton;
+import com.google.inject.multibindings.Multibinder;
+import io.paradaux.chestshop.integration.GriefPreventionIntegration;
+import io.paradaux.chestshop.integration.Integration;
+import io.paradaux.chestshop.integration.NexoIntegration;
+import io.paradaux.chestshop.integration.TreasuryIntegration;
+import io.paradaux.chestshop.integration.WorldGuardIntegration;
 import io.paradaux.chestshop.services.AccountService;
 import io.paradaux.chestshop.services.AdminBypass;
 import io.paradaux.chestshop.services.BusinessAccountService;
@@ -72,5 +78,13 @@ public class ChestShopModule extends AbstractModule {
         // ChestShopSign is a static-heavy sign-format util with a small instance surface,
         // not an interface/impl service — bound concrete.
         bind(ChestShopSign.class).in(Singleton.class);
+
+        // Soft-dependency integrations — each detected + hooked by the IntegrationRegistrar
+        // (PAR-307). Adding a new one is a new Integration + one addBinding line here.
+        Multibinder<Integration> integrations = Multibinder.newSetBinder(binder(), Integration.class);
+        integrations.addBinding().to(TreasuryIntegration.class);
+        integrations.addBinding().to(WorldGuardIntegration.class);
+        integrations.addBinding().to(GriefPreventionIntegration.class);
+        integrations.addBinding().to(NexoIntegration.class);
     }
 }

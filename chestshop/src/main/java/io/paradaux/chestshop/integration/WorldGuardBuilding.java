@@ -13,7 +13,7 @@ import org.bukkit.Location;
 import org.bukkit.plugin.Plugin;
 
 /**
- * WorldGuard region gating for shop creation. Constructed by {@code Dependencies} only
+ * WorldGuard region gating for shop creation. Constructed by {@code WorldGuardIntegration} only
  * when WorldGuard is hooked and {@code WORLDGUARD_INTEGRATION} is on, and registered with
  * {@link io.paradaux.chestshop.services.ProtectionService} as a method reference (no
  * longer a Bukkit {@code Listener}). The former {@code ignoreCancelled=true} "skip once

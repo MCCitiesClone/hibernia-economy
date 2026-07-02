@@ -14,7 +14,7 @@ import java.util.function.Consumer;
  * {@code BuildPermission} bus with direct, ordered calls. The vanilla shop-member
  * check ({@link io.paradaux.chestshop.integration.VanillaShopProtection#onProtectionCheck}) always runs;
  * the optional WorldGuard/GriefPrevention integrations run after it only when those
- * plugins are hooked and their config flags are on — {@code Dependencies} registers them
+ * plugins are hooked and their config flags are on — the WorldGuard/GriefPrevention integrations register them
  * here as method references (so this service never names the {@code com.sk89q}/
  * {@code me.ryanhamshire} classes, keeping them off the call path when the plugin is
  * absent, exactly as the old conditional listener registration did).

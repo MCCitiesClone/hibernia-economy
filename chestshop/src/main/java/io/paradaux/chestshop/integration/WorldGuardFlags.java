@@ -19,4 +19,16 @@ public class WorldGuardFlags {
         }
         ENABLE_SHOP = enableShop;
     }
+
+    private WorldGuardFlags() {
+    }
+
+    /**
+     * Force the {@code allow-shop} flag registration (runs the static initialiser). WorldGuard
+     * locks its flag registry once it enables, so this must be called from {@code onLoad}, before
+     * that — earlier than the Guice injector exists, which is why it stays a plain static call.
+     */
+    public static void register() {
+        ENABLE_SHOP.getName();
+    }
 }

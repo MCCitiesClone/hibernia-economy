@@ -16,15 +16,15 @@ import java.util.UUID;
  * The internal economy API: ChestShop's single point of contact with the Treasury
  * ledger ({@link TreasuryApi}). Services call these methods directly instead of
  * firing the old internal {@code Currency*Event}s and routing them through
- * {@code TreasuryEconomyProvider} — replacing the economy event bus with a
+ * {@code TreasuryIntegration} — replacing the economy event bus with a
  * treasury-api-style service boundary.
  *
  * <p>The live {@link TreasuryApi} (and optional {@link BusinessApi}) handle + the
  * ChestShop SYSTEM account id are {@linkplain #bind bound} once Treasury is resolved
- * at enable (from {@code TreasuryEconomyProvider.prepare}); ChestShop requires
+ * at enable (from {@code TreasuryIntegration.hook}); ChestShop requires
  * Treasury, so by the time any economy call runs they are set. Account resolution,
  * access checks, balances, settlement and legacy business-sign migration all live
- * here now — the {@code Currency*}/{@code Account*} event bus and {@code TreasuryEconomyProvider}'s
+ * here now — the {@code Currency*}/{@code Account*} event bus and {@code TreasuryIntegration}'s
  * handlers were collapsed into these direct calls.
  */
 public interface EconomyService {
@@ -94,7 +94,7 @@ public interface EconomyService {
      * ChestShop SYSTEM account as a money sink (paying into an admin shop) or source
      * (an admin shop paying out); an admin shop is first redirected to the configured
      * server-economy account when there is one. Replaces {@code CurrencyTransferEvent}
-     * + {@code TreasuryEconomyProvider.onCurrencyTransfer} + {@code ServerAccountCorrector}.
+     * + {@code TreasuryIntegration.onCurrencyTransfer} + {@code ServerAccountCorrector}.
      *
      * <p>Runs synchronously on the main thread (see {@link TransactionService#process}) and is
      * fast-fail by contract (ADT-131): the primary transfer is a single attempt — any failure
@@ -112,7 +112,7 @@ public interface EconomyService {
      * token, so if the physical sign still shows the legacy text we rewrite the owner line
      * in place. A no-op for shops already in the native form (or non-business owners).
      * Runs as a MONITOR-equivalent post-transaction step (was
-     * {@code TreasuryEconomyProvider.onTransactionMigrateSign}).
+     * {@code TreasuryIntegration.onTransactionMigrateSign}).
      */
     void migrateLegacyBusinessSign(Transaction event);
 }

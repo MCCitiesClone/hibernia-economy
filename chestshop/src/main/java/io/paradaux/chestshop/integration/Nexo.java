@@ -90,7 +90,7 @@ public final class Nexo {
     private static volatile boolean acceptBareIds = true;
     private static volatile boolean supportItemsAdder = true;
 
-    /** Wire the item database and load {@code nexo.yml} (called from Dependencies when Nexo hooks). */
+    /** Wire the item database and load {@code nexo.yml} (called from {@code NexoIntegration} when Nexo hooks). */
     public static void init(ItemCodeService codes) {
         itemCodes = codes;
         reload();

@@ -1,63 +1,76 @@
-package io.paradaux.chestshop.adapters;
+package io.paradaux.chestshop.integration;
 
+import com.google.inject.Inject;
+import com.google.inject.Singleton;
+import io.paradaux.business.api.BusinessApi;
 import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.services.BusinessAccountService;
 import io.paradaux.chestshop.services.EconomyService;
 import io.paradaux.chestshop.utils.BusinessAccountUtil;
-import io.paradaux.business.api.BusinessApi;
 import io.paradaux.treasury.api.TaxApi;
-import io.paradaux.treasury.model.economy.AccountType;
 import io.paradaux.treasury.api.TreasuryApi;
+import io.paradaux.treasury.model.economy.Account;
+import io.paradaux.treasury.model.economy.AccountType;
 import org.bukkit.Bukkit;
+import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.RegisteredServiceProvider;
 
 import java.util.List;
-import java.util.UUID;
 import java.util.logging.Level;
 
 /**
- * Treasury economy provider for ChestShop.
+ * Treasury integration — ChestShop's economy boundary, and its one {@linkplain #required()
+ * required} integration: without the ledger there is nowhere to move money, so a missing
+ * Treasury fails enable.
  *
- * <p>This provider is now only responsible for resolving, at enable time, resolving the Treasury (and
- * optional Business) handles and binding them to {@link io.paradaux.chestshop.services.EconomyService}
- * via {@link #prepare(EconomyService)}. All ledger access — account resolution, access
- * checks, balances, settlement and legacy business-sign migration — runs through that
- * single {@link TreasuryApi}/{@link BusinessApi} boundary.
+ * <p>Resolves the live {@link TreasuryApi} (plus {@link TaxApi} for sales-tax routing and,
+ * optionally, the Business {@link BusinessApi} for firm CHESTSHOP permission checks), finds or
+ * creates the ChestShop SYSTEM account used for intermediary transfers, and hands those handles
+ * to {@link EconomyService}/{@link BusinessAccountService} — the direct TreasuryApi/BusinessApi
+ * boundary that replaced the currency + account event bus. Absorbed the former
+ * {@code adapters/TreasuryEconomyProvider} (PAR-307).
  */
-public final class TreasuryEconomyProvider {
+@Singleton
+public class TreasuryIntegration implements Integration {
 
-    private TreasuryEconomyProvider() {
+    private final EconomyService economy;
+    private final BusinessAccountService businessAccounts;
+
+    @Inject
+    public TreasuryIntegration(EconomyService economy, BusinessAccountService businessAccounts) {
+        this.economy = economy;
+        this.businessAccounts = businessAccounts;
     }
 
+    @Override
+    public String pluginName() {
+        return "Treasury";
+    }
 
-    /**
-     * Attempt to initialize the Treasury economy provider.
-     *
-     * @return A new TreasuryEconomyProvider, or null if Treasury is not available
-     */
-    public static boolean prepare(EconomyService economy, BusinessAccountService businessAccounts) {
-        if (Bukkit.getPluginManager().getPlugin("Treasury") == null) {
-            return false;
-        }
+    @Override
+    public boolean required() {
+        return true;
+    }
 
+    @Override
+    public boolean hook(Plugin plugin) {
         RegisteredServiceProvider<TreasuryApi> rsp =
                 Bukkit.getServicesManager().getRegistration(TreasuryApi.class);
         if (rsp == null) {
             ChestShop.getBukkitLogger().warning("Treasury plugin found but TreasuryApi service not registered!");
             return false;
         }
-
         TreasuryApi treasury = rsp.getProvider();
 
-        // Find or create the ChestShop SYSTEM account for intermediary transfers
+        // Find or create the ChestShop SYSTEM account for intermediary transfers.
         int systemAccountId;
         try {
-            List<io.paradaux.treasury.model.economy.Account> systemAccounts =
+            List<Account> systemAccounts =
                     treasury.getAccountsByTypeAndOwner(AccountType.SYSTEM, BusinessAccountUtil.CHESTSHOP_SYSTEM_UUID);
             if (systemAccounts != null && !systemAccounts.isEmpty()) {
                 systemAccountId = systemAccounts.get(0).getAccountId();
             } else {
-                io.paradaux.treasury.model.economy.Account systemAccount =
+                Account systemAccount =
                         treasury.createAccount(AccountType.SYSTEM, BusinessAccountUtil.CHESTSHOP_SYSTEM_UUID, "ChestShop System");
                 systemAccount.setAllowOverdraft(true);
                 treasury.updateAccount(systemAccount);
@@ -67,12 +80,10 @@ public final class TreasuryEconomyProvider {
             ChestShop.getBukkitLogger().log(Level.SEVERE, "Failed to initialize Treasury SYSTEM account!", e);
             return false;
         }
-
         ChestShop.getBukkitLogger().info("Treasury SYSTEM account initialized (ID: " + systemAccountId + ")");
 
-        // Resolve TaxApi for sales-tax routing into Treasury's default tax
-        // account (typically DCGovernment). Treasury exposes it as a separate
-        // service so we don't need a second Bukkit lookup.
+        // Resolve TaxApi for sales-tax routing into Treasury's default tax account (typically
+        // DCGovernment). Treasury exposes it as a separate service so we don't need a second lookup.
         TaxApi taxApi = treasury.getTaxApi();
         if (taxApi == null) {
             ChestShop.getBukkitLogger().warning(
@@ -81,7 +92,7 @@ public final class TreasuryEconomyProvider {
         ChestShop.getBukkitLogger().info("Sales tax now routed via Treasury TaxApi → "
                 + (taxApi != null ? taxApi.getDefaultTaxAccountName() : "(disabled)"));
 
-        // Optionally integrate with the Business plugin for CHESTSHOP permission checks
+        // Optionally integrate with the Business plugin for CHESTSHOP permission checks.
         BusinessApi businessApi = null;
         if (Bukkit.getPluginManager().getPlugin("Business") != null) {
             RegisteredServiceProvider<BusinessApi> businessRsp =
@@ -94,13 +105,8 @@ public final class TreasuryEconomyProvider {
             }
         }
 
-        // Hand the live ledger handle + SYSTEM account + tax/business APIs to the
-        // EconomyService — ChestShop's direct TreasuryApi/BusinessApi boundary that
-        // replaced the currency + account event bus.
         economy.bind(treasury, systemAccountId, taxApi);
         businessAccounts.bind(treasury, businessApi);
-
         return true;
     }
-
 }

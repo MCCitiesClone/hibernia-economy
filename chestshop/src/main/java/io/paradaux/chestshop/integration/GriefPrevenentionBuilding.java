@@ -5,7 +5,7 @@ import me.ryanhamshire.GriefPrevention.GriefPrevention;
 import org.bukkit.plugin.Plugin;
 
 /**
- * GriefPrevention claim gating for shop creation. Constructed by {@code Dependencies} only
+ * GriefPrevention claim gating for shop creation. Constructed by {@code GriefPreventionIntegration} only
  * when GriefPrevention is hooked and {@code GRIEFPREVENTION_INTEGRATION} is on, and
  * registered with {@link io.paradaux.chestshop.services.ProtectionService} as a method
  * reference (no longer a Bukkit {@code Listener}).

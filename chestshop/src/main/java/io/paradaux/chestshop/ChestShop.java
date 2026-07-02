@@ -21,7 +21,8 @@ import io.paradaux.chestshop.listeners.PlayerInteract;
 import io.paradaux.chestshop.listeners.PlayerInventory;
 import io.paradaux.chestshop.listeners.PlayerTeleport;
 import io.paradaux.chestshop.utils.FileFormatter;
-import io.paradaux.chestshop.integration.Dependencies;
+import io.paradaux.chestshop.integration.IntegrationRegistrar;
+import io.paradaux.chestshop.integration.WorldGuardFlags;
 import io.paradaux.chestshop.services.ItemCodeService;
 import io.paradaux.chestshop.listeners.RestrictedSign;
 
@@ -94,7 +95,12 @@ public class ChestShop extends JavaPlugin {
 
     @Override
     public void onLoad() {
-        Dependencies.initializePlugins();
+        // WorldGuard's custom allow-shop flag must be registered before WorldGuard enables
+        // (onLoad) — this runs pre-Guice, so it's the one integration concern outside the
+        // IntegrationRegistrar. Everything else hooks at enable via Integration#hook.
+        if (getServer().getPluginManager().getPlugin("WorldGuard") != null) {
+            WorldGuardFlags.register();
+        }
     }
 
     @Override
@@ -123,7 +129,7 @@ public class ChestShop extends JavaPlugin {
                         // services it needs (listener → service → persistence), and
                         // registered in one call via ListenerManager#registerAll (PAR-282).
                         .listeners(
-                                Dependencies.class,
+                                IntegrationRegistrar.class,
                                 SignBreak.class,
                                 io.paradaux.chestshop.listeners.PhysicsBreak.class,
                                 io.paradaux.chestshop.listeners.PaperBlockDestroyListener.class,
@@ -156,7 +162,7 @@ public class ChestShop extends JavaPlugin {
 
         itemCodes.migrateIfNeeded();
 
-        if (!injector.getInstance(Dependencies.class).loadPlugins()) {
+        if (!injector.getInstance(IntegrationRegistrar.class).hookAll()) {
             getServer().getPluginManager().disablePlugin(this);
             return;
         }

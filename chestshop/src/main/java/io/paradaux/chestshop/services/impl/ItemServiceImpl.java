@@ -35,7 +35,7 @@ import static io.paradaux.chestshop.utils.StringUtil.getMinecraftStringWidth;
  * <p>Sign-format validation is pure and lives on {@code ChestShopSign.validateSign}.</p>
  *
  * <p>The optional Nexo custom-item integration (a softdepend) is only invoked once that
- * plugin is hooked ({@link #enableNexo()} is called from {@code Dependencies}), keeping the
+ * plugin is hooked ({@link #enableNexo()} is called from {@code NexoIntegration}), keeping the
  * {@code com.nexomc.nexo} classes off the call path when the plugin is absent.
  */
 @Singleton

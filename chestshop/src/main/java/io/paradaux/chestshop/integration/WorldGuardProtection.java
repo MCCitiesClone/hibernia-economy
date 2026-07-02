@@ -23,7 +23,7 @@ import org.bukkit.event.Event;
 import org.bukkit.plugin.Plugin;
 
 /**
- * WorldGuard region/built-in chest protection. Constructed by {@code Dependencies} only
+ * WorldGuard region/built-in chest protection. Constructed by {@code WorldGuardIntegration} only
  * when WorldGuard is hooked and {@code WORLDGUARD_USE_PROTECTION} is on, and registered
  * with {@link io.paradaux.chestshop.services.ProtectionService} as a method reference
  * (no longer a Bukkit {@code Listener}).
