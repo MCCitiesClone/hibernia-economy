@@ -1,5 +1,7 @@
-package io.paradaux.chestshop.utils;
+package io.paradaux.chestshop.services;
 
+import io.paradaux.chestshop.utils.MaterialUtil;
+import io.paradaux.chestshop.services.MaterialService;
 import io.paradaux.chestshop.model.config.ChestShopConfiguration;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
@@ -23,18 +25,18 @@ import static org.mockito.Mockito.when;
  * {@code MaterialTest} only exercises the name-shortening path.
  */
 @ExtendWith(MockitoExtension.class)
-class MaterialUtilEqualityTest {
+class MaterialServiceEqualityTest {
 
     @Mock private ItemStack stack;
 
-    private MaterialUtil materialUtil;
+    private MaterialService materialService;
 
     @BeforeEach
     void setUp() {
         ChestShopConfiguration config = mock(ChestShopConfiguration.class);
         lenient().when(config.getCacheSize()).thenReturn(1000);
         lenient().when(config.getExcludedItemAttributes()).thenReturn(new LinkedHashSet<>());
-        materialUtil = new MaterialUtil(config);
+        materialService = new MaterialService(config);
     }
 
     @Test
@@ -57,7 +59,7 @@ class MaterialUtilEqualityTest {
 
     @Test
     void equals_returnsTrueForBothEmpty() {
-        assertThat(materialUtil.equals(null, null)).isTrue();
+        assertThat(materialService.equals(null, null)).isTrue();
     }
 
     @Test
@@ -66,8 +68,8 @@ class MaterialUtilEqualityTest {
         lenient().when(real.getType()).thenReturn(Material.STONE);
         lenient().when(real.getAmount()).thenReturn(1);
 
-        assertThat(materialUtil.equals(real, null)).isFalse();
-        assertThat(materialUtil.equals(null, real)).isFalse();
+        assertThat(materialService.equals(real, null)).isFalse();
+        assertThat(materialService.equals(null, real)).isFalse();
     }
 
     @Test
@@ -79,7 +81,7 @@ class MaterialUtilEqualityTest {
         lenient().when(b.getType()).thenReturn(Material.DIRT);
         lenient().when(b.getAmount()).thenReturn(1);
 
-        assertThat(materialUtil.equals(a, b)).isFalse();
+        assertThat(materialService.equals(a, b)).isFalse();
     }
 
     @Test
@@ -93,7 +95,7 @@ class MaterialUtilEqualityTest {
         lenient().when(b.getAmount()).thenReturn(1);
         lenient().when(b.hasItemMeta()).thenReturn(false);
 
-        assertThat(materialUtil.equals(a, b)).isTrue();
+        assertThat(materialService.equals(a, b)).isTrue();
     }
 
     @Test
@@ -111,6 +113,6 @@ class MaterialUtilEqualityTest {
         lenient().when(meta.hasItemMeta()).thenReturn(true);
         lenient().when(meta.getItemMeta()).thenReturn(itemMeta);
 
-        assertThat(materialUtil.equals(plain, meta)).isFalse();
+        assertThat(materialService.equals(plain, meta)).isFalse();
     }
 }

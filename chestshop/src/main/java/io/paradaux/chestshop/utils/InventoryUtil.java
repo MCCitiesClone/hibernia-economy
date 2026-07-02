@@ -1,5 +1,6 @@
 package io.paradaux.chestshop.utils;
 
+import io.paradaux.chestshop.services.MaterialService;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -24,12 +25,12 @@ public class InventoryUtil {
     private static Boolean legacyContents = null;
 
     private final ChestShopConfiguration config;
-    private final MaterialUtil materialUtil;
+    private final MaterialService materialService;
 
     @Inject
-    public InventoryUtil(ChestShopConfiguration config, MaterialUtil materialUtil) {
+    public InventoryUtil(ChestShopConfiguration config, MaterialService materialService) {
         this.config = config;
-        this.materialUtil = materialUtil;
+        this.materialService = materialService;
     }
 
     private static ItemStack[] getStorageContents(Inventory inventory) {
@@ -65,7 +66,7 @@ public class InventoryUtil {
         int itemAmount = 0;
 
         for (ItemStack iStack : items.values()) {
-            if (!materialUtil.equals(iStack, item)) {
+            if (!materialService.equals(iStack, item)) {
                 continue;
             }
 
@@ -97,7 +98,7 @@ public class InventoryUtil {
         for (ItemStack slot : getStorageContents(inventory)) {
             if (MaterialUtil.isEmpty(slot)) {
                 capacity += perStack;
-            } else if (materialUtil.equals(slot, item)) {
+            } else if (materialService.equals(slot, item)) {
                 capacity += Math.max(0, perStack - slot.getAmount());
             }
         }
@@ -208,7 +209,7 @@ public class InventoryUtil {
                 continue;
             }
 
-            if (!materialUtil.equals(iStack, item)) {
+            if (!materialService.equals(iStack, item)) {
                 continue;
             }
 
@@ -246,7 +247,7 @@ public class InventoryUtil {
 
         int amount = item.getAmount();
         for (ItemStack currentItem : sourceInventory) {
-            if (materialUtil.equals(currentItem, item)) {
+            if (materialService.equals(currentItem, item)) {
                 ItemStack clone = currentItem.clone();
                 if (currentItem.getAmount() >= amount) {
                     clone.setAmount(amount);
@@ -306,7 +307,7 @@ public class InventoryUtil {
                 inventory.setItem(currentSlot, currentItem);
 
                 amountLeft -= currentItem.getAmount();
-            } else if (currentItem.getAmount() < maxStackSize && materialUtil.equals(currentItem, item)) {
+            } else if (currentItem.getAmount() < maxStackSize && materialService.equals(currentItem, item)) {
                 int neededToAdd = Math.min(maxStackSize - currentItem.getAmount(), amountLeft);
 
                 currentItem.setAmount(currentItem.getAmount() + neededToAdd);
@@ -370,7 +371,7 @@ public class InventoryUtil {
         for (int currentSlot = 0; currentSlot < effectiveSize(inventory) && amountLeft > 0; currentSlot++) {
             ItemStack currentItem = inventory.getItem(currentSlot);
 
-            if (currentItem != null && materialUtil.equals(currentItem, item)) {
+            if (currentItem != null && materialService.equals(currentItem, item)) {
                 int neededToRemove = Math.min(currentItem.getAmount(), amountLeft);
 
                 currentItem.setAmount(currentItem.getAmount() - neededToRemove);
@@ -403,7 +404,7 @@ public class InventoryUtil {
         Iterating:
         for (ItemStack item : items) {
             for (Map.Entry<ItemStack, Integer> entry : counts.entrySet()) {
-                if (materialUtil.equals(item, entry.getKey())) {
+                if (materialService.equals(item, entry.getKey())) {
                     entry.setValue(entry.getValue() + item.getAmount());
                     continue Iterating;
                 }
@@ -501,7 +502,7 @@ public class InventoryUtil {
         ItemStack itemClone = item.clone();
 
         for (ItemStack stackedItem : stackedItems) {
-            if (materialUtil.equals(stackedItem, itemClone) && stackedItem.getAmount() < getMaxStackSize(stackedItem)) {
+            if (materialService.equals(stackedItem, itemClone) && stackedItem.getAmount() < getMaxStackSize(stackedItem)) {
                 int amountToAdd = Math.min(getMaxStackSize(stackedItem) - stackedItem.getAmount(), amount);
                 stackedItem.setAmount(stackedItem.getAmount() + amountToAdd);
                 amount = amount - amountToAdd;

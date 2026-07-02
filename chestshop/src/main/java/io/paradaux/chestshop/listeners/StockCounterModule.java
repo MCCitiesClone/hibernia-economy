@@ -1,10 +1,10 @@
 package io.paradaux.chestshop.listeners;
 
+import io.paradaux.chestshop.services.MaterialService;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import io.paradaux.chestshop.services.ItemService;
 import io.paradaux.chestshop.utils.InventoryUtil;
-import io.paradaux.chestshop.utils.MaterialUtil;
 import io.paradaux.chestshop.utils.QuantityUtil;
 import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.model.config.ChestShopConfiguration;
@@ -41,17 +41,17 @@ public class StockCounterModule implements Listener {
     private final ChestShopSign chestShopSign;
     private final ShopBlockUtil shopBlockUtil;
     private final InventoryUtil inventoryUtil;
-    private final MaterialUtil materialUtil;
+    private final MaterialService materialService;
 
     @Inject
     public StockCounterModule(ItemService items, ChestShopConfiguration config, ChestShopSign chestShopSign,
-                              ShopBlockUtil shopBlockUtil, InventoryUtil inventoryUtil, MaterialUtil materialUtil) {
+                              ShopBlockUtil shopBlockUtil, InventoryUtil inventoryUtil, MaterialService materialService) {
         this.items = items;
         this.config = config;
         this.chestShopSign = chestShopSign;
         this.shopBlockUtil = shopBlockUtil;
         this.inventoryUtil = inventoryUtil;
-        this.materialUtil = materialUtil;
+        this.materialService = materialService;
     }
 
     // Invoked directly by ShopService#create (was a @HIGH PreShopCreationContext listener).
@@ -167,7 +167,7 @@ public class StockCounterModule implements Listener {
         int numTradedItemsInChest = inventoryUtil.getAmount(itemTradedByShop, chestShopInventory);
 
         for (ItemStack extraStack : extraItems) {
-            if (!materialUtil.equals(extraStack, itemTradedByShop)) {
+            if (!materialService.equals(extraStack, itemTradedByShop)) {
                 continue;
             }
 

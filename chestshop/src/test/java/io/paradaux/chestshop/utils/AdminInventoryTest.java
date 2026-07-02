@@ -1,6 +1,6 @@
 package io.paradaux.chestshop.utils;
 
-import io.paradaux.chestshop.utils.MaterialUtil;
+import io.paradaux.chestshop.services.MaterialService;
 import org.bukkit.inventory.ItemStack;
 import org.junit.jupiter.api.Test;
 
@@ -18,7 +18,7 @@ class AdminInventoryTest {
 
     @Test
     void setItem_indexBeyondCurrentLength_growsArrayInsteadOfThrowing() {
-        AdminInventory inventory = new AdminInventory(new ItemStack[0], mock(MaterialUtil.class));
+        AdminInventory inventory = new AdminInventory(new ItemStack[0], mock(MaterialService.class));
         ItemStack stack = mock(ItemStack.class);
 
         // Previously copyOfRange(content, 0, i) produced a length-i array and
@@ -36,9 +36,9 @@ class AdminInventoryTest {
         when(stored1.getAmount()).thenReturn(10);
         when(stored2.getAmount()).thenReturn(10);
 
-        MaterialUtil materialUtil = mock(MaterialUtil.class);
-        when(materialUtil.equals(any(), any())).thenReturn(true);
-        AdminInventory inventory = new AdminInventory(new ItemStack[]{stored1, stored2}, materialUtil);
+        MaterialService materialService = mock(MaterialService.class);
+        when(materialService.equals(any(), any())).thenReturn(true);
+        AdminInventory inventory = new AdminInventory(new ItemStack[]{stored1, stored2}, materialService);
 
         ItemStack query = mock(ItemStack.class);
         when(query.getAmount()).thenReturn(1); // query amount must be ignored

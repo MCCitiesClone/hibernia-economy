@@ -21,7 +21,6 @@ import io.paradaux.chestshop.signs.RestrictedSign;
 import io.paradaux.chestshop.utils.ImplementationAdapter;
 import io.paradaux.chestshop.utils.InventoryUtil;
 import io.paradaux.chestshop.utils.LocationUtil;
-import io.paradaux.chestshop.utils.MaterialUtil;
 import io.paradaux.chestshop.plugins.ShowItemHook;
 import io.paradaux.chestshop.utils.PriceUtil;
 import io.paradaux.chestshop.utils.ShopBlockUtil;
@@ -105,12 +104,12 @@ public class TransactionService {
     private final ChestShopSign chestShopSign;
     private final ShopBlockUtil shopBlockUtil;
     private final InventoryUtil inventoryUtil;
-    private final MaterialUtil materialUtil;
+    private final MaterialService materialService;
     private final ShowItemHook showItem;
 
     @Inject
     public TransactionService(EconomyService economy, ShopService shops, AccountService accounts, SignBreak signBreak, StockCounterModule stockCounter, Message message, ItemService items, MarketListener market,
-                              ChestShopConfiguration config, ChestShopSign chestShopSign, ShopBlockUtil shopBlockUtil, InventoryUtil inventoryUtil, MaterialUtil materialUtil, ShowItemHook showItem) {
+                              ChestShopConfiguration config, ChestShopSign chestShopSign, ShopBlockUtil shopBlockUtil, InventoryUtil inventoryUtil, MaterialService materialService, ShowItemHook showItem) {
         this.economy = economy;
         this.shops = shops;
         this.accounts = accounts;
@@ -123,7 +122,7 @@ public class TransactionService {
         this.chestShopSign = chestShopSign;
         this.shopBlockUtil = shopBlockUtil;
         this.inventoryUtil = inventoryUtil;
-        this.materialUtil = materialUtil;
+        this.materialService = materialService;
         this.showItem = showItem;
     }
 
@@ -515,7 +514,7 @@ public class TransactionService {
             boolean added = false;
             int maxStackSize = inventoryUtil.getMaxStackSize(stack);
             for (ItemStack iStack : stacks) {
-                if (iStack.getAmount() < maxStackSize && materialUtil.equals(toAdd, iStack)) {
+                if (iStack.getAmount() < maxStackSize && materialService.equals(toAdd, iStack)) {
                     int newAmount = iStack.getAmount() + toAdd.getAmount();
                     if (newAmount > maxStackSize) {
                         iStack.setAmount(maxStackSize);
@@ -548,7 +547,7 @@ public class TransactionService {
             int maxStackSize = inventoryUtil.getMaxStackSize(item);
             int free = 0;
             for (ItemStack itemInInventory : inventory.getContents()) {
-                if (materialUtil.equals(item, itemInInventory) && itemInInventory != null) {
+                if (materialService.equals(item, itemInInventory) && itemInInventory != null) {
                     free += (maxStackSize - itemInInventory.getAmount()) % maxStackSize;
                 }
             }

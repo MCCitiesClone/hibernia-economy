@@ -1,21 +1,11 @@
 package io.paradaux.chestshop.utils;
 
-import io.paradaux.chestshop.ChestShop;
-import io.paradaux.chestshop.model.config.ChestShopConfiguration;
-import com.google.inject.Inject;
-import com.google.inject.Singleton;
 import org.bukkit.Material;
-import org.bukkit.configuration.file.YamlConstructor;
-import org.bukkit.configuration.file.YamlRepresenter;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.inventory.meta.ItemMeta;
-import org.yaml.snakeyaml.DumperOptions;
-import org.yaml.snakeyaml.Yaml;
-import org.yaml.snakeyaml.nodes.Tag;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -26,10 +16,20 @@ import static io.paradaux.chestshop.utils.StringUtil.getMinecraftCharWidth;
 import static io.paradaux.chestshop.utils.StringUtil.getMinecraftStringWidth;
 
 /**
+ * Pure, stateless item/material string helpers: empty/custom-data detection, sign-name
+ * shortening, durability/{@code #metadata} parsing, and the fuzzy {@link #resolveMaterial}
+ * lookup. The config-dependent, stateful parts split out of here (PAR-282):
+ * item-equality and the config-sized material cache are on
+ * {@link io.paradaux.chestshop.services.MaterialService}; the item↔sign-code naming is on
+ * {@code ItemCodeService}.
+ *
  * @author Acrobot
  */
-@Singleton
-public class MaterialUtil {
+public final class MaterialUtil {
+
+    private MaterialUtil() {
+    }
+
     public static final Pattern DURABILITY = Pattern.compile(":\\d+");
     public static final Pattern METADATA = Pattern.compile("#[0-9a-zA-Z]+");
 
@@ -65,24 +65,6 @@ public class MaterialUtil {
             "Hrtbr", "Hrtb"
     );
 
-    private final SimpleCache<String, Material> materialCache;
-
-    private static final Yaml YAML = new Yaml(new YamlBukkitConstructor(), new YamlRepresenter(), new DumperOptions());
-
-    private final ChestShopConfiguration config;
-
-    @Inject
-    public MaterialUtil(ChestShopConfiguration config) {
-        this.config = config;
-        this.materialCache = new SimpleCache<>(config.getCacheSize());
-    }
-
-    private static class YamlBukkitConstructor extends YamlConstructor {
-        public YamlBukkitConstructor() {
-            this.yamlConstructors.put(new Tag(Tag.PREFIX + "org.bukkit.inventory.ItemStack"), yamlConstructors.get(Tag.MAP));
-        }
-    }
-
     /**
      * Checks if the itemStack is empty or null
      *
@@ -92,142 +74,6 @@ public class MaterialUtil {
     public static boolean isEmpty(ItemStack item) {
         return item == null || item.getType() == Material.AIR;
     }
-
-    /**
-     * Checks if the itemStacks are equal, ignoring their amount
-     *
-     * @param one first itemStack
-     * @param two second itemStack
-     * @return Are they equal?
-     */
-    public boolean equals(ItemStack one, ItemStack two) {
-        if (one == null || two == null) {
-            return one == two;
-        }
-        if (one.isSimilar(two)) {
-            return true;
-        }
-
-        // Additional checks as serialisation and de-serialisation might lead to different item meta
-        // This would only be done if the items share the same item meta type so it shouldn't be too inefficient
-        // Special check for books as their pages might change when serialising (See SPIGOT-3206 and ChestShop#250)
-        // Special check for explorer maps/every item with a localised name (See SPIGOT-4672)
-        // Special check for legacy spawn eggs (See ChestShop#264)
-        if (one.getType() != two.getType()
-                || one.getDurability() != two.getDurability()
-                || (one.hasItemMeta() && two.hasItemMeta() && one.getItemMeta().getClass() != two.getItemMeta().getClass())) {
-            return false;
-        }
-        if (!one.hasItemMeta() && !two.hasItemMeta()) {
-            return true;
-        }
-        ItemMeta oneMeta = one.getItemMeta();
-        ItemMeta twoMeta = two.getItemMeta();
-        // return true if both are null or same, false if only one is null
-        if (oneMeta == twoMeta || oneMeta == null || twoMeta == null) {
-            return oneMeta == twoMeta;
-        }
-
-        Map<String, Object> oneSerMeta = new HashMap<>(oneMeta.serialize());
-        Map<String, Object> twoSerMeta = new HashMap<>(twoMeta.serialize());
-
-        removeExcludedKeys(oneSerMeta);
-        removeExcludedKeys(twoSerMeta);
-
-        if (oneSerMeta.equals(twoSerMeta)) {
-            return true;
-        }
-
-        // Try to use same parsing as the YAML dumper in the ItemDatabase when generating the code as the last resort
-        ItemStack oneCloned = one.clone();
-        oneCloned.setAmount(1);
-
-        ItemStack twoCloned = two.clone();
-        twoCloned.setAmount(1);
-
-        ItemStack oneDumped = YAML.loadAs(YAML.dump(oneCloned), ItemStack.class);
-        if (oneDumped.isSimilar(twoCloned)) {
-            return true;
-        }
-
-        ItemMeta oneDumpedMeta = oneDumped.getItemMeta();
-        if (oneDumpedMeta != null && oneDumpedMeta.serialize().equals(twoSerMeta)) {
-            return true;
-        }
-
-        ItemStack twoDumped = YAML.loadAs(YAML.dump(twoCloned), ItemStack.class);
-        if (oneDumped.isSimilar(twoDumped)) {
-            return true;
-        }
-
-        ItemMeta twoDumpedMeta = twoDumped.getItemMeta();
-        if (oneDumpedMeta != null && twoDumpedMeta != null) {
-            Map<String, Object> oneSerDumpedMeta = new HashMap<>(oneDumpedMeta.serialize());
-            Map<String, Object> twoSerDumpedMeta = new HashMap<>(twoDumpedMeta.serialize());
-
-            removeExcludedKeys(oneSerDumpedMeta);
-            removeExcludedKeys(twoSerDumpedMeta);
-
-            if (oneSerDumpedMeta.equals(twoSerDumpedMeta)) {
-                return true;
-            }
-        }
-
-        // return true if both are null or same, false otherwise
-        return oneDumpedMeta == twoDumpedMeta;
-    }
-
-    /**
-     * Remove all keys included in the {@code EXCLUDED_ITEM_ATTRIBUTES} config option from a serialized
-     * meta map
-     * @param map The serialized item data to modify
-     */
-    private void removeExcludedKeys(Map<String, Object> map) {
-        map.keySet().removeAll(config.getExcludedItemAttributes());
-    }
-
-    /**
-     * Gives you a Material from a String (doesn't have to be fully typed in)
-     *
-     * @param name Name of the material
-     * @return Material found
-     */
-    public Material getMaterial(String name) {
-        String replacedName = name;
-        // revert unidirectional abbreviations
-        List<Map.Entry<String, String>> abbreviations = new ArrayList<>(UNIDIRECTIONAL_ABBREVIATIONS.entrySet());
-        for (int i = abbreviations.size() - 1; i >= 0; i--) {
-            Map.Entry<String, String> entry = abbreviations.get(i);
-            replacedName = replacedName.replaceAll(entry.getValue() + "(_|$|[A-Z\\d])", entry.getKey() + "$1");
-        }
-
-        String formatted = name.replaceAll("(?<!^)(?>\\s?)([A-Z1-9])", "_$1").replace(' ', '_').toUpperCase(Locale.ROOT);
-
-        Material material = materialCache.get(formatted);
-        if (material != null) {
-            return material;
-        }
-
-        material = Material.matchMaterial(name);
-
-        if (material != null) {
-            materialCache.put(formatted, material);
-            return material;
-        }
-
-        material = new EnumParser<Material>().parse(replacedName, Material.values());
-        if (material != null) {
-            materialCache.put(formatted, material);
-        }
-
-        return material;
-    }
-
-    // The item ↔ sign-code naming (getName/getItem/getSignName/getItemList/getMetadata)
-    // and the #code Metadata facade moved to ItemCodeService.encode/decode (PAR-282) — the
-    // canonical conversion is DB-backed, so it belongs in the service, not this pure util.
-    // The pure helpers it composes (getMaterial, getDurability, parseMetadata, hasCustomData,
-    // getShortenedName, equals, …) stay here.
 
     /**
      * Check whether the provided ItemStack has custom data (in the past called "ItemMeta"). This will ignore
@@ -253,7 +99,8 @@ public class MaterialUtil {
     }
 
     /**
-     * Get an item name shortened to a max length that is still reversable by {@link #getMaterial(String)}
+     * Get an item name shortened to a max length that is still reversable by
+     * {@link #resolveMaterial(String)}
      *
      * @param itemName  The name of the item
      * @param maxWidth  The max width
@@ -392,6 +239,32 @@ public class MaterialUtil {
         return m.group().substring(1);
     }
 
+    /**
+     * Fuzzy-resolve a {@link Material} from a (possibly partial/abbreviated) name — the pure
+     * lookup: exact {@link Material#matchMaterial}, else the enum-prefix parser after reversing
+     * the unidirectional sign abbreviations. Returns {@code null} if unresolved. The config-sized
+     * cache wrapper lives on {@link io.paradaux.chestshop.services.MaterialService#getMaterial}.
+     *
+     * @param name Name of the material
+     * @return Material found, or null
+     */
+    public static Material resolveMaterial(String name) {
+        String replacedName = name;
+        // revert unidirectional abbreviations
+        List<Map.Entry<String, String>> abbreviations = new ArrayList<>(UNIDIRECTIONAL_ABBREVIATIONS.entrySet());
+        for (int i = abbreviations.size() - 1; i >= 0; i--) {
+            Map.Entry<String, String> entry = abbreviations.get(i);
+            replacedName = replacedName.replaceAll(entry.getValue() + "(_|$|[A-Z\\d])", entry.getKey() + "$1");
+        }
+
+        Material material = Material.matchMaterial(name);
+        if (material != null) {
+            return material;
+        }
+
+        return new EnumParser<Material>().parse(replacedName, Material.values());
+    }
+
     private static class EnumParser<E extends Enum<E>> {
         private E parse(String name, E[] values) {
             String formatted = name.replaceAll("(?<!^)(?>\\s?)([A-Z1-9])", "_$1").toUpperCase(Locale.ROOT).replace(' ', '_');
@@ -442,5 +315,4 @@ public class MaterialUtil {
             }
         }
     }
-
 }

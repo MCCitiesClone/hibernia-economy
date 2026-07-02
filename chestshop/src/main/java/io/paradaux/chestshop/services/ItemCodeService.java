@@ -42,13 +42,13 @@ import java.util.logging.Level;
 public class ItemCodeService {
 
     private final ItemCodeMapper items;
-    private final MaterialUtil materialUtil;
+    private final MaterialService materialService;
     private final Yaml yaml = new Yaml(new YamlBukkitConstructor(), new YamlRepresenter(), new DumperOptions());
 
     @Inject
-    public ItemCodeService(ItemCodeMapper items, MaterialUtil materialUtil) {
+    public ItemCodeService(ItemCodeMapper items, MaterialService materialService) {
         this.items = items;
-        this.materialUtil = materialUtil;
+        this.materialService = materialService;
     }
 
     /** Runs the one-time metadata re-serialisation if the server's data version advanced. */
@@ -186,7 +186,7 @@ public class ItemCodeService {
         }
 
         Integer durability = MaterialUtil.getDurability(itemName);
-        Material material = materialUtil.getMaterial(split[0]);
+        Material material = materialService.getMaterial(split[0]);
         if (material == null) {
             return null;
         }

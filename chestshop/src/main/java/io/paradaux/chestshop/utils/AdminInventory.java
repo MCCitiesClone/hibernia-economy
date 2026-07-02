@@ -1,5 +1,6 @@
 package io.paradaux.chestshop.utils;
 
+import io.paradaux.chestshop.services.MaterialService;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -21,11 +22,11 @@ public class AdminInventory implements Inventory {
 
     private ItemStack[] content;
     private int maxStackSize = 64;
-    private final MaterialUtil materialUtil;
+    private final MaterialService materialService;
 
-    public AdminInventory(ItemStack[] content, MaterialUtil materialUtil) {
+    public AdminInventory(ItemStack[] content, MaterialService materialService) {
         this.content = content;
-        this.materialUtil = materialUtil;
+        this.materialService = materialService;
     }
 
     @Override
@@ -128,7 +129,7 @@ public class AdminInventory implements Inventory {
     public boolean contains(ItemStack itemStack, int i) {
         int amount = 0;
         for (ItemStack item : content) {
-            if (materialUtil.equals(item, itemStack)) {
+            if (materialService.equals(item, itemStack)) {
                 amount += item.getAmount();
             }
         }
@@ -183,7 +184,7 @@ public class AdminInventory implements Inventory {
     @Override
     public int first(ItemStack itemStack) {
         for (int i = 0; i < content.length; i++) {
-            if (materialUtil.equals(content[i], itemStack)) {
+            if (materialService.equals(content[i], itemStack)) {
                 return i;
             }
         }

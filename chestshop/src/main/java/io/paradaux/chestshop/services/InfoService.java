@@ -9,7 +9,6 @@ import io.paradaux.hibernia.framework.i18n.Message;
 import io.paradaux.chestshop.model.Account;
 import io.paradaux.chestshop.signs.ChestShopSign;
 import io.paradaux.chestshop.utils.InventoryUtil;
-import io.paradaux.chestshop.utils.MaterialUtil;
 import io.paradaux.chestshop.plugins.ShowItemHook;
 import io.paradaux.chestshop.utils.PriceUtil;
 import io.paradaux.chestshop.utils.StringUtil;
@@ -76,13 +75,12 @@ public class InfoService {
     private final ChestShopSign chestShopSign;
     private final ShopBlockUtil shopBlockUtil;
     private final InventoryUtil inventoryUtil;
-    private final MaterialUtil materialUtil;
     private final ShowItemHook showItem;
 
     @Inject
     public InfoService(AccountService accounts, EconomyService economy, ItemService items, Message message,
                        ChestShopConfiguration config, ChestShopSign chestShopSign, ShopBlockUtil shopBlockUtil,
-                       InventoryUtil inventoryUtil, MaterialUtil materialUtil, ShowItemHook showItem) {
+                       InventoryUtil inventoryUtil, ShowItemHook showItem) {
         this.accounts = accounts;
         this.economy = economy;
         this.items = items;
@@ -91,7 +89,6 @@ public class InfoService {
         this.chestShopSign = chestShopSign;
         this.shopBlockUtil = shopBlockUtil;
         this.inventoryUtil = inventoryUtil;
-        this.materialUtil = materialUtil;
         this.showItem = showItem;
     }
 

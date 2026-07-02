@@ -1,5 +1,6 @@
 package io.paradaux.chestshop.utils;
 
+import io.paradaux.chestshop.services.MaterialService;
 import io.paradaux.chestshop.model.config.ChestShopConfiguration;
 import org.bukkit.Material;
 import org.junit.jupiter.api.BeforeEach;
@@ -23,14 +24,14 @@ import static org.mockito.Mockito.mock;
  */
 public class MaterialTest {
 
-    private MaterialUtil materialUtil;
+    private MaterialService materialService;
 
     @BeforeEach
     void setUp() {
         ChestShopConfiguration config = mock(ChestShopConfiguration.class);
         lenient().when(config.getCacheSize()).thenReturn(1000);
         lenient().when(config.getExcludedItemAttributes()).thenReturn(new LinkedHashSet<>());
-        materialUtil = new MaterialUtil(config);
+        materialService = new MaterialService(config);
     }
 
     @Test
@@ -40,7 +41,7 @@ public class MaterialTest {
                 continue;
             }
             String shortenedName = MaterialUtil.getShortenedName(material.toString(), MaterialUtil.MAXIMUM_SIGN_WIDTH);
-            assertSame(material, materialUtil.getMaterial(shortenedName), shortenedName + " did not produce " + material);
+            assertSame(material, materialService.getMaterial(shortenedName), shortenedName + " did not produce " + material);
         }
     }
 
@@ -55,7 +56,7 @@ public class MaterialTest {
                     continue;
                 }
                 String shortenedName = MaterialUtil.getShortenedName(material.toString(), maxWidth);
-                assertSame(material, materialUtil.getMaterial(shortenedName), shortenedName + " with " + metaData + " meta did not produce " + material);
+                assertSame(material, materialService.getMaterial(shortenedName), shortenedName + " with " + metaData + " meta did not produce " + material);
             }
         }
     }
@@ -68,7 +69,7 @@ public class MaterialTest {
             "Exp Bottle"
     })
     public void testCodesWithAndWithoutSpace(String materialName) {
-        assertNotNull(materialUtil.getMaterial(materialName));
+        assertNotNull(materialService.getMaterial(materialName));
     }
 
     @Test

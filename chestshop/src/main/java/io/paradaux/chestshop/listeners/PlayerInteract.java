@@ -1,5 +1,6 @@
 package io.paradaux.chestshop.listeners;
 
+import io.paradaux.chestshop.services.MaterialService;
 import com.google.inject.Inject;
 import io.paradaux.chestshop.utils.*;
 import io.paradaux.chestshop.ChestShop;
@@ -76,13 +77,13 @@ public class PlayerInteract implements Listener {
     private final ChestShopSign chestShopSign;
     private final ShopBlockUtil shopBlockUtil;
     private final InventoryUtil inventoryUtil;
-    private final MaterialUtil materialUtil;
+    private final MaterialService materialService;
 
     @Inject
     public PlayerInteract(TransactionService transactions, InfoService info, AccountService accounts,
                           EconomyService economy, ItemService items, Message message, Security security,
                           ChestShopConfiguration config, ChestShopSign chestShopSign, ShopBlockUtil shopBlockUtil,
-                          InventoryUtil inventoryUtil, MaterialUtil materialUtil) {
+                          InventoryUtil inventoryUtil, MaterialService materialService) {
         this.transactions = transactions;
         this.info = info;
         this.accounts = accounts;
@@ -94,7 +95,7 @@ public class PlayerInteract implements Listener {
         this.chestShopSign = chestShopSign;
         this.shopBlockUtil = shopBlockUtil;
         this.inventoryUtil = inventoryUtil;
-        this.materialUtil = materialUtil;
+        this.materialService = materialService;
     }
 
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
@@ -309,7 +310,7 @@ public class PlayerInteract implements Listener {
         // - there is no container for the shop sign
         // - the config doesn't force unlimited admin shop stock
         if (adminShop && (ownerInventory == null || config.isForceUnlimitedAdminShop())) {
-            ownerInventory = new AdminInventory(action == buy ? Arrays.stream(items).map(ItemStack::clone).toArray(ItemStack[]::new) : new ItemStack[0], materialUtil);
+            ownerInventory = new AdminInventory(action == buy ? Arrays.stream(items).map(ItemStack::clone).toArray(ItemStack[]::new) : new ItemStack[0], materialService);
         }
 
         TransactionType transactionType = (action == buy ? BUY : SELL);

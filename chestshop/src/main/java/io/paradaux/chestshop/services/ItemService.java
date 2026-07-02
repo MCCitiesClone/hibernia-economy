@@ -39,16 +39,16 @@ public class ItemService {
 
     private final ItemAliasModule aliases;
     private final ItemCodeService itemCodes;
-    private final MaterialUtil materialUtil;
+    private final MaterialService materialService;
     private final InventoryUtil inventoryUtil;
     private volatile boolean itemBridgeEnabled = false;
     private volatile boolean nexoEnabled = false;
 
     @Inject
-    public ItemService(ItemAliasModule aliases, ItemCodeService itemCodes, MaterialUtil materialUtil, InventoryUtil inventoryUtil) {
+    public ItemService(ItemAliasModule aliases, ItemCodeService itemCodes, MaterialService materialService, InventoryUtil inventoryUtil) {
         this.aliases = aliases;
         this.itemCodes = itemCodes;
-        this.materialUtil = materialUtil;
+        this.materialService = materialService;
         this.inventoryUtil = inventoryUtil;
     }
 
@@ -101,7 +101,7 @@ public class ItemService {
 
     /** Resolve the material part of an item code (vanilla material lookup), or {@code null}. */
     public Material parseMaterial(String materialString, short data) {
-        return materialUtil.getMaterial(materialString); // the legacy data value is ignored on modern materials
+        return materialService.getMaterial(materialString); // the legacy data value is ignored on modern materials
     }
 
     // ---- item display names (were the static ItemUtil helpers; PAR-282) ---------
@@ -152,7 +152,7 @@ public class ItemService {
             }
 
             ItemStack codeItem = parse(code);
-            if (!materialUtil.equals(itemStack, codeItem)) {
+            if (!materialService.equals(itemStack, codeItem)) {
                 throw new IllegalArgumentException("Cannot generate code for item " + itemStack
                         + " with maximum length of " + maxWidth
                         + " (code " + code + " results in item " + codeItem + ")");
