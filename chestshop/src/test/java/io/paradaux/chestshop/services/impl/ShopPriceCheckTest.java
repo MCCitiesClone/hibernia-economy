@@ -1,5 +1,6 @@
-package io.paradaux.chestshop.services;
+package io.paradaux.chestshop.services.impl;
 
+import io.paradaux.chestshop.services.ChestShopSign;
 import io.paradaux.chestshop.model.config.ChestShopConfiguration;
 import io.paradaux.chestshop.model.ShopCreation;
 import io.paradaux.chestshop.utils.PriceUtil;
@@ -16,18 +17,18 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 /**
- * Exercises {@link ShopService#checkPrice} — the shop-sign price-line parser/normaliser
+ * Exercises {@link ShopServiceImpl#checkPrice} — the shop-sign price-line parser/normaliser
  * that was the standalone {@code PriceChecker} before the creation pipeline was folded
  * into the service (PAR-282). Created by Andrzej Pomirski (Acrobot).
  */
 class ShopPriceCheckTest {
 
-    private final ShopService shops = newShopService();
+    private final ShopServiceImpl shops = newShopService();
 
-    private static ShopService newShopService() {
+    private static ShopServiceImpl newShopService() {
         ChestShopConfiguration config = mock(ChestShopConfiguration.class);
         when(config.getPricePrecision()).thenReturn(2);
-        return new ShopService(null, null, null, null, null, null, null, null, config, null, null, null);
+        return new ShopServiceImpl(null, null, null, null, null, null, null, null, config, null, null, null);
     }
 
     static String[] getPriceString(String prices) {

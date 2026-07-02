@@ -1,12 +1,10 @@
 package io.paradaux.chestshop.services;
 
-import com.google.inject.Singleton;
 import io.paradaux.chestshop.model.BuildPermission;
 import io.paradaux.chestshop.model.ProtectionCheck;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
-import org.bukkit.event.Event;
 
 import javax.annotation.Nullable;
 import java.util.function.Consumer;
@@ -25,55 +23,22 @@ import java.util.function.Consumer;
  * ever claims shop blocks — they are never independently protected, and that event was
  * dropped entirely.
  */
-@Singleton
-public class ProtectionService {
-
-    private final io.paradaux.chestshop.integration.VanillaShopProtection vanillaProtection;
-
-    @com.google.inject.Inject
-    public ProtectionService(io.paradaux.chestshop.integration.VanillaShopProtection vanillaProtection) {
-        this.vanillaProtection = vanillaProtection;
-    }
-
-    @Nullable private volatile Consumer<ProtectionCheck> worldGuardProtection;
-    @Nullable private volatile Consumer<BuildPermission> worldGuardBuilding;
-    @Nullable private volatile Consumer<BuildPermission> griefPreventionBuilding;
+public interface ProtectionService {
 
     /** Hook WorldGuard region/built-in protection into access checks (WORLDGUARD_USE_PROTECTION). */
-    public void setWorldGuardProtection(Consumer<ProtectionCheck> check) {
-        this.worldGuardProtection = check;
-    }
+    void setWorldGuardProtection(Consumer<ProtectionCheck> check);
 
     /** Hook WorldGuard region gating into shop-creation build checks (WORLDGUARD_INTEGRATION). */
-    public void setWorldGuardBuilding(Consumer<BuildPermission> check) {
-        this.worldGuardBuilding = check;
-    }
+    void setWorldGuardBuilding(Consumer<BuildPermission> check);
 
     /** Hook GriefPrevention claim gating into shop-creation build checks (GRIEFPREVENTION_INTEGRATION). */
-    public void setGriefPreventionBuilding(Consumer<BuildPermission> check) {
-        this.griefPreventionBuilding = check;
-    }
+    void setGriefPreventionBuilding(Consumer<BuildPermission> check);
 
     /** Whether {@code player} may access {@code block} (vanilla shop membership + WorldGuard). */
-    public boolean canAccess(Block block, Player player, boolean ignoreBuiltInProtection) {
-        return runProtectionCheck(new ProtectionCheck(block, player, ignoreBuiltInProtection));
-    }
+    boolean canAccess(Block block, Player player, boolean ignoreBuiltInProtection);
 
     /** Whether {@code player} may view {@code block} (as {@link #canAccess} but without the manage check). */
-    public boolean canView(Block block, Player player, boolean ignoreBuiltInProtection) {
-        return runProtectionCheck(new ProtectionCheck(block, player, ignoreBuiltInProtection, false));
-    }
-
-    private boolean runProtectionCheck(ProtectionCheck event) {
-        // Vanilla ChestShop shop-member protection always runs first; both handlers only
-        // ever set DENY (and self-guard on it), so the result is "deny if either denies".
-        vanillaProtection.onProtectionCheck(event);
-        Consumer<ProtectionCheck> wg = worldGuardProtection;
-        if (wg != null) {
-            wg.accept(event);
-        }
-        return event.getResult() != Event.Result.DENY;
-    }
+    boolean canView(Block block, Player player, boolean ignoreBuiltInProtection);
 
     /**
      * Whether a shop may be created at {@code sign}/{@code chest} by {@code player}.
@@ -81,16 +46,5 @@ public class ProtectionService {
      * {@code ignoreCancelled=true} (skip once disallowed), so each only runs while the
      * build is still allowed — WorldGuard first (it is loaded first).
      */
-    public boolean canBuild(Player player, @Nullable Location chest, Location sign) {
-        BuildPermission event = new BuildPermission(player, chest, sign);
-        Consumer<BuildPermission> wgb = worldGuardBuilding;
-        if (wgb != null && event.isAllowed()) {
-            wgb.accept(event);
-        }
-        Consumer<BuildPermission> gpb = griefPreventionBuilding;
-        if (gpb != null && event.isAllowed()) {
-            gpb.accept(event);
-        }
-        return event.isAllowed();
-    }
+    boolean canBuild(Player player, @Nullable Location chest, Location sign);
 }

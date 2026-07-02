@@ -1,5 +1,6 @@
 package io.paradaux.chestshop.services;
 
+import io.paradaux.chestshop.services.impl.MaterialServiceImpl;
 import io.paradaux.chestshop.utils.MaterialUtil;
 import io.paradaux.chestshop.model.config.ChestShopConfiguration;
 import org.bukkit.Material;
@@ -35,7 +36,7 @@ class MaterialServiceEqualityTest {
         ChestShopConfiguration config = mock(ChestShopConfiguration.class);
         lenient().when(config.getCacheSize()).thenReturn(1000);
         lenient().when(config.getExcludedItemAttributes()).thenReturn(new LinkedHashSet<>());
-        materialService = new MaterialService(config);
+        materialService = new MaterialServiceImpl(config);
     }
 
     @Test

@@ -1,4 +1,4 @@
-package io.paradaux.chestshop.services;
+package io.paradaux.chestshop.services.impl;
 
 import io.paradaux.chestshop.model.config.ChestShopConfiguration;
 import io.paradaux.chestshop.model.ShopCreation;
@@ -13,15 +13,15 @@ import static org.mockito.Mockito.when;
 
 /**
  * Free ($0) shops are rejected at creation by default, and permitted when
- * {@code ALLOW_FREE_SHOPS} is set (PAR-88). Exercises {@link ShopService#checkPrice}
- * (price-line normalise) then {@link ShopService#rejectFreeShop} (the free-shop gate),
+ * {@code ALLOW_FREE_SHOPS} is set (PAR-88). Exercises {@link ShopServiceImpl#checkPrice}
+ * (price-line normalise) then {@link ShopServiceImpl#rejectFreeShop} (the free-shop gate),
  * the steps that were {@code PriceChecker}/{@code FreePriceChecker} before the creation
  * pipeline was folded into the service (PAR-282).
  */
 class ShopFreePriceCheckTest {
 
     private final ChestShopConfiguration config = mock(ChestShopConfiguration.class);
-    private final ShopService shops = new ShopService(null, null, null, null, null, null, null, null, config, null, null, null);
+    private final ShopServiceImpl shops = new ShopServiceImpl(null, null, null, null, null, null, null, null, config, null, null, null);
 
     {
         when(config.getPricePrecision()).thenReturn(2);

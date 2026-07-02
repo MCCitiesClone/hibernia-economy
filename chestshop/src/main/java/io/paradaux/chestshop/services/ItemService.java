@@ -1,18 +1,8 @@
 package io.paradaux.chestshop.services;
 
-import com.google.inject.Inject;
-import com.google.inject.Singleton;
 import io.paradaux.chestshop.integration.Nexo;
-import io.paradaux.chestshop.utils.MaterialUtil;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-
-import static io.paradaux.chestshop.utils.MaterialUtil.MAXIMUM_SIGN_WIDTH;
-import static io.paradaux.chestshop.utils.StringUtil.getMinecraftStringWidth;
 
 /**
  * Resolves the item/sign strings ChestShop puts on signs. Replaces the
@@ -32,123 +22,36 @@ import static io.paradaux.chestshop.utils.StringUtil.getMinecraftStringWidth;
  * plugin is hooked ({@link #enableNexo()} is called from {@code Dependencies}), keeping the
  * {@code com.nexomc.nexo} classes off the call path when the plugin is absent.
  */
-@Singleton
-public class ItemService {
-
-    private final ItemAliasModule aliases;
-    private final ItemCodeService itemCodes;
-    private final MaterialService materialService;
-    private final InventoryService inventoryService;
-    private volatile boolean nexoEnabled = false;
-
-    @Inject
-    public ItemService(ItemAliasModule aliases, ItemCodeService itemCodes, MaterialService materialService, InventoryService inventoryService) {
-        this.aliases = aliases;
-        this.itemCodes = itemCodes;
-        this.materialService = materialService;
-        this.inventoryService = inventoryService;
-    }
+public interface ItemService {
 
     /** Mark the Nexo custom-item integration as available + load nexo.yml (called when the plugin hooks). */
-    public void enableNexo() {
-        Nexo.init(itemCodes);
-        this.nexoEnabled = true;
-    }
+    void enableNexo();
 
     /** Reload the configurable item aliases (and Nexo's nexo.yml, if hooked) from disk (on {@code /chestshop reload}). */
-    public void reloadAliases() {
-        aliases.reload();
-        if (nexoEnabled) {
-            Nexo.reload();
-        }
-    }
+    void reloadAliases();
 
     /** Parse a sign item string into an {@link ItemStack} (Nexo / alias / vanilla material), or {@code null}. */
-    public ItemStack parse(String itemString) {
-        ItemStack item = nexoEnabled ? Nexo.parseItem(itemString) : null;
-        ItemStack alias = aliases.resolveItem(itemString); // a configured alias overrides a custom-item match
-        if (alias != null) {
-            item = alias;
-        }
-        if (item == null) {
-            item = itemCodes.decode(itemString); // vanilla fallback
-        }
-        return item;
-    }
+    ItemStack parse(String itemString);
 
     /** The sign string for an item (Nexo / vanilla name / configured alias), within {@code maxWidth}. */
-    public String queryString(ItemStack item, int maxWidth) {
-        String result = nexoEnabled ? Nexo.queryString(item, maxWidth) : null;
-        if (result == null) {
-            result = itemCodes.encode(item, maxWidth); // vanilla name
-        }
-        return aliases.applyAlias(result, maxWidth); // configured alias override
-    }
+    String queryString(ItemStack item, int maxWidth);
 
     /** Resolve the material part of an item code (vanilla material lookup), or {@code null}. */
-    public Material parseMaterial(String materialString, short data) {
-        return materialService.getMaterial(materialString); // the legacy data value is ignored on modern materials
-    }
-
-    // ---- item display names (were the static ItemUtil helpers; PAR-282) ---------
+    Material parseMaterial(String materialString, short data);
 
     /** A comma-joined "count name" list for a set of stacks (used in trade/give messages). */
-    public String getItemList(ItemStack[] items) {
-        Map<ItemStack, Integer> itemCounts = inventoryService.getItemCounts(items);
-
-        List<String> itemText = new ArrayList<>();
-        for (Map.Entry<ItemStack, Integer> entry : itemCounts.entrySet()) {
-            itemText.add(entry.getValue() + " " + getName(entry.getKey()));
-        }
-
-        return String.join(", ", itemText);
-    }
+    String getItemList(ItemStack[] items);
 
     /** The item's full (untruncated) ChestShop name/code. */
-    public String getName(ItemStack itemStack) {
-        return getName(itemStack, 0);
-    }
+    String getName(ItemStack itemStack);
 
     /**
      * The item's ChestShop name/code, constrained to {@code maxWidth} pixels (0 = unlimited).
      * Throws {@link IllegalArgumentException} if a width-shortened code no longer round-trips
      * back to the same item.
      */
-    public String getName(ItemStack itemStack, int maxWidth) {
-        String code = queryString(itemStack, maxWidth);
-        if (code != null) {
-            if (maxWidth > 0) {
-                int codeWidth = getMinecraftStringWidth(code);
-                if (codeWidth > maxWidth) {
-                    int exceeding = codeWidth - maxWidth;
-
-                    int poundIndex = code.indexOf('#');
-                    int colonIndex = code.indexOf(':');
-                    String material = code;
-                    String rest = "";
-                    if (poundIndex > 0 && (colonIndex < 0 || poundIndex < colonIndex)) {
-                        material = code.substring(0, poundIndex);
-                        rest = code.substring(poundIndex);
-                    } else if (colonIndex > 0 && (poundIndex < 0 || colonIndex < poundIndex)) {
-                        material = code.substring(0, colonIndex);
-                        rest = code.substring(colonIndex);
-                    }
-                    code = MaterialUtil.getShortenedName(material, getMinecraftStringWidth(material) - exceeding) + rest;
-                }
-            }
-
-            ItemStack codeItem = parse(code);
-            if (!materialService.equals(itemStack, codeItem)) {
-                throw new IllegalArgumentException("Cannot generate code for item " + itemStack
-                        + " with maximum length of " + maxWidth
-                        + " (code " + code + " results in item " + codeItem + ")");
-            }
-        }
-        return code;
-    }
+    String getName(ItemStack itemStack, int maxWidth);
 
     /** The item's name as it appears on a sign (constrained to the sign width). */
-    public String getSignName(ItemStack itemStack) {
-        return getName(itemStack, MAXIMUM_SIGN_WIDTH);
-    }
+    String getSignName(ItemStack itemStack);
 }

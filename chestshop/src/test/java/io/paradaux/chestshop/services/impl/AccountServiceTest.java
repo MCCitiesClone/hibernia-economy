@@ -1,4 +1,4 @@
-package io.paradaux.chestshop.services;
+package io.paradaux.chestshop.services.impl;
 
 import io.paradaux.chestshop.model.config.ChestShopConfiguration;
 import io.paradaux.chestshop.model.Account;
@@ -43,14 +43,14 @@ class AccountServiceTest {
     }
 
     private FakeAccountMapper mapper;
-    private AccountService service;
+    private AccountServiceImpl service;
 
     @BeforeEach
     void setUp() {
         ChestShopConfiguration config = mock(ChestShopConfiguration.class);
         when(config.getCacheSize()).thenReturn(128);
         mapper = new FakeAccountMapper();
-        service = new AccountService(mapper, null, config, null, null);
+        service = new AccountServiceImpl(mapper, null, config, null, null);
     }
 
     @Test

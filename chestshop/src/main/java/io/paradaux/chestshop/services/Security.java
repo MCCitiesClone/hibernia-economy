@@ -1,15 +1,8 @@
 package io.paradaux.chestshop.services;
 
-import com.google.inject.Inject;
-import com.google.inject.Singleton;
-import io.paradaux.chestshop.model.config.ChestShopConfiguration;
-import io.paradaux.chestshop.utils.BlockUtil;
 import org.bukkit.block.Block;
-import org.bukkit.block.BlockFace;
 import org.bukkit.block.Sign;
 import org.bukkit.entity.Player;
-
-import static io.paradaux.chestshop.utils.ImplementationAdapter.getState;
 
 /**
  * Shop-block protection facade over {@link ProtectionService}. Injected like any
@@ -18,82 +11,13 @@ import static io.paradaux.chestshop.utils.ImplementationAdapter.getState;
  *
  * @author Acrobot
  */
-@Singleton
-public class Security {
-    private static final BlockFace[] SIGN_CONNECTION_FACES = {BlockFace.UP, BlockFace.EAST, BlockFace.WEST, BlockFace.NORTH, BlockFace.SOUTH};
-    private static final BlockFace[] BLOCKS_AROUND = {BlockFace.UP, BlockFace.DOWN, BlockFace.EAST, BlockFace.WEST, BlockFace.NORTH, BlockFace.SOUTH};
+public interface Security {
 
-    private final ProtectionService protection;
-    private final AccountService accounts;
-    private final ChestShopConfiguration config;
-    private final ChestShopSign chestShopSign;
-    private final ShopBlockService shopBlockService;
+    boolean canAccess(Player player, Block block);
 
-    @Inject
-    public Security(ProtectionService protection, AccountService accounts, ChestShopConfiguration config,
-                    ChestShopSign chestShopSign, ShopBlockService shopBlockService) {
-        this.protection = protection;
-        this.accounts = accounts;
-        this.config = config;
-        this.chestShopSign = chestShopSign;
-        this.shopBlockService = shopBlockService;
-    }
+    boolean canAccess(Player player, Block block, boolean ignoreDefaultProtection);
 
-    public boolean canAccess(Player player, Block block) {
-        return canAccess(player, block, false);
-    }
+    boolean canView(Player player, Block block, boolean ignoreDefaultProtection);
 
-    public boolean canAccess(Player player, Block block, boolean ignoreDefaultProtection) {
-        return protection.canAccess(block, player, ignoreDefaultProtection);
-    }
-
-    public boolean canView(Player player, Block block, boolean ignoreDefaultProtection) {
-        return protection.canView(block, player, ignoreDefaultProtection);
-    }
-
-    public boolean canPlaceSign(Player player, Sign sign) {
-        Block baseBlock = BlockUtil.getAttachedBlock(sign);
-
-        if (!config.isAllowMultipleShopsAtOneBlock() && anotherShopFound(baseBlock, sign.getBlock(), player)) {
-            return false;
-        }
-
-        return canBePlaced(player, sign.getBlock());
-    }
-
-    private boolean canBePlaced(Player player, Block sign) {
-        for (BlockFace face : BLOCKS_AROUND) {
-            Block block = sign.getRelative(face);
-
-            if (!shopBlockService.couldBeShopContainer(block)) {
-                continue;
-            }
-            if (!canAccess(player, block)) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    private boolean anotherShopFound(Block baseBlock, Block signBlock, Player player) {
-        for (BlockFace face : SIGN_CONNECTION_FACES) {
-            Block block = baseBlock.getRelative(face);
-
-            if (block.equals(signBlock) || !BlockUtil.isSign(block)) {
-                continue;
-            }
-
-            Sign sign = (Sign) getState(block, false);
-
-            if (!chestShopSign.isValid(sign) || !BlockUtil.getAttachedBlock(sign).equals(baseBlock)) {
-                continue;
-            }
-
-            if (!accounts.isOwner(player, sign)) {
-                return true;
-            }
-        }
-        return false;
-    }
+    boolean canPlaceSign(Player player, Sign sign);
 }

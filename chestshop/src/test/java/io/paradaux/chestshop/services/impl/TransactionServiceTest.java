@@ -1,5 +1,6 @@
-package io.paradaux.chestshop.services;
+package io.paradaux.chestshop.services.impl;
 
+import io.paradaux.chestshop.services.InventoryService;
 import io.paradaux.chestshop.model.config.ChestShopConfiguration;
 import io.paradaux.chestshop.model.Transaction;
 import org.bukkit.inventory.Inventory;
@@ -18,7 +19,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * Verifies the goods-side atomicity guarantees of {@link TransactionService} (ADT-4):
+ * Verifies the goods-side atomicity guarantees of {@link TransactionServiceImpl} (ADT-4):
  * a fully-achievable move proceeds, an incomplete move reverts both inventories
  * without committing, and the money-leg compensation reverses goods in the correct
  * direction for both buy and sell. The underlying inventory mechanics live in
@@ -32,7 +33,7 @@ import static org.mockito.Mockito.when;
 class TransactionServiceTest {
 
     private InventoryService inventoryService;
-    private TransactionService service;
+    private TransactionServiceImpl service;
 
     @BeforeEach
     void setUp() {
@@ -40,7 +41,7 @@ class TransactionServiceTest {
         // away here — the transfer overloads under test are stubbed directly.
         inventoryService = mock(InventoryService.class);
         ChestShopConfiguration config = mock(ChestShopConfiguration.class);
-        service = new TransactionService(null, null, null, null, null, null, null, null,
+        service = new TransactionServiceImpl(null, null, null, null, null, null, null, null,
                 config, null, null, inventoryService, null, null, null);
     }
 
