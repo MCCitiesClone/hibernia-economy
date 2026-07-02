@@ -3,7 +3,7 @@ package io.paradaux.chestshop.services;
 import io.paradaux.chestshop.model.config.ChestShopConfiguration;
 import io.paradaux.chestshop.model.Account;
 import io.paradaux.chestshop.mappers.AccountMapper;
-import io.paradaux.chestshop.model.PlayerDTO;
+import io.paradaux.chestshop.model.PlayerSnapshot;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -86,7 +86,7 @@ class AccountServiceTest {
 
     @Test
     void getNewShortenedName_returnsTheStrippedName_whenItIsFree() {
-        String name = service.getNewShortenedName(new PlayerDTO(UUID.randomUUID(), "Acrobot"));
+        String name = service.getNewShortenedName(new PlayerSnapshot(UUID.randomUUID(), "Acrobot"));
 
         assertThat(name).isEqualTo("Acrobot");
     }
@@ -95,7 +95,7 @@ class AccountServiceTest {
     void getNewShortenedName_disambiguates_whenTheBaseNameIsTaken() {
         mapper.takenShortNames.add("Acrobot");
 
-        String name = service.getNewShortenedName(new PlayerDTO(UUID.randomUUID(), "Acrobot"));
+        String name = service.getNewShortenedName(new PlayerSnapshot(UUID.randomUUID(), "Acrobot"));
 
         assertThat(name).isNotEqualTo("Acrobot");
         assertThat(name).startsWith("Acrobot:");

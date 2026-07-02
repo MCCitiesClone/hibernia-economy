@@ -1,8 +1,8 @@
 package io.paradaux.chestshop.services;
 
 import com.google.inject.Singleton;
-import io.paradaux.chestshop.model.BuildPermissionContext;
-import io.paradaux.chestshop.model.ProtectionCheckContext;
+import io.paradaux.chestshop.model.BuildPermission;
+import io.paradaux.chestshop.model.ProtectionCheck;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
@@ -12,8 +12,8 @@ import javax.annotation.Nullable;
 import java.util.function.Consumer;
 
 /**
- * Owns shop/chest protection checks, replacing the {@code ProtectionCheckContext} and
- * {@code BuildPermissionContext} bus with direct, ordered calls. The vanilla shop-member
+ * Owns shop/chest protection checks, replacing the {@code ProtectionCheck} and
+ * {@code BuildPermission} bus with direct, ordered calls. The vanilla shop-member
  * check ({@link io.paradaux.chestshop.integration.VanillaShopProtection#onProtectionCheck}) always runs;
  * the optional WorldGuard/GriefPrevention integrations run after it only when those
  * plugins are hooked and their config flags are on — {@code Dependencies} registers them
@@ -35,40 +35,40 @@ public class ProtectionService {
         this.vanillaProtection = vanillaProtection;
     }
 
-    @Nullable private volatile Consumer<ProtectionCheckContext> worldGuardProtection;
-    @Nullable private volatile Consumer<BuildPermissionContext> worldGuardBuilding;
-    @Nullable private volatile Consumer<BuildPermissionContext> griefPreventionBuilding;
+    @Nullable private volatile Consumer<ProtectionCheck> worldGuardProtection;
+    @Nullable private volatile Consumer<BuildPermission> worldGuardBuilding;
+    @Nullable private volatile Consumer<BuildPermission> griefPreventionBuilding;
 
     /** Hook WorldGuard region/built-in protection into access checks (WORLDGUARD_USE_PROTECTION). */
-    public void setWorldGuardProtection(Consumer<ProtectionCheckContext> check) {
+    public void setWorldGuardProtection(Consumer<ProtectionCheck> check) {
         this.worldGuardProtection = check;
     }
 
     /** Hook WorldGuard region gating into shop-creation build checks (WORLDGUARD_INTEGRATION). */
-    public void setWorldGuardBuilding(Consumer<BuildPermissionContext> check) {
+    public void setWorldGuardBuilding(Consumer<BuildPermission> check) {
         this.worldGuardBuilding = check;
     }
 
     /** Hook GriefPrevention claim gating into shop-creation build checks (GRIEFPREVENTION_INTEGRATION). */
-    public void setGriefPreventionBuilding(Consumer<BuildPermissionContext> check) {
+    public void setGriefPreventionBuilding(Consumer<BuildPermission> check) {
         this.griefPreventionBuilding = check;
     }
 
     /** Whether {@code player} may access {@code block} (vanilla shop membership + WorldGuard). */
     public boolean canAccess(Block block, Player player, boolean ignoreBuiltInProtection) {
-        return runProtectionCheck(new ProtectionCheckContext(block, player, ignoreBuiltInProtection));
+        return runProtectionCheck(new ProtectionCheck(block, player, ignoreBuiltInProtection));
     }
 
     /** Whether {@code player} may view {@code block} (as {@link #canAccess} but without the manage check). */
     public boolean canView(Block block, Player player, boolean ignoreBuiltInProtection) {
-        return runProtectionCheck(new ProtectionCheckContext(block, player, ignoreBuiltInProtection, false));
+        return runProtectionCheck(new ProtectionCheck(block, player, ignoreBuiltInProtection, false));
     }
 
-    private boolean runProtectionCheck(ProtectionCheckContext event) {
+    private boolean runProtectionCheck(ProtectionCheck event) {
         // Vanilla ChestShop shop-member protection always runs first; both handlers only
         // ever set DENY (and self-guard on it), so the result is "deny if either denies".
         vanillaProtection.onProtectionCheck(event);
-        Consumer<ProtectionCheckContext> wg = worldGuardProtection;
+        Consumer<ProtectionCheck> wg = worldGuardProtection;
         if (wg != null) {
             wg.accept(event);
         }
@@ -82,12 +82,12 @@ public class ProtectionService {
      * build is still allowed — WorldGuard first (it is loaded first).
      */
     public boolean canBuild(Player player, @Nullable Location chest, Location sign) {
-        BuildPermissionContext event = new BuildPermissionContext(player, chest, sign);
-        Consumer<BuildPermissionContext> wgb = worldGuardBuilding;
+        BuildPermission event = new BuildPermission(player, chest, sign);
+        Consumer<BuildPermission> wgb = worldGuardBuilding;
         if (wgb != null && event.isAllowed()) {
             wgb.accept(event);
         }
-        Consumer<BuildPermissionContext> gpb = griefPreventionBuilding;
+        Consumer<BuildPermission> gpb = griefPreventionBuilding;
         if (gpb != null && event.isAllowed()) {
             gpb.accept(event);
         }

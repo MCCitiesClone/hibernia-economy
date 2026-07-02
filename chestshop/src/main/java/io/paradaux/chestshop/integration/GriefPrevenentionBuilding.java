@@ -1,6 +1,6 @@
 package io.paradaux.chestshop.integration;
 
-import io.paradaux.chestshop.model.BuildPermissionContext;
+import io.paradaux.chestshop.model.BuildPermission;
 import me.ryanhamshire.GriefPrevention.GriefPrevention;
 import org.bukkit.plugin.Plugin;
 
@@ -19,7 +19,7 @@ public class GriefPrevenentionBuilding {
         this.griefPrevention = (GriefPrevention) plugin;
     }
 
-    public void canBuild(BuildPermissionContext event) {
+    public void canBuild(BuildPermission event) {
         event.allow(griefPrevention.dataStore.getClaimAt(event.getSign(), false, null) != null);
     }
 }

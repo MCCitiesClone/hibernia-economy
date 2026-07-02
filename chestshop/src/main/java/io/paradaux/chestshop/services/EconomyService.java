@@ -8,7 +8,7 @@ import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.utils.Permissions;
 import io.paradaux.chestshop.model.config.ChestShopConfiguration;
 import io.paradaux.chestshop.model.Account;
-import io.paradaux.chestshop.model.TransactionContext;
+import io.paradaux.chestshop.model.Transaction;
 import io.paradaux.treasury.api.TaxApi;
 import io.paradaux.treasury.api.TreasuryApi;
 import io.paradaux.treasury.model.economy.AccountType;
@@ -237,7 +237,7 @@ public class EconomyService {
      * failing ledger degrades to a cancelled trade rather than a held tick. The sales-tax leg
      * is best-effort and runs only after the primary has already committed.
      */
-    public boolean settle(BigDecimal amount, Player initiator, UUID partner, boolean buy, TransactionContext txn) {
+    public boolean settle(BigDecimal amount, Player initiator, UUID partner, boolean buy, Transaction txn) {
         UUID resolvedPartner = partner;
         if (accounts.isAdminShop(resolvedPartner) && !accounts.isServerEconomyAccount(resolvedPartner)) {
             Account server = accounts.getServerEconomyAccount();
@@ -353,12 +353,12 @@ public class EconomyService {
         return BigDecimal.valueOf(pct).divide(BigDecimal.valueOf(100), 6, RoundingMode.HALF_UP);
     }
 
-    private String buildTransferMessage(TransactionContext txn) {
+    private String buildTransferMessage(Transaction txn) {
         int totalItems = Arrays.stream(txn.getStock()).mapToInt(ItemStack::getAmount).sum();
         String itemName = transferItemName(txn);
         String ownerName = txn.getOwnerAccount().getName();
         String clientName = txn.getClient().getName();
-        boolean isBuy = txn.getTransactionType() == TransactionContext.TransactionType.BUY;
+        boolean isBuy = txn.getTransactionType() == Transaction.TransactionType.BUY;
 
         String prefix = clientName + (isBuy ? " bought x" : " sold x") + totalItems + " ";
         String suffix = (isBuy ? " from " : " to ") + ownerName;
@@ -373,7 +373,7 @@ public class EconomyService {
         return prefix + itemName + suffix;
     }
 
-    private String transferItemName(TransactionContext txn) {
+    private String transferItemName(Transaction txn) {
         ItemStack[] stock = txn.getStock();
         if (stock != null && stock.length > 0 && stock[0] != null) {
             try {
@@ -417,7 +417,7 @@ public class EconomyService {
      * Runs as a MONITOR-equivalent post-transaction step (was
      * {@code TreasuryEconomyProvider.onTransactionMigrateSign}).
      */
-    public void migrateLegacyBusinessSign(TransactionContext event) {
+    public void migrateLegacyBusinessSign(Transaction event) {
         Sign sign = event.getSign();
         Account owner = event.getOwnerAccount();
         if (sign == null || owner == null || owner.getUuid() == null || !BusinessAccountUtil.isBusinessUuid(owner.getUuid())) {

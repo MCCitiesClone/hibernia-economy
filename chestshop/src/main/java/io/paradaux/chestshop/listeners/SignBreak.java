@@ -6,7 +6,7 @@ import com.google.inject.Singleton;
 import io.paradaux.chestshop.utils.BlockUtil;
 import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.model.config.ChestShopConfiguration;
-import io.paradaux.chestshop.model.ShopDestroyedContext;
+import io.paradaux.chestshop.model.DestroyedShop;
 import io.paradaux.chestshop.services.AccountService;
 import io.paradaux.chestshop.services.ShopService;
 import io.paradaux.chestshop.services.ChestShopSign;
@@ -179,7 +179,7 @@ public class SignBreak implements Listener {
     public void sendShopDestroyed(Sign sign, Player player) {
         Container connectedContainer = shopBlockService.findConnectedContainer(sign.getBlock());
 
-        shops.onDestroyed(new ShopDestroyedContext(player, sign, connectedContainer));
+        shops.onDestroyed(new DestroyedShop(player, sign, connectedContainer));
     }
 
     private static List<Sign> getAttachedSigns(Block block) {

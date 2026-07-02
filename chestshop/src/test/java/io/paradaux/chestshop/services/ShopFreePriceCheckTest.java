@@ -1,7 +1,7 @@
 package io.paradaux.chestshop.services;
 
 import io.paradaux.chestshop.model.config.ChestShopConfiguration;
-import io.paradaux.chestshop.model.PreShopCreationContext;
+import io.paradaux.chestshop.model.ShopCreation;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -33,8 +33,8 @@ class ShopFreePriceCheckTest {
         when(config.isAllowFreeShops()).thenReturn(false); // restore the default for other tests
     }
 
-    private PreShopCreationContext run(String priceLine) {
-        PreShopCreationContext event = new PreShopCreationContext(null, null, new String[]{null, null, priceLine, null});
+    private ShopCreation run(String priceLine) {
+        ShopCreation event = new ShopCreation(null, null, new String[]{null, null, priceLine, null});
         shops.checkPrice(event);      // normalise the price line first (LOWEST)
         shops.rejectFreeShop(event);  // then the free-shop gate (NORMAL)
         return event;

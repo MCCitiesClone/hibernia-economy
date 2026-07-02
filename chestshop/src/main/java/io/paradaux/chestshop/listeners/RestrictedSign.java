@@ -4,7 +4,7 @@ import io.paradaux.chestshop.services.AdminBypass;
 import io.paradaux.chestshop.services.ChestShopSign;
 import com.google.inject.Inject;
 import io.paradaux.chestshop.utils.BlockUtil;
-import io.paradaux.chestshop.model.PreTransactionContext;
+import io.paradaux.chestshop.model.PendingTransaction;
 import io.paradaux.chestshop.utils.Permissions;
 import io.paradaux.chestshop.services.AccountService;
 import io.paradaux.hibernia.framework.i18n.Message;
@@ -20,7 +20,7 @@ import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.SignChangeEvent;
 
 import static io.paradaux.chestshop.utils.ImplementationAdapter.getState;
-import static io.paradaux.chestshop.model.PreTransactionContext.TransactionOutcome.SHOP_IS_RESTRICTED;
+import static io.paradaux.chestshop.model.PendingTransaction.TransactionOutcome.SHOP_IS_RESTRICTED;
 import static io.paradaux.chestshop.utils.Permissions.ADMIN;
 
 /**
@@ -86,7 +86,7 @@ public class RestrictedSign implements Listener {
         }
     }
 
-    public void onPreTransaction(PreTransactionContext event) {
+    public void onPreTransaction(PendingTransaction event) {
         if (event.isCancelled()) {
             return;
         }

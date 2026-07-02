@@ -3,7 +3,7 @@ package io.paradaux.chestshop.integration;
 import io.paradaux.chestshop.services.ShopBlockService;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import io.paradaux.chestshop.model.ProtectionCheckContext;
+import io.paradaux.chestshop.model.ProtectionCheck;
 import io.paradaux.chestshop.utils.Permissions;
 import io.paradaux.chestshop.services.AccountService;
 import io.paradaux.chestshop.services.ChestShopSign;
@@ -37,8 +37,8 @@ public class VanillaShopProtection {
         this.shopBlockService = shopBlockService;
     }
 
-    // Invoked directly by ProtectionService (was a NORMAL ProtectionCheckContext listener).
-    public void onProtectionCheck(ProtectionCheckContext event) {
+    // Invoked directly by ProtectionService (was a NORMAL ProtectionCheck listener).
+    public void onProtectionCheck(ProtectionCheck event) {
         if (event.getResult() == Event.Result.DENY || event.isBuiltInProtectionIgnored()) {
             return;
         }

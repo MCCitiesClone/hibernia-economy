@@ -20,7 +20,7 @@ import java.util.UUID;
  *
  * @author Acrobot
  */
-public class TransactionContext {
+public class Transaction {
     private final TransactionType type;
 
     private final Inventory ownerInventory;
@@ -56,7 +56,7 @@ public class TransactionContext {
 
     private boolean cancelled = false;
 
-    public TransactionContext(PreTransactionContext event, Sign sign) {
+    public Transaction(PendingTransaction event, Sign sign) {
         this.type = event.getTransactionType();
 
         this.ownerInventory = event.getOwnerInventory();

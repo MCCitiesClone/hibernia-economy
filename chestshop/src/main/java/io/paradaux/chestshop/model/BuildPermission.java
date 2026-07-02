@@ -14,14 +14,14 @@ import javax.annotation.Nullable;
  *
  * @author Acrobot
  */
-public class BuildPermissionContext {
+public class BuildPermission {
 
     private Player player;
     private Location chest, sign;
 
     private boolean allowed = true;
 
-    public BuildPermissionContext(Player player, @Nullable Location chest, Location sign) {
+    public BuildPermission(Player player, @Nullable Location chest, Location sign) {
         this.player = player;
         this.chest = chest;
         this.sign = sign;

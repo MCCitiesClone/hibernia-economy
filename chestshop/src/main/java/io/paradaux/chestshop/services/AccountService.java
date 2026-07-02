@@ -9,7 +9,7 @@ import io.paradaux.chestshop.utils.Permissions;
 import io.paradaux.chestshop.model.config.ChestShopConfiguration;
 import io.paradaux.chestshop.model.Account;
 import io.paradaux.chestshop.mappers.AccountMapper;
-import io.paradaux.chestshop.model.PlayerDTO;
+import io.paradaux.chestshop.model.PlayerSnapshot;
 import io.paradaux.chestshop.utils.NameUtil;
 import io.paradaux.chestshop.utils.NumberUtil;
 import io.paradaux.chestshop.utils.SimpleCache;
@@ -104,7 +104,7 @@ public class AccountService {
 
         Account account = getAccount(id);
         if (account == null) {
-            account = storeUsername(new PlayerDTO(id, name));
+            account = storeUsername(new PlayerSnapshot(id, name));
         }
         return account;
     }
@@ -216,7 +216,7 @@ public class AccountService {
             OfflinePlayer offlinePlayer = ChestShop.getBukkitServer().getOfflinePlayer(name);
             if (offlinePlayer != null && offlinePlayer.getName() != null && offlinePlayer.getUniqueId() != null
                     && (!config.isEnsureCorrectPlayerid() || offlinePlayer.getUniqueId().version() == uuidVersion)) {
-                account = storeUsername(new PlayerDTO(offlinePlayer.getUniqueId(), offlinePlayer.getName()));
+                account = storeUsername(new PlayerSnapshot(offlinePlayer.getUniqueId(), offlinePlayer.getName()));
             } else {
                 invalidPlayers.put(name.toLowerCase(Locale.ROOT), true);
             }
@@ -231,7 +231,7 @@ public class AccountService {
      * Store the username of a player into the database and the username-uuid cache.
      * @return The stored/updated account, or {@code null} if there was an error updating it
      */
-    public Account storeUsername(final PlayerDTO player) {
+    public Account storeUsername(final PlayerSnapshot player) {
         final UUID uuid = player.getUniqueId();
 
         Account latestAccount;
@@ -281,7 +281,7 @@ public class AccountService {
      * Get a new unique shortened name that hasn't been used by another player yet
      * (a maximum of 15 chars long).
      */
-    String getNewShortenedName(PlayerDTO player) {
+    String getNewShortenedName(PlayerSnapshot player) {
         String shortenedName = NameUtil.stripUsername(player.getName());
 
         Account account = getAccountFromShortName(shortenedName);

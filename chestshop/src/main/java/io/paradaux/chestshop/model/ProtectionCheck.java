@@ -12,7 +12,7 @@ import org.bukkit.event.Event;
  *
  * @author Acrobot
  */
-public class ProtectionCheckContext {
+public class ProtectionCheck {
 
     private Event.Result result = Event.Result.DEFAULT;
     private boolean ignoreBuiltInProtection = false;
@@ -20,18 +20,18 @@ public class ProtectionCheckContext {
     private Block block;
     private Player player;
 
-    public ProtectionCheckContext(Block block, Player player) {
+    public ProtectionCheck(Block block, Player player) {
         this.block = block;
         this.player = player;
     }
 
-    public ProtectionCheckContext(Block block, Player player, boolean ignoreBuiltInProtection) {
+    public ProtectionCheck(Block block, Player player, boolean ignoreBuiltInProtection) {
         this.block = block;
         this.player = player;
         this.ignoreBuiltInProtection = ignoreBuiltInProtection;
     }
 
-    public ProtectionCheckContext(Block block, Player player, boolean ignoreBuiltInProtection, boolean checkManagement) {
+    public ProtectionCheck(Block block, Player player, boolean ignoreBuiltInProtection, boolean checkManagement) {
         this.block = block;
         this.player = player;
         this.ignoreBuiltInProtection = ignoreBuiltInProtection;

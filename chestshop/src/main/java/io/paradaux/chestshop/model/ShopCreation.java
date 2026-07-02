@@ -15,7 +15,7 @@ import javax.annotation.Nullable;
  *
  * @author Acrobot
  */
-public class PreShopCreationContext {
+public class ShopCreation {
 
     // Immutable creation inputs.
     private final Player creator;
@@ -27,7 +27,7 @@ public class PreShopCreationContext {
     private CreationOutcome outcome = CreationOutcome.SHOP_CREATED_SUCCESSFULLY;
     private String[] signLines;
 
-    public PreShopCreationContext(Player creator, Sign sign, String[] signLines) {
+    public ShopCreation(Player creator, Sign sign, String[] signLines) {
         this.creator = creator;
         this.sign = sign;
         this.signLines = signLines.clone();

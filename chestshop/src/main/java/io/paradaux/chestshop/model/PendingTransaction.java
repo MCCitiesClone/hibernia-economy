@@ -7,8 +7,8 @@ import org.bukkit.inventory.ItemStack;
 
 import java.math.BigDecimal;
 
-import static io.paradaux.chestshop.model.PreTransactionContext.TransactionOutcome.TRANSACTION_SUCCESSFUL;
-import static io.paradaux.chestshop.model.TransactionContext.TransactionType;
+import static io.paradaux.chestshop.model.PendingTransaction.TransactionOutcome.TRANSACTION_SUCCESSFUL;
+import static io.paradaux.chestshop.model.Transaction.TransactionType;
 
 /**
  * Carrier threaded through the ordered pre-transaction validation steps run by
@@ -21,7 +21,7 @@ import static io.paradaux.chestshop.model.TransactionContext.TransactionType;
  *
  * @author Acrobot
  */
-public class PreTransactionContext {
+public class PendingTransaction {
 
     // Immutable trade inputs (from TransactionService#prepare).
     private final Player client;
@@ -42,7 +42,7 @@ public class PreTransactionContext {
     // rather than mutating the world mid-validation (ADT-139).
     private boolean rejectedAsFreeShop = false;
 
-    public PreTransactionContext(Inventory ownerInventory, Inventory clientInventory, ItemStack[] items, BigDecimal exactPrice, Player client, Account ownerAccount, Sign sign, TransactionType type) {
+    public PendingTransaction(Inventory ownerInventory, Inventory clientInventory, ItemStack[] items, BigDecimal exactPrice, Player client, Account ownerAccount, Sign sign, TransactionType type) {
         this.ownerInventory = ownerInventory;
         this.clientInventory = (clientInventory == null ? client.getInventory() : clientInventory);
 

@@ -14,14 +14,14 @@ import javax.annotation.Nullable;
  *
  * @author Acrobot
  */
-public class ShopDestroyedContext {
+public class DestroyedShop {
 
     private final Player destroyer;
 
     private final Sign sign;
     private final Container container;
 
-    public ShopDestroyedContext(@Nullable Player destroyer, Sign sign, @Nullable Container container) {
+    public DestroyedShop(@Nullable Player destroyer, Sign sign, @Nullable Container container) {
         this.destroyer = destroyer;
         this.sign = sign;
         this.container = container;

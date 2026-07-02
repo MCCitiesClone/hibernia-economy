@@ -14,7 +14,7 @@ import javax.annotation.Nullable;
  *
  * @author Acrobot
  */
-public class ShopCreatedContext {
+public class CreatedShop {
 
     private final Player creator;
 
@@ -23,7 +23,7 @@ public class ShopCreatedContext {
     @Nullable private final Account ownerAccount;
     @Nullable private final Container container;
 
-    public ShopCreatedContext(Player creator, Sign sign, @Nullable Container container, String[] signLines, @Nullable Account ownerAccount) {
+    public CreatedShop(Player creator, Sign sign, @Nullable Container container, String[] signLines, @Nullable Account ownerAccount) {
         this.creator = creator;
         this.sign = sign;
         this.container = container;

@@ -6,8 +6,8 @@ import io.paradaux.chestshop.utils.BlockUtil;
 import io.paradaux.chestshop.utils.ImplementationAdapter;
 import io.paradaux.chestshop.utils.StringUtil;
 import io.paradaux.chestshop.ChestShop;
-import io.paradaux.chestshop.model.PreShopCreationContext;
-import io.paradaux.chestshop.model.ShopCreatedContext;
+import io.paradaux.chestshop.model.ShopCreation;
+import io.paradaux.chestshop.model.CreatedShop;
 import io.paradaux.chestshop.services.AccountService;
 import io.paradaux.chestshop.services.ItemService;
 import io.paradaux.chestshop.services.ShopService;
@@ -78,7 +78,7 @@ public class SignCreate implements Listener {
             return;
         }
 
-        PreShopCreationContext preEvent = shops.create(event.getPlayer(), sign, lines);
+        ShopCreation preEvent = shops.create(event.getPlayer(), sign, lines);
 
         if (preEvent.getOutcome().shouldBreakSign()) {
             event.setCancelled(true);
@@ -96,7 +96,7 @@ public class SignCreate implements Listener {
             return;
         }
 
-        ShopCreatedContext postEvent = new ShopCreatedContext(preEvent.getPlayer(), preEvent.getSign(), shopBlockService.findConnectedContainer(preEvent.getSign()), preEvent.getSignLines(), preEvent.getOwnerAccount());
+        CreatedShop postEvent = new CreatedShop(preEvent.getPlayer(), preEvent.getSign(), shopBlockService.findConnectedContainer(preEvent.getSign()), preEvent.getSignLines(), preEvent.getOwnerAccount());
         shops.onCreated(postEvent);
     }
 }

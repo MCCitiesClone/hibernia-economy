@@ -1,13 +1,13 @@
 package io.paradaux.chestshop.services;
 
 import io.paradaux.chestshop.utils.NumberUtil;
-import io.paradaux.chestshop.model.TransactionContext;
+import io.paradaux.chestshop.model.Transaction;
 import org.bukkit.inventory.ItemStack;
 
 /**
  * Rolling buy/sell transaction + item counters surfaced by the {@code /csmetrics} command.
  * Formerly a {@code @MONITOR(ignoreCancelled=true)}
- * {@link TransactionContext} listener; {@link #onTransaction} is now invoked directly by
+ * {@link Transaction} listener; {@link #onTransaction} is now invoked directly by
  * {@link io.paradaux.chestshop.services.TransactionService#process}.
  *
  * @author Acrobot
@@ -28,7 +28,7 @@ public class MetricsModule {
     private static long boughtItemsCurrent = 0;
     private static long soldItemsCurrent = 0;
 
-    public static void onTransaction(final TransactionContext event) {
+    public static void onTransaction(final Transaction event) {
         checkReset();
         switch (event.getTransactionType()) {
             case BUY:

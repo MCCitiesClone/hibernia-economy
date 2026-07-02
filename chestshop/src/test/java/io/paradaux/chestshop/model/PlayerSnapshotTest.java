@@ -12,14 +12,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.lenient;
 
 @ExtendWith(MockitoExtension.class)
-class PlayerDTOTest {
+class PlayerSnapshotTest {
 
     @Mock private Player player;
 
     @Test
     void uuidNameConstructor_storesValuesVerbatim() {
         UUID id = UUID.randomUUID();
-        PlayerDTO dto = new PlayerDTO(id, "Steve");
+        PlayerSnapshot dto = new PlayerSnapshot(id, "Steve");
 
         assertThat(dto.getUniqueId()).isEqualTo(id);
         assertThat(dto.getName()).isEqualTo("Steve");
@@ -31,7 +31,7 @@ class PlayerDTOTest {
         lenient().when(player.getUniqueId()).thenReturn(id);
         lenient().when(player.getName()).thenReturn("Notch");
 
-        PlayerDTO dto = new PlayerDTO(player);
+        PlayerSnapshot dto = new PlayerSnapshot(player);
 
         assertThat(dto.getUniqueId()).isEqualTo(id);
         assertThat(dto.getName()).isEqualTo("Notch");
@@ -39,7 +39,7 @@ class PlayerDTOTest {
 
     @Test
     void setters_overwriteFields() {
-        PlayerDTO dto = new PlayerDTO(UUID.randomUUID(), "old");
+        PlayerSnapshot dto = new PlayerSnapshot(UUID.randomUUID(), "old");
         UUID newId = UUID.randomUUID();
 
         dto.setUniqueId(newId);

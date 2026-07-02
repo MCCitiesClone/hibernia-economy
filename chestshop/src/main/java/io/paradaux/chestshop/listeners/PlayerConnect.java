@@ -8,7 +8,7 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 
 import io.paradaux.chestshop.ChestShop;
-import io.paradaux.chestshop.model.PlayerDTO;
+import io.paradaux.chestshop.model.PlayerSnapshot;
 import io.paradaux.chestshop.services.AccountService;
 import io.paradaux.chestshop.services.TransactionService;
 
@@ -32,7 +32,7 @@ public class PlayerConnect implements Listener {
             accounts.setUuidVersion(event.getPlayer().getUniqueId().version());
         }
 
-        final PlayerDTO playerDTO = new PlayerDTO(event.getPlayer());
+        final PlayerSnapshot playerDTO = new PlayerSnapshot(event.getPlayer());
 
         // Register (create or refresh) the player's name↔UUID row on every join, as
         // upstream ChestShop does. Only updating pre-existing rows left brand-new

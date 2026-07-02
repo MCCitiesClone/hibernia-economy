@@ -7,8 +7,8 @@ import io.paradaux.chestshop.utils.*;
 import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.model.config.ChestShopConfiguration;
 import io.paradaux.chestshop.model.Account;
-import io.paradaux.chestshop.model.PreTransactionContext;
-import io.paradaux.chestshop.model.TransactionContext;
+import io.paradaux.chestshop.model.PendingTransaction;
+import io.paradaux.chestshop.model.Transaction;
 import io.paradaux.chestshop.utils.Permissions;
 import io.paradaux.chestshop.services.Security;
 import io.paradaux.chestshop.services.AccountService;
@@ -202,7 +202,7 @@ public class PlayerInteract implements Listener {
         // below dispatches AccountQuery/AccountCheck/ItemParse events and scans
         // inventories; an auto-clicker would otherwise force that work (and a
         // DB/economy round-trip) every tick. The old SpamClickProtector only
-        // cancelled the already-built PreTransactionContext, i.e. after the cost
+        // cancelled the already-built PendingTransaction, i.e. after the cost
         // was already paid (ADT-44).
         long now = System.currentTimeMillis();
         Long lastClick = LAST_TRADE_CLICK.get(player);
@@ -211,7 +211,7 @@ public class PlayerInteract implements Listener {
         }
         LAST_TRADE_CLICK.put(player, now);
 
-        PreTransactionContext pEvent = transactions.prepare(sign, player, action);
+        PendingTransaction pEvent = transactions.prepare(sign, player, action);
         if (pEvent == null)
             return;
 
@@ -219,7 +219,7 @@ public class PlayerInteract implements Listener {
         if (pEvent.isCancelled())
             return;
 
-        TransactionContext tEvent = new TransactionContext(pEvent, sign);
+        Transaction tEvent = new Transaction(pEvent, sign);
         transactions.process(tEvent);
     }
 
