@@ -110,9 +110,14 @@ public class TransactionService {
     private final InventoryService inventoryService;
     private final MaterialService materialService;
 
+    private final AdminBypass adminBypass;
+    private final RestrictedSign restrictedSign;
+
     @Inject
     public TransactionService(EconomyService economy, ShopService shops, AccountService accounts, SignBreak signBreak, StockCounterModule stockCounter, Message message, ItemService items, MarketListener market,
-                              ChestShopConfiguration config, ChestShopSign chestShopSign, ShopBlockService shopBlockService, InventoryService inventoryService, MaterialService materialService) {
+                              ChestShopConfiguration config, ChestShopSign chestShopSign, ShopBlockService shopBlockService, InventoryService inventoryService, MaterialService materialService, AdminBypass adminBypass, RestrictedSign restrictedSign) {
+        this.restrictedSign = restrictedSign;
+        this.adminBypass = adminBypass;
         this.economy = economy;
         this.shops = shops;
         this.accounts = accounts;
@@ -266,7 +271,7 @@ public class TransactionService {
 
         // RestrictedSign is a genuine cross-plugin sign listener; its pre-trade access
         // gate stays where it lives and is invoked here in the former @LOW slot.
-        RestrictedSign.onPreTransaction(ctx);
+        restrictedSign.onPreTransaction(ctx);
 
         if (!config.isAllowPartialTransactions() && !ctx.isCancelled()) {
             checkFundsAndStock(ctx);
@@ -423,10 +428,10 @@ public class TransactionService {
         for (ItemStack stock : ctx.getStock()) {
             String matID = stock.getType().toString().toLowerCase(Locale.ROOT);
             boolean hasPerm = buy
-                    ? Permissions.has(client, Permissions.BUY) && !Permissions.hasPermissionSetFalse(client, Permissions.BUY_ID + matID)
-                            || Permissions.has(client, Permissions.BUY_ID + matID)
-                    : Permissions.has(client, Permissions.SELL) && !Permissions.hasPermissionSetFalse(client, Permissions.SELL_ID + matID)
-                            || Permissions.has(client, Permissions.SELL_ID + matID);
+                    ? adminBypass.has(client, Permissions.BUY) && !Permissions.hasPermissionSetFalse(client, Permissions.BUY_ID + matID)
+                            || adminBypass.has(client, Permissions.BUY_ID + matID)
+                    : adminBypass.has(client, Permissions.SELL) && !Permissions.hasPermissionSetFalse(client, Permissions.SELL_ID + matID)
+                            || adminBypass.has(client, Permissions.SELL_ID + matID);
             if (!hasPerm) {
                 ctx.setCancelled(CLIENT_DOES_NOT_HAVE_PERMISSION);
                 return;

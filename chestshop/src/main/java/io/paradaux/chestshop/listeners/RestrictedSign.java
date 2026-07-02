@@ -1,5 +1,6 @@
 package io.paradaux.chestshop.listeners;
 
+import io.paradaux.chestshop.services.AdminBypass;
 import io.paradaux.chestshop.services.ChestShopSign;
 import com.google.inject.Inject;
 import io.paradaux.chestshop.utils.BlockUtil;
@@ -32,8 +33,11 @@ public class RestrictedSign implements Listener {
     private final AccountService accounts;
     private final ChestShopSign chestShopSign;
 
+    private final AdminBypass adminBypass;
+
     @Inject
-    public RestrictedSign(Message message, AccountService accounts, ChestShopSign chestShopSign) {
+    public RestrictedSign(Message message, AccountService accounts, ChestShopSign chestShopSign, AdminBypass adminBypass) {
+        this.adminBypass = adminBypass;
         this.message = message;
         this.accounts = accounts;
         this.chestShopSign = chestShopSign;
@@ -66,7 +70,7 @@ public class RestrictedSign implements Listener {
             }
             Block connectedSign = event.getBlock().getRelative(BlockFace.DOWN);
 
-            if (!Permissions.has(player, ADMIN) || !chestShopSign.isValid(connectedSign)) {
+            if (!adminBypass.has(player, ADMIN) || !chestShopSign.isValid(connectedSign)) {
                 dropSignAndCancelEvent(event);
                 return;
             }
@@ -82,7 +86,7 @@ public class RestrictedSign implements Listener {
         }
     }
 
-    public static void onPreTransaction(PreTransactionContext event) {
+    public void onPreTransaction(PreTransactionContext event) {
         if (event.isCancelled()) {
             return;
         }
@@ -141,7 +145,7 @@ public class RestrictedSign implements Listener {
         return isRestricted(sign.getLines());
     }
 
-    public static boolean canAccess(Sign sign, Player player) {
+    public boolean canAccess(Sign sign, Player player) {
         Block blockUp = sign.getBlock().getRelative(BlockFace.UP);
         return !BlockUtil.isSign(blockUp) || hasPermission(player, ((Sign) getState(blockUp, false)).getLines());
     }
@@ -156,13 +160,13 @@ public class RestrictedSign implements Listener {
         return BlockUtil.isSign(down) ? (Sign) getState(down, false) : null;
     }
 
-    public static boolean hasPermission(Player p, String[] lines) {
-        if (Permissions.has(p, ADMIN)) {
+    public boolean hasPermission(Player p, String[] lines) {
+        if (adminBypass.has(p, ADMIN)) {
             return true;
         }
 
         for (String line : lines) {
-            if (Permissions.has(p, Permissions.GROUP + line)) {
+            if (adminBypass.has(p, Permissions.GROUP + line)) {
                 return true;
             }
         }

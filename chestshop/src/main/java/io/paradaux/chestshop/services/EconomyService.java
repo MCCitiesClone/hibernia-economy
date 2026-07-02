@@ -59,8 +59,11 @@ public class EconomyService {
     private final ItemService items;
     private final ChestShopConfiguration config;
 
+    private final AdminBypass adminBypass;
+
     @Inject
-    public EconomyService(AccountService accounts, ItemService items, ChestShopConfiguration config) {
+    public EconomyService(AccountService accounts, ItemService items, ChestShopConfiguration config, AdminBypass adminBypass) {
+        this.adminBypass = adminBypass;
         this.accounts = accounts;
         this.items = items;
         this.config = config;
@@ -310,7 +313,7 @@ public class EconomyService {
         if (rate.compareTo(BigDecimal.ZERO) <= 0) {
             return BigDecimal.ZERO;
         }
-        if (initiator != null && Permissions.has(initiator, Permissions.NO_BUY_TAX)) {
+        if (initiator != null && adminBypass.has(initiator, Permissions.NO_BUY_TAX)) {
             return BigDecimal.ZERO;
         }
         try {

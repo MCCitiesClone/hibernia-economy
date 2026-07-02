@@ -1,7 +1,7 @@
 package io.paradaux.chestshop.commands;
 
 import com.google.inject.Inject;
-import io.paradaux.chestshop.utils.AdminBypass;
+import io.paradaux.chestshop.services.AdminBypass;
 import io.paradaux.hibernia.framework.commander.annotations.Command;
 import io.paradaux.hibernia.framework.commander.annotations.Description;
 import io.paradaux.hibernia.framework.commander.annotations.Route;
@@ -22,16 +22,18 @@ import org.bukkit.entity.Player;
 public class BypassCommand implements CommandHandler {
 
     private final Message message;
+    private final AdminBypass adminBypass;
 
     @Inject
-    public BypassCommand(Message message) {
+    public BypassCommand(Message message, AdminBypass adminBypass) {
         this.message = message;
+        this.adminBypass = adminBypass;
     }
 
     @Route("bypass")
     @Description("Toggle your own admin bypass — off lets you play as a normal customer")
     public void bypass(@Sender Player player) {
-        if (AdminBypass.toggle(player)) {
+        if (adminBypass.toggle(player)) {
             message.send(player, "chestshop.BYPASS_OFF");
         } else {
             message.send(player, "chestshop.BYPASS_ON");

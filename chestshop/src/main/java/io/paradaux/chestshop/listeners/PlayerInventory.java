@@ -1,5 +1,6 @@
 package io.paradaux.chestshop.listeners;
 
+import io.paradaux.chestshop.services.AdminBypass;
 import io.paradaux.chestshop.services.ShopBlockService;
 import com.google.inject.Inject;
 import io.paradaux.chestshop.model.config.ChestShopConfiguration;
@@ -37,9 +38,12 @@ public class PlayerInventory implements Listener {
     private final ChestShopSign chestShopSign;
     private final ShopBlockService shopBlockService;
 
+    private final AdminBypass adminBypass;
+
     @Inject
     public PlayerInventory(InfoService info, Message message, Security security,
-                           ChestShopConfiguration config, ChestShopSign chestShopSign, ShopBlockService shopBlockService) {
+                           ChestShopConfiguration config, ChestShopSign chestShopSign, ShopBlockService shopBlockService, AdminBypass adminBypass) {
+        this.adminBypass = adminBypass;
         this.info = info;
         this.message = message;
         this.security = security;
@@ -91,7 +95,7 @@ public class PlayerInventory implements Listener {
         }
 
         if (!canAccess) {
-            if (Permissions.has(player, Permissions.SHOPINFO)) {
+            if (adminBypass.has(player, Permissions.SHOPINFO)) {
                 for (Block container : containers) {
                     Sign sign = shopBlockService.getConnectedSign(container);
                     if (sign != null) {

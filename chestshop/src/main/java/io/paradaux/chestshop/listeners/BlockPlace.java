@@ -1,5 +1,6 @@
 package io.paradaux.chestshop.listeners;
 
+import io.paradaux.chestshop.services.AdminBypass;
 import io.paradaux.chestshop.services.ShopBlockService;
 import com.google.inject.Inject;
 import io.paradaux.chestshop.utils.Permissions;
@@ -29,8 +30,11 @@ public class BlockPlace implements Listener {
     private final ChestShopSign chestShopSign;
     private final ShopBlockService shopBlockService;
 
+    private final AdminBypass adminBypass;
+
     @Inject
-    public BlockPlace(Message message, Security security, ChestShopSign chestShopSign, ShopBlockService shopBlockService) {
+    public BlockPlace(Message message, Security security, ChestShopSign chestShopSign, ShopBlockService shopBlockService, AdminBypass adminBypass) {
+        this.adminBypass = adminBypass;
         this.message = message;
         this.security = security;
         this.chestShopSign = chestShopSign;
@@ -47,7 +51,7 @@ public class BlockPlace implements Listener {
 
         Player player = event.getPlayer();
 
-        if (Permissions.has(player, Permissions.ADMIN)) {
+        if (adminBypass.has(player, Permissions.ADMIN)) {
             return;
         }
 

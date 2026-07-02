@@ -1,17 +1,15 @@
 package io.paradaux.chestshop.utils;
 
 import org.bukkit.command.CommandSender;
-import org.bukkit.entity.Player;
 
 import java.util.Locale;
 
 /**
- * ChestShop permission nodes + the runtime checks that the framework's command
+ * ChestShop permission nodes + the pure permission helpers the framework's command
  * {@code @Permission} annotation can't express: the per-material buy/sell/create nodes
- * (built by concatenation), the {@code othername} wildcard / set-false rules, and the
- * {@link AdminBypass} demotion. Commands gate themselves with HiberniaFramework's
- * {@code @Permission} directly (no enum); these helpers are only for the imperative
- * checks in the services and listeners.
+ * (built by concatenation), the raw {@link #hasNode} check, the set-false rule, and the
+ * {@link #isGated} classifier for the elevated staff nodes. The bypass-aware check that
+ * consults a player's opt-out state lives on the {@code AdminBypass} service (PAR-305).
  *
  * @author Acrobot
  */
@@ -48,27 +46,26 @@ public final class Permissions {
 
     private Permissions() {}
 
-    public static boolean has(CommandSender sender, String node) {
-        // An admin who ran /chestshop bypass to "play" forfeits the elevated staff
-        // nodes until they turn bypass back on, so every admin-gated path treats
-        // them as a normal player (AdminBypass).
-        if (sender instanceof Player player && AdminBypass.isDisabled(player) && AdminBypass.isGated(node)) {
-            return false;
-        }
+    /** Raw permission check (case-insensitive), with no admin-bypass demotion. */
+    public static boolean hasNode(CommandSender sender, String node) {
         return sender.hasPermission(node) || sender.hasPermission(node.toLowerCase(Locale.ROOT));
     }
 
-    public static boolean otherName(Player player, String name) {
-        return otherName(player, OTHER_NAME, name);
-    }
-
-    public static boolean otherName(Player player, String base, String name) {
-        boolean hasBase = !base.equals(OTHER_NAME) && otherName(player, OTHER_NAME, name);
-        if (hasBase || has(player, base + ".*")) {
-            return !hasPermissionSetFalse(player, base + "." + name)
-                    && !hasPermissionSetFalse(player, base + "." + name.toLowerCase(Locale.ROOT));
-        }
-        return has(player, base + "." + name) || has(player, base + "." + name.toLowerCase(Locale.ROOT));
+    /**
+     * Whether a permission node is one of the elevated "staff" powers that an opted-out
+     * admin should lose. Basic player nodes (shop.create/buy/sell, iteminfo, shopinfo, the
+     * toggles, the command itself) are never gated.
+     */
+    public static boolean isGated(String node) {
+        String n = node.toLowerCase(Locale.ROOT);
+        return n.startsWith("chestshop.admin")      // admin + adminshop
+                || n.startsWith("chestshop.mod")
+                || n.startsWith("chestshop.name")
+                || n.startsWith("chestshop.othername")
+                || n.startsWith("chestshop.nofee")
+                || n.startsWith("chestshop.notax")
+                || n.startsWith("chestshop.nolimit")
+                || n.startsWith("chestshop.group");
     }
 
     public static boolean hasPermissionSetFalse(CommandSender sender, String permission) {

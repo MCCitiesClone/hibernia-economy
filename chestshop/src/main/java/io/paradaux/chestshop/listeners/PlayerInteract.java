@@ -1,5 +1,6 @@
 package io.paradaux.chestshop.listeners;
 
+import io.paradaux.chestshop.services.AdminBypass;
 import io.paradaux.chestshop.services.ShopBlockService;
 import com.google.inject.Inject;
 import io.paradaux.chestshop.utils.*;
@@ -65,10 +66,13 @@ public class PlayerInteract implements Listener {
     private final ChestShopSign chestShopSign;
     private final ShopBlockService shopBlockService;
 
+    private final AdminBypass adminBypass;
+
     @Inject
     public PlayerInteract(TransactionService transactions, InfoService info, AccountService accounts,
                           ItemService items, Message message, Security security,
-                          ChestShopConfiguration config, ChestShopSign chestShopSign, ShopBlockService shopBlockService) {
+                          ChestShopConfiguration config, ChestShopSign chestShopSign, ShopBlockService shopBlockService, AdminBypass adminBypass) {
+        this.adminBypass = adminBypass;
         this.transactions = transactions;
         this.info = info;
         this.accounts = accounts;
@@ -94,7 +98,7 @@ public class PlayerInteract implements Listener {
             if (sign != null) {
 
                 if (!security.canView(player, block, config.isTurnOffDefaultProtectionWhenProtectedExternally())) {
-                    if (Permissions.has(player, Permissions.SHOPINFO)) {
+                    if (adminBypass.has(player, Permissions.SHOPINFO)) {
                         info.showShopInfo(player, sign);
                         event.setCancelled(true);
                     } else if (!config.isTurnOffDefaultProtectionWhenProtectedExternally()) {

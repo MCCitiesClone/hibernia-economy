@@ -58,9 +58,12 @@ public class AccountService {
     private Account serverEconomyAccount;
     private int uuidVersion = -1;
 
+    private final AdminBypass adminBypass;
+
     @Inject
     public AccountService(AccountMapper accounts, BusinessAccountService businessAccounts,
-                          ChestShopConfiguration config, ChestShopSign chestShopSign) {
+                          ChestShopConfiguration config, ChestShopSign chestShopSign, AdminBypass adminBypass) {
+        this.adminBypass = adminBypass;
         this.accounts = accounts;
         this.businessAccounts = businessAccounts;
         this.config = config;
@@ -296,7 +299,7 @@ public class AccountService {
 
     public boolean canUseName(Player player, String base, String name) {
         if (chestShopSign.isAdminShop(name)) {
-            if (Permissions.has(player, Permissions.ADMIN_SHOP)) {
+            if (adminBypass.has(player, Permissions.ADMIN_SHOP)) {
                 return true;
             } else {
                 ChestShop.logDebug(player.getName() + " cannot use the name " + name + " as it's an admin shop and they don't have the permission " + Permissions.ADMIN_SHOP);
@@ -309,11 +312,11 @@ public class AccountService {
         // For business accounts, skip permission-based shortcuts — access is controlled
         // solely by Treasury/Business via canAccess(). Only ChestShop admins bypass this.
         if (isBusinessAccount) {
-            if (Permissions.has(player, Permissions.ADMIN)) {
+            if (adminBypass.has(player, Permissions.ADMIN)) {
                 return true;
             }
         } else {
-            if (Permissions.otherName(player, base, name)) {
+            if (adminBypass.otherName(player, base, name)) {
                 return true;
             }
         }
@@ -328,7 +331,7 @@ public class AccountService {
             ChestShop.logDebug(player.getName() + " cannot use the name " + name + " for a shop as no account with that name exists");
             return false;
         }
-        if (!isBusinessAccount && !account.getName().equalsIgnoreCase(name) && Permissions.otherName(player, base, account.getName())) {
+        if (!isBusinessAccount && !account.getName().equalsIgnoreCase(name) && adminBypass.otherName(player, base, account.getName())) {
             return true;
         }
         return canAccess(player, account);

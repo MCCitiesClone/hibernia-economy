@@ -66,9 +66,12 @@ public class ShopService {
     private final ChestShopSign chestShopSign;
     private final ShopBlockService shopBlockService;
 
+    private final AdminBypass adminBypass;
+
     @Inject
     public ShopService(AccountService accounts, EconomyService economy, ItemService items, ProtectionService protection, StockCounterModule stockCounter, Message message, Security security, MarketListener market,
-                       ChestShopConfiguration config, ChestShopSign chestShopSign, ShopBlockService shopBlockService) {
+                       ChestShopConfiguration config, ChestShopSign chestShopSign, ShopBlockService shopBlockService, AdminBypass adminBypass) {
+        this.adminBypass = adminBypass;
         this.accounts = accounts;
         this.economy = economy;
         this.items = items;
@@ -243,7 +246,7 @@ public class ShopService {
             return;
         }
         Player player = ctx.getPlayer();
-        if (Permissions.has(player, Permissions.ADMIN)) {
+        if (adminBypass.has(player, Permissions.ADMIN)) {
             return;
         }
         if (!security.canAccess(player, connectedContainer.getBlock())) {
@@ -256,7 +259,7 @@ public class ShopService {
         BigDecimal shopCreationPrice = config.getShopCreationPrice();
         if (shopCreationPrice.compareTo(BigDecimal.ZERO) == 0
                 || chestShopSign.isAdminShop(ctx.getSignLines())
-                || Permissions.has(ctx.getPlayer(), NOFEE)) {
+                || adminBypass.has(ctx.getPlayer(), NOFEE)) {
             return;
         }
         if (!economy.hasFunds(ctx.getPlayer().getUniqueId(), shopCreationPrice)) {
@@ -319,8 +322,8 @@ public class ShopService {
         ItemStack item = items.parse(itemLine);
 
         if (item == null) {
-            if (PriceUtil.hasBuyPrice(priceLine) && !Permissions.has(player, Permissions.SHOP_CREATION_BUY)
-                    || PriceUtil.hasSellPrice(priceLine) && !Permissions.has(player, Permissions.SHOP_CREATION_SELL)) {
+            if (PriceUtil.hasBuyPrice(priceLine) && !adminBypass.has(player, Permissions.SHOP_CREATION_BUY)
+                    || PriceUtil.hasSellPrice(priceLine) && !adminBypass.has(player, Permissions.SHOP_CREATION_SELL)) {
                 ctx.setOutcome(CreationOutcome.NO_PERMISSION);
             }
             return;
@@ -345,10 +348,10 @@ public class ShopService {
     }
 
     /** Shared buy/sell creation-permission test for a specific material. */
-    private static boolean canCreateForItem(Player player, String perItemSideNode, String matID, String sideNode) {
-        return Permissions.has(player, perItemSideNode)
-                || Permissions.has(player, Permissions.SHOP_CREATION)
-                || Permissions.has(player, Permissions.SHOP_CREATION_ID + matID) && Permissions.has(player, sideNode);
+    private boolean canCreateForItem(Player player, String perItemSideNode, String matID, String sideNode) {
+        return adminBypass.has(player, perItemSideNode)
+                || adminBypass.has(player, Permissions.SHOP_CREATION)
+                || adminBypass.has(player, Permissions.SHOP_CREATION_ID + matID) && adminBypass.has(player, sideNode);
     }
 
     /** Charge the creation fee (the former {@code ignoreCancelled=true} CreationFeeGetter step). */
@@ -423,7 +426,7 @@ public class ShopService {
             failName(ctx);
             return;
         }
-        if (!Permissions.has(player, Permissions.ADMIN) && !accounts.canAccess(player, account)) {
+        if (!adminBypass.has(player, Permissions.ADMIN) && !accounts.canAccess(player, account)) {
             message.send(player, "chestshop.BUSINESS_NO_CHESTSHOP_PERMISSION");
             failName(ctx);
             return;
@@ -585,7 +588,7 @@ public class ShopService {
 
         if (price.compareTo(BigDecimal.ZERO) == 0
                 || chestShopSign.isAdminShop(signLines)
-                || Permissions.has(player, NOFEE)) {
+                || adminBypass.has(player, NOFEE)) {
             return true;
         }
 
@@ -607,7 +610,7 @@ public class ShopService {
     public void refundOnRemoval(Player destroyer, Sign sign) {
         BigDecimal refund = config.getShopRefundPrice();
 
-        if (destroyer == null || Permissions.has(destroyer, NOFEE) || refund.compareTo(BigDecimal.ZERO) == 0) {
+        if (destroyer == null || adminBypass.has(destroyer, NOFEE) || refund.compareTo(BigDecimal.ZERO) == 0) {
             return;
         }
 
