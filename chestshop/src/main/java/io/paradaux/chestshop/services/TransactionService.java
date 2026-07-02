@@ -1,5 +1,11 @@
 package io.paradaux.chestshop.services;
 
+import org.bukkit.event.block.Action;
+import io.paradaux.chestshop.utils.AdminInventory;
+import java.util.Arrays;
+import io.paradaux.chestshop.context.TransactionContext.TransactionType;
+import static org.bukkit.event.block.Action.LEFT_CLICK_BLOCK;
+import static org.bukkit.event.block.Action.RIGHT_CLICK_BLOCK;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Table;
@@ -127,6 +133,117 @@ public class TransactionService {
 
     private static final String BUY_LOG = "%1$s bought %2$s for %3$.2f from %4$s at %5$s";
     private static final String SELL_LOG = "%1$s sold %2$s for %3$.2f to %4$s at %5$s";
+
+    // ===================== trade context construction =====================
+
+    /**
+     * Build the {@link PreTransactionContext} for a shop interaction: resolve the owner
+     * account, price the trade (honouring shift-sell-in-stacks / shift-sell-everything), and
+     * assemble the stacked items + (virtual admin) shop inventory. Returns {@code null} — after
+     * messaging the player — when the click can't become a trade. First step of the trade
+     * lifecycle (prepare -> validate -> process -> execute); moved off the PlayerInteract
+     * listener so the whole lifecycle lives in this service (PAR-299).
+     */
+    public PreTransactionContext prepare(Sign sign, Player player, Action action) {
+        String name = ChestShopSign.getOwner(sign);
+        String prices = ChestShopSign.getPrice(sign);
+        String material = ChestShopSign.getItem(sign);
+
+        Account account = accounts.resolveAccount(name);
+        if (account == null) {
+            message.send(player, "chestshop.PLAYER_NOT_FOUND");
+            return null;
+        }
+
+        boolean adminShop = chestShopSign.isAdminShop(sign);
+
+        // check if player exists in economy
+        if (!adminShop && !economy.hasAccount(account.getUuid())) {
+            message.send(player, "chestshop.NO_ECONOMY_ACCOUNT");
+            return null;
+        }
+
+        Action buy = config.isReverseButtons() ? LEFT_CLICK_BLOCK : RIGHT_CLICK_BLOCK;
+        BigDecimal price = (action == buy ? PriceUtil.getExactBuyPrice(prices) : PriceUtil.getExactSellPrice(prices));
+
+        Container shopBlock = shopBlockService.findConnectedContainer(sign);
+        Inventory ownerInventory = shopBlock != null ? shopBlock.getInventory() : null;
+
+        ItemStack item = items.parse(material);
+        if (item == null) {
+            message.send(player, "chestshop.INVALID_SHOP_DETECTED");
+            return null;
+        }
+
+        int amount = -1;
+        try {
+            amount = ChestShopSign.getQuantity(sign);
+        } catch (NumberFormatException ignored) {} // There is no quantity number on the sign
+
+        if (amount < 1 || amount > config.getMaxShopAmount()) {
+            message.send(player, "chestshop.INVALID_SHOP_PRICE");
+            return null;
+        }
+
+        BigDecimal pricePerItem = price.divide(BigDecimal.valueOf(amount), MathContext.DECIMAL128);
+        if (config.isShiftSellsInStacks() && player.isSneaking() && !price.equals(PriceUtil.NO_PRICE) && isAllowedForShift(action == buy)) {
+            int newAmount = adminShop ? inventoryService.getMaxStackSize(item) : getStackAmount(item, ownerInventory, player, action);
+            if (newAmount > 0) {
+                price = pricePerItem.multiply(BigDecimal.valueOf(newAmount)).setScale(config.getPricePrecision(), RoundingMode.HALF_UP);
+                amount = newAmount;
+            }
+        } else if (config.isShiftSellsEverything() && player.isSneaking() && !price.equals(PriceUtil.NO_PRICE) && isAllowedForShift(action == buy)) {
+            if (action != buy) {
+                int newAmount = inventoryService.getAmount(item, player.getInventory());
+                if (newAmount > 0) {
+                    price = pricePerItem.multiply(BigDecimal.valueOf(newAmount)).setScale(config.getPricePrecision(), RoundingMode.HALF_UP);
+                    amount = newAmount;
+                }
+            } else if (!adminShop && ownerInventory != null) {
+                int newAmount = inventoryService.getAmount(item, ownerInventory);
+                if (newAmount > 0) {
+                    price = pricePerItem.multiply(BigDecimal.valueOf(newAmount)).setScale(config.getPricePrecision(), RoundingMode.HALF_UP);
+                    amount = newAmount;
+                }
+            }
+        }
+
+        item.setAmount(amount);
+
+        ItemStack[] items = inventoryService.getItemsStacked(item);
+
+        // Create virtual admin inventory if
+        // - it's an admin shop
+        // - there is no container for the shop sign
+        // - the config doesn't force unlimited admin shop stock
+        if (adminShop && (ownerInventory == null || config.isForceUnlimitedAdminShop())) {
+            ownerInventory = new AdminInventory(action == buy ? Arrays.stream(items).map(ItemStack::clone).toArray(ItemStack[]::new) : new ItemStack[0], materialService);
+        }
+
+        TransactionType transactionType = (action == buy ? BUY : SELL);
+        return new PreTransactionContext(ownerInventory, player.getInventory(), items, price, player, account, sign, transactionType);
+    }
+
+    private boolean isAllowedForShift(boolean buyTransaction) {
+        String allowed = config.getShiftAllows();
+
+        if (allowed.equalsIgnoreCase("ALL")) {
+            return true;
+        }
+
+        return allowed.equalsIgnoreCase(buyTransaction ? "BUY" : "SELL");
+    }
+
+    private int getStackAmount(ItemStack item, Inventory inventory, Player player, Action action) {
+        Action buy = config.isReverseButtons() ? LEFT_CLICK_BLOCK : RIGHT_CLICK_BLOCK;
+        Inventory checkedInventory = (action == buy ? inventory : player.getInventory());
+
+        if (checkedInventory.containsAtLeast(item, inventoryService.getMaxStackSize(item))) {
+            return inventoryService.getMaxStackSize(item);
+        } else {
+            return inventoryService.getAmount(item, checkedInventory);
+        }
+    }
 
     // ===================== pre-trade validation =====================
 

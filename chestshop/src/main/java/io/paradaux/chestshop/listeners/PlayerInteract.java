@@ -1,20 +1,16 @@
 package io.paradaux.chestshop.listeners;
 
 import io.paradaux.chestshop.services.ShopBlockService;
-import io.paradaux.chestshop.services.InventoryService;
-import io.paradaux.chestshop.services.MaterialService;
 import com.google.inject.Inject;
 import io.paradaux.chestshop.utils.*;
 import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.model.config.ChestShopConfiguration;
-import io.paradaux.chestshop.utils.AdminInventory;
 import io.paradaux.chestshop.model.Account;
 import io.paradaux.chestshop.context.PreTransactionContext;
 import io.paradaux.chestshop.context.TransactionContext;
 import io.paradaux.chestshop.permission.Permissions;
 import io.paradaux.chestshop.services.Security;
 import io.paradaux.chestshop.services.AccountService;
-import io.paradaux.chestshop.services.EconomyService;
 import io.paradaux.chestshop.services.InfoService;
 import io.paradaux.chestshop.services.ItemService;
 import io.paradaux.chestshop.services.TransactionService;
@@ -35,19 +31,12 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
-import java.math.BigDecimal;
-import java.math.MathContext;
-import java.math.RoundingMode;
-import java.util.Arrays;
 import java.util.Map;
 import java.util.WeakHashMap;
 import java.util.logging.Level;
 
 import static io.paradaux.chestshop.utils.ImplementationAdapter.getState;
 import static io.paradaux.chestshop.utils.BlockUtil.isSign;
-import static io.paradaux.chestshop.context.TransactionContext.TransactionType;
-import static io.paradaux.chestshop.context.TransactionContext.TransactionType.BUY;
-import static io.paradaux.chestshop.context.TransactionContext.TransactionType.SELL;
 import static io.paradaux.chestshop.permission.Permissions.OTHER_NAME_CREATE;
 import static io.paradaux.chestshop.signs.ChestShopSign.*;
 import static org.bukkit.event.block.Action.LEFT_CLICK_BLOCK;
@@ -69,33 +58,26 @@ public class PlayerInteract implements Listener {
     private final TransactionService transactions;
     private final InfoService info;
     private final AccountService accounts;
-    private final EconomyService economy;
     private final ItemService items;
     private final Message message;
     private final Security security;
     private final ChestShopConfiguration config;
     private final ChestShopSign chestShopSign;
     private final ShopBlockService shopBlockService;
-    private final InventoryService inventoryService;
-    private final MaterialService materialService;
 
     @Inject
     public PlayerInteract(TransactionService transactions, InfoService info, AccountService accounts,
-                          EconomyService economy, ItemService items, Message message, Security security,
-                          ChestShopConfiguration config, ChestShopSign chestShopSign, ShopBlockService shopBlockService,
-                          InventoryService inventoryService, MaterialService materialService) {
+                          ItemService items, Message message, Security security,
+                          ChestShopConfiguration config, ChestShopSign chestShopSign, ShopBlockService shopBlockService) {
         this.transactions = transactions;
         this.info = info;
         this.accounts = accounts;
-        this.economy = economy;
         this.items = items;
         this.message = message;
         this.security = security;
         this.config = config;
         this.chestShopSign = chestShopSign;
         this.shopBlockService = shopBlockService;
-        this.inventoryService = inventoryService;
-        this.materialService = materialService;
     }
 
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
@@ -225,7 +207,7 @@ public class PlayerInteract implements Listener {
         }
         LAST_TRADE_CLICK.put(player, now);
 
-        PreTransactionContext pEvent = preparePreTransactionContext(sign, player, action);
+        PreTransactionContext pEvent = transactions.prepare(sign, player, action);
         if (pEvent == null)
             return;
 
@@ -235,107 +217,6 @@ public class PlayerInteract implements Listener {
 
         TransactionContext tEvent = new TransactionContext(pEvent, sign);
         transactions.process(tEvent);
-    }
-
-    private PreTransactionContext preparePreTransactionContext(Sign sign, Player player, Action action) {
-        String name = ChestShopSign.getOwner(sign);
-        String prices = ChestShopSign.getPrice(sign);
-        String material = ChestShopSign.getItem(sign);
-
-        Account account = accounts.resolveAccount(name);
-        if (account == null) {
-            message.send(player, "chestshop.PLAYER_NOT_FOUND");
-            return null;
-        }
-
-        boolean adminShop = chestShopSign.isAdminShop(sign);
-
-        // check if player exists in economy
-        if (!adminShop && !economy.hasAccount(account.getUuid())) {
-            message.send(player, "chestshop.NO_ECONOMY_ACCOUNT");
-            return null;
-        }
-
-        Action buy = config.isReverseButtons() ? LEFT_CLICK_BLOCK : RIGHT_CLICK_BLOCK;
-        BigDecimal price = (action == buy ? PriceUtil.getExactBuyPrice(prices) : PriceUtil.getExactSellPrice(prices));
-
-        Container shopBlock = shopBlockService.findConnectedContainer(sign);
-        Inventory ownerInventory = shopBlock != null ? shopBlock.getInventory() : null;
-
-        ItemStack item = items.parse(material);
-        if (item == null) {
-            message.send(player, "chestshop.INVALID_SHOP_DETECTED");
-            return null;
-        }
-
-        int amount = -1;
-        try {
-            amount = ChestShopSign.getQuantity(sign);
-        } catch (NumberFormatException ignored) {} // There is no quantity number on the sign
-
-        if (amount < 1 || amount > config.getMaxShopAmount()) {
-            message.send(player, "chestshop.INVALID_SHOP_PRICE");
-            return null;
-        }
-
-        BigDecimal pricePerItem = price.divide(BigDecimal.valueOf(amount), MathContext.DECIMAL128);
-        if (config.isShiftSellsInStacks() && player.isSneaking() && !price.equals(PriceUtil.NO_PRICE) && isAllowedForShift(action == buy)) {
-            int newAmount = adminShop ? inventoryService.getMaxStackSize(item) : getStackAmount(item, ownerInventory, player, action);
-            if (newAmount > 0) {
-                price = pricePerItem.multiply(BigDecimal.valueOf(newAmount)).setScale(config.getPricePrecision(), RoundingMode.HALF_UP);
-                amount = newAmount;
-            }
-        } else if (config.isShiftSellsEverything() && player.isSneaking() && !price.equals(PriceUtil.NO_PRICE) && isAllowedForShift(action == buy)) {
-            if (action != buy) {
-                int newAmount = inventoryService.getAmount(item, player.getInventory());
-                if (newAmount > 0) {
-                    price = pricePerItem.multiply(BigDecimal.valueOf(newAmount)).setScale(config.getPricePrecision(), RoundingMode.HALF_UP);
-                    amount = newAmount;
-                }
-            } else if (!adminShop && ownerInventory != null) {
-                int newAmount = inventoryService.getAmount(item, ownerInventory);
-                if (newAmount > 0) {
-                    price = pricePerItem.multiply(BigDecimal.valueOf(newAmount)).setScale(config.getPricePrecision(), RoundingMode.HALF_UP);
-                    amount = newAmount;
-                }
-            }
-        }
-
-        item.setAmount(amount);
-
-        ItemStack[] items = inventoryService.getItemsStacked(item);
-
-        // Create virtual admin inventory if
-        // - it's an admin shop
-        // - there is no container for the shop sign
-        // - the config doesn't force unlimited admin shop stock
-        if (adminShop && (ownerInventory == null || config.isForceUnlimitedAdminShop())) {
-            ownerInventory = new AdminInventory(action == buy ? Arrays.stream(items).map(ItemStack::clone).toArray(ItemStack[]::new) : new ItemStack[0], materialService);
-        }
-
-        TransactionType transactionType = (action == buy ? BUY : SELL);
-        return new PreTransactionContext(ownerInventory, player.getInventory(), items, price, player, account, sign, transactionType);
-    }
-
-    private boolean isAllowedForShift(boolean buyTransaction) {
-        String allowed = config.getShiftAllows();
-
-        if (allowed.equalsIgnoreCase("ALL")) {
-            return true;
-        }
-
-        return allowed.equalsIgnoreCase(buyTransaction ? "BUY" : "SELL");
-    }
-
-    private int getStackAmount(ItemStack item, Inventory inventory, Player player, Action action) {
-        Action buy = config.isReverseButtons() ? LEFT_CLICK_BLOCK : RIGHT_CLICK_BLOCK;
-        Inventory checkedInventory = (action == buy ? inventory : player.getInventory());
-
-        if (checkedInventory.containsAtLeast(item, inventoryService.getMaxStackSize(item))) {
-            return inventoryService.getMaxStackSize(item);
-        } else {
-            return inventoryService.getAmount(item, checkedInventory);
-        }
     }
 
     private void showChestGUI(Player player, Block signBlock, Sign sign) {
