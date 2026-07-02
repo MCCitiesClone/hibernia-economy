@@ -36,8 +36,9 @@ public class ChestShopModule extends AbstractModule {
         // former static-util classes into @Singleton services routed through
         // ChestShopConfiguration (PAR-282). Bound explicitly so the single shared
         // instance (e.g. MaterialService's material cache) is unambiguous; the pure,
-        // stateless helpers stay static on the utils/*Util classes. The remaining
-        // ShopBlockUtil↔ChestShopSign construction cycle is broken with Provider<>.
+        // stateless helpers stay static on the utils/*Util classes. The dependency graph
+        // is fully acyclic now — no Provider<> cycle-breakers (ShopBlockService depends on
+        // ChestShopSign directly, since the block-detection predicates live on the service).
         bind(MaterialService.class).in(Singleton.class);
         bind(InventoryService.class).in(Singleton.class);
         bind(ShopBlockService.class).in(Singleton.class);
