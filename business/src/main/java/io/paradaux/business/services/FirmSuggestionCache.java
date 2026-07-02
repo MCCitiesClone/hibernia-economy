@@ -4,7 +4,6 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import io.paradaux.business.model.Firm;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -72,17 +71,6 @@ public class FirmSuggestionCache {
             activeAt = now;
         }
         return active;
-    }
-
-    /** Distinct names in {@code pool} that start with {@code prefix} (case-insensitive), sorted + capped. */
-    public static List<String> match(Collection<String> pool, String prefix, int limit) {
-        String p = prefix == null ? "" : prefix.toLowerCase(Locale.ROOT);
-        return pool.stream()
-                .filter(n -> n.toLowerCase(Locale.ROOT).startsWith(p))
-                .distinct()
-                .sorted(String.CASE_INSENSITIVE_ORDER)
-                .limit(limit)
-                .collect(Collectors.toList());
     }
 
     private static List<String> names(List<Firm> firms) {

@@ -1,5 +1,6 @@
 package io.paradaux.business.commands.resolvers;
 
+import io.paradaux.business.utils.Suggestions;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import io.paradaux.hibernia.framework.commander.spi.ParameterResolver;
@@ -38,8 +39,8 @@ public final class FirmNameResolver implements ParameterResolver<FirmName> {
     @Override
     public List<String> suggestions(String prefix, CommandSender sender) {
         if (sender instanceof Player p) {
-            return FirmSuggestionCache.match(cache.playerFirmNames(p.getUniqueId()), prefix, 20);
+            return Suggestions.match(cache.playerFirmNames(p.getUniqueId()), prefix, 20);
         }
-        return FirmSuggestionCache.match(cache.activeFirmNames(), prefix, 20);
+        return Suggestions.match(cache.activeFirmNames(), prefix, 20);
     }
 }

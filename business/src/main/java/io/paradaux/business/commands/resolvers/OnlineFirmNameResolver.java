@@ -1,5 +1,6 @@
 package io.paradaux.business.commands.resolvers;
 
+import io.paradaux.business.utils.Suggestions;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import io.paradaux.hibernia.framework.commander.spi.ParameterResolver;
@@ -46,6 +47,6 @@ public final class OnlineFirmNameResolver implements ParameterResolver<OnlineFir
         for (Player online : List.copyOf(Bukkit.getOnlinePlayers())) {
             pool.addAll(cache.playerFirmNames(online.getUniqueId()));
         }
-        return FirmSuggestionCache.match(pool, prefix, 20);
+        return Suggestions.match(pool, prefix, 20);
     }
 }

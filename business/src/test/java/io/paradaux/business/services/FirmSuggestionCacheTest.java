@@ -111,29 +111,4 @@ class FirmSuggestionCacheTest {
         assertThat(c.activeFirmNames()).containsExactlyInAnyOrder("Acme", "Initech");
         verify(firms, times(2)).listAllActiveFirms();
     }
-
-    // ---- match(): filtering, ordering, dedupe, cap -----------------------------
-
-    @Test
-    void match_filtersCaseInsensitivePrefix() {
-        List<String> out = FirmSuggestionCache.match(List.of("Acme", "Apex", "Globex"), "a", 20);
-        assertThat(out).containsExactly("Acme", "Apex");
-    }
-
-    @Test
-    void match_nullPrefixReturnsAllSortedCaseInsensitive() {
-        List<String> out = FirmSuggestionCache.match(List.of("globex", "Acme", "apex"), null, 20);
-        assertThat(out).containsExactly("Acme", "apex", "globex");
-    }
-
-    @Test
-    void match_distinctAndCapped() {
-        List<String> out = FirmSuggestionCache.match(List.of("Acme", "Acme", "Apex", "Anvil"), "a", 2);
-        assertThat(out).containsExactly("Acme", "Anvil");
-    }
-
-    @Test
-    void match_emptyPoolIsEmpty() {
-        assertThat(FirmSuggestionCache.match(Set.of(), "x", 20)).isEmpty();
-    }
 }
