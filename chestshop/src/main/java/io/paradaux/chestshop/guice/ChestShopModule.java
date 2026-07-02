@@ -10,7 +10,7 @@ import io.paradaux.chestshop.services.TransactionService;
 import io.paradaux.chestshop.signs.ChestShopSign;
 import io.paradaux.chestshop.services.InventoryService;
 import io.paradaux.chestshop.services.MaterialService;
-import io.paradaux.chestshop.utils.ShopBlockUtil;
+import io.paradaux.chestshop.services.ShopBlockService;
 
 /**
  * ChestShop's own Guice bindings — its service layer, alongside the framework's
@@ -38,7 +38,7 @@ public class ChestShopModule extends AbstractModule {
         // ShopBlockUtil↔ChestShopSign construction cycle is broken with Provider<>.
         bind(MaterialService.class).in(Singleton.class);
         bind(InventoryService.class).in(Singleton.class);
-        bind(ShopBlockUtil.class).in(Singleton.class);
+        bind(ShopBlockService.class).in(Singleton.class);
         bind(ChestShopSign.class).in(Singleton.class);
     }
 }

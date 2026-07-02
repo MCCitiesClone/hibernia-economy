@@ -1,12 +1,12 @@
 package io.paradaux.chestshop.market;
 
+import io.paradaux.chestshop.services.ShopBlockService;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import io.paradaux.chestshop.model.Account;
 import io.paradaux.chestshop.services.AccountService;
 import io.paradaux.chestshop.services.ItemCodeService;
 import io.paradaux.chestshop.signs.ChestShopSign;
-import io.paradaux.chestshop.utils.ShopBlockUtil;
 import io.paradaux.hibernia.framework.i18n.Message;
 import io.paradaux.treasury.api.market.ShopLocation;
 import org.bukkit.Chunk;
@@ -48,7 +48,7 @@ public class MarketResyncService {
     private final JavaPlugin plugin;
     private final MarketRecords records;
     private final ChestShopSign chestShopSign;
-    private final ShopBlockUtil shopBlockUtil;
+    private final ShopBlockService shopBlockService;
     private final ItemCodeService itemCodes;
     private final AccountService accounts;
     private final Message message;
@@ -57,12 +57,12 @@ public class MarketResyncService {
 
     @Inject
     public MarketResyncService(JavaPlugin plugin, MarketRecords records, ChestShopSign chestShopSign,
-                               ShopBlockUtil shopBlockUtil, ItemCodeService itemCodes,
+                               ShopBlockService shopBlockService, ItemCodeService itemCodes,
                                AccountService accounts, Message message) {
         this.plugin = plugin;
         this.records = records;
         this.chestShopSign = chestShopSign;
-        this.shopBlockUtil = shopBlockUtil;
+        this.shopBlockService = shopBlockService;
         this.itemCodes = itemCodes;
         this.accounts = accounts;
         this.message = message;
@@ -181,7 +181,7 @@ public class MarketResyncService {
                 }
                 owner = records.ownerFromUuid(account.getUuid(), false);
             }
-            Container container = admin ? null : shopBlockUtil.findConnectedContainer(sign);
+            Container container = admin ? null : shopBlockService.findConnectedContainer(sign);
             Integer stock = container != null ? records.stockOf(item, container.getInventory()) : null;
             Integer capacity = container != null ? records.capacityOf(item, container.getInventory()) : null;
             MarketHook.market().upsertShop(records.shop(sign, item, owner, stock, capacity));

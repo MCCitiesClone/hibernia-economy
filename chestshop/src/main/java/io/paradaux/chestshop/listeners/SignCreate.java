@@ -1,5 +1,6 @@
 package io.paradaux.chestshop.listeners;
 
+import io.paradaux.chestshop.services.ShopBlockService;
 import com.google.inject.Inject;
 import io.paradaux.chestshop.utils.BlockUtil;
 import io.paradaux.chestshop.utils.ImplementationAdapter;
@@ -11,7 +12,6 @@ import io.paradaux.chestshop.services.AccountService;
 import io.paradaux.chestshop.services.ItemService;
 import io.paradaux.chestshop.services.ShopService;
 import io.paradaux.chestshop.signs.ChestShopSign;
-import io.paradaux.chestshop.utils.ShopBlockUtil;
 import org.bukkit.block.Block;
 import org.bukkit.block.Sign;
 import org.bukkit.event.EventHandler;
@@ -30,17 +30,17 @@ public class SignCreate implements Listener {
     private final ShopService shops;
     private final SignBreak signBreak;
     private final ChestShopSign chestShopSign;
-    private final ShopBlockUtil shopBlockUtil;
+    private final ShopBlockService shopBlockService;
 
     @Inject
     public SignCreate(AccountService accounts, ItemService items, ShopService shops, SignBreak signBreak,
-                      ChestShopSign chestShopSign, ShopBlockUtil shopBlockUtil) {
+                      ChestShopSign chestShopSign, ShopBlockService shopBlockService) {
         this.accounts = accounts;
         this.items = items;
         this.shops = shops;
         this.signBreak = signBreak;
         this.chestShopSign = chestShopSign;
-        this.shopBlockUtil = shopBlockUtil;
+        this.shopBlockService = shopBlockService;
     }
 
     @EventHandler(ignoreCancelled = true)
@@ -96,7 +96,7 @@ public class SignCreate implements Listener {
             return;
         }
 
-        ShopCreatedContext postEvent = new ShopCreatedContext(preEvent.getPlayer(), preEvent.getSign(), shopBlockUtil.findConnectedContainer(preEvent.getSign()), preEvent.getSignLines(), preEvent.getOwnerAccount());
+        ShopCreatedContext postEvent = new ShopCreatedContext(preEvent.getPlayer(), preEvent.getSign(), shopBlockService.findConnectedContainer(preEvent.getSign()), preEvent.getSignLines(), preEvent.getOwnerAccount());
         shops.onCreated(postEvent);
     }
 }

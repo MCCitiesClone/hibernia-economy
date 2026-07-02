@@ -1,5 +1,6 @@
 package io.paradaux.chestshop.listeners;
 
+import io.paradaux.chestshop.services.ShopBlockService;
 import io.paradaux.chestshop.services.InventoryService;
 import io.paradaux.chestshop.services.MaterialService;
 import com.google.inject.Inject;
@@ -11,7 +12,6 @@ import io.paradaux.chestshop.model.config.ChestShopConfiguration;
 import io.paradaux.chestshop.context.PreShopCreationContext;
 import io.paradaux.chestshop.context.TransactionContext;
 import io.paradaux.chestshop.signs.ChestShopSign;
-import io.paradaux.chestshop.utils.ShopBlockUtil;
 import org.bukkit.block.Block;
 import org.bukkit.block.Container;
 import org.bukkit.block.Sign;
@@ -39,17 +39,17 @@ public class StockCounterModule implements Listener {
     private final ItemService items;
     private final ChestShopConfiguration config;
     private final ChestShopSign chestShopSign;
-    private final ShopBlockUtil shopBlockUtil;
+    private final ShopBlockService shopBlockService;
     private final InventoryService inventoryService;
     private final MaterialService materialService;
 
     @Inject
     public StockCounterModule(ItemService items, ChestShopConfiguration config, ChestShopSign chestShopSign,
-                              ShopBlockUtil shopBlockUtil, InventoryService inventoryService, MaterialService materialService) {
+                              ShopBlockService shopBlockService, InventoryService inventoryService, MaterialService materialService) {
         this.items = items;
         this.config = config;
         this.chestShopSign = chestShopSign;
-        this.shopBlockUtil = shopBlockUtil;
+        this.shopBlockService = shopBlockService;
         this.inventoryService = inventoryService;
         this.materialService = materialService;
     }
@@ -79,7 +79,7 @@ public class StockCounterModule implements Listener {
 
         ItemStack itemTradedByShop = determineItemTradedByShop(ChestShopSign.getItem(event.getSignLines()));
         if (itemTradedByShop != null) {
-            Container container = shopBlockUtil.findConnectedContainer(event.getSign());
+            Container container = shopBlockService.findConnectedContainer(event.getSign());
             if (container != null) {
                 event.setSignLine(QUANTITY_LINE, getQuantityLineWithCounter(quantity, itemTradedByShop, container.getInventory()));
             }
@@ -93,11 +93,11 @@ public class StockCounterModule implements Listener {
         }
 
         InventoryHolder holder = getHolder(event.getInventory(), false);
-        if (!shopBlockUtil.couldBeShopContainer(holder)) {
+        if (!shopBlockService.couldBeShopContainer(holder)) {
             return;
         }
 
-        for (Sign shopSign : shopBlockUtil.findConnectedShopSigns(holder)) {
+        for (Sign shopSign : shopBlockService.findConnectedShopSigns(holder)) {
             if (!config.isUseStockCounter()
                     || (config.isForceUnlimitedAdminShop() && chestShopSign.isAdminShop(shopSign))) {
                 if (QuantityUtil.quantityLineContainsCounter(ChestShopSign.getQuantityLine(shopSign))) {
@@ -140,7 +140,7 @@ public class StockCounterModule implements Listener {
             return;
         }
 
-        for (Sign shopSign : shopBlockUtil.findConnectedShopSigns( getHolder(event.getOwnerInventory(), false))) {
+        for (Sign shopSign : shopBlockService.findConnectedShopSigns( getHolder(event.getOwnerInventory(), false))) {
             updateCounterOnQuantityLine(shopSign, event.getOwnerInventory());
         }
     }
@@ -189,7 +189,7 @@ public class StockCounterModule implements Listener {
 
     public void updateCounterOnItemMoveEvent(ItemStack toAdd, InventoryHolder destinationHolder) {
         Block shopBlock = chestShopSign.getShopBlock(destinationHolder);
-        Sign connectedSign = shopBlockUtil.getConnectedSign(shopBlock);
+        Sign connectedSign = shopBlockService.getConnectedSign(shopBlock);
 
         updateCounterOnQuantityLine(connectedSign, destinationHolder.getInventory(), toAdd);
     }

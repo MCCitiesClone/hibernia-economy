@@ -1,5 +1,6 @@
 package io.paradaux.chestshop.listeners;
 
+import io.paradaux.chestshop.services.ShopBlockService;
 import com.google.inject.Inject;
 import io.paradaux.chestshop.permission.Permissions;
 import io.paradaux.chestshop.services.Security;
@@ -26,21 +27,21 @@ public class BlockPlace implements Listener {
     private final Message message;
     private final Security security;
     private final ChestShopSign chestShopSign;
-    private final ShopBlockUtil shopBlockUtil;
+    private final ShopBlockService shopBlockService;
 
     @Inject
-    public BlockPlace(Message message, Security security, ChestShopSign chestShopSign, ShopBlockUtil shopBlockUtil) {
+    public BlockPlace(Message message, Security security, ChestShopSign chestShopSign, ShopBlockService shopBlockService) {
         this.message = message;
         this.security = security;
         this.chestShopSign = chestShopSign;
-        this.shopBlockUtil = shopBlockUtil;
+        this.shopBlockService = shopBlockService;
     }
 
     @EventHandler(ignoreCancelled = true)
     public void onContainerPlace(BlockPlaceEvent event) {
         Block placed = event.getBlockPlaced();
 
-        if (!shopBlockUtil.couldBeShopContainer(placed)) {
+        if (!shopBlockService.couldBeShopContainer(placed)) {
             return;
         }
 
@@ -96,7 +97,7 @@ public class BlockPlace implements Listener {
         for (BlockFace face : searchDirections) {
             Block relative = placed.getRelative(face);
 
-            if (!shopBlockUtil.couldBeShopContainer(relative)) {
+            if (!shopBlockService.couldBeShopContainer(relative)) {
                 continue;
             }
 

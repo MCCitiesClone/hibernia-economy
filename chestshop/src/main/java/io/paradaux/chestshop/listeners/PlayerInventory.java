@@ -1,12 +1,12 @@
 package io.paradaux.chestshop.listeners;
 
+import io.paradaux.chestshop.services.ShopBlockService;
 import com.google.inject.Inject;
 import io.paradaux.chestshop.model.config.ChestShopConfiguration;
 import io.paradaux.chestshop.permission.Permissions;
 import io.paradaux.chestshop.services.Security;
 import io.paradaux.chestshop.services.InfoService;
 import io.paradaux.chestshop.signs.ChestShopSign;
-import io.paradaux.chestshop.utils.ShopBlockUtil;
 import io.paradaux.hibernia.framework.i18n.Message;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
@@ -35,17 +35,17 @@ public class PlayerInventory implements Listener {
     private final Security security;
     private final ChestShopConfiguration config;
     private final ChestShopSign chestShopSign;
-    private final ShopBlockUtil shopBlockUtil;
+    private final ShopBlockService shopBlockService;
 
     @Inject
     public PlayerInventory(InfoService info, Message message, Security security,
-                           ChestShopConfiguration config, ChestShopSign chestShopSign, ShopBlockUtil shopBlockUtil) {
+                           ChestShopConfiguration config, ChestShopSign chestShopSign, ShopBlockService shopBlockService) {
         this.info = info;
         this.message = message;
         this.security = security;
         this.config = config;
         this.chestShopSign = chestShopSign;
-        this.shopBlockUtil = shopBlockUtil;
+        this.shopBlockService = shopBlockService;
     }
 
     @EventHandler
@@ -81,7 +81,7 @@ public class PlayerInventory implements Listener {
 
         boolean canAccess = false;
         for (Block container : containers) {
-            if (chestShopSign.isShopBlock(container)) {
+            if (shopBlockService.isShopBlock(container)) {
                 if (security.canView(player, container, false)) {
                     canAccess = true;
                 }
@@ -93,7 +93,7 @@ public class PlayerInventory implements Listener {
         if (!canAccess) {
             if (Permissions.has(player, Permissions.SHOPINFO)) {
                 for (Block container : containers) {
-                    Sign sign = shopBlockUtil.getConnectedSign(container);
+                    Sign sign = shopBlockService.getConnectedSign(container);
                     if (sign != null) {
                         info.showShopInfo((Player) event.getPlayer(), sign);
                     }

@@ -23,7 +23,6 @@ import io.paradaux.chestshop.utils.InventoryUtil;
 import io.paradaux.chestshop.utils.LocationUtil;
 import io.paradaux.chestshop.plugins.ShowItemHook;
 import io.paradaux.chestshop.utils.PriceUtil;
-import io.paradaux.chestshop.utils.ShopBlockUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
@@ -102,14 +101,14 @@ public class TransactionService {
     private final MarketListener market;
     private final ChestShopConfiguration config;
     private final ChestShopSign chestShopSign;
-    private final ShopBlockUtil shopBlockUtil;
+    private final ShopBlockService shopBlockService;
     private final InventoryService inventoryService;
     private final MaterialService materialService;
     private final ShowItemHook showItem;
 
     @Inject
     public TransactionService(EconomyService economy, ShopService shops, AccountService accounts, SignBreak signBreak, StockCounterModule stockCounter, Message message, ItemService items, MarketListener market,
-                              ChestShopConfiguration config, ChestShopSign chestShopSign, ShopBlockUtil shopBlockUtil, InventoryService inventoryService, MaterialService materialService, ShowItemHook showItem) {
+                              ChestShopConfiguration config, ChestShopSign chestShopSign, ShopBlockService shopBlockService, InventoryService inventoryService, MaterialService materialService, ShowItemHook showItem) {
         this.economy = economy;
         this.shops = shops;
         this.accounts = accounts;
@@ -120,7 +119,7 @@ public class TransactionService {
         this.market = market;
         this.config = config;
         this.chestShopSign = chestShopSign;
-        this.shopBlockUtil = shopBlockUtil;
+        this.shopBlockService = shopBlockService;
         this.inventoryService = inventoryService;
         this.materialService = materialService;
         this.showItem = showItem;
@@ -818,7 +817,7 @@ public class TransactionService {
             return;
         }
 
-        Container connectedContainer = shopBlockUtil.findConnectedContainer(sign);
+        Container connectedContainer = shopBlockService.findConnectedContainer(sign);
         shops.onDestroyed(new ShopDestroyedContext(null, sign, connectedContainer));
 
         Material signType = sign.getType();

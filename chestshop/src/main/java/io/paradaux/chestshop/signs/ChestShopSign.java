@@ -38,12 +38,10 @@ import static io.paradaux.chestshop.utils.MaterialUtil.METADATA;
 public class ChestShopSign {
 
     private final ChestShopConfiguration config;
-    private final ShopBlockUtil shopBlockUtil;
 
     @Inject
-    public ChestShopSign(ChestShopConfiguration config, ShopBlockUtil shopBlockUtil) {
+    public ChestShopSign(ChestShopConfiguration config) {
         this.config = config;
-        this.shopBlockUtil = shopBlockUtil;
     }
 
     public static final byte NAME_LINE = 0;
@@ -176,53 +174,10 @@ public class ChestShopSign {
         return BlockUtil.isSign(sign) && isValid((Sign) getState(sign, false));
     }
 
-    /**
-     * @deprecated Use {@link #isShopBlock(Block}
-     */
-    @Deprecated
-    public boolean isShopChest(Block chest) {
-        if (!BlockUtil.isChest(chest)) {
-            return false;
-        }
-
-        return shopBlockUtil.getConnectedSign(chest) != null;
-    }
-
-    public boolean isShopBlock(Block block) {
-        if (!shopBlockUtil.couldBeShopContainer(block)) {
-            return false;
-        }
-
-        return shopBlockUtil.getConnectedSign(block) != null;
-    }
-
-    /**
-     * @deprecated Use {@link #isShopBlock(InventoryHolder}
-     */
-    @Deprecated
-    public boolean isShopChest(InventoryHolder holder) {
-        if (!BlockUtil.isChest(holder)) {
-            return false;
-        }
-
-        if (holder instanceof DoubleChest) {
-            return isShopChest(((DoubleChest) holder).getLocation().getBlock());
-        } else if (holder instanceof Chest) {
-            return isShopChest(((Chest) holder).getBlock());
-        } else {
-            return false;
-        }
-    }
-
-    public boolean isShopBlock(InventoryHolder holder) {
-        if (holder instanceof DoubleChest) {
-            return isShopBlock(ImplementationAdapter.getLeftSide((DoubleChest) holder, false))
-                    || isShopBlock(ImplementationAdapter.getRightSide((DoubleChest) holder, false));
-        } else if (holder instanceof BlockState) {
-            return isShopBlock(((BlockState) holder).getBlock());
-        }
-        return false;
-    }
+    // isShopChest/isShopBlock (block-level shop detection) moved to ShopBlockService
+    // (PAR-282) — they are block geometry, not sign-line logic, and hosting them there
+    // lets ShopBlockService depend on this class directly (isValid) with no back-edge,
+    // dissolving the former ShopBlockUtil↔ChestShopSign construction cycle.
 
     public Block getShopBlock(InventoryHolder holder) {
         if (holder instanceof DoubleChest) {

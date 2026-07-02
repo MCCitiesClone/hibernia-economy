@@ -1,5 +1,6 @@
 package io.paradaux.chestshop.listeners;
 
+import io.paradaux.chestshop.services.ShopBlockService;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import io.paradaux.chestshop.utils.BlockUtil;
@@ -9,7 +10,6 @@ import io.paradaux.chestshop.context.ShopDestroyedContext;
 import io.paradaux.chestshop.services.AccountService;
 import io.paradaux.chestshop.services.ShopService;
 import io.paradaux.chestshop.signs.ChestShopSign;
-import io.paradaux.chestshop.utils.ShopBlockUtil;
 import io.paradaux.hibernia.framework.i18n.Message;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -48,17 +48,17 @@ public class SignBreak implements Listener {
     private final Message message;
     private final ChestShopConfiguration config;
     private final ChestShopSign chestShopSign;
-    private final ShopBlockUtil shopBlockUtil;
+    private final ShopBlockService shopBlockService;
 
     @Inject
     public SignBreak(AccountService accounts, ShopService shops, Message message,
-                     ChestShopConfiguration config, ChestShopSign chestShopSign, ShopBlockUtil shopBlockUtil) {
+                     ChestShopConfiguration config, ChestShopSign chestShopSign, ShopBlockService shopBlockService) {
         this.accounts = accounts;
         this.shops = shops;
         this.message = message;
         this.config = config;
         this.chestShopSign = chestShopSign;
-        this.shopBlockUtil = shopBlockUtil;
+        this.shopBlockService = shopBlockService;
     }
 
     public void handlePhysicsBreak(Block block) {
@@ -177,7 +177,7 @@ public class SignBreak implements Listener {
     }
 
     public void sendShopDestroyed(Sign sign, Player player) {
-        Container connectedContainer = shopBlockUtil.findConnectedContainer(sign.getBlock());
+        Container connectedContainer = shopBlockService.findConnectedContainer(sign.getBlock());
 
         shops.onDestroyed(new ShopDestroyedContext(player, sign, connectedContainer));
     }

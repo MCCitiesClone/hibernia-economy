@@ -1,5 +1,6 @@
 package io.paradaux.chestshop.listeners;
 
+import io.paradaux.chestshop.services.ShopBlockService;
 import io.paradaux.chestshop.services.InventoryService;
 import io.paradaux.chestshop.services.MaterialService;
 import com.google.inject.Inject;
@@ -18,7 +19,6 @@ import io.paradaux.chestshop.services.InfoService;
 import io.paradaux.chestshop.services.ItemService;
 import io.paradaux.chestshop.services.TransactionService;
 import io.paradaux.chestshop.signs.ChestShopSign;
-import io.paradaux.chestshop.utils.ShopBlockUtil;
 import io.paradaux.hibernia.framework.i18n.Message;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -76,14 +76,14 @@ public class PlayerInteract implements Listener {
     private final Security security;
     private final ChestShopConfiguration config;
     private final ChestShopSign chestShopSign;
-    private final ShopBlockUtil shopBlockUtil;
+    private final ShopBlockService shopBlockService;
     private final InventoryService inventoryService;
     private final MaterialService materialService;
 
     @Inject
     public PlayerInteract(TransactionService transactions, InfoService info, AccountService accounts,
                           EconomyService economy, ItemService items, Message message, Security security,
-                          ChestShopConfiguration config, ChestShopSign chestShopSign, ShopBlockUtil shopBlockUtil,
+                          ChestShopConfiguration config, ChestShopSign chestShopSign, ShopBlockService shopBlockService,
                           InventoryService inventoryService, MaterialService materialService) {
         this.transactions = transactions;
         this.info = info;
@@ -94,7 +94,7 @@ public class PlayerInteract implements Listener {
         this.security = security;
         this.config = config;
         this.chestShopSign = chestShopSign;
-        this.shopBlockUtil = shopBlockUtil;
+        this.shopBlockService = shopBlockService;
         this.inventoryService = inventoryService;
         this.materialService = materialService;
     }
@@ -108,8 +108,8 @@ public class PlayerInteract implements Listener {
         Action action = event.getAction();
         Player player = event.getPlayer();
 
-        if (config.isUseBuiltInProtection() && shopBlockUtil.couldBeShopContainer(block)) {
-            Sign sign = shopBlockUtil.getConnectedSign(block);
+        if (config.isUseBuiltInProtection() && shopBlockService.couldBeShopContainer(block)) {
+            Sign sign = shopBlockService.getConnectedSign(block);
             if (sign != null) {
 
                 if (!security.canView(player, block, config.isTurnOffDefaultProtectionWhenProtectedExternally())) {
@@ -260,7 +260,7 @@ public class PlayerInteract implements Listener {
         Action buy = config.isReverseButtons() ? LEFT_CLICK_BLOCK : RIGHT_CLICK_BLOCK;
         BigDecimal price = (action == buy ? PriceUtil.getExactBuyPrice(prices) : PriceUtil.getExactSellPrice(prices));
 
-        Container shopBlock = shopBlockUtil.findConnectedContainer(sign);
+        Container shopBlock = shopBlockService.findConnectedContainer(sign);
         Inventory ownerInventory = shopBlock != null ? shopBlock.getInventory() : null;
 
         ItemStack item = items.parse(material);
@@ -348,7 +348,7 @@ public class PlayerInteract implements Listener {
     }
 
     private void showChestGUI(Player player, Block signBlock, Sign sign) {
-        Container container = shopBlockUtil.findConnectedContainer(sign);
+        Container container = shopBlockService.findConnectedContainer(sign);
 
         if (container == null) {
             message.send(player, "chestshop.NO_CHEST_DETECTED");

@@ -65,11 +65,11 @@ public class ShopService {
     private final MarketListener market;
     private final ChestShopConfiguration config;
     private final ChestShopSign chestShopSign;
-    private final ShopBlockUtil shopBlockUtil;
+    private final ShopBlockService shopBlockService;
 
     @Inject
     public ShopService(AccountService accounts, EconomyService economy, ItemService items, ProtectionService protection, StockCounterModule stockCounter, Message message, Security security, MarketListener market,
-                       ChestShopConfiguration config, ChestShopSign chestShopSign, ShopBlockUtil shopBlockUtil) {
+                       ChestShopConfiguration config, ChestShopSign chestShopSign, ShopBlockService shopBlockService) {
         this.accounts = accounts;
         this.economy = economy;
         this.items = items;
@@ -80,7 +80,7 @@ public class ShopService {
         this.market = market;
         this.config = config;
         this.chestShopSign = chestShopSign;
-        this.shopBlockUtil = shopBlockUtil;
+        this.shopBlockService = shopBlockService;
     }
 
     /**
@@ -136,7 +136,7 @@ public class ShopService {
 
         if (item == null) {
             if (config.isAllowAutoItemFill() && itemCode.equals(AUTOFILL_CODE)) {
-                Container container = shopBlockUtil.findConnectedContainer(ctx.getSign());
+                Container container = shopBlockService.findConnectedContainer(ctx.getSign());
                 if (container != null) {
                     for (ItemStack stack : container.getInventory().getContents()) {
                         if (!MaterialUtil.isEmpty(stack)) {
@@ -235,7 +235,7 @@ public class ShopService {
     /** Require a backing chest (non-admin) the creator may access. */
     private void checkChest(PreShopCreationContext ctx) {
         String nameLine = ChestShopSign.getOwner(ctx.getSignLines());
-        Container connectedContainer = shopBlockUtil.findConnectedContainer(ctx.getSign().getBlock());
+        Container connectedContainer = shopBlockService.findConnectedContainer(ctx.getSign().getBlock());
 
         if (connectedContainer == null) {
             if (!chestShopSign.isAdminShop(nameLine)) {
@@ -288,7 +288,7 @@ public class ShopService {
             ctx.setOutcome(CreationOutcome.NO_PERMISSION_FOR_TERRAIN);
             return;
         }
-        Container connectedContainer = shopBlockUtil.findConnectedContainer(ctx.getSign().getBlock());
+        Container connectedContainer = shopBlockService.findConnectedContainer(ctx.getSign().getBlock());
         Location containerLocation = connectedContainer != null ? connectedContainer.getLocation() : null;
         if (!protection.canBuild(player, containerLocation, ctx.getSign().getLocation())) {
             ctx.setOutcome(CreationOutcome.NO_PERMISSION_FOR_TERRAIN);
@@ -507,7 +507,7 @@ public class ShopService {
 
         BlockFace shopBlockFace = null;
         for (BlockFace face : ShopBlockUtil.CHEST_EXTENSION_FACES) {
-            if (shopBlockUtil.couldBeShopContainer(signBlock.getRelative(face))) {
+            if (shopBlockService.couldBeShopContainer(signBlock.getRelative(face))) {
                 shopBlockFace = face;
                 break;
             }

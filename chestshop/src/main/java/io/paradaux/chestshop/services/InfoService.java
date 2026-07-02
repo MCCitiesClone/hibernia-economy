@@ -11,7 +11,6 @@ import io.paradaux.chestshop.signs.ChestShopSign;
 import io.paradaux.chestshop.plugins.ShowItemHook;
 import io.paradaux.chestshop.utils.PriceUtil;
 import io.paradaux.chestshop.utils.StringUtil;
-import io.paradaux.chestshop.utils.ShopBlockUtil;
 import net.kyori.adventure.text.Component;
 import org.bukkit.ChatColor;
 import org.bukkit.Color;
@@ -72,13 +71,13 @@ public class InfoService {
     private final Message message;
     private final ChestShopConfiguration config;
     private final ChestShopSign chestShopSign;
-    private final ShopBlockUtil shopBlockUtil;
+    private final ShopBlockService shopBlockService;
     private final InventoryService inventoryService;
     private final ShowItemHook showItem;
 
     @Inject
     public InfoService(AccountService accounts, EconomyService economy, ItemService items, Message message,
-                       ChestShopConfiguration config, ChestShopSign chestShopSign, ShopBlockUtil shopBlockUtil,
+                       ChestShopConfiguration config, ChestShopSign chestShopSign, ShopBlockService shopBlockService,
                        InventoryService inventoryService, ShowItemHook showItem) {
         this.accounts = accounts;
         this.economy = economy;
@@ -86,7 +85,7 @@ public class InfoService {
         this.message = message;
         this.config = config;
         this.chestShopSign = chestShopSign;
-        this.shopBlockUtil = shopBlockUtil;
+        this.shopBlockService = shopBlockService;
         this.inventoryService = inventoryService;
         this.showItem = showItem;
     }
@@ -125,7 +124,7 @@ public class InfoService {
             return;
         }
 
-        Container shopBlock = shopBlockUtil.findConnectedContainer(sign);
+        Container shopBlock = shopBlockService.findConnectedContainer(sign);
         String stock = shopBlock != null
                 ? String.valueOf(inventoryService.getAmount(item, shopBlock.getInventory()))
                 : "∞"; // Infinity symbol

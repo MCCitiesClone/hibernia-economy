@@ -1,7 +1,7 @@
 package io.paradaux.chestshop.listeners;
 
 import com.google.inject.Inject;
-import io.paradaux.chestshop.signs.ChestShopSign;
+import io.paradaux.chestshop.services.ShopBlockService;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
 import org.bukkit.block.DoubleChest;
@@ -19,11 +19,11 @@ import static io.paradaux.chestshop.utils.ImplementationAdapter.getHolder;
  */
 public class PlayerTeleport implements Listener {
 
-    private final ChestShopSign chestShopSign;
+    private final ShopBlockService shopBlockService;
 
     @Inject
-    public PlayerTeleport(ChestShopSign chestShopSign) {
-        this.chestShopSign = chestShopSign;
+    public PlayerTeleport(ShopBlockService shopBlockService) {
+        this.shopBlockService = shopBlockService;
     }
 
     @EventHandler
@@ -40,7 +40,7 @@ public class PlayerTeleport implements Listener {
             container = ((BlockState) holder).getBlock();
         }
 
-        if (chestShopSign.isShopBlock(container)) {
+        if (shopBlockService.isShopBlock(container)) {
             event.getPlayer().closeInventory();
         }
     }

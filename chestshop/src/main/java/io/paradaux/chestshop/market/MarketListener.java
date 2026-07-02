@@ -1,12 +1,12 @@
 package io.paradaux.chestshop.market;
 
+import io.paradaux.chestshop.services.ShopBlockService;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import io.paradaux.chestshop.context.ShopCreatedContext;
 import io.paradaux.chestshop.context.ShopDestroyedContext;
 import io.paradaux.chestshop.context.TransactionContext;
 import io.paradaux.chestshop.signs.ChestShopSign;
-import io.paradaux.chestshop.utils.ShopBlockUtil;
 import io.paradaux.treasury.api.MarketApi;
 import org.bukkit.Location;
 import org.bukkit.block.Sign;
@@ -43,15 +43,15 @@ public class MarketListener implements Listener {
     private final MarketRecords records;
     private final io.paradaux.chestshop.services.ItemCodeService itemCodes;
     private final ChestShopSign chestShopSign;
-    private final ShopBlockUtil shopBlockUtil;
+    private final ShopBlockService shopBlockService;
 
     @Inject
     public MarketListener(MarketRecords records, io.paradaux.chestshop.services.ItemCodeService itemCodes,
-                          ChestShopSign chestShopSign, ShopBlockUtil shopBlockUtil) {
+                          ChestShopSign chestShopSign, ShopBlockService shopBlockService) {
         this.records = records;
         this.itemCodes = itemCodes;
         this.chestShopSign = chestShopSign;
-        this.shopBlockUtil = shopBlockUtil;
+        this.shopBlockService = shopBlockService;
     }
 
     // Invoked directly by TransactionService#process (was a @MONITOR TransactionContext listener).
@@ -116,7 +116,7 @@ public class MarketListener implements Listener {
         try {
             InventoryHolder holder = event.getInventory().getHolder();
             if (holder == null) return;
-            List<Sign> signs = shopBlockUtil.findConnectedShopSigns(holder);
+            List<Sign> signs = shopBlockService.findConnectedShopSigns(holder);
             if (signs.isEmpty()) return;
             Inventory inv = event.getInventory();
             MarketApi market = MarketHook.market();

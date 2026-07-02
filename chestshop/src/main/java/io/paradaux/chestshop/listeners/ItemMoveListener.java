@@ -2,7 +2,7 @@ package io.paradaux.chestshop.listeners;
 
 import com.google.inject.Inject;
 import io.paradaux.chestshop.model.config.ChestShopConfiguration;
-import io.paradaux.chestshop.signs.ChestShopSign;
+import io.paradaux.chestshop.services.ShopBlockService;
 import org.bukkit.block.BlockState;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -19,13 +19,13 @@ public class ItemMoveListener implements Listener {
 
     private final StockCounterModule stockCounter;
     private final ChestShopConfiguration config;
-    private final ChestShopSign chestShopSign;
+    private final ShopBlockService shopBlockService;
 
     @Inject
-    public ItemMoveListener(StockCounterModule stockCounter, ChestShopConfiguration config, ChestShopSign chestShopSign) {
+    public ItemMoveListener(StockCounterModule stockCounter, ChestShopConfiguration config, ShopBlockService shopBlockService) {
         this.stockCounter = stockCounter;
         this.config = config;
-        this.chestShopSign = chestShopSign;
+        this.shopBlockService = shopBlockService;
     }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
@@ -34,12 +34,12 @@ public class ItemMoveListener implements Listener {
 
         if (!config.isTurnOffHopperProtection() && !(destinationHolder instanceof BlockState)) {
             InventoryHolder sourceHolder = getHolder(event.getSource(), false);
-            if (chestShopSign.isShopBlock(sourceHolder)) {
+            if (shopBlockService.isShopBlock(sourceHolder)) {
                 event.setCancelled(true);
                 return;
             }
         }
-        if (config.isUseStockCounter() && chestShopSign.isShopBlock(destinationHolder)) {
+        if (config.isUseStockCounter() && shopBlockService.isShopBlock(destinationHolder)) {
             stockCounter.updateCounterOnItemMoveEvent(event.getItem(), destinationHolder);
         }
     }

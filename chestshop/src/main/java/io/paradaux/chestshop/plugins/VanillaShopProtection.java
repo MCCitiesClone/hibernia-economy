@@ -1,12 +1,12 @@
 package io.paradaux.chestshop.plugins;
 
+import io.paradaux.chestshop.services.ShopBlockService;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import io.paradaux.chestshop.context.protection.ProtectionCheckContext;
 import io.paradaux.chestshop.permission.Permissions;
 import io.paradaux.chestshop.services.AccountService;
 import io.paradaux.chestshop.signs.ChestShopSign;
-import io.paradaux.chestshop.utils.ShopBlockUtil;
 import org.bukkit.block.Block;
 import org.bukkit.block.Sign;
 import org.bukkit.entity.Player;
@@ -28,13 +28,13 @@ public class VanillaShopProtection {
 
     private final AccountService accounts;
     private final ChestShopSign chestShopSign;
-    private final ShopBlockUtil shopBlockUtil;
+    private final ShopBlockService shopBlockService;
 
     @Inject
-    public VanillaShopProtection(AccountService accounts, ChestShopSign chestShopSign, ShopBlockUtil shopBlockUtil) {
+    public VanillaShopProtection(AccountService accounts, ChestShopSign chestShopSign, ShopBlockService shopBlockService) {
         this.accounts = accounts;
         this.chestShopSign = chestShopSign;
-        this.shopBlockUtil = shopBlockUtil;
+        this.shopBlockService = shopBlockService;
     }
 
     // Invoked directly by ProtectionService (was a NORMAL ProtectionCheckContext listener).
@@ -68,8 +68,8 @@ public class VanillaShopProtection {
             }
         }
 
-        if (shopBlockUtil.couldBeShopContainer(block)) {
-            Sign sign = shopBlockUtil.getConnectedSign(block);
+        if (shopBlockService.couldBeShopContainer(block)) {
+            Sign sign = shopBlockService.getConnectedSign(block);
 
             if (sign != null && !isShopMember(player, sign)) {
                 return false;
@@ -80,7 +80,7 @@ public class VanillaShopProtection {
     }
 
     private boolean canBeProtected(Block block) {
-        return isSign(block) || shopBlockUtil.couldBeShopContainer(block);
+        return isSign(block) || shopBlockService.couldBeShopContainer(block);
     }
 
     private boolean isShopMember(Player player, Sign sign) {

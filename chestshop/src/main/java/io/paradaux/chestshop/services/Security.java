@@ -5,7 +5,6 @@ import com.google.inject.Singleton;
 import io.paradaux.chestshop.model.config.ChestShopConfiguration;
 import io.paradaux.chestshop.signs.ChestShopSign;
 import io.paradaux.chestshop.utils.BlockUtil;
-import io.paradaux.chestshop.utils.ShopBlockUtil;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.Sign;
@@ -29,16 +28,16 @@ public class Security {
     private final AccountService accounts;
     private final ChestShopConfiguration config;
     private final ChestShopSign chestShopSign;
-    private final ShopBlockUtil shopBlockUtil;
+    private final ShopBlockService shopBlockService;
 
     @Inject
     public Security(ProtectionService protection, AccountService accounts, ChestShopConfiguration config,
-                    ChestShopSign chestShopSign, ShopBlockUtil shopBlockUtil) {
+                    ChestShopSign chestShopSign, ShopBlockService shopBlockService) {
         this.protection = protection;
         this.accounts = accounts;
         this.config = config;
         this.chestShopSign = chestShopSign;
-        this.shopBlockUtil = shopBlockUtil;
+        this.shopBlockService = shopBlockService;
     }
 
     public boolean canAccess(Player player, Block block) {
@@ -67,7 +66,7 @@ public class Security {
         for (BlockFace face : BLOCKS_AROUND) {
             Block block = sign.getRelative(face);
 
-            if (!shopBlockUtil.couldBeShopContainer(block)) {
+            if (!shopBlockService.couldBeShopContainer(block)) {
                 continue;
             }
             if (!canAccess(player, block)) {
