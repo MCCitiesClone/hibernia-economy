@@ -3,7 +3,7 @@ package io.paradaux.chestshop.listeners;
 import io.paradaux.chestshop.services.ShopBlockService;
 import com.google.inject.Inject;
 import io.paradaux.chestshop.model.config.ChestShopConfiguration;
-import io.paradaux.chestshop.permission.Permissions;
+import io.paradaux.chestshop.utils.Permissions;
 import io.paradaux.chestshop.services.Security;
 import io.paradaux.chestshop.services.InfoService;
 import io.paradaux.chestshop.services.ChestShopSign;

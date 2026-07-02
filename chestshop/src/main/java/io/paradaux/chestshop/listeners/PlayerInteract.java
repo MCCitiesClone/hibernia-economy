@@ -8,7 +8,7 @@ import io.paradaux.chestshop.model.config.ChestShopConfiguration;
 import io.paradaux.chestshop.model.Account;
 import io.paradaux.chestshop.model.PreTransactionContext;
 import io.paradaux.chestshop.model.TransactionContext;
-import io.paradaux.chestshop.permission.Permissions;
+import io.paradaux.chestshop.utils.Permissions;
 import io.paradaux.chestshop.services.Security;
 import io.paradaux.chestshop.services.AccountService;
 import io.paradaux.chestshop.services.InfoService;
@@ -37,7 +37,7 @@ import java.util.logging.Level;
 
 import static io.paradaux.chestshop.utils.ImplementationAdapter.getState;
 import static io.paradaux.chestshop.utils.BlockUtil.isSign;
-import static io.paradaux.chestshop.permission.Permissions.OTHER_NAME_CREATE;
+import static io.paradaux.chestshop.utils.Permissions.OTHER_NAME_CREATE;
 import static io.paradaux.chestshop.services.ChestShopSign.*;
 import static org.bukkit.event.block.Action.LEFT_CLICK_BLOCK;
 import static org.bukkit.event.block.Action.RIGHT_CLICK_BLOCK;

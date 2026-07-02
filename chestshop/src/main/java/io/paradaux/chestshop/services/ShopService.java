@@ -3,7 +3,7 @@ package io.paradaux.chestshop.services;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import io.paradaux.chestshop.ChestShop;
-import io.paradaux.chestshop.permission.Permissions;
+import io.paradaux.chestshop.utils.Permissions;
 import io.paradaux.chestshop.model.config.ChestShopConfiguration;
 import io.paradaux.hibernia.framework.i18n.Message;
 import io.paradaux.chestshop.model.Account;
@@ -35,7 +35,7 @@ import java.math.BigDecimal;
 import java.util.Locale;
 import java.util.logging.Level;
 
-import static io.paradaux.chestshop.permission.Permissions.NOFEE;
+import static io.paradaux.chestshop.utils.Permissions.NOFEE;
 import static io.paradaux.chestshop.services.ChestShopSign.AUTOFILL_CODE;
 
 /**

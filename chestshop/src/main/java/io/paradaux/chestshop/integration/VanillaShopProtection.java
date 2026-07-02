@@ -4,7 +4,7 @@ import io.paradaux.chestshop.services.ShopBlockService;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import io.paradaux.chestshop.model.ProtectionCheckContext;
-import io.paradaux.chestshop.permission.Permissions;
+import io.paradaux.chestshop.utils.Permissions;
 import io.paradaux.chestshop.services.AccountService;
 import io.paradaux.chestshop.services.ChestShopSign;
 import org.bukkit.block.Block;

@@ -1,4 +1,4 @@
-package io.paradaux.chestshop.permission;
+package io.paradaux.chestshop.utils;
 
 import org.bukkit.entity.Player;
 

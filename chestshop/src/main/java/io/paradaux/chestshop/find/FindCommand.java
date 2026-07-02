@@ -4,7 +4,7 @@ import com.google.inject.Inject;
 import io.paradaux.chestshop.find.preview.PreviewHandler;
 import io.paradaux.chestshop.services.MarketHook;
 import io.paradaux.chestshop.services.MarketResyncService;
-import io.paradaux.chestshop.permission.Permissions;
+import io.paradaux.chestshop.utils.Permissions;
 import io.paradaux.chestshop.services.ItemCodeService;
 import io.paradaux.chestshop.services.ItemService;
 import io.paradaux.chestshop.services.ChestShopSign;
