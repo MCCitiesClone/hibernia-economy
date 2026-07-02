@@ -1,4 +1,4 @@
-package io.paradaux.chestshop.market;
+package io.paradaux.chestshop.services;
 
 import io.paradaux.chestshop.ChestShop;
 import io.paradaux.business.api.BusinessApi;

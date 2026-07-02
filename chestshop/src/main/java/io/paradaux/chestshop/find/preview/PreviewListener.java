@@ -2,7 +2,7 @@ package io.paradaux.chestshop.find.preview;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import io.paradaux.chestshop.market.MarketHook;
+import io.paradaux.chestshop.services.MarketHook;
 import io.paradaux.treasury.api.market.ShopResult;
 import org.bukkit.Chunk;
 import org.bukkit.entity.Player;

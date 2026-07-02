@@ -12,7 +12,7 @@ import io.paradaux.chestshop.model.ShopCreatedContext;
 import io.paradaux.chestshop.model.ShopDestroyedContext;
 import io.paradaux.chestshop.model.PreShopCreationContext.CreationOutcome;
 import io.paradaux.chestshop.listeners.StockCounterModule;
-import io.paradaux.chestshop.market.MarketListener;
+import io.paradaux.chestshop.listeners.MarketListener;
 import io.paradaux.chestshop.utils.LocationUtil;
 import io.paradaux.chestshop.utils.MaterialUtil;
 import io.paradaux.chestshop.utils.PriceUtil;

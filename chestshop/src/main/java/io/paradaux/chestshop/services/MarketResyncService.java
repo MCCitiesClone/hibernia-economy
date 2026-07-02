@@ -1,12 +1,8 @@
-package io.paradaux.chestshop.market;
+package io.paradaux.chestshop.services;
 
-import io.paradaux.chestshop.services.ShopBlockService;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import io.paradaux.chestshop.model.Account;
-import io.paradaux.chestshop.services.AccountService;
-import io.paradaux.chestshop.services.ItemCodeService;
-import io.paradaux.chestshop.services.ChestShopSign;
 import io.paradaux.hibernia.framework.i18n.Message;
 import io.paradaux.treasury.api.market.ShopLocation;
 import org.bukkit.Chunk;

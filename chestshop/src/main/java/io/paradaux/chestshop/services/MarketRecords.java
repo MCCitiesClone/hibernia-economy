@@ -1,13 +1,9 @@
-package io.paradaux.chestshop.market;
+package io.paradaux.chestshop.services;
 
-import io.paradaux.chestshop.services.InventoryService;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import io.paradaux.chestshop.services.ItemCodeService;
-import io.paradaux.chestshop.services.ItemService;
 import io.paradaux.chestshop.utils.MaterialUtil;
 import io.paradaux.chestshop.utils.PriceUtil;
-import io.paradaux.chestshop.services.ChestShopSign;
 import io.paradaux.business.api.BusinessApi;
 import io.paradaux.business.model.Firm;
 import io.paradaux.treasury.api.TreasuryApi;
@@ -35,7 +31,7 @@ import java.util.UUID;
  * rather than the static locator (PAR-282).
  */
 @Singleton
-final class MarketRecords {
+public class MarketRecords {
 
     /** Mirrors ChestShop's synthetic-UUID scheme for business accounts: UUID(MSB, accountId). */
     static final long BUSINESS_UUID_MSB = 0xC5B0000000000000L;
@@ -51,10 +47,10 @@ final class MarketRecords {
         this.inventoryService = inventoryService;
     }
 
-    record Owner(Integer accountId, String type, Integer firmId, UUID ownerUuid, boolean admin) {}
+    public record Owner(Integer accountId, String type, Integer firmId, UUID ownerUuid, boolean admin) {}
 
     /** Resolve the shop's owning account from the ChestShop owner-account UUID. */
-    Owner ownerFromUuid(UUID ownerUuid, boolean adminShop) {
+    public Owner ownerFromUuid(UUID ownerUuid, boolean adminShop) {
         if (adminShop || ownerUuid == null) {
             return new Owner(null, null, null, null, true);
         }
@@ -185,12 +181,12 @@ final class MarketRecords {
         }
     }
 
-    int stockOf(ItemStack item, Inventory inventory) {
+    public int stockOf(ItemStack item, Inventory inventory) {
         return inventory == null ? 0 : inventoryService.getAmount(item, inventory);
     }
 
     /** Remaining free space for the item in the container; null if unknown (no inventory). */
-    Integer capacityOf(ItemStack item, Inventory inventory) {
+    public Integer capacityOf(ItemStack item, Inventory inventory) {
         return inventory == null ? null : inventoryService.getRemainingCapacity(item, inventory);
     }
 
@@ -199,7 +195,7 @@ final class MarketRecords {
     }
 
     // ── DTO builders ──
-    ChestShopSaleRecord sale(Sign sign, ItemStack item, int quantity, UUID customer,
+    public ChestShopSaleRecord sale(Sign sign, ItemStack item, int quantity, UUID customer,
                                     Owner owner, BigDecimal total, BigDecimal tax,
                                     String direction, Integer shopStock, Long txnId) {
         Location l = sign.getLocation();
@@ -215,7 +211,7 @@ final class MarketRecords {
                 owner.admin() ? null : shopStock);
     }
 
-    ChestShopShopRecord shop(Sign sign, ItemStack item, Owner owner,
+    public ChestShopShopRecord shop(Sign sign, ItemStack item, Owner owner,
                              Integer currentStock, Integer estimatedCapacity) {
         Location l = sign.getLocation();
         String priceLine = sign.getLine(ChestShopSign.PRICE_LINE);
@@ -235,7 +231,7 @@ final class MarketRecords {
                 owner.admin() ? null : estimatedCapacity, worldUuid(l));
     }
 
-    int totalAmount(ItemStack[] stock) {
+    public int totalAmount(ItemStack[] stock) {
         return java.util.Arrays.stream(stock).filter(Objects::nonNull).mapToInt(ItemStack::getAmount).sum();
     }
 

@@ -22,7 +22,7 @@ import io.paradaux.chestshop.model.ShopDestroyedContext;
 import io.paradaux.chestshop.model.TransactionContext;
 import io.paradaux.chestshop.listeners.SignBreak;
 import io.paradaux.chestshop.listeners.StockCounterModule;
-import io.paradaux.chestshop.market.MarketListener;
+import io.paradaux.chestshop.listeners.MarketListener;
 import io.paradaux.chestshop.listeners.RestrictedSign;
 import io.paradaux.chestshop.utils.ImplementationAdapter;
 import io.paradaux.chestshop.utils.InventoryUtil;

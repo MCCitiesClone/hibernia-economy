@@ -2,8 +2,8 @@ package io.paradaux.chestshop.find;
 
 import com.google.inject.Inject;
 import io.paradaux.chestshop.find.preview.PreviewHandler;
-import io.paradaux.chestshop.market.MarketHook;
-import io.paradaux.chestshop.market.MarketResyncService;
+import io.paradaux.chestshop.services.MarketHook;
+import io.paradaux.chestshop.services.MarketResyncService;
 import io.paradaux.chestshop.permission.Permissions;
 import io.paradaux.chestshop.services.ItemCodeService;
 import io.paradaux.chestshop.services.ItemService;
