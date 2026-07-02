@@ -38,9 +38,9 @@ public class Toggle implements CommandHandler {
     @Description("Toggle shop sale notifications on/off")
     public void toggle(@Sender Player player) {
         Account account = accounts.getOrCreateAccount(player);
-        account.setIgnoreMessages(!account.isIgnoringMessages());
+        account.setIgnoreMessages(!account.isIgnoreMessages());
 
-        message.send(player, account.isIgnoringMessages()
+        message.send(player, account.isIgnoreMessages()
                 ? "chestshop.TOGGLE_MESSAGES_OFF" : "chestshop.TOGGLE_MESSAGES_ON");
 
         try {

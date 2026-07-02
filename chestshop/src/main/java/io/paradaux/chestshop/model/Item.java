@@ -1,5 +1,8 @@
 package io.paradaux.chestshop.model;
 
+import lombok.Getter;
+import lombok.Setter;
+
 /**
  * A row of the {@code items} table ({@code items.db}): an auto-increment id ↔ the
  * serialized (Base64) item blob a shop references by a short code on its sign. A plain
@@ -8,6 +11,8 @@ package io.paradaux.chestshop.model;
  *
  * @author Andrzej Pomirski
  */
+@Getter
+@Setter
 public class Item {
 
     private int id;
@@ -18,23 +23,6 @@ public class Item {
     }
 
     public Item(String base64ItemCode) {
-        this.base64ItemCode = base64ItemCode;
-    }
-
-    public int getId() {
-        return id;
-    }
-
-    /** Set by MyBatis from the generated key on insert. */
-    public void setId(int id) {
-        this.id = id;
-    }
-
-    public String getBase64ItemCode() {
-        return base64ItemCode;
-    }
-
-    public void setBase64ItemCode(String base64ItemCode) {
         this.base64ItemCode = base64ItemCode;
     }
 }

@@ -1,5 +1,7 @@
 package io.paradaux.chestshop.model;
 
+import lombok.Getter;
+import lombok.Setter;
 import org.bukkit.entity.Player;
 
 import java.util.UUID;
@@ -10,7 +12,10 @@ import java.util.UUID;
  * Since Bukkit API is not thread-safe, this should work
  * @author Andrzej Pomirski
  */
+@Getter
+@Setter
 public class PlayerDTO {
+
     private UUID uniqueId;
     private String name;
 
@@ -22,21 +27,5 @@ public class PlayerDTO {
     public PlayerDTO(Player player) {
         this.uniqueId = player.getUniqueId();
         this.name = player.getName();
-    }
-
-    public UUID getUniqueId() {
-        return uniqueId;
-    }
-
-    public void setUniqueId(UUID uniqueId) {
-        this.uniqueId = uniqueId;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
     }
 }
