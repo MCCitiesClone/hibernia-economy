@@ -1,4 +1,4 @@
-package io.paradaux.chestshop.economy;
+package io.paradaux.chestshop.adapters;
 
 import org.jetbrains.annotations.Nullable;
 

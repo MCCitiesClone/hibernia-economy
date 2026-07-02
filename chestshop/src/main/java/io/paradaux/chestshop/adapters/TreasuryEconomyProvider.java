@@ -1,4 +1,4 @@
-package io.paradaux.chestshop.economy;
+package io.paradaux.chestshop.adapters;
 
 import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.services.BusinessAccountService;
