@@ -1,5 +1,6 @@
 package io.paradaux.chestshop.services;
 
+import io.paradaux.chestshop.utils.Messages;
 import org.bukkit.event.block.Action;
 import io.paradaux.chestshop.utils.AdminInventory;
 import java.util.Arrays;
@@ -111,10 +112,11 @@ public class TransactionService {
     private final InventoryService inventoryService;
     private final MaterialService materialService;
     private final ShowItemHook showItem;
+    private final BungeeMessenger bungee;
 
     @Inject
     public TransactionService(EconomyService economy, ShopService shops, AccountService accounts, SignBreak signBreak, StockCounterModule stockCounter, Message message, ItemService items, MarketListener market,
-                              ChestShopConfiguration config, ChestShopSign chestShopSign, ShopBlockService shopBlockService, InventoryService inventoryService, MaterialService materialService, ShowItemHook showItem) {
+                              ChestShopConfiguration config, ChestShopSign chestShopSign, ShopBlockService shopBlockService, InventoryService inventoryService, MaterialService materialService, ShowItemHook showItem, BungeeMessenger bungee) {
         this.economy = economy;
         this.shops = shops;
         this.accounts = accounts;
@@ -129,6 +131,7 @@ public class TransactionService {
         this.inventoryService = inventoryService;
         this.materialService = materialService;
         this.showItem = showItem;
+        this.bungee = bungee;
     }
 
     private static final String BUY_LOG = "%1$s bought %2$s for %3$.2f from %4$s at %5$s";
@@ -775,9 +778,9 @@ public class TransactionService {
             if (config.isShowitemMessage() && showItem.sendMessage(message, player, key, stock, Collections.emptyMap(), replacements)) {
                 return;
             }
-            player.sendMessage(message.component(key, ChestShop.values(true, ImmutableMap.of("material", itemList, "item", itemList), replacements)));
+            player.sendMessage(message.component(key, Messages.values(true, ImmutableMap.of("material", itemList, "item", itemList), replacements)));
         } else {
-            ChestShop.sendBungeeMessage(ownerAccount.getName(), key, ImmutableMap.of("material", itemList, "item", itemList), replacements);
+            bungee.send(ownerAccount.getName(), key, ImmutableMap.of("material", itemList, "item", itemList), replacements);
         }
     }
 
@@ -1042,10 +1045,10 @@ public class TransactionService {
 
         if (player != null) {
             replacementMap.put("item", items.getItemList(event.getStock()));
-            player.sendMessage(message.component(key, ChestShop.values(true, replacementMap)));
+            player.sendMessage(message.component(key, Messages.values(true, replacementMap)));
         } else if (playerName != null) {
             replacementMap.put("item", items.getItemList(event.getStock()));
-            ChestShop.sendBungeeMessage(playerName, key, replacementMap);
+            bungee.send(playerName, key, replacementMap);
         }
     }
 }

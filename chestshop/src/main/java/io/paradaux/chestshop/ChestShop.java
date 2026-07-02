@@ -15,7 +15,6 @@ import io.paradaux.chestshop.listeners.SignCreate;
 import io.paradaux.chestshop.economy.EconomyProvider;
 import io.paradaux.chestshop.listeners.GarbageTextListener;
 import io.paradaux.chestshop.listeners.ItemMoveListener;
-import io.paradaux.chestshop.services.ItemAliasModule;
 import io.paradaux.chestshop.services.MetricsModule;
 import io.paradaux.chestshop.listeners.StockCounterModule;
 import io.paradaux.chestshop.listeners.PlayerConnect;
@@ -28,13 +27,7 @@ import io.paradaux.chestshop.services.ItemCodeService;
 import io.paradaux.chestshop.signs.RestrictedSign;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.common.io.ByteArrayDataOutput;
-import com.google.common.io.ByteStreams;
 
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.serializer.gson.GsonComponentSerializer;
-import net.md_5.bungee.api.chat.BaseComponent;
-import net.md_5.bungee.chat.ComponentSerializer;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Marker;
@@ -54,7 +47,6 @@ import org.bstats.charts.SingleLineChart;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Server;
-import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.event.Event;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.PluginDescriptionFile;
@@ -88,12 +80,11 @@ public class ChestShop extends JavaPlugin {
 
     private static Metrics bStats;
 
-    // Private references the plugin main class uses for its own enable-time orchestration
-    // (DB migration, account-cache load, BungeeCord message rendering). NOT a service
-    // locator — every other class injects its collaborators (PAR-282).
-    private static io.paradaux.hibernia.framework.i18n.Message message;
-    private static ItemCodeService itemCodes;
-    private static io.paradaux.chestshop.services.AccountService accounts;
+    // Instance references the plugin main class resolves at enable for its own
+    // orchestration (DB migration, account-cache load). Not a service locator — every
+    // other class injects its collaborators (PAR-282, PAR-300).
+    private ItemCodeService itemCodes;
+    private io.paradaux.chestshop.services.AccountService accounts;
 
     private static File dataFolder;
 
@@ -134,7 +125,7 @@ public class ChestShop extends JavaPlugin {
         // are CommandHandlers registered through Brigadier via CommandManager.
         // The framework Message bean is bound (no withoutMessages()) so both the
         // commander's error feedback and ChestShop's own command/listener output
-        // render from messages.properties via ChestShop.message().
+        // render from messages.properties via the injected framework Message bean.
         io.paradaux.hibernia.framework.guice.HiberniaModule hibernia =
                 io.paradaux.hibernia.framework.guice.HiberniaModule.forPlugin(this)
                         .scanConfiguration("io.paradaux.chestshop.model.config")
@@ -174,7 +165,6 @@ public class ChestShop extends JavaPlugin {
                 new io.paradaux.chestshop.guice.DatabaseModule(loadFile("users.db"), loadFile("items.db")));
         this.configurationLoader = injector.getInstance(
                 io.paradaux.hibernia.framework.configurator.ConfigurationLoader.class);
-        message = injector.getInstance(io.paradaux.hibernia.framework.i18n.Message.class);
         itemCodes = injector.getInstance(io.paradaux.chestshop.services.ItemCodeService.class);
         accounts = injector.getInstance(io.paradaux.chestshop.services.AccountService.class);
 
@@ -477,55 +467,9 @@ public class ChestShop extends JavaPlugin {
         return bStats;
     }
 
-    /**
-     * Build a placeholder-value map for the framework {@link io.paradaux.hibernia.framework.i18n.Message}:
-     * a base map plus key/value replacement pairs, optionally blanking {@code {prefix}}. Every ChestShop
-     * template begins with {@code {prefix}}, so {@code withPrefix=false} suppresses it (continuation lines).
-     */
-    public static Map<String, Object> values(boolean withPrefix, Map<String, String> base, String... replacements) {
-        Map<String, Object> values = new LinkedHashMap<>();
-        if (!withPrefix) {
-            values.put("prefix", "");
-        }
-        if (base != null) {
-            values.putAll(base);
-        }
-        for (int i = 0; i + 1 < replacements.length; i += 2) {
-            values.put(replacements[i], replacements[i + 1]);
-        }
-        return values;
-    }
-
     public static <E extends Event> E callEvent(E event) {
         Bukkit.getPluginManager().callEvent(event);
         return event;
-    }
-
-    public static void sendBungeeMessage(String playerName, String key, Map<String, String> replacementMap, String... replacements) {
-        sendBungeeMessage(playerName, message.component(key, values(true, replacementMap, replacements)));
-    }
-
-    public static void sendBungeeMessage(String playerName, String message) {
-        sendBungeeMessage(playerName, "Message", message);
-    }
-
-    public static void sendBungeeMessage(String playerName, BaseComponent[] message) {
-        sendBungeeMessage(playerName, "MessageRaw", ComponentSerializer.toString(message));
-    }
-
-    public static void sendBungeeMessage(String playerName, Component message) {
-        sendBungeeMessage(playerName, "MessageRaw", GsonComponentSerializer.gson().serialize(message));
-    }
-
-    private static void sendBungeeMessage(String playerName, String channel, String message) {
-        if (plugin.config != null && plugin.config.isBungeecordMessages() && !Bukkit.getOnlinePlayers().isEmpty()) {
-            ByteArrayDataOutput out = ByteStreams.newDataOutput();
-            out.writeUTF(channel);
-            out.writeUTF(playerName);
-            out.writeUTF(message);
-
-            Bukkit.getOnlinePlayers().iterator().next().sendPluginMessage(plugin, "BungeeCord", out.toByteArray());
-        }
     }
 
     public static void runInAsyncThread(Runnable runnable) {

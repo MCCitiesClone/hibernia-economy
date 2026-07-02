@@ -1,5 +1,7 @@
 package io.paradaux.chestshop.integration;
 
+import io.paradaux.chestshop.services.BungeeMessenger;
+import io.paradaux.chestshop.utils.Messages;
 import io.paradaux.chestshop.services.InventoryService;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
@@ -40,10 +42,12 @@ public class ShowItemHook {
     private static Plugin showItem = null;
 
     private final InventoryService inventoryService;
+    private final BungeeMessenger bungee;
 
     @Inject
-    public ShowItemHook(InventoryService inventoryService) {
+    public ShowItemHook(InventoryService inventoryService, BungeeMessenger bungee) {
         this.inventoryService = inventoryService;
+        this.bungee = bungee;
     }
 
     /** Record the hooked ShowItem plugin (process-wide) once it's available. */
@@ -84,14 +88,14 @@ public class ShowItemHook {
         // Render through the framework Message with the built item icon passed as the
         // {item} placeholder value: a ComponentLike renders inline, so the item (with its
         // hover) is embedded without MineDown's Replacer.
-        Map<String, Object> values = ChestShop.values(showPrefix, replacementMap, replacements);
+        Map<String, Object> values = Messages.values(showPrefix, replacementMap, replacements);
         values.put("item", itemComponent.build());
         Component component = message.component(key, values);
         if (player != null) {
             player.sendMessage(component);
             return true;
         } else if (playerName != null) {
-            ChestShop.sendBungeeMessage(playerName, component);
+            bungee.send(playerName, component);
             return true;
         }
 

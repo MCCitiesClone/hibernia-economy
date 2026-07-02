@@ -1,5 +1,6 @@
 package io.paradaux.chestshop.services;
 
+import io.paradaux.chestshop.utils.Messages;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
@@ -138,7 +139,7 @@ public class InfoService {
         );
         if (!config.isShowitemMessage()
                 || !showItem.sendMessage(message, sender, sender.getName(), "chestshop.shopinfo", false, new ItemStack[]{item}, replacementMap)) {
-            sender.sendMessage(message.component("chestshop.shopinfo", ChestShop.values(false, replacementMap)));
+            sender.sendMessage(message.component("chestshop.shopinfo", Messages.values(false, replacementMap)));
         }
 
         BigDecimal buyPrice = PriceUtil.getExactBuyPrice(pricesLine);
@@ -201,7 +202,7 @@ public class InfoService {
             Map<String, String> replacementMap = ImmutableMap.of("item", items.getName(item));
             if (!config.isShowitemMessage() || !(sender instanceof Player)
                     || !showItem.sendMessage(message, (Player) sender, sender.getName(), messageKey, false, new ItemStack[]{item}, replacementMap)) {
-                sender.sendMessage(message.component(messageKey, ChestShop.values(false, replacementMap)));
+                sender.sendMessage(message.component(messageKey, Messages.values(false, replacementMap)));
             }
         } catch (IllegalArgumentException e) {
             sender.sendMessage(ChatColor.RED + "Error while generating full name. Please contact an admin or take a look at the console/log!");
