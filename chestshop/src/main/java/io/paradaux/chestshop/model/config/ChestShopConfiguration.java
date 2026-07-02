@@ -142,9 +142,6 @@ public class ChestShopConfiguration {
     @ConfigurationValue(path = "ALLOW_AUTO_ITEM_FILL", defaultValue = "true")
     private boolean allowAutoItemFill;
 
-    @ConfigurationValue(path = "BUNGEECORD_MESSAGES", defaultValue = "false")
-    private boolean bungeecordMessages;
-
     @ConfigurationValue(path = "SHOW_MESSAGE_OUT_OF_STOCK", defaultValue = "true")
     private boolean showMessageOutOfStock;
 

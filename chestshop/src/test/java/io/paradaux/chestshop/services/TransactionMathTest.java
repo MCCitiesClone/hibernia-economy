@@ -25,7 +25,7 @@ class TransactionMathTest {
         when(config.getPricePrecision()).thenReturn(precision);
         // Only config is consulted by scalePrice; every other collaborator is unused here.
         return new TransactionService(null, null, null, null, null, null, null, null,
-                config, null, null, null, null, null, null);
+                config, null, null, null, null, null);
     }
 
     // ── getAmountOfAffordableItems: floor(wallet / pricePerItem) ───────────────

@@ -112,11 +112,10 @@ public class TransactionService {
     private final InventoryService inventoryService;
     private final MaterialService materialService;
     private final ShowItemHook showItem;
-    private final BungeeMessenger bungee;
 
     @Inject
     public TransactionService(EconomyService economy, ShopService shops, AccountService accounts, SignBreak signBreak, StockCounterModule stockCounter, Message message, ItemService items, MarketListener market,
-                              ChestShopConfiguration config, ChestShopSign chestShopSign, ShopBlockService shopBlockService, InventoryService inventoryService, MaterialService materialService, ShowItemHook showItem, BungeeMessenger bungee) {
+                              ChestShopConfiguration config, ChestShopSign chestShopSign, ShopBlockService shopBlockService, InventoryService inventoryService, MaterialService materialService, ShowItemHook showItem) {
         this.economy = economy;
         this.shops = shops;
         this.accounts = accounts;
@@ -131,7 +130,6 @@ public class TransactionService {
         this.inventoryService = inventoryService;
         this.materialService = materialService;
         this.showItem = showItem;
-        this.bungee = bungee;
     }
 
     private static final String BUY_LOG = "%1$s bought %2$s for %3$.2f from %4$s at %5$s";
@@ -760,8 +758,8 @@ public class TransactionService {
 
     private void sendMessageToOwner(Account ownerAccount, String key, String[] replacements, ItemStack... stock) {
         Player player = Bukkit.getPlayer(ownerAccount.getUuid());
-        if (player == null && !config.isBungeecordMessages()) {
-            return;
+        if (player == null) {
+            return; // owner isn't on this server — nothing to notify
         }
 
         if (config.getNotificationMessageCooldown() > 0) {
@@ -773,15 +771,11 @@ public class TransactionService {
             notificationCooldowns.put(ownerAccount.getUuid(), cacheKey, System.currentTimeMillis());
         }
 
-        String itemList = items.getItemList(stock);
-        if (player != null) {
-            if (config.isShowitemMessage() && showItem.sendMessage(message, player, key, stock, Collections.emptyMap(), replacements)) {
-                return;
-            }
-            player.sendMessage(message.component(key, Messages.values(true, ImmutableMap.of("material", itemList, "item", itemList), replacements)));
-        } else {
-            bungee.send(ownerAccount.getName(), key, ImmutableMap.of("material", itemList, "item", itemList), replacements);
+        if (config.isShowitemMessage() && showItem.sendMessage(message, player, key, stock, Collections.emptyMap(), replacements)) {
+            return;
         }
+        String itemList = items.getItemList(stock);
+        player.sendMessage(message.component(key, Messages.values(true, ImmutableMap.of("material", itemList, "item", itemList), replacements)));
     }
 
     // ===================== post-trade pipeline =====================
@@ -1012,20 +1006,20 @@ public class TransactionService {
         boolean buy = event.getTransactionType() == BUY;
 
         if (config.isShowTransactionInformationClient()) {
-            sendTradeMessage(player, player.getName(),
+            sendTradeMessage(player,
                     buy ? "chestshop.YOU_BOUGHT_FROM_SHOP" : "chestshop.YOU_SOLD_TO_SHOP", event,
                     buy ? "owner" : "buyer", event.getOwnerAccount().getName());
         }
 
         if (config.isShowTransactionInformationOwner() && !accounts.isIgnoring(event.getOwnerAccount().getUuid())) {
             Player owner = Bukkit.getPlayer(event.getOwnerAccount().getUuid());
-            sendTradeMessage(owner, event.getOwnerAccount().getName(),
+            sendTradeMessage(owner,
                     buy ? "chestshop.SOMEBODY_BOUGHT_FROM_YOUR_SHOP" : "chestshop.SOMEBODY_SOLD_TO_YOUR_SHOP", event,
                     buy ? "buyer" : "seller", player.getName());
         }
     }
 
-    private void sendTradeMessage(Player player, String playerName, String key, TransactionContext event, String... replacements) {
+    private void sendTradeMessage(Player player, String key, TransactionContext event, String... replacements) {
         Location loc = event.getSign().getLocation();
         Map<String, String> replacementMap = new LinkedHashMap<>();
         replacementMap.put("price", economy.format(event.getExactPrice()));
@@ -1039,16 +1033,15 @@ public class TransactionService {
             replacementMap.put(replacements[i], replacements[i + 1]);
         }
 
-        if (config.isShowitemMessage() && showItem.sendMessage(message, player, playerName, key, event.getStock(), replacementMap)) {
+        if (player == null) {
+            return; // recipient isn't on this server — nothing to notify
+        }
+
+        if (config.isShowitemMessage() && showItem.sendMessage(message, player, key, event.getStock(), replacementMap)) {
             return;
         }
 
-        if (player != null) {
-            replacementMap.put("item", items.getItemList(event.getStock()));
-            player.sendMessage(message.component(key, Messages.values(true, replacementMap)));
-        } else if (playerName != null) {
-            replacementMap.put("item", items.getItemList(event.getStock()));
-            bungee.send(playerName, key, replacementMap);
-        }
+        replacementMap.put("item", items.getItemList(event.getStock()));
+        player.sendMessage(message.component(key, Messages.values(true, replacementMap)));
     }
 }

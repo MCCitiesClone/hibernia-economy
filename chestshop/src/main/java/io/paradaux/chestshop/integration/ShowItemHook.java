@@ -1,6 +1,5 @@
 package io.paradaux.chestshop.integration;
 
-import io.paradaux.chestshop.services.BungeeMessenger;
 import io.paradaux.chestshop.utils.Messages;
 import io.paradaux.chestshop.services.InventoryService;
 import com.google.inject.Inject;
@@ -42,12 +41,10 @@ public class ShowItemHook {
     private static Plugin showItem = null;
 
     private final InventoryService inventoryService;
-    private final BungeeMessenger bungee;
 
     @Inject
-    public ShowItemHook(InventoryService inventoryService, BungeeMessenger bungee) {
+    public ShowItemHook(InventoryService inventoryService) {
         this.inventoryService = inventoryService;
-        this.bungee = bungee;
     }
 
     /** Record the hooked ShowItem plugin (process-wide) once it's available. */
@@ -56,14 +53,10 @@ public class ShowItemHook {
     }
 
     public boolean sendMessage(Message message, Player player, String key, ItemStack[] stock, Map<String, String> replacementMap, String... replacements) {
-        return sendMessage(message, player, player.getName(), key, stock, replacementMap, replacements);
+        return sendMessage(message, player, key, true, stock, replacementMap, replacements);
     }
 
-    public boolean sendMessage(Message message, Player player, String playerName, String key, ItemStack[] stock, Map<String, String> replacementMap, String... replacements) {
-        return sendMessage(message, player, playerName, key, true, stock, replacementMap, replacements);
-    }
-
-    public boolean sendMessage(Message message, Player player, String playerName, String key, boolean showPrefix, ItemStack[] stock, Map<String, String> replacementMap, String... replacements) {
+    public boolean sendMessage(Message message, Player player, String key, boolean showPrefix, ItemStack[] stock, Map<String, String> replacementMap, String... replacements) {
         if (showItem == null) {
             return false;
         }
@@ -91,14 +84,7 @@ public class ShowItemHook {
         Map<String, Object> values = Messages.values(showPrefix, replacementMap, replacements);
         values.put("item", itemComponent.build());
         Component component = message.component(key, values);
-        if (player != null) {
-            player.sendMessage(component);
-            return true;
-        } else if (playerName != null) {
-            bungee.send(playerName, component);
-            return true;
-        }
-
+        player.sendMessage(component);
         return true;
     }
 }

@@ -115,9 +115,6 @@ ALLOW_PARTIAL_TRANSACTIONS: true
 # Can '?' be put in place of item name in order for the sign to be auto-filled?
 ALLOW_AUTO_ITEM_FILL: true
 
-# Enable this if you use BungeeCord and want players to receive shop notifications on other servers
-BUNGEECORD_MESSAGES: false
-
 # Do you want to show "Out of stock" messages?
 SHOW_MESSAGE_OUT_OF_STOCK: true
 

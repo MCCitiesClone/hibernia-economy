@@ -138,7 +138,7 @@ public class InfoService {
                 "quantity", String.valueOf(amount)
         );
         if (!config.isShowitemMessage()
-                || !showItem.sendMessage(message, sender, sender.getName(), "chestshop.shopinfo", false, new ItemStack[]{item}, replacementMap)) {
+                || !showItem.sendMessage(message, sender, "chestshop.shopinfo", false, new ItemStack[]{item}, replacementMap)) {
             sender.sendMessage(message.component("chestshop.shopinfo", Messages.values(false, replacementMap)));
         }
 
@@ -201,7 +201,7 @@ public class InfoService {
         try {
             Map<String, String> replacementMap = ImmutableMap.of("item", items.getName(item));
             if (!config.isShowitemMessage() || !(sender instanceof Player)
-                    || !showItem.sendMessage(message, (Player) sender, sender.getName(), messageKey, false, new ItemStack[]{item}, replacementMap)) {
+                    || !showItem.sendMessage(message, (Player) sender, messageKey, false, new ItemStack[]{item}, replacementMap)) {
                 sender.sendMessage(message.component(messageKey, Messages.values(false, replacementMap)));
             }
         } catch (IllegalArgumentException e) {

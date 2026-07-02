@@ -96,7 +96,7 @@ public class ChestShop extends JavaPlugin {
     private io.paradaux.hibernia.framework.configurator.ConfigurationLoader configurationLoader;
     // The framework Configurator repopulates this same component instance in place on
     // reload() (identity preserved), so injected references stay valid and this field can
-    // be captured once for the plugin's own metrics/logging/bungee reads (PAR-282).
+    // be captured once for the plugin's own metrics/logging reads (PAR-282).
     private ChestShopConfiguration config;
 
     public ChestShop() {
@@ -196,7 +196,6 @@ public class ChestShop extends JavaPlugin {
             }
         }
 
-        registerPluginMessagingChannels();
 
         startStatistics();
     }
@@ -318,12 +317,6 @@ public class ChestShop extends JavaPlugin {
     }
 
     //////////////////    REGISTER EVENTS, SCHEDULER & STATS    ///////////////////////////
-    private void registerPluginMessagingChannels() {
-        if (config.isBungeecordMessages()) {
-            getServer().getMessenger().registerOutgoingPluginChannel(this, "BungeeCord");
-        }
-    }
-
     public void registerEvent(Listener listener) {
         getServer().getPluginManager().registerEvents(listener, this);
     }
@@ -371,7 +364,6 @@ public class ChestShop extends JavaPlugin {
         bStats.addCustomChart(new SimplePie("uses-server-economy-account", () -> !config.getServerEconomyAccount().isEmpty() ? "enabled" : "disabled"));
         bStats.addCustomChart(new SimplePie("uses-server-economy-account-uuid", () -> !config.getServerEconomyAccountUuid().equals(new UUID(0, 0)) ? "enabled" : "disabled"));
         bStats.addCustomChart(new SimplePie("allow-partial-transactions", () -> config.isAllowPartialTransactions() ? "enabled" : "disabled"));
-        bStats.addCustomChart(new SimplePie("bungeecord-messages", () -> config.isBungeecordMessages() ? "enabled" : "disabled"));
         bStats.addCustomChart(new SimplePie("allow-multiple-shops-at-one-block", () -> config.isAllowMultipleShopsAtOneBlock() ? "enabled" : "disabled"));
         bStats.addCustomChart(new SimplePie("allow-partial-transactions", () -> config.isAllowPartialTransactions() ? "enabled" : "disabled"));
         bStats.addCustomChart(new SimplePie("log-to-console", () -> config.isLogToConsole() ? "enabled" : "disabled"));
@@ -391,7 +383,6 @@ public class ChestShop extends JavaPlugin {
             map.put("uses-server-economy-account-uuid", getChartArray(!config.getServerEconomyAccountUuid().equals(new UUID(0, 0))));
             map.put("allow-multiple-shops-at-one-block", getChartArray(config.isAllowMultipleShopsAtOneBlock()));
             map.put("allow-partial-transactions", getChartArray(config.isAllowPartialTransactions()));
-            map.put("bungeecord-messages", getChartArray(config.isBungeecordMessages()));
             map.put("log-to-console", getChartArray(config.isLogToConsole()));
             map.put("log-to-file", getChartArray(config.isLogToFile()));
             return map;
@@ -422,8 +413,7 @@ public class ChestShop extends JavaPlugin {
     ///////////////////////////////////////////////////////////////////////////////
     // The static ChestShop.<service>() locator is gone (PAR-282): every class takes its
     // collaborators through constructor DI. The plugin main class keeps private references
-    // only for the few services it drives itself at enable time (migration, account load,
-    // BungeeCord message rendering).
+    // only for the few services it drives itself at enable time (migration, account load).
 
     public static File getFolder() {
         return dataFolder;
