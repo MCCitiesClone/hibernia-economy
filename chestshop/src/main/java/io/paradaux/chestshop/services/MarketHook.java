@@ -33,9 +33,9 @@ public final class MarketHook {
         shopQuery = load(ShopQueryApi.class);
         treasury = load(TreasuryApi.class);
         business = load(BusinessApi.class);
-        log.info("ChestShop market tracker {0}",
+        log.info("ChestShop market tracker {}",
                 enabled() ? "enabled" : "disabled (Treasury MarketApi not available)");
-        log.info("ChestShop /find search {0}",
+        log.info("ChestShop /find search {}",
                 searchEnabled() ? "enabled" : "disabled (Treasury ShopQueryApi not available)");
     }
 
