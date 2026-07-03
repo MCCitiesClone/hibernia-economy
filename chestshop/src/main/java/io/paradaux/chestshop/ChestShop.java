@@ -208,7 +208,7 @@ public class ChestShop extends JavaPlugin {
         } catch (InterruptedException ignored) {}
 
         if (injector != null) {
-            injector.getInstance(io.paradaux.chestshop.database.ChestShopDatabases.class).close();
+            injector.getInstance(io.paradaux.chestshop.guice.ChestShopDatabases.class).close();
         }
     }
 

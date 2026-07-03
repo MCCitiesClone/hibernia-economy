@@ -18,6 +18,23 @@ import java.util.List;
 @Mapper
 public interface ItemCodeMapper {
 
+    // ---- Schema (idempotent; run at startup by DatabaseModule) ------------------
+
+    /** Create the items table if absent. Required — a failure aborts startup. */
+    @Update("""
+            CREATE TABLE IF NOT EXISTS items (
+                id   INTEGER PRIMARY KEY AUTOINCREMENT,
+                code VARCHAR NOT NULL
+            )
+            """)
+    void createTable();
+
+    /** Index on the blob column for the code lookup. Required. */
+    @Update("CREATE INDEX IF NOT EXISTS idx_items_code ON items(code)")
+    void createCodeIndex();
+
+    // ---- Queries ---------------------------------------------------------------
+
     /** The id of an existing row whose blob equals {@code blob}, or {@code null}. */
     @Select("SELECT id FROM items WHERE code = #{blob} LIMIT 1")
     Integer findIdByBlob(@Param("blob") String blob);

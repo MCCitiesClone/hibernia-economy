@@ -30,6 +30,11 @@ class AccountServiceTest {
         final Set<String> takenShortNames = new HashSet<>();
         Account lastSaved;
 
+        @Override public void createTable() {}
+        @Override public void addLastSeenColumn() {}
+        @Override public void addIgnoreMessagesColumn() {}
+        @Override public void createNameUuidIndex() {}
+
         @Override public Account findLatestByUuid(UUID uuid) { return null; }
         @Override public Account findLatestByName(String name) { return null; }
         @Override public Account findByShortName(String shortName) {

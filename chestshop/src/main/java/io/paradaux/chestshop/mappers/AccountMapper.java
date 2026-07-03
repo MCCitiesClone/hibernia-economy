@@ -5,6 +5,7 @@ import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
+import org.apache.ibatis.annotations.Update;
 
 import java.util.UUID;
 
@@ -20,6 +21,34 @@ import java.util.UUID;
 public interface AccountMapper {
 
     String COLUMNS = "name, shortName, uuid, lastSeen, ignoreMessages";
+
+    // ---- Schema (idempotent; run at startup by DatabaseModule) ------------------
+
+    /** Create the accounts table if absent. Required — a failure aborts startup. */
+    @Update("""
+            CREATE TABLE IF NOT EXISTS accounts (
+                name           VARCHAR NOT NULL,
+                shortName      VARCHAR NOT NULL PRIMARY KEY,
+                uuid           VARCHAR NOT NULL,
+                lastSeen       BIGINT  NOT NULL DEFAULT 0,
+                ignoreMessages BOOLEAN NOT NULL DEFAULT 0
+            )
+            """)
+    void createTable();
+
+    /** Best-effort top-up of a pre-existing older table (ignored if the column already exists). */
+    @Update("ALTER TABLE accounts ADD COLUMN lastSeen BIGINT NOT NULL DEFAULT 0")
+    void addLastSeenColumn();
+
+    /** Best-effort top-up of a pre-existing older table (ignored if the column already exists). */
+    @Update("ALTER TABLE accounts ADD COLUMN ignoreMessages BOOLEAN NOT NULL DEFAULT 0")
+    void addIgnoreMessagesColumn();
+
+    /** Best-effort unique index (ignored if it exists or legacy data has duplicates). */
+    @Update("CREATE UNIQUE INDEX IF NOT EXISTS uq_accounts_name_uuid ON accounts(name, uuid)")
+    void createNameUuidIndex();
+
+    // ---- Queries ---------------------------------------------------------------
 
     /** The most-recently-seen account for {@code uuid} (a player may have several name rows). */
     @Select("SELECT " + COLUMNS + " FROM accounts WHERE uuid = #{uuid} ORDER BY lastSeen DESC LIMIT 1")
