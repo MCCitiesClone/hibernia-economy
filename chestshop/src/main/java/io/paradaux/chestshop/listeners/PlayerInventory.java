@@ -1,5 +1,6 @@
 package io.paradaux.chestshop.listeners;
 
+import io.paradaux.chestshop.utils.InventoryUtil;
 import io.paradaux.chestshop.services.AdminBypass;
 import io.paradaux.chestshop.services.ShopBlockService;
 import com.google.inject.Inject;
@@ -22,9 +23,9 @@ import org.bukkit.inventory.InventoryHolder;
 import java.util.ArrayList;
 import java.util.List;
 
-import static io.paradaux.chestshop.utils.ImplementationAdapter.getHolder;
-import static io.paradaux.chestshop.utils.ImplementationAdapter.getLeftSide;
-import static io.paradaux.chestshop.utils.ImplementationAdapter.getRightSide;
+import static io.paradaux.chestshop.utils.InventoryUtil.getHolder;
+import static io.paradaux.chestshop.utils.InventoryUtil.getLeftSide;
+import static io.paradaux.chestshop.utils.InventoryUtil.getRightSide;
 
 /**
  * @author Acrobot

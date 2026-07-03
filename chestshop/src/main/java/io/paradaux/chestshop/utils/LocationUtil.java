@@ -7,7 +7,11 @@ import org.bukkit.Location;
  *
  * @author Acrobot
  */
-public class LocationUtil {
+public final class LocationUtil {
+
+    private LocationUtil() {
+    }
+
     /**
      * Returns a string representing the location
      *

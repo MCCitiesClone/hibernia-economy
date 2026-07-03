@@ -11,7 +11,11 @@ import java.util.stream.Collectors;
 /**
  * @author Acrobot
  */
-public class StringUtil {
+public final class StringUtil {
+
+    private StringUtil() {
+    }
+
 
     /**
      * Capitalizes every first letter of a word

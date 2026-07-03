@@ -1,13 +1,12 @@
 package io.paradaux.chestshop.services.impl;
 
+import io.paradaux.chestshop.utils.InventoryUtil;
 import io.paradaux.chestshop.services.ChestShopSign;
 import io.paradaux.chestshop.services.ShopBlockService;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import io.paradaux.chestshop.model.config.ChestShopConfiguration;
 import io.paradaux.chestshop.utils.BlockUtil;
-import io.paradaux.chestshop.utils.ImplementationAdapter;
-import io.paradaux.chestshop.utils.ShopBlockUtil;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
@@ -22,9 +21,9 @@ import org.bukkit.inventory.InventoryHolder;
 import java.util.ArrayList;
 import java.util.List;
 
-import static io.paradaux.chestshop.utils.ImplementationAdapter.getLeftSide;
-import static io.paradaux.chestshop.utils.ImplementationAdapter.getRightSide;
-import static io.paradaux.chestshop.utils.ImplementationAdapter.getState;
+import static io.paradaux.chestshop.utils.InventoryUtil.getLeftSide;
+import static io.paradaux.chestshop.utils.InventoryUtil.getRightSide;
+import static io.paradaux.chestshop.utils.BlockUtil.getState;
 
 /**
  * The stateful block↔shop-sign geometry split out of {@code ShopBlockUtil} (PAR-282):
@@ -56,7 +55,7 @@ public class ShopBlockServiceImpl implements ShopBlockService {
         Sign sign = findAnyNearbyShopSign(block);
 
         if (sign == null) {
-            Block neighbor = ShopBlockUtil.findNeighbor(block);
+            Block neighbor = BlockUtil.findNeighbor(block);
             if (neighbor != null) {
                 sign = findAnyNearbyShopSign(neighbor);
             }
@@ -101,7 +100,7 @@ public class ShopBlockServiceImpl implements ShopBlockService {
             }
         }
 
-        for (BlockFace bf : ShopBlockUtil.SHOP_FACES) {
+        for (BlockFace bf : BlockUtil.SHOP_FACES) {
             if (bf != signFace) {
                 Block faceBlock = location.clone().add(bf.getModX(), bf.getModY(), bf.getModZ()).getBlock();
                 if (couldBeShopContainer(faceBlock)) {
@@ -151,7 +150,7 @@ public class ShopBlockServiceImpl implements ShopBlockService {
     public List<Sign> findConnectedShopSigns(Block chestBlock) {
         List<Sign> result = new ArrayList<>();
 
-        for (BlockFace bf : ShopBlockUtil.SHOP_FACES) {
+        for (BlockFace bf : BlockUtil.SHOP_FACES) {
             Block faceBlock = chestBlock.getRelative(bf);
 
             if (!BlockUtil.isSign(faceBlock)) {
@@ -175,7 +174,7 @@ public class ShopBlockServiceImpl implements ShopBlockService {
 
     @Override
     public Sign findAnyNearbyShopSign(Block block) {
-        for (BlockFace bf : ShopBlockUtil.SHOP_FACES) {
+        for (BlockFace bf : BlockUtil.SHOP_FACES) {
             Block faceBlock = block.getRelative(bf);
             if (!BlockUtil.isLoaded(faceBlock)) {
                 continue;
@@ -223,8 +222,8 @@ public class ShopBlockServiceImpl implements ShopBlockService {
     @Override
     public boolean isShopBlock(InventoryHolder holder) {
         if (holder instanceof DoubleChest) {
-            return isShopBlock(ImplementationAdapter.getLeftSide((DoubleChest) holder, false))
-                    || isShopBlock(ImplementationAdapter.getRightSide((DoubleChest) holder, false));
+            return isShopBlock(InventoryUtil.getLeftSide((DoubleChest) holder, false))
+                    || isShopBlock(InventoryUtil.getRightSide((DoubleChest) holder, false));
         } else if (holder instanceof BlockState) {
             return isShopBlock(((BlockState) holder).getBlock());
         }

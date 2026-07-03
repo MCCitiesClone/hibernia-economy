@@ -14,7 +14,7 @@ import org.bukkit.block.BlockFace;
 import org.bukkit.block.Sign;
 import org.bukkit.entity.Player;
 
-import static io.paradaux.chestshop.utils.ImplementationAdapter.getState;
+import static io.paradaux.chestshop.utils.BlockUtil.getState;
 
 /**
  * Shop-block protection facade over {@link ProtectionService}. Injected like any

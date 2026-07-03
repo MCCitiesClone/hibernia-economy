@@ -2,9 +2,11 @@ package io.paradaux.chestshop.utils;
 
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
+import org.bukkit.block.BlockState;
 import org.bukkit.block.DoubleChest;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.block.data.Directional;
+import org.bukkit.block.data.type.Chest;
 import org.bukkit.block.data.type.Sign;
 import org.bukkit.block.data.type.WallSign;
 import org.bukkit.entity.Player;
@@ -12,9 +14,24 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 
 /**
+ * Pure, stateless block helpers: sign/chest tests, attached-block and double-chest neighbour
+ * geometry, direction math, block-state reads and GUI opening. The stateful, config/sign-backed
+ * resolution (getConnectedSign, findConnectedContainer, isShopBlock, …) lives on
+ * {@link io.paradaux.chestshop.services.ShopBlockService}.
+ *
  * @author Acrobot
  */
-public class BlockUtil {
+public final class BlockUtil {
+
+    /** The faces off a chest that a second chest may extend it into (double-chest search). */
+    public static final BlockFace[] CHEST_EXTENSION_FACES = {BlockFace.EAST, BlockFace.NORTH, BlockFace.WEST, BlockFace.SOUTH};
+
+    /** The faces around a shop container that its sign/neighbours may sit on. */
+    public static final BlockFace[] SHOP_FACES = {BlockFace.SELF, BlockFace.DOWN, BlockFace.UP, BlockFace.EAST, BlockFace.NORTH, BlockFace.WEST, BlockFace.SOUTH};
+
+    private BlockUtil() {
+    }
+
     /**
      * Checks if the block is a sign
      *
@@ -120,5 +137,64 @@ public class BlockUtil {
      */
     public static boolean isLoaded(Block block) {
         return block.getWorld().isChunkLoaded(block.getX() >> 4, block.getZ() >> 4);
+    }
+
+    /**
+     * The other half of a double chest, or {@code null} if {@code block} is a single chest
+     * (or the neighbour isn't loaded / isn't the same type).
+     */
+    public static Block findNeighbor(Block block) {
+        if (!isLoaded(block)) {
+            return null;
+        }
+
+        BlockData blockData = block.getBlockData();
+        if (!(blockData instanceof Chest)) {
+            return null;
+        }
+
+        Chest chestData = (Chest) blockData;
+        if (chestData.getType() == Chest.Type.SINGLE) {
+            return null;
+        }
+
+        BlockFace chestFace = chestData.getFacing();
+        // we have to rotate is to get the adjacent chest
+        // west, right -> south
+        // west, left -> north
+        if (chestFace == BlockFace.WEST) {
+            chestFace = BlockFace.NORTH;
+        } else if (chestFace == BlockFace.NORTH) {
+            chestFace = BlockFace.EAST;
+        } else if (chestFace == BlockFace.EAST) {
+            chestFace = BlockFace.SOUTH;
+        } else if (chestFace == BlockFace.SOUTH) {
+            chestFace = BlockFace.WEST;
+        }
+        if (chestData.getType() == Chest.Type.RIGHT) {
+            chestFace = chestFace.getOppositeFace();
+        }
+
+        Block neighborBlock = block.getRelative(chestFace);
+        if (!isLoaded(neighborBlock)) {
+            return null;
+        }
+
+        if (neighborBlock.getType() == block.getType()) {
+            return neighborBlock;
+        }
+
+        return null;
+    }
+
+    /**
+     * Read a block's state, snapshot or live.
+     *
+     * @param block       the block to read
+     * @param useSnapshot {@code false} to read the live block state (not a snapshot copy)
+     * @return the block's state
+     */
+    public static BlockState getState(Block block, boolean useSnapshot) {
+        return block.getState(useSnapshot);
     }
 }

@@ -1,5 +1,6 @@
 package io.paradaux.chestshop.listeners;
 
+import io.paradaux.chestshop.utils.InventoryUtil;
 import com.google.inject.Inject;
 import io.paradaux.chestshop.services.ShopBlockService;
 import org.bukkit.block.Block;
@@ -10,7 +11,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.inventory.InventoryHolder;
 
-import static io.paradaux.chestshop.utils.ImplementationAdapter.getHolder;
+import static io.paradaux.chestshop.utils.InventoryUtil.getHolder;
 
 /**
  * A fix for a CraftBukkit bug.

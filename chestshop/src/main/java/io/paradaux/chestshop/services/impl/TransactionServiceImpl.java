@@ -11,7 +11,7 @@ import io.paradaux.chestshop.services.ChestShopSign;
 import io.paradaux.chestshop.services.AdminBypass;
 import io.paradaux.chestshop.services.AccountService;
 import io.paradaux.chestshop.services.TransactionService;
-import io.paradaux.chestshop.utils.Messages;
+import io.paradaux.chestshop.utils.MessageUtil;
 import org.bukkit.event.block.Action;
 import io.paradaux.chestshop.utils.AdminInventory;
 import java.util.Arrays;
@@ -35,7 +35,6 @@ import io.paradaux.chestshop.listeners.SignBreak;
 import io.paradaux.chestshop.listeners.StockCounterModule;
 import io.paradaux.chestshop.listeners.MarketListener;
 import io.paradaux.chestshop.listeners.RestrictedSign;
-import io.paradaux.chestshop.utils.ImplementationAdapter;
 import io.paradaux.chestshop.utils.InventoryUtil;
 import io.paradaux.chestshop.utils.LocationUtil;
 import io.paradaux.chestshop.utils.PriceUtil;
@@ -771,7 +770,7 @@ public class TransactionServiceImpl implements TransactionService {
         }
 
         String itemList = items.getItemList(stock);
-        player.sendMessage(message.component(key, Messages.values(true, ImmutableMap.of("material", itemList, "item", itemList), replacements)));
+        player.sendMessage(message.component(key, MessageUtil.values(true, ImmutableMap.of("material", itemList, "item", itemList), replacements)));
     }
 
     // ===================== post-trade pipeline =====================
@@ -882,8 +881,8 @@ public class TransactionServiceImpl implements TransactionService {
         } else if (holder instanceof BlockState blockState) {
             blockState.update();
         } else if (holder instanceof DoubleChest doubleChest) {
-            update(ImplementationAdapter.getLeftSide(doubleChest, false));
-            update(ImplementationAdapter.getRightSide(doubleChest, false));
+            update(InventoryUtil.getLeftSide(doubleChest, false));
+            update(InventoryUtil.getRightSide(doubleChest, false));
         }
     }
 
@@ -1010,6 +1009,6 @@ public class TransactionServiceImpl implements TransactionService {
         }
 
         replacementMap.put("item", items.getItemList(event.getStock()));
-        player.sendMessage(message.component(key, Messages.values(true, replacementMap)));
+        player.sendMessage(message.component(key, MessageUtil.values(true, replacementMap)));
     }
 }

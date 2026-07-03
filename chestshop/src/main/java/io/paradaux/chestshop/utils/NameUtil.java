@@ -5,7 +5,11 @@ package io.paradaux.chestshop.utils;
  *
  * @author Andrzej Pomirski (Acrobot)
  */
-public class NameUtil {
+public final class NameUtil {
+
+    private NameUtil() {
+    }
+
 
     /**
      * Strip the username to 15 characters (number of characters a sign can hold)

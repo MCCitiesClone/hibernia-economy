@@ -1,5 +1,6 @@
 package io.paradaux.chestshop.listeners;
 
+import io.paradaux.chestshop.utils.BlockUtil;
 import io.paradaux.chestshop.services.AdminBypass;
 import io.paradaux.chestshop.services.ShopBlockService;
 import com.google.inject.Inject;
@@ -36,7 +37,7 @@ import java.util.Map;
 import java.util.WeakHashMap;
 import java.util.logging.Level;
 
-import static io.paradaux.chestshop.utils.ImplementationAdapter.getState;
+import static io.paradaux.chestshop.utils.BlockUtil.getState;
 import static io.paradaux.chestshop.utils.BlockUtil.isSign;
 import static io.paradaux.chestshop.utils.Permissions.OTHER_NAME_CREATE;
 import static io.paradaux.chestshop.services.ChestShopSign.*;

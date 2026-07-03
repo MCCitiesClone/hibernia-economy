@@ -1,6 +1,5 @@
 package io.paradaux.chestshop.services;
 
-import io.paradaux.chestshop.utils.ShopBlockUtil;
 import org.bukkit.block.Block;
 import org.bukkit.block.Container;
 import org.bukkit.block.Sign;

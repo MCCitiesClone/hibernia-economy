@@ -1,5 +1,6 @@
 package io.paradaux.chestshop.integration;
 
+import io.paradaux.chestshop.utils.BlockUtil;
 import io.paradaux.chestshop.services.ShopBlockService;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
@@ -12,7 +13,7 @@ import org.bukkit.block.Sign;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 
-import static io.paradaux.chestshop.utils.ImplementationAdapter.getState;
+import static io.paradaux.chestshop.utils.BlockUtil.getState;
 import static io.paradaux.chestshop.utils.BlockUtil.isSign;
 
 /**

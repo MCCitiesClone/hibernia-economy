@@ -9,7 +9,11 @@ import java.util.Map;
 /**
  * @author Acrobot
  */
-public class PriceUtil {
+public final class PriceUtil {
+
+    private PriceUtil() {
+    }
+
     public static final BigDecimal NO_PRICE = BigDecimal.valueOf(-1);
     public static final BigDecimal FREE = BigDecimal.valueOf(0);
     public static final BigDecimal MAX = BigDecimal.valueOf(Double.MAX_VALUE);

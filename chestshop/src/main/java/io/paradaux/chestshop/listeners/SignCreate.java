@@ -3,7 +3,6 @@ package io.paradaux.chestshop.listeners;
 import io.paradaux.chestshop.services.ShopBlockService;
 import com.google.inject.Inject;
 import io.paradaux.chestshop.utils.BlockUtil;
-import io.paradaux.chestshop.utils.ImplementationAdapter;
 import io.paradaux.chestshop.utils.StringUtil;
 import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.model.ShopCreation;
@@ -51,7 +50,7 @@ public class SignCreate implements Listener {
             return;
         }
 
-        Sign sign = (Sign) ImplementationAdapter.getState(signBlock, false);
+        Sign sign = (Sign) BlockUtil.getState(signBlock, false);
 
         if (chestShopSign.isValid(sign) && !accounts.canAccess(event.getPlayer(), sign)) {
             // There was already a shop here, but the player does not have permission to change it

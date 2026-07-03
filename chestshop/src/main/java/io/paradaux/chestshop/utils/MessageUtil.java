@@ -9,9 +9,9 @@ import java.util.Map;
  * {@code {prefix}}, so {@code withPrefix=false} blanks it for continuation lines. Relocated
  * off the ChestShop main class (PAR-300) — it's a pure function, not plugin state.
  */
-public final class Messages {
+public final class MessageUtil {
 
-    private Messages() {
+    private MessageUtil() {
     }
 
     public static Map<String, Object> values(boolean withPrefix, Map<String, String> base, String... replacements) {

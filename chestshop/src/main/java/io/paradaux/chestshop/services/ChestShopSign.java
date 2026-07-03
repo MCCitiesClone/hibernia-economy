@@ -1,7 +1,7 @@
 package io.paradaux.chestshop.services;
 
+import io.paradaux.chestshop.utils.InventoryUtil;
 import io.paradaux.chestshop.utils.BlockUtil;
-import io.paradaux.chestshop.utils.ImplementationAdapter;
 import io.paradaux.chestshop.utils.QuantityUtil;
 import io.paradaux.chestshop.utils.StringUtil;
 import io.paradaux.chestshop.ChestShop;
@@ -9,7 +9,6 @@ import io.paradaux.chestshop.model.config.ChestShopConfiguration;
 import io.paradaux.chestshop.utils.AdminInventory;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import io.paradaux.chestshop.utils.ShopBlockUtil;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
 import org.bukkit.block.DoubleChest;
@@ -22,7 +21,7 @@ import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static io.paradaux.chestshop.utils.ImplementationAdapter.getState;
+import static io.paradaux.chestshop.utils.BlockUtil.getState;
 import static io.paradaux.chestshop.utils.MaterialUtil.DURABILITY;
 import static io.paradaux.chestshop.utils.MaterialUtil.METADATA;
 
@@ -176,8 +175,8 @@ public class ChestShopSign {
 
     public Block getShopBlock(InventoryHolder holder) {
         if (holder instanceof DoubleChest) {
-            return Optional.ofNullable(getShopBlock(ImplementationAdapter.getLeftSide((DoubleChest) holder, false)))
-                    .orElse(getShopBlock(ImplementationAdapter.getRightSide((DoubleChest) holder, false)));
+            return Optional.ofNullable(getShopBlock(InventoryUtil.getLeftSide((DoubleChest) holder, false)))
+                    .orElse(getShopBlock(InventoryUtil.getRightSide((DoubleChest) holder, false)));
         } else if (holder instanceof BlockState) {
             return ((BlockState) holder).getBlock();
         }

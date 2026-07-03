@@ -1,12 +1,12 @@
 package io.paradaux.chestshop.listeners;
 
+import io.paradaux.chestshop.utils.BlockUtil;
 import io.paradaux.chestshop.services.AdminBypass;
 import io.paradaux.chestshop.services.ShopBlockService;
 import com.google.inject.Inject;
 import io.paradaux.chestshop.utils.Permissions;
 import io.paradaux.chestshop.services.Security;
 import io.paradaux.chestshop.services.ChestShopSign;
-import io.paradaux.chestshop.utils.ShopBlockUtil;
 import io.paradaux.hibernia.framework.i18n.Message;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -61,7 +61,7 @@ public class BlockPlace implements Listener {
             return;
         }
 
-        Block neighbor = ShopBlockUtil.findNeighbor(placed);
+        Block neighbor = BlockUtil.findNeighbor(placed);
 
         if (neighbor != null && !security.canAccess(event.getPlayer(), neighbor)) {
             message.send(event.getPlayer(), "chestshop.ACCESS_DENIED");

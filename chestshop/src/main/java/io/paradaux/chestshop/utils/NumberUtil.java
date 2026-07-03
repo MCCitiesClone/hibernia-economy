@@ -3,7 +3,11 @@ package io.paradaux.chestshop.utils;
 /**
  * @author Acrobot
  */
-public class NumberUtil {
+public final class NumberUtil {
+
+    private NumberUtil() {
+    }
+
     /**
      * Checks if the string is a integer
      *

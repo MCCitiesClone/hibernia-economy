@@ -30,7 +30,7 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
-import static io.paradaux.chestshop.utils.ImplementationAdapter.getState;
+import static io.paradaux.chestshop.utils.BlockUtil.getState;
 import static io.paradaux.chestshop.utils.BlockUtil.getAttachedBlock;
 import static io.paradaux.chestshop.utils.BlockUtil.isSign;
 import static io.paradaux.chestshop.utils.Permissions.OTHER_NAME_DESTROY;

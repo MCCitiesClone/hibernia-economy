@@ -1,5 +1,6 @@
 package io.paradaux.chestshop.services.impl;
 
+import io.paradaux.chestshop.utils.BlockUtil;
 import io.paradaux.chestshop.services.ShopBlockService;
 import io.paradaux.chestshop.services.Security;
 import io.paradaux.chestshop.services.ProtectionService;
@@ -26,7 +27,6 @@ import io.paradaux.chestshop.utils.LocationUtil;
 import io.paradaux.chestshop.utils.MaterialUtil;
 import io.paradaux.chestshop.utils.PriceUtil;
 import io.paradaux.chestshop.utils.StringUtil;
-import io.paradaux.chestshop.utils.ShopBlockUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
@@ -498,7 +498,7 @@ public class ShopServiceImpl implements ShopService {
         }
 
         BlockFace shopBlockFace = null;
-        for (BlockFace face : ShopBlockUtil.CHEST_EXTENSION_FACES) {
+        for (BlockFace face : BlockUtil.CHEST_EXTENSION_FACES) {
             if (shopBlockService.couldBeShopContainer(signBlock.getRelative(face))) {
                 shopBlockFace = face;
                 break;

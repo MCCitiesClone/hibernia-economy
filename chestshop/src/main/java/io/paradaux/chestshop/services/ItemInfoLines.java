@@ -1,6 +1,6 @@
 package io.paradaux.chestshop.services;
 
-import io.paradaux.chestshop.utils.Messages;
+import io.paradaux.chestshop.utils.MessageUtil;
 import io.paradaux.chestshop.ChestShop;
 import io.paradaux.hibernia.framework.i18n.Message;
 import net.kyori.adventure.text.Component;
@@ -61,7 +61,7 @@ public final class ItemInfoLines {
     }
 
     private Component render(String key, String... args) {
-        return message.component(key, Messages.values(false, null, args));
+        return message.component(key, MessageUtil.values(false, null, args));
     }
 
     public void addRawMessage(String key, Component message) {

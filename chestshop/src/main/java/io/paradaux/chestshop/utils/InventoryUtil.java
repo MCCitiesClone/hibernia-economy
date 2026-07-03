@@ -1,6 +1,8 @@
 package io.paradaux.chestshop.utils;
 
+import org.bukkit.block.DoubleChest;
 import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.Map;
@@ -106,5 +108,38 @@ public final class InventoryUtil {
         }
 
         return totalLeft;
+    }
+
+    /**
+     * The inventory's holder, snapshot or live.
+     *
+     * @param inventory   the inventory
+     * @param useSnapshot {@code false} to get the live holder (not a snapshot copy)
+     * @return the inventory's holder
+     */
+    public static InventoryHolder getHolder(Inventory inventory, boolean useSnapshot) {
+        return inventory.getHolder(useSnapshot);
+    }
+
+    /**
+     * A double chest's left-side holder, snapshot or live.
+     *
+     * @param doubleChest the double chest
+     * @param useSnapshot {@code false} to get the live holder (not a snapshot copy)
+     * @return the left side's holder
+     */
+    public static InventoryHolder getLeftSide(DoubleChest doubleChest, boolean useSnapshot) {
+        return doubleChest.getLeftSide(useSnapshot);
+    }
+
+    /**
+     * A double chest's right-side holder, snapshot or live.
+     *
+     * @param doubleChest the double chest
+     * @param useSnapshot {@code false} to get the live holder (not a snapshot copy)
+     * @return the right side's holder
+     */
+    public static InventoryHolder getRightSide(DoubleChest doubleChest, boolean useSnapshot) {
+        return doubleChest.getRightSide(useSnapshot);
     }
 }

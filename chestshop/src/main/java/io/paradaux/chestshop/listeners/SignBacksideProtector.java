@@ -3,7 +3,6 @@ package io.paradaux.chestshop.listeners;
 import com.google.inject.Inject;
 import io.paradaux.chestshop.services.ChestShopSign;
 import io.paradaux.chestshop.utils.BlockUtil;
-import io.paradaux.chestshop.utils.ImplementationAdapter;
 import io.paradaux.hibernia.framework.i18n.Message;
 import org.bukkit.block.Block;
 import org.bukkit.block.Sign;
@@ -38,7 +37,7 @@ public class SignBacksideProtector implements Listener {
         }
 
         if (event.getSide() != Side.FRONT) {
-            Sign sign = (Sign) ImplementationAdapter.getState(signBlock, false);
+            Sign sign = (Sign) BlockUtil.getState(signBlock, false);
             if (chestShopSign.isValid(sign)) {
                 event.setCancelled(true);
                 message.send(event.getPlayer(), "chestshop.CANNOT_CHANGE_SIGN_BACKSIDE");

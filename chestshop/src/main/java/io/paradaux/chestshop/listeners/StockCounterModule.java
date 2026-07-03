@@ -1,5 +1,6 @@
 package io.paradaux.chestshop.listeners;
 
+import io.paradaux.chestshop.utils.InventoryUtil;
 import io.paradaux.chestshop.services.ShopBlockService;
 import io.paradaux.chestshop.services.InventoryService;
 import io.paradaux.chestshop.services.MaterialService;
@@ -25,7 +26,7 @@ import org.bukkit.inventory.ItemStack;
 
 import java.util.IllegalFormatException;
 
-import static io.paradaux.chestshop.utils.ImplementationAdapter.getHolder;
+import static io.paradaux.chestshop.utils.InventoryUtil.getHolder;
 import static io.paradaux.chestshop.services.ChestShopSign.QUANTITY_LINE;
 
 

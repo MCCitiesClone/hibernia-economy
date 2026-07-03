@@ -19,7 +19,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.SignChangeEvent;
 
-import static io.paradaux.chestshop.utils.ImplementationAdapter.getState;
+import static io.paradaux.chestshop.utils.BlockUtil.getState;
 import static io.paradaux.chestshop.model.PendingTransaction.TransactionOutcome.SHOP_IS_RESTRICTED;
 import static io.paradaux.chestshop.utils.Permissions.ADMIN;
 
