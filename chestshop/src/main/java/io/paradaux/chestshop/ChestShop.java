@@ -22,7 +22,7 @@ import io.paradaux.chestshop.listeners.PlayerInteractListener;
 import io.paradaux.chestshop.listeners.PlayerInventoryListener;
 import io.paradaux.chestshop.listeners.PlayerTeleportListener;
 import io.paradaux.chestshop.integration.IntegrationRegistrar;
-import io.paradaux.chestshop.integration.worldguard.WorldGuardFlags;
+import io.paradaux.chestshop.integration.WorldGuardIntegration;
 import io.paradaux.chestshop.services.ItemCodeService;
 import io.paradaux.chestshop.listeners.RestrictedSignListener;
 
@@ -83,7 +83,7 @@ public class ChestShop extends JavaPlugin {
         // (onLoad) — this runs pre-Guice, so it's the one integration concern outside the
         // IntegrationRegistrar. Everything else hooks at enable via Integration#hook.
         if (getServer().getPluginManager().getPlugin("WorldGuard") != null) {
-            WorldGuardFlags.register();
+            WorldGuardIntegration.registerFlag();
         }
     }
 

@@ -1,6 +1,5 @@
 package io.paradaux.chestshop.services;
 
-import io.paradaux.chestshop.integration.nexo.Nexo;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 
@@ -10,22 +9,22 @@ import org.bukkit.inventory.ItemStack;
  * {@code SignValidationEvent} carriers and their resolver "listeners" with direct,
  * ordered service methods (PAR-282). The resolution order is unchanged:
  * <ul>
- *   <li>{@link #parse}: Nexo (if hooked) → configured alias → vanilla material
- *       (the alias step overrides a custom-item match, as before);</li>
- *   <li>{@link #queryString}: Nexo key (if hooked) → vanilla name → alias override;</li>
+ *   <li>{@link #parse}: custom-item resolver (if registered) → configured alias → vanilla
+ *       material (the alias step overrides a custom-item match, as before);</li>
+ *   <li>{@link #queryString}: custom-item key (if registered) → vanilla name → alias override;</li>
  *   <li>{@link #parseMaterial}: a single resolver.</li>
  * </ul>
  *
  * <p>Sign-format validation is pure and lives on {@code ChestShopSign.validateSign}.</p>
  *
- * <p>The optional Nexo custom-item integration (a softdepend) is only invoked once that
- * plugin is hooked ({@link #enableNexo()} is called from {@code NexoIntegration}), keeping the
- * {@code com.nexomc.nexo} classes off the call path when the plugin is absent.
+ * <p>The optional custom-item integration (a softdepend such as Nexo) registers a
+ * {@link CustomItemResolver} when it hooks — the service never references the integration's
+ * classes directly, keeping them off the call path when the plugin is absent (PAR-314).
  */
 public interface ItemService {
 
-    /** Mark the Nexo custom-item integration as available + load nexo.yml (called when the plugin hooks). */
-    void enableNexo();
+    /** Register a custom-item resolver (a soft-dependency integration hooks itself in here). */
+    void registerCustomItemResolver(CustomItemResolver resolver);
 
     /** Reload the configurable item aliases (and Nexo's nexo.yml, if hooked) from disk (on {@code /chestshop reload}). */
     void reloadAliases();

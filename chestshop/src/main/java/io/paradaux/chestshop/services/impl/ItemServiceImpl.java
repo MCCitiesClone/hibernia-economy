@@ -5,10 +5,10 @@ import io.paradaux.chestshop.services.ItemCodeService;
 import io.paradaux.chestshop.services.ItemAliasModule;
 import io.paradaux.chestshop.services.InventoryService;
 import io.paradaux.chestshop.services.ChestShopSign;
+import io.paradaux.chestshop.services.CustomItemResolver;
 import io.paradaux.chestshop.services.ItemService;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import io.paradaux.chestshop.integration.nexo.Nexo;
 import io.paradaux.chestshop.utils.MaterialUtil;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
@@ -26,17 +26,17 @@ import static io.paradaux.chestshop.utils.StringUtil.getMinecraftStringWidth;
  * {@code SignValidationEvent} carriers and their resolver "listeners" with direct,
  * ordered service methods (PAR-282). The resolution order is unchanged:
  * <ul>
- *   <li>{@link #parse}: Nexo (if hooked) → configured alias → vanilla material
- *       (the alias step overrides a custom-item match, as before);</li>
- *   <li>{@link #queryString}: Nexo key (if hooked) → vanilla name → alias override;</li>
+ *   <li>{@link #parse}: custom-item resolver (if registered) → configured alias → vanilla
+ *       material (the alias step overrides a custom-item match, as before);</li>
+ *   <li>{@link #queryString}: custom-item key (if registered) → vanilla name → alias override;</li>
  *   <li>{@link #parseMaterial}: a single resolver.</li>
  * </ul>
  *
  * <p>Sign-format validation is pure and lives on {@code ChestShopSign.validateSign}.</p>
  *
- * <p>The optional Nexo custom-item integration (a softdepend) is only invoked once that
- * plugin is hooked ({@link #enableNexo()} is called from {@code NexoIntegration}), keeping the
- * {@code com.nexomc.nexo} classes off the call path when the plugin is absent.
+ * <p>The optional custom-item integration (a softdepend such as Nexo) registers a
+ * {@link CustomItemResolver} when it hooks — this service never references the integration's
+ * classes directly, keeping them off the call path when the plugin is absent (PAR-314).
  */
 @Singleton
 public class ItemServiceImpl implements ItemService {
@@ -45,7 +45,7 @@ public class ItemServiceImpl implements ItemService {
     private final ItemCodeService itemCodes;
     private final MaterialService materialService;
     private final InventoryService inventoryService;
-    private volatile boolean nexoEnabled = false;
+    private volatile CustomItemResolver customItems;
 
     @Inject
     public ItemServiceImpl(ItemAliasModule aliases, ItemCodeService itemCodes, MaterialService materialService, InventoryService inventoryService) {
@@ -55,26 +55,27 @@ public class ItemServiceImpl implements ItemService {
         this.inventoryService = inventoryService;
     }
 
-    /** Mark the Nexo custom-item integration as available + load nexo.yml (called when the plugin hooks). */
+    /** Register a custom-item resolver (a soft-dependency integration hooks itself in here). */
     @Override
-    public void enableNexo() {
-        Nexo.init(itemCodes);
-        this.nexoEnabled = true;
+    public void registerCustomItemResolver(CustomItemResolver resolver) {
+        this.customItems = resolver;
     }
 
-    /** Reload the configurable item aliases (and Nexo's nexo.yml, if hooked) from disk (on {@code /chestshop reload}). */
+    /** Reload the configurable item aliases (and the custom-item resolver's config, if any). */
     @Override
     public void reloadAliases() {
         aliases.reload();
-        if (nexoEnabled) {
-            Nexo.reload();
+        CustomItemResolver resolver = customItems;
+        if (resolver != null) {
+            resolver.reload();
         }
     }
 
-    /** Parse a sign item string into an {@link ItemStack} (Nexo / alias / vanilla material), or {@code null}. */
+    /** Parse a sign item string into an {@link ItemStack} (custom / alias / vanilla material), or {@code null}. */
     @Override
     public ItemStack parse(String itemString) {
-        ItemStack item = nexoEnabled ? Nexo.parseItem(itemString) : null;
+        CustomItemResolver resolver = customItems;
+        ItemStack item = resolver != null ? resolver.parseItem(itemString) : null;
         ItemStack alias = aliases.resolveItem(itemString); // a configured alias overrides a custom-item match
         if (alias != null) {
             item = alias;
@@ -85,10 +86,11 @@ public class ItemServiceImpl implements ItemService {
         return item;
     }
 
-    /** The sign string for an item (Nexo / vanilla name / configured alias), within {@code maxWidth}. */
+    /** The sign string for an item (custom / vanilla name / configured alias), within {@code maxWidth}. */
     @Override
     public String queryString(ItemStack item, int maxWidth) {
-        String result = nexoEnabled ? Nexo.queryString(item, maxWidth) : null;
+        CustomItemResolver resolver = customItems;
+        String result = resolver != null ? resolver.queryString(item, maxWidth) : null;
         if (result == null) {
             result = itemCodes.encode(item, maxWidth); // vanilla name
         }

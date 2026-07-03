@@ -1,5 +1,4 @@
-package io.paradaux.chestshop.integration.treasury;
-import io.paradaux.chestshop.integration.Integration;
+package io.paradaux.chestshop.integration;
 import lombok.extern.slf4j.Slf4j;
 
 import com.google.inject.Inject;
