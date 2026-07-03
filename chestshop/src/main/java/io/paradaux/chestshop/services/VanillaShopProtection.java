@@ -1,4 +1,4 @@
-package io.paradaux.chestshop.integration;
+package io.paradaux.chestshop.services;
 
 import io.paradaux.chestshop.utils.BlockUtil;
 import io.paradaux.chestshop.services.ShopBlockService;

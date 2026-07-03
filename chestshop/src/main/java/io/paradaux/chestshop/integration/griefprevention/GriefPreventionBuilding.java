@@ -1,4 +1,4 @@
-package io.paradaux.chestshop.integration;
+package io.paradaux.chestshop.integration.griefprevention;
 
 import io.paradaux.chestshop.model.BuildPermission;
 import me.ryanhamshire.GriefPrevention.GriefPrevention;
@@ -12,10 +12,10 @@ import org.bukkit.plugin.Plugin;
  *
  * @author Acrobot
  */
-public class GriefPrevenentionBuilding {
+public class GriefPreventionBuilding {
     private GriefPrevention griefPrevention;
 
-    public GriefPrevenentionBuilding(Plugin plugin) {
+    public GriefPreventionBuilding(Plugin plugin) {
         this.griefPrevention = (GriefPrevention) plugin;
     }
 

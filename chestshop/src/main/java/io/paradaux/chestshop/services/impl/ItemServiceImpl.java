@@ -8,7 +8,7 @@ import io.paradaux.chestshop.services.ChestShopSign;
 import io.paradaux.chestshop.services.ItemService;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import io.paradaux.chestshop.integration.Nexo;
+import io.paradaux.chestshop.integration.nexo.Nexo;
 import io.paradaux.chestshop.utils.MaterialUtil;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;

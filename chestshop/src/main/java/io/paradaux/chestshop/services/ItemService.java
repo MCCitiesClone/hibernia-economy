@@ -1,6 +1,6 @@
 package io.paradaux.chestshop.services;
 
-import io.paradaux.chestshop.integration.Nexo;
+import io.paradaux.chestshop.integration.nexo.Nexo;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 

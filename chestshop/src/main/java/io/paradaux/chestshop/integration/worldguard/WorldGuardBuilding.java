@@ -1,4 +1,4 @@
-package io.paradaux.chestshop.integration;
+package io.paradaux.chestshop.integration.worldguard;
 
 import io.paradaux.chestshop.model.config.ChestShopConfiguration;
 import io.paradaux.chestshop.model.BuildPermission;

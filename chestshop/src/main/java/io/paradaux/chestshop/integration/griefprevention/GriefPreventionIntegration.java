@@ -1,4 +1,5 @@
-package io.paradaux.chestshop.integration;
+package io.paradaux.chestshop.integration.griefprevention;
+import io.paradaux.chestshop.integration.Integration;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
@@ -32,7 +33,7 @@ public class GriefPreventionIntegration implements Integration {
         if (!config.isGriefpreventionIntegration()) {
             return false;
         }
-        protection.setGriefPreventionBuilding(new GriefPrevenentionBuilding(plugin)::canBuild);
+        protection.setGriefPreventionBuilding(new GriefPreventionBuilding(plugin)::canBuild);
         return true;
     }
 }

@@ -1,4 +1,4 @@
-package io.paradaux.chestshop.integration;
+package io.paradaux.chestshop.integration.nexo;
 import lombok.extern.slf4j.Slf4j;
 
 import com.nexomc.nexo.api.NexoItems;

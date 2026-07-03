@@ -22,7 +22,7 @@ import io.paradaux.chestshop.listeners.PlayerInteractListener;
 import io.paradaux.chestshop.listeners.PlayerInventoryListener;
 import io.paradaux.chestshop.listeners.PlayerTeleportListener;
 import io.paradaux.chestshop.integration.IntegrationRegistrar;
-import io.paradaux.chestshop.integration.WorldGuardFlags;
+import io.paradaux.chestshop.integration.worldguard.WorldGuardFlags;
 import io.paradaux.chestshop.services.ItemCodeService;
 import io.paradaux.chestshop.listeners.RestrictedSignListener;
 

@@ -1,4 +1,5 @@
-package io.paradaux.chestshop.integration;
+package io.paradaux.chestshop.integration.worldguard;
+import io.paradaux.chestshop.integration.Integration;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
