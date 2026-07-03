@@ -55,8 +55,15 @@ import io.paradaux.chestshop.services.impl.TransactionServiceImpl;
  */
 public class ChestShopModule extends AbstractModule {
 
+    private final java.io.File dataFolder;
+
+    public ChestShopModule(java.io.File dataFolder) {
+        this.dataFolder = dataFolder;
+    }
+
     @Override
     protected void configure() {
+        bind(java.io.File.class).annotatedWith(com.google.inject.name.Names.named("dataFolder")).toInstance(dataFolder);
         bind(AccountService.class).to(AccountServiceImpl.class).in(Singleton.class);
         bind(AdminBypassService.class).to(AdminBypassServiceImpl.class).in(Singleton.class);
         bind(BusinessAccountService.class).to(BusinessAccountServiceImpl.class).in(Singleton.class);

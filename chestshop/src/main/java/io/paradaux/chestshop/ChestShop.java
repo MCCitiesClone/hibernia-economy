@@ -132,7 +132,7 @@ public class ChestShop extends JavaPlugin {
                                 io.paradaux.chestshop.listeners.PreviewListener.class)
                         .build();
         this.injector = com.google.inject.Guice.createInjector(hibernia,
-                new io.paradaux.chestshop.guice.ChestShopModule(),
+                new io.paradaux.chestshop.guice.ChestShopModule(getDataFolder()),
                 new io.paradaux.chestshop.guice.DatabaseModule(loadFile("users.db"), loadFile("items.db")));
         this.configurationLoader = injector.getInstance(
                 io.paradaux.hibernia.framework.configurator.ConfigurationLoader.class);

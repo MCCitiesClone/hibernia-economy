@@ -46,18 +46,20 @@ public class ItemCodeServiceImpl implements ItemCodeService {
 
     private final ItemCodeMapper items;
     private final MaterialService materialService;
+    private final java.io.File dataFolder;
     private final Yaml yaml = new Yaml(new YamlBukkitConstructor(), new YamlRepresenter(), new DumperOptions());
 
     @Inject
-    public ItemCodeServiceImpl(ItemCodeMapper items, MaterialService materialService) {
+    public ItemCodeServiceImpl(ItemCodeMapper items, MaterialService materialService, @com.google.inject.name.Named("dataFolder") java.io.File dataFolder) {
         this.items = items;
         this.materialService = materialService;
+        this.dataFolder = dataFolder;
     }
 
     /** Runs the one-time metadata re-serialisation if the server's data version advanced. */
     @Override
     public void migrateIfNeeded() {
-        File versionFile = ChestShop.loadFile("version");
+        File versionFile = new File(dataFolder, "version");
         YamlConfiguration versionConfig = YamlConfiguration.loadConfiguration(versionFile);
 
         // One-time: rewrite legacy Java-serialized item-code blobs to plain Base64

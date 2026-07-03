@@ -1,6 +1,5 @@
 package io.paradaux.chestshop.services.impl;
 
-import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.services.MaterialService;
 import io.paradaux.chestshop.services.ItemCodeService;
 import io.paradaux.chestshop.services.InventoryService;
@@ -52,16 +51,18 @@ public class ItemServiceImpl implements ItemService {
     private final MaterialService materialService;
     private final InventoryService inventoryService;
     private volatile CustomItemResolver customItems;
+    private final java.io.File dataFolder;
 
     // Configurable item-code ↔ alias mapping (itemAliases.yml), absorbed from the former
     // ItemAliasModule (PAR-316) — it was ItemService's own config with no other consumer.
     private BiMap<String, String> aliases;
 
     @Inject
-    public ItemServiceImpl(ItemCodeService itemCodes, MaterialService materialService, InventoryService inventoryService) {
+    public ItemServiceImpl(ItemCodeService itemCodes, MaterialService materialService, InventoryService inventoryService, @com.google.inject.name.Named("dataFolder") java.io.File dataFolder) {
         this.itemCodes = itemCodes;
         this.materialService = materialService;
         this.inventoryService = inventoryService;
+        this.dataFolder = dataFolder;
         loadAliases();
     }
 
@@ -178,7 +179,7 @@ public class ItemServiceImpl implements ItemService {
 
     /** (Re)load the item-code → alias map from itemAliases.yml, writing a defaulted file if absent. */
     private void loadAliases() {
-        File file = new File(ChestShop.getFolder(), "itemAliases.yml");
+        File file = new File(dataFolder, "itemAliases.yml");
         YamlConfiguration configuration = YamlConfiguration.loadConfiguration(file);
         configuration.options().header(
                 "This file specified optional aliases for certain item codes. (Use the full name from /iteminfo)"
@@ -189,7 +190,7 @@ public class ItemServiceImpl implements ItemService {
             configuration.addDefault("Other Material#Eg", "Some other Item");
             try {
                 configuration.options().copyDefaults(true);
-                configuration.save(ChestShop.loadFile("itemAliases.yml"));
+                configuration.save(file);
             } catch (IOException e) {
                 log.error("Error while saving item aliases config", e);
             }
