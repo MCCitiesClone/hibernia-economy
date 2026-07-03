@@ -1,4 +1,5 @@
 package io.paradaux.chestshop.services;
+import io.paradaux.chestshop.model.ItemInfoLines;
 
 import org.bukkit.block.Sign;
 import org.bukkit.command.CommandSender;

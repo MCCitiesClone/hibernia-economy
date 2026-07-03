@@ -1,4 +1,4 @@
-package io.paradaux.chestshop.services;
+package io.paradaux.chestshop.model;
 
 import io.paradaux.chestshop.utils.MessageUtil;
 import io.paradaux.chestshop.ChestShop;

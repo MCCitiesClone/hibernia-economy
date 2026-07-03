@@ -5,7 +5,7 @@ import com.google.inject.Inject;
 import io.paradaux.chestshop.utils.MaterialUtil;
 import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.services.InfoService;
-import io.paradaux.chestshop.services.ItemInfoLines;
+import io.paradaux.chestshop.model.ItemInfoLines;
 import io.paradaux.chestshop.services.ItemService;
 import io.paradaux.hibernia.framework.commander.annotations.Command;
 import io.paradaux.hibernia.framework.commander.annotations.GreedyArg;

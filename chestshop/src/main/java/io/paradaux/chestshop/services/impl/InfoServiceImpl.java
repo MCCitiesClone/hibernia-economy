@@ -3,7 +3,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import io.paradaux.chestshop.services.ShopBlockService;
 import io.paradaux.chestshop.services.ItemService;
-import io.paradaux.chestshop.services.ItemInfoLines;
+import io.paradaux.chestshop.model.ItemInfoLines;
 import io.paradaux.chestshop.services.InventoryService;
 import io.paradaux.chestshop.services.EconomyService;
 import io.paradaux.chestshop.services.SignService;
