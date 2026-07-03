@@ -4,7 +4,7 @@ import io.paradaux.chestshop.dialogs.FindDialog;
 import io.paradaux.chestshop.dialogs.FindState;
 import com.google.inject.Inject;
 import io.paradaux.chestshop.services.PreviewService;
-import io.paradaux.chestshop.services.MarketHook;
+import io.paradaux.chestshop.services.MarketService;
 import io.paradaux.chestshop.services.MarketResyncService;
 import io.paradaux.chestshop.utils.Permissions;
 import io.paradaux.chestshop.services.ItemCodeService;
@@ -45,10 +45,13 @@ public final class FindCommand implements CommandHandler {
     private final PreviewService previews;
     private final Message message;
 
+    private final io.paradaux.chestshop.services.MarketService marketService;
+
     @Inject
     public FindCommand(DialogManager dialogs, ItemService items, ItemCodeService itemCodes,
                        SignService signService, MarketResyncService resync,
-                       PreviewService previews, Message message) {
+                       PreviewService previews, Message message, MarketService marketService) {
+        this.marketService = marketService;
         this.dialogs = dialogs;
         this.items = items;
         this.itemCodes = itemCodes;
@@ -98,12 +101,12 @@ public final class FindCommand implements CommandHandler {
         if (sign == null) {
             return; // a reason was already sent
         }
-        if (!MarketHook.enabled()) {
+        if (!marketService.enabled()) {
             message.send(player, "find.no-search");
             return;
         }
         Location l = sign.getLocation();
-        MarketHook.market().setShopVisibility(l.getWorld().getName(),
+        marketService.market().setShopVisibility(l.getWorld().getName(),
                 l.getBlockX(), l.getBlockY(), l.getBlockZ(), visible);
         message.send(player, "find.visibility-set", "value", visible ? "shown" : "hidden");
     }
@@ -121,13 +124,13 @@ public final class FindCommand implements CommandHandler {
         if (sign == null) {
             return;
         }
-        if (!MarketHook.enabled()) {
+        if (!marketService.enabled()) {
             message.send(player, "find.no-search");
             return;
         }
         Location l = sign.getLocation();
         String world = l.getWorld().getName();
-        MarketHook.market().setShopHologram(world, l.getBlockX(), l.getBlockY(), l.getBlockZ(), visible);
+        marketService.market().setShopHologram(world, l.getBlockX(), l.getBlockY(), l.getBlockZ(), visible);
         if (visible) {
             String itemCode = SignService.getItem(sign);
             ItemStack item = itemCode != null ? itemCodes.decode(itemCode) : null;
@@ -149,11 +152,11 @@ public final class FindCommand implements CommandHandler {
         if (!(sender instanceof Player player)) {
             return;
         }
-        if (!MarketHook.enabled()) {
+        if (!marketService.enabled()) {
             message.send(player, "find.no-search");
             return;
         }
-        MarketHook.market().setPreviewPreference(player.getUniqueId(), visible);
+        marketService.market().setPreviewPreference(player.getUniqueId(), visible);
         previews.applyPreference(player, visible);
         message.send(player, "find.preview-set", "value", visible ? "shown" : "hidden");
     }
@@ -202,7 +205,7 @@ public final class FindCommand implements CommandHandler {
 
     /**
      * The canonical (custom-aware) sign code stored on {@code chestshop_shop.item_key} —
-     * mirrors {@code MarketRecords.itemKey} so a search matches what the tracker wrote.
+     * mirrors {@code MarketService.itemKey} so a search matches what the tracker wrote.
      */
     private String canonicalKey(ItemStack item) {
         try {

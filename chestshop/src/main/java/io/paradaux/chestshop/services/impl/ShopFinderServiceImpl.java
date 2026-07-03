@@ -1,6 +1,6 @@
 package io.paradaux.chestshop.services.impl;
 
-import io.paradaux.chestshop.services.MarketHook;
+import io.paradaux.chestshop.services.MarketService;
 import io.paradaux.chestshop.services.ShopFinderService;
 import io.paradaux.chestshop.dialogs.FindState;
 import io.paradaux.chestshop.model.FoundShop;
@@ -26,14 +26,17 @@ public class ShopFinderServiceImpl implements ShopFinderService {
 
     private final JavaPlugin plugin;
 
+    private final io.paradaux.chestshop.services.MarketService marketService;
+
     @Inject
-    public ShopFinderServiceImpl(JavaPlugin plugin) {
+    public ShopFinderServiceImpl(JavaPlugin plugin, MarketService marketService) {
+        this.marketService = marketService;
         this.plugin = plugin;
     }
 
     @Override
     public boolean available() {
-        return MarketHook.searchEnabled();
+        return marketService.searchEnabled();
     }
 
     @Override
@@ -51,7 +54,7 @@ public class ShopFinderServiceImpl implements ShopFinderService {
 
     /** The blocking query + in-memory pipeline. Package-private for testing with a stubbed FindState. */
     List<FoundShop> query(FindState state) {
-        ShopQueryApi api = MarketHook.shopQuery();
+        ShopQueryApi api = marketService.shopQuery();
         if (api == null) {
             return List.of();
         }

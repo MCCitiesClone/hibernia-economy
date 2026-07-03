@@ -3,7 +3,7 @@ package io.paradaux.chestshop.listeners;
 import io.paradaux.chestshop.services.PreviewService;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import io.paradaux.chestshop.services.MarketHook;
+import io.paradaux.chestshop.services.MarketService;
 import io.paradaux.treasury.api.market.ShopResult;
 import org.bukkit.Chunk;
 import org.bukkit.entity.Player;
@@ -20,7 +20,7 @@ import java.util.UUID;
 /**
  * Loads and unloads shop hologram previews with their chunk, and applies a
  * joining player's stored preview preference. Reads the registry through the
- * in-process {@link MarketHook#shopQuery()}; inert if Treasury isn't present.
+ * in-process the market service; inert if Treasury isn't present.
  */
 @Singleton
 public final class PreviewListener implements Listener {
@@ -31,15 +31,18 @@ public final class PreviewListener implements Listener {
     private final JavaPlugin plugin;
     private final PreviewService previews;
 
+    private final io.paradaux.chestshop.services.MarketService marketService;
+
     @Inject
-    public PreviewListener(JavaPlugin plugin, PreviewService previews) {
+    public PreviewListener(JavaPlugin plugin, PreviewService previews, MarketService marketService) {
+        this.marketService = marketService;
         this.plugin = plugin;
         this.previews = previews;
     }
 
     @EventHandler
     public void onChunkLoad(ChunkLoadEvent event) {
-        if (!MarketHook.searchEnabled()) {
+        if (!marketService.searchEnabled()) {
             return;
         }
         Chunk chunk = event.getChunk();
@@ -49,7 +52,7 @@ public final class PreviewListener implements Listener {
         plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
             List<ShopResult> shops;
             try {
-                shops = MarketHook.shopQuery().shopsInChunk(world, cx, cz);
+                shops = marketService.shopQuery().shopsInChunk(world, cx, cz);
             } catch (RuntimeException e) {
                 return;
             }
@@ -72,7 +75,7 @@ public final class PreviewListener implements Listener {
 
     @EventHandler
     public void onJoin(PlayerJoinEvent event) {
-        if (!MarketHook.searchEnabled()) {
+        if (!marketService.searchEnabled()) {
             return;
         }
         Player player = event.getPlayer();
@@ -80,7 +83,7 @@ public final class PreviewListener implements Listener {
         plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
             boolean visible;
             try {
-                visible = MarketHook.shopQuery().previewVisible(id, DEFAULT_PREVIEW_VISIBLE);
+                visible = marketService.shopQuery().previewVisible(id, DEFAULT_PREVIEW_VISIBLE);
             } catch (RuntimeException e) {
                 return;
             }

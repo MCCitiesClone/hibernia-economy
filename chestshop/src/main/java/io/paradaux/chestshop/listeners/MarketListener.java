@@ -1,7 +1,6 @@
 package io.paradaux.chestshop.listeners;
 
-import io.paradaux.chestshop.services.MarketRecords;
-import io.paradaux.chestshop.services.MarketHook;
+import io.paradaux.chestshop.services.MarketService;
 import io.paradaux.chestshop.services.ShopBlockService;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
@@ -42,15 +41,15 @@ import java.util.UUID;
 @Singleton
 public class MarketListener implements Listener {
 
-    private final MarketRecords records;
+    private final MarketService marketService;
     private final io.paradaux.chestshop.services.ItemCodeService itemCodes;
     private final SignService signService;
     private final ShopBlockService shopBlockService;
 
     @Inject
-    public MarketListener(MarketRecords records, io.paradaux.chestshop.services.ItemCodeService itemCodes,
+    public MarketListener(MarketService marketService, io.paradaux.chestshop.services.ItemCodeService itemCodes,
                           SignService signService, ShopBlockService shopBlockService) {
-        this.records = records;
+        this.marketService = marketService;
         this.itemCodes = itemCodes;
         this.signService = signService;
         this.shopBlockService = shopBlockService;
@@ -58,24 +57,24 @@ public class MarketListener implements Listener {
 
     // Invoked directly by TransactionService#process (was a @MONITOR Transaction listener).
     public void onTransaction(Transaction event) {
-        if (!MarketHook.enabled()) return;
+        if (!marketService.enabled()) return;
         try {
             ItemStack[] stock = event.getStock();
             if (stock == null || stock.length == 0 || stock[0] == null) return;
             ItemStack item = stock[0];
-            int quantity = records.totalAmount(stock);
+            int quantity = marketService.totalAmount(stock);
             Sign sign = event.getSign();
             boolean admin = signService.isAdminShop(sign);
             UUID ownerUuid = event.getOwnerAccount() != null ? event.getOwnerAccount().getUuid() : null;
-            MarketRecords.Owner owner = records.ownerFromUuid(ownerUuid, admin);
+            MarketService.Owner owner = marketService.ownerFromUuid(ownerUuid, admin);
             String direction = event.getTransactionType() == Transaction.TransactionType.BUY ? "BUY" : "SELL";
-            Integer shopStock = admin ? null : records.stockOf(item, event.getOwnerInventory());
-            Integer capacity = admin ? null : records.capacityOf(item, event.getOwnerInventory());
+            Integer shopStock = admin ? null : marketService.stockOf(item, event.getOwnerInventory());
+            Integer capacity = admin ? null : marketService.capacityOf(item, event.getOwnerInventory());
 
-            MarketApi market = MarketHook.market();
-            market.recordSale(records.sale(sign, item, quantity, event.getClient().getUniqueId(),
+            MarketApi market = marketService.market();
+            market.recordSale(marketService.sale(sign, item, quantity, event.getClient().getUniqueId(),
                     owner, event.getExactPrice(), event.getSalesTax(), direction, shopStock, event.getSettlementTxnId()));
-            market.upsertShop(records.shop(sign, item, owner, shopStock, capacity));
+            market.upsertShop(marketService.shop(sign, item, owner, shopStock, capacity));
         } catch (Throwable ignored) {
             // analytics only
         }
@@ -83,29 +82,29 @@ public class MarketListener implements Listener {
 
     // Invoked directly by ShopService#onCreated (was a @MONITOR CreatedShop listener).
     public void onShopCreated(CreatedShop event) {
-        if (!MarketHook.enabled()) return;
+        if (!marketService.enabled()) return;
         try {
             Sign sign = event.getSign();
             ItemStack item = itemCodes.decode(event.getSignLines()[SignService.ITEM_LINE]);
             if (item == null) return;
             boolean admin = signService.isAdminShop(event.getSignLines());
             UUID ownerUuid = event.getOwnerAccount() != null ? event.getOwnerAccount().getUuid() : null;
-            MarketRecords.Owner owner = records.ownerFromUuid(ownerUuid, admin);
+            MarketService.Owner owner = marketService.ownerFromUuid(ownerUuid, admin);
             Inventory container = (!admin && event.getContainer() != null)
                     ? event.getContainer().getInventory() : null;
-            Integer stock = container != null ? records.stockOf(item, container) : null;
-            Integer capacity = container != null ? records.capacityOf(item, container) : null;
-            MarketHook.market().upsertShop(records.shop(sign, item, owner, stock, capacity));
+            Integer stock = container != null ? marketService.stockOf(item, container) : null;
+            Integer capacity = container != null ? marketService.capacityOf(item, container) : null;
+            marketService.market().upsertShop(marketService.shop(sign, item, owner, stock, capacity));
         } catch (Throwable ignored) {
         }
     }
 
     // Invoked directly by ShopService#onDestroyed (was a @MONITOR DestroyedShop listener).
     public void onShopDestroyed(DestroyedShop event) {
-        if (!MarketHook.enabled()) return;
+        if (!marketService.enabled()) return;
         try {
             Location l = event.getSign().getLocation();
-            MarketHook.market().deactivateShop(
+            marketService.market().deactivateShop(
                     l.getWorld() != null ? l.getWorld().getName() : null,
                     l.getBlockX(), l.getBlockY(), l.getBlockZ());
         } catch (Throwable ignored) {
@@ -114,14 +113,14 @@ public class MarketListener implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR)
     public void onInventoryClose(InventoryCloseEvent event) {
-        if (!MarketHook.enabled()) return;
+        if (!marketService.enabled()) return;
         try {
             InventoryHolder holder = event.getInventory().getHolder();
             if (holder == null) return;
             List<Sign> signs = shopBlockService.findConnectedShopSigns(holder);
             if (signs.isEmpty()) return;
             Inventory inv = event.getInventory();
-            MarketApi market = MarketHook.market();
+            MarketApi market = marketService.market();
             for (Sign sign : signs) {
                 if (signService.isAdminShop(sign)) continue;
                 String itemName = SignService.getItem(sign);
@@ -131,7 +130,7 @@ public class MarketListener implements Listener {
                 market.updateShopStock(
                         l.getWorld() != null ? l.getWorld().getName() : null,
                         l.getBlockX(), l.getBlockY(), l.getBlockZ(),
-                        records.stockOf(item, inv), records.capacityOf(item, inv));
+                        marketService.stockOf(item, inv), marketService.capacityOf(item, inv));
             }
         } catch (Throwable ignored) {
         }

@@ -11,7 +11,7 @@ import com.sk89q.worldedit.util.eventbus.Subscribe;
 import com.sk89q.worldedit.world.block.BlockCategories;
 import com.sk89q.worldedit.world.block.BlockState;
 import com.sk89q.worldedit.world.block.BlockStateHolder;
-import io.paradaux.chestshop.services.MarketHook;
+import io.paradaux.chestshop.services.MarketService;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.server.PluginDisableEvent;
@@ -38,9 +38,11 @@ public final class WorldEditShopCleanupListener implements Listener {
     private record Pos(String world, int x, int y, int z) {}
 
     private final JavaPlugin plugin;
+    private final io.paradaux.chestshop.services.MarketService marketService;
     private final Queue<Pos> queue = new ConcurrentLinkedDeque<>();
 
-    public WorldEditShopCleanupListener(JavaPlugin plugin) {
+    public WorldEditShopCleanupListener(JavaPlugin plugin, MarketService marketService) {
+        this.marketService = marketService;
         this.plugin = plugin;
     }
 
@@ -53,7 +55,7 @@ public final class WorldEditShopCleanupListener implements Listener {
     }
 
     private void drain() {
-        if (!MarketHook.enabled() || queue.isEmpty()) {
+        if (!marketService.enabled() || queue.isEmpty()) {
             return;
         }
         Set<Pos> batch = new HashSet<>();
@@ -62,7 +64,7 @@ public final class WorldEditShopCleanupListener implements Listener {
             batch.add(pos);
         }
         for (Pos p : batch) {
-            MarketHook.market().deactivateShop(p.world(), p.x(), p.y(), p.z());
+            marketService.market().deactivateShop(p.world(), p.x(), p.y(), p.z());
         }
     }
 

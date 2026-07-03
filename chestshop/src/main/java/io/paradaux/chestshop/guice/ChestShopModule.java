@@ -18,6 +18,7 @@ import io.paradaux.chestshop.services.InventoryService;
 import io.paradaux.chestshop.services.ItemCodeService;
 import io.paradaux.chestshop.services.ItemService;
 import io.paradaux.chestshop.services.MarketResyncService;
+import io.paradaux.chestshop.services.MarketService;
 import io.paradaux.chestshop.services.MaterialService;
 import io.paradaux.chestshop.services.MetricsService;
 import io.paradaux.chestshop.services.PreviewService;
@@ -72,6 +73,7 @@ public class ChestShopModule extends AbstractModule {
         bind(ShopFinderService.class).to(ShopFinderServiceImpl.class).in(Singleton.class);
         bind(ShopService.class).to(ShopServiceImpl.class).in(Singleton.class);
         bind(TransactionService.class).to(TransactionServiceImpl.class).in(Singleton.class);
+        bind(MarketService.class).to(io.paradaux.chestshop.services.impl.MarketServiceImpl.class).in(Singleton.class);
         bind(MetricsService.class).to(io.paradaux.chestshop.services.impl.MetricsServiceImpl.class).in(Singleton.class);
 
         // SignService is a static-heavy sign-format util with a small instance surface,

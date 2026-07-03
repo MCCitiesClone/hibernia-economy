@@ -8,7 +8,7 @@ import io.paradaux.chestshop.commands.ItemInfoCommand;
 import io.paradaux.chestshop.commands.ShopInfoCommand;
 import io.paradaux.chestshop.commands.ToggleCommand;
 import io.paradaux.chestshop.commands.VersionCommand;
-import io.paradaux.chestshop.services.MarketHook;
+import io.paradaux.chestshop.services.MarketService;
 import io.paradaux.chestshop.listeners.MarketListener;
 import io.paradaux.chestshop.listeners.BlockPlaceListener;
 import io.paradaux.chestshop.listeners.ChestBreakListener;
@@ -152,7 +152,7 @@ public class ChestShop extends JavaPlugin {
 
         // Register every Bukkit listener bound via HiberniaModule.listeners(...) above.
         injector.getInstance(io.paradaux.hibernia.framework.events.ListenerManager.class).registerAll();
-        MarketHook.init();
+        injector.getInstance(MarketService.class).init();
 
         // Optional: keep the shop registry clean when WorldEdit/FAWE bulk-removes
         // shops (WE bypasses Bukkit block events). Only touched when WE is present,
@@ -160,7 +160,7 @@ public class ChestShop extends JavaPlugin {
         if (getServer().getPluginManager().getPlugin("WorldEdit") != null
                 || getServer().getPluginManager().getPlugin("FastAsyncWorldEdit") != null) {
             try {
-                new io.paradaux.chestshop.listeners.WorldEditShopCleanupListener(this).register();
+                new io.paradaux.chestshop.listeners.WorldEditShopCleanupListener(this, injector.getInstance(io.paradaux.chestshop.services.MarketService.class)).register();
             } catch (Throwable t) {
                 log.warn("WorldEdit shop-cleanup adapter unavailable", t);
             }

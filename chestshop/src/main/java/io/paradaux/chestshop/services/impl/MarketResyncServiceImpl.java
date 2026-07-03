@@ -2,8 +2,7 @@ package io.paradaux.chestshop.services.impl;
 import lombok.extern.slf4j.Slf4j;
 
 import io.paradaux.chestshop.services.ShopBlockService;
-import io.paradaux.chestshop.services.MarketRecords;
-import io.paradaux.chestshop.services.MarketHook;
+import io.paradaux.chestshop.services.MarketService;
 import io.paradaux.chestshop.services.ItemCodeService;
 import io.paradaux.chestshop.services.SignService;
 import io.paradaux.chestshop.services.AccountService;
@@ -50,7 +49,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class MarketResyncServiceImpl implements MarketResyncService {
 
     private final JavaPlugin plugin;
-    private final MarketRecords records;
+    private final MarketService marketService;
     private final SignService signService;
     private final ShopBlockService shopBlockService;
     private final ItemCodeService itemCodes;
@@ -60,11 +59,11 @@ public class MarketResyncServiceImpl implements MarketResyncService {
     private final AtomicBoolean running = new AtomicBoolean(false);
 
     @Inject
-    public MarketResyncServiceImpl(JavaPlugin plugin, MarketRecords records, SignService signService,
+    public MarketResyncServiceImpl(JavaPlugin plugin, MarketService marketService, SignService signService,
                                ShopBlockService shopBlockService, ItemCodeService itemCodes,
                                AccountService accounts, Message message) {
         this.plugin = plugin;
-        this.records = records;
+        this.marketService = marketService;
         this.signService = signService;
         this.shopBlockService = shopBlockService;
         this.itemCodes = itemCodes;
@@ -74,7 +73,7 @@ public class MarketResyncServiceImpl implements MarketResyncService {
 
     @Override
     public void resync(Player initiator, int chunksPerTick) {
-        if (!MarketHook.enabled() || !MarketHook.searchEnabled()) {
+        if (!marketService.enabled() || !marketService.searchEnabled()) {
             message.send(initiator, "find.no-search");
             return;
         }
@@ -88,7 +87,7 @@ public class MarketResyncServiceImpl implements MarketResyncService {
         plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
             Map<String, Set<String>> knownByChunk;
             try {
-                knownByChunk = groupKnownByChunk(MarketHook.shopQuery().activeShopLocations(null));
+                knownByChunk = groupKnownByChunk(marketService.shopQuery().activeShopLocations(null));
             } catch (RuntimeException e) {
                 running.set(false);
                 plugin.getServer().getScheduler().runTask(plugin,
@@ -158,7 +157,7 @@ public class MarketResyncServiceImpl implements MarketResyncService {
             for (String pos : known) {
                 if (!seen.contains(pos)) {
                     int[] xyz = parsePos(pos);
-                    MarketHook.market().deactivateShop(world, xyz[0], xyz[1], xyz[2]);
+                    marketService.market().deactivateShop(world, xyz[0], xyz[1], xyz[2]);
                     deactivated++;
                 }
             }
@@ -175,20 +174,20 @@ public class MarketResyncServiceImpl implements MarketResyncService {
                 return false;
             }
             boolean admin = signService.isAdminShop(sign);
-            MarketRecords.Owner owner;
+            MarketService.Owner owner;
             if (admin) {
-                owner = records.ownerFromUuid(null, true);
+                owner = marketService.ownerFromUuid(null, true);
             } else {
                 Account account = accounts.resolveAccount(SignService.getOwner(sign));
                 if (account == null || account.getUuid() == null) {
                     return false; // owner not resolvable — skip rather than write a half row
                 }
-                owner = records.ownerFromUuid(account.getUuid(), false);
+                owner = marketService.ownerFromUuid(account.getUuid(), false);
             }
             Container container = admin ? null : shopBlockService.findConnectedContainer(sign);
-            Integer stock = container != null ? records.stockOf(item, container.getInventory()) : null;
-            Integer capacity = container != null ? records.capacityOf(item, container.getInventory()) : null;
-            MarketHook.market().upsertShop(records.shop(sign, item, owner, stock, capacity));
+            Integer stock = container != null ? marketService.stockOf(item, container.getInventory()) : null;
+            Integer capacity = container != null ? marketService.capacityOf(item, container.getInventory()) : null;
+            marketService.market().upsertShop(marketService.shop(sign, item, owner, stock, capacity));
             return true;
         } catch (RuntimeException e) {
             log.debug("resync: skipped a sign", e);
