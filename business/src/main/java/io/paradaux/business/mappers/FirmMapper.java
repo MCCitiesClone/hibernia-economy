@@ -26,7 +26,7 @@ public interface FirmMapper {
               <if test="hqRegion != null">hq_region = #{hqRegion},</if>
               <if test="defaultAccountId != null">default_account_id = #{defaultAccountId},</if>
               <if test="archived != null">is_archived = #{archived},</if>
-              updated_at = updated_at
+              updated_at = CURRENT_TIMESTAMP
             </set>
             WHERE firm_id = #{firmId}
             </script>
@@ -43,7 +43,7 @@ public interface FirmMapper {
             UPDATE firm
             SET is_archived = 1,
                 default_account_id = NULL,
-                updated_at = updated_at
+                updated_at = CURRENT_TIMESTAMP
             WHERE firm_id = #{firmId}
             """)
     void archiveFirm(@Param("firmId") int firmId);
