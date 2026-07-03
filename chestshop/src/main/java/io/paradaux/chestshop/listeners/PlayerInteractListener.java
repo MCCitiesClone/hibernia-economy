@@ -12,7 +12,7 @@ import io.paradaux.chestshop.model.Account;
 import io.paradaux.chestshop.model.PendingTransaction;
 import io.paradaux.chestshop.model.Transaction;
 import io.paradaux.chestshop.utils.Permissions;
-import io.paradaux.chestshop.services.Security;
+import io.paradaux.chestshop.services.ProtectionService;
 import io.paradaux.chestshop.services.AccountService;
 import io.paradaux.chestshop.services.InfoService;
 import io.paradaux.chestshop.services.ItemService;
@@ -63,7 +63,7 @@ public class PlayerInteractListener implements Listener {
     private final AccountService accounts;
     private final ItemService items;
     private final Message message;
-    private final Security security;
+    private final ProtectionService protection;
     private final ChestShopConfiguration config;
     private final ChestShopSign chestShopSign;
     private final ShopBlockService shopBlockService;
@@ -72,7 +72,7 @@ public class PlayerInteractListener implements Listener {
 
     @Inject
     public PlayerInteractListener(TransactionService transactions, InfoService info, AccountService accounts,
-                          ItemService items, Message message, Security security,
+                          ItemService items, Message message, ProtectionService protection,
                           ChestShopConfiguration config, ChestShopSign chestShopSign, ShopBlockService shopBlockService, AdminBypass adminBypass) {
         this.adminBypass = adminBypass;
         this.transactions = transactions;
@@ -80,7 +80,7 @@ public class PlayerInteractListener implements Listener {
         this.accounts = accounts;
         this.items = items;
         this.message = message;
-        this.security = security;
+        this.protection = protection;
         this.config = config;
         this.chestShopSign = chestShopSign;
         this.shopBlockService = shopBlockService;
@@ -99,7 +99,7 @@ public class PlayerInteractListener implements Listener {
             Sign sign = shopBlockService.getConnectedSign(block);
             if (sign != null) {
 
-                if (!security.canView(player, block, config.isTurnOffDefaultProtectionWhenProtectedExternally())) {
+                if (!protection.canView(block, player, config.isTurnOffDefaultProtectionWhenProtectedExternally())) {
                     if (adminBypass.has(player, Permissions.SHOPINFO)) {
                         info.showShopInfo(player, sign);
                         event.setCancelled(true);
@@ -195,7 +195,7 @@ public class PlayerInteractListener implements Listener {
             event.setCancelled(true);
         }
 
-        if (config.isCheckAccessForShopUse() && !security.canAccess(player, block, true)) {
+        if (config.isCheckAccessForShopUse() && !protection.canAccess(block, player, true)) {
             message.send(player, "chestshop.TRADE_DENIED");
             return;
         }
@@ -233,11 +233,11 @@ public class PlayerInteractListener implements Listener {
             return;
         }
 
-        if (!security.canAccess(player, signBlock)) {
+        if (!protection.canAccess(player, signBlock)) {
             return;
         }
         
-        if (!security.canAccess(player, container.getBlock())) {
+        if (!protection.canAccess(player, container.getBlock())) {
             return;
         }
 

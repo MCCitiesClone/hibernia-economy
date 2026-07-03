@@ -6,7 +6,7 @@ import io.paradaux.chestshop.services.ShopBlockService;
 import com.google.inject.Inject;
 import io.paradaux.chestshop.model.config.ChestShopConfiguration;
 import io.paradaux.chestshop.utils.Permissions;
-import io.paradaux.chestshop.services.Security;
+import io.paradaux.chestshop.services.ProtectionService;
 import io.paradaux.chestshop.services.InfoService;
 import io.paradaux.chestshop.services.ChestShopSign;
 import io.paradaux.hibernia.framework.i18n.Message;
@@ -34,7 +34,7 @@ public class PlayerInventoryListener implements Listener {
 
     private final InfoService info;
     private final Message message;
-    private final Security security;
+    private final ProtectionService protection;
     private final ChestShopConfiguration config;
     private final ChestShopSign chestShopSign;
     private final ShopBlockService shopBlockService;
@@ -42,12 +42,12 @@ public class PlayerInventoryListener implements Listener {
     private final AdminBypass adminBypass;
 
     @Inject
-    public PlayerInventoryListener(InfoService info, Message message, Security security,
+    public PlayerInventoryListener(InfoService info, Message message, ProtectionService protection,
                            ChestShopConfiguration config, ChestShopSign chestShopSign, ShopBlockService shopBlockService, AdminBypass adminBypass) {
         this.adminBypass = adminBypass;
         this.info = info;
         this.message = message;
-        this.security = security;
+        this.protection = protection;
         this.config = config;
         this.chestShopSign = chestShopSign;
         this.shopBlockService = shopBlockService;
@@ -87,7 +87,7 @@ public class PlayerInventoryListener implements Listener {
         boolean canAccess = false;
         for (Block container : containers) {
             if (shopBlockService.isShopBlock(container)) {
-                if (security.canView(player, container, false)) {
+                if (protection.canView(container, player, false)) {
                     canAccess = true;
                 }
             } else {

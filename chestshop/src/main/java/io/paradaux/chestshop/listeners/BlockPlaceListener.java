@@ -5,7 +5,7 @@ import io.paradaux.chestshop.services.AdminBypass;
 import io.paradaux.chestshop.services.ShopBlockService;
 import com.google.inject.Inject;
 import io.paradaux.chestshop.utils.Permissions;
-import io.paradaux.chestshop.services.Security;
+import io.paradaux.chestshop.services.ProtectionService;
 import io.paradaux.chestshop.services.ChestShopSign;
 import io.paradaux.hibernia.framework.i18n.Message;
 import org.bukkit.Material;
@@ -26,17 +26,17 @@ import java.util.List;
 public class BlockPlaceListener implements Listener {
 
     private final Message message;
-    private final Security security;
+    private final ProtectionService protection;
     private final ChestShopSign chestShopSign;
     private final ShopBlockService shopBlockService;
 
     private final AdminBypass adminBypass;
 
     @Inject
-    public BlockPlaceListener(Message message, Security security, ChestShopSign chestShopSign, ShopBlockService shopBlockService, AdminBypass adminBypass) {
+    public BlockPlaceListener(Message message, ProtectionService protection, ChestShopSign chestShopSign, ShopBlockService shopBlockService, AdminBypass adminBypass) {
         this.adminBypass = adminBypass;
         this.message = message;
-        this.security = security;
+        this.protection = protection;
         this.chestShopSign = chestShopSign;
         this.shopBlockService = shopBlockService;
     }
@@ -55,7 +55,7 @@ public class BlockPlaceListener implements Listener {
             return;
         }
 
-        if (!security.canAccess(player, placed)) {
+        if (!protection.canAccess(player, placed)) {
             message.send(event.getPlayer(), "chestshop.ACCESS_DENIED");
             event.setCancelled(true);
             return;
@@ -63,7 +63,7 @@ public class BlockPlaceListener implements Listener {
 
         Block neighbor = BlockUtil.findNeighbor(placed);
 
-        if (neighbor != null && !security.canAccess(event.getPlayer(), neighbor)) {
+        if (neighbor != null && !protection.canAccess(event.getPlayer(), neighbor)) {
             message.send(event.getPlayer(), "chestshop.ACCESS_DENIED");
             event.setCancelled(true);
         }
@@ -105,7 +105,7 @@ public class BlockPlaceListener implements Listener {
                 continue;
             }
 
-            if (!security.canAccess(event.getPlayer(), relative)) {
+            if (!protection.canAccess(event.getPlayer(), relative)) {
                 message.send(event.getPlayer(), "chestshop.ACCESS_DENIED");
                 event.setCancelled(true);
                 return;

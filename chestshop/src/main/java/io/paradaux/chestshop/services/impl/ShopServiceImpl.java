@@ -3,7 +3,6 @@ import lombok.extern.slf4j.Slf4j;
 
 import io.paradaux.chestshop.utils.BlockUtil;
 import io.paradaux.chestshop.services.ShopBlockService;
-import io.paradaux.chestshop.services.Security;
 import io.paradaux.chestshop.services.ProtectionService;
 import io.paradaux.chestshop.services.ItemService;
 import io.paradaux.chestshop.services.EconomyService;
@@ -55,7 +54,7 @@ import static io.paradaux.chestshop.services.ChestShopSign.AUTOFILL_CODE;
  * out to a dozen priority-ordered validator classes coordinating through a mutable
  * outcome/signLines bag — with one service whose validation steps are ordinary ordered
  * private methods (PAR-282). The genuine cross-cutting hooks (market-DB sync, stock
- * counter) and {@code Security}/{@code ProtectionService} integration stay.
+ * counter) and {@code ProtectionService} integration stay.
  *
  * <p>Shops have no ChestShop-owned persistence — they are sign + chest world state — so
  * there is no repository here, only this service.
@@ -70,7 +69,6 @@ public class ShopServiceImpl implements ShopService {
     private final ProtectionService protection;
     private final StockCounterListener stockCounter;
     private final Message message;
-    private final Security security;
     private final MarketListener market;
     private final ChestShopConfiguration config;
     private final ChestShopSign chestShopSign;
@@ -79,7 +77,7 @@ public class ShopServiceImpl implements ShopService {
     private final AdminBypass adminBypass;
 
     @Inject
-    public ShopServiceImpl(AccountService accounts, EconomyService economy, ItemService items, ProtectionService protection, StockCounterListener stockCounter, Message message, Security security, MarketListener market,
+    public ShopServiceImpl(AccountService accounts, EconomyService economy, ItemService items, ProtectionService protection, StockCounterListener stockCounter, Message message, MarketListener market,
                        ChestShopConfiguration config, ChestShopSign chestShopSign, ShopBlockService shopBlockService, AdminBypass adminBypass) {
         this.adminBypass = adminBypass;
         this.accounts = accounts;
@@ -88,7 +86,6 @@ public class ShopServiceImpl implements ShopService {
         this.protection = protection;
         this.stockCounter = stockCounter;
         this.message = message;
-        this.security = security;
         this.market = market;
         this.config = config;
         this.chestShopSign = chestShopSign;
@@ -251,7 +248,7 @@ public class ShopServiceImpl implements ShopService {
         if (adminBypass.has(player, Permissions.ADMIN)) {
             return;
         }
-        if (!security.canAccess(player, connectedContainer.getBlock())) {
+        if (!protection.canAccess(player, connectedContainer.getBlock())) {
             ctx.setOutcome(CreationOutcome.NO_PERMISSION_FOR_CHEST);
         }
     }
@@ -288,7 +285,7 @@ public class ShopServiceImpl implements ShopService {
     /** Require terrain build permission for the sign and its chest. */
     private void checkTerrain(ShopCreation ctx) {
         Player player = ctx.getPlayer();
-        if (!security.canPlaceSign(player, ctx.getSign())) {
+        if (!protection.canPlaceSign(player, ctx.getSign())) {
             ctx.setOutcome(CreationOutcome.NO_PERMISSION_FOR_TERRAIN);
             return;
         }

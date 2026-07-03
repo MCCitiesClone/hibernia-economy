@@ -1,79 +1,93 @@
 package io.paradaux.chestshop.services.impl;
 
-import io.paradaux.chestshop.services.ProtectionService;
+import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import io.paradaux.chestshop.model.BuildPermission;
 import io.paradaux.chestshop.model.ProtectionCheck;
+import io.paradaux.chestshop.model.config.ChestShopConfiguration;
+import io.paradaux.chestshop.services.AccountService;
+import io.paradaux.chestshop.services.ChestShopSign;
+import io.paradaux.chestshop.services.ProtectionService;
+import io.paradaux.chestshop.services.ShopBlockService;
+import io.paradaux.chestshop.utils.BlockUtil;
+import io.paradaux.chestshop.utils.Permissions;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
+import org.bukkit.block.Sign;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 
 import javax.annotation.Nullable;
 import java.util.function.Consumer;
 
+import static io.paradaux.chestshop.utils.BlockUtil.getState;
+import static io.paradaux.chestshop.utils.BlockUtil.isSign;
+
 /**
- * Owns shop/chest protection checks, replacing the {@code ProtectionCheck} and
- * {@code BuildPermission} bus with direct, ordered calls. The vanilla shop-member
- * check ({@link io.paradaux.chestshop.services.VanillaShopProtection#onProtectionCheck}) always runs;
- * the optional WorldGuard/GriefPrevention integrations run after it only when those
- * plugins are hooked and their config flags are on — the WorldGuard/GriefPrevention integrations register them
- * here as method references (so this service never names the {@code com.sk89q}/
- * {@code me.ryanhamshire} classes, keeping them off the call path when the plugin is
- * absent, exactly as the old conditional listener registration did).
- *
- * <p>Block-level protection (the LWC/Lockette integrations) was removed, so no provider
- * ever claims shop blocks — they are never independently protected, and that event was
- * dropped entirely.
+ * Owns all shop/chest protection checks: the vanilla shop-member check (absorbed from the former
+ * {@code VanillaShopProtection}) runs first, then the optional WorldGuard/GriefPrevention providers
+ * the integrations register as method refs. Also carries the caller-facing access/view/
+ * sign-placement checks the former {@code Security} facade exposed (PAR-316).
  */
 @Singleton
 public class ProtectionServiceImpl implements ProtectionService {
 
-    private final io.paradaux.chestshop.services.VanillaShopProtection vanillaProtection;
+    private static final BlockFace[] SIGN_CONNECTION_FACES = {BlockFace.UP, BlockFace.EAST, BlockFace.WEST, BlockFace.NORTH, BlockFace.SOUTH};
+    private static final BlockFace[] BLOCKS_AROUND = {BlockFace.UP, BlockFace.DOWN, BlockFace.EAST, BlockFace.WEST, BlockFace.NORTH, BlockFace.SOUTH};
 
-    @com.google.inject.Inject
-    public ProtectionServiceImpl(io.paradaux.chestshop.services.VanillaShopProtection vanillaProtection) {
-        this.vanillaProtection = vanillaProtection;
-    }
+    private final AccountService accounts;
+    private final ChestShopConfiguration config;
+    private final ChestShopSign chestShopSign;
+    private final ShopBlockService shopBlockService;
 
     @Nullable private volatile Consumer<ProtectionCheck> worldGuardProtection;
     @Nullable private volatile Consumer<BuildPermission> worldGuardBuilding;
     @Nullable private volatile Consumer<BuildPermission> griefPreventionBuilding;
 
-    /** Hook WorldGuard region/built-in protection into access checks (WORLDGUARD_USE_PROTECTION). */
+    @Inject
+    public ProtectionServiceImpl(AccountService accounts, ChestShopConfiguration config,
+                                 ChestShopSign chestShopSign, ShopBlockService shopBlockService) {
+        this.accounts = accounts;
+        this.config = config;
+        this.chestShopSign = chestShopSign;
+        this.shopBlockService = shopBlockService;
+    }
+
     @Override
     public void setWorldGuardProtection(Consumer<ProtectionCheck> check) {
         this.worldGuardProtection = check;
     }
 
-    /** Hook WorldGuard region gating into shop-creation build checks (WORLDGUARD_INTEGRATION). */
     @Override
     public void setWorldGuardBuilding(Consumer<BuildPermission> check) {
         this.worldGuardBuilding = check;
     }
 
-    /** Hook GriefPrevention claim gating into shop-creation build checks (GRIEFPREVENTION_INTEGRATION). */
     @Override
     public void setGriefPreventionBuilding(Consumer<BuildPermission> check) {
         this.griefPreventionBuilding = check;
     }
 
-    /** Whether {@code player} may access {@code block} (vanilla shop membership + WorldGuard). */
     @Override
     public boolean canAccess(Block block, Player player, boolean ignoreBuiltInProtection) {
         return runProtectionCheck(new ProtectionCheck(block, player, ignoreBuiltInProtection));
     }
 
-    /** Whether {@code player} may view {@code block} (as {@link #canAccess} but without the manage check). */
+    @Override
+    public boolean canAccess(Player player, Block block) {
+        return canAccess(block, player, false);
+    }
+
     @Override
     public boolean canView(Block block, Player player, boolean ignoreBuiltInProtection) {
         return runProtectionCheck(new ProtectionCheck(block, player, ignoreBuiltInProtection, false));
     }
 
     private boolean runProtectionCheck(ProtectionCheck event) {
-        // Vanilla ChestShop shop-member protection always runs first; both handlers only
-        // ever set DENY (and self-guard on it), so the result is "deny if either denies".
-        vanillaProtection.onProtectionCheck(event);
+        // Vanilla ChestShop shop-member protection always runs first; both handlers only ever
+        // set DENY (and self-guard on it), so the result is "deny if either denies".
+        vanillaCheck(event);
         Consumer<ProtectionCheck> wg = worldGuardProtection;
         if (wg != null) {
             wg.accept(event);
@@ -93,5 +107,88 @@ public class ProtectionServiceImpl implements ProtectionService {
             gpb.accept(event);
         }
         return event.isAllowed();
+    }
+
+    // ---- vanilla shop-member protection (was VanillaShopProtection) --------------
+
+    private void vanillaCheck(ProtectionCheck event) {
+        if (event.getResult() == Event.Result.DENY || event.isBuiltInProtectionIgnored()) {
+            return;
+        }
+        if (!hasMemberAccess(event.getPlayer(), event.getBlock())) {
+            event.setResult(Event.Result.DENY);
+        }
+    }
+
+    private boolean hasMemberAccess(Player player, Block block) {
+        if (!isSign(block) && !shopBlockService.couldBeShopContainer(block)) {
+            return true;
+        }
+
+        if (isSign(block)) {
+            Sign sign = (Sign) getState(block, false);
+            if (!chestShopSign.isValid(sign)) {
+                return true;
+            }
+            if (!isShopMember(player, sign)) {
+                return false;
+            }
+        }
+
+        if (shopBlockService.couldBeShopContainer(block)) {
+            Sign sign = shopBlockService.getConnectedSign(block);
+            if (sign != null && !isShopMember(player, sign)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private boolean isShopMember(Player player, Sign sign) {
+        return accounts.hasPermission(player, Permissions.OTHER_NAME_ACCESS, sign);
+    }
+
+    // ---- shop-sign placement (was Security) -------------------------------------
+
+    @Override
+    public boolean canPlaceSign(Player player, Sign sign) {
+        Block baseBlock = BlockUtil.getAttachedBlock(sign);
+
+        if (!config.isAllowMultipleShopsAtOneBlock() && anotherShopFound(baseBlock, sign.getBlock(), player)) {
+            return false;
+        }
+
+        return canBePlaced(player, sign.getBlock());
+    }
+
+    private boolean canBePlaced(Player player, Block sign) {
+        for (BlockFace face : BLOCKS_AROUND) {
+            Block block = sign.getRelative(face);
+            if (!shopBlockService.couldBeShopContainer(block)) {
+                continue;
+            }
+            if (!canAccess(player, block)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private boolean anotherShopFound(Block baseBlock, Block signBlock, Player player) {
+        for (BlockFace face : SIGN_CONNECTION_FACES) {
+            Block block = baseBlock.getRelative(face);
+            if (block.equals(signBlock) || !BlockUtil.isSign(block)) {
+                continue;
+            }
+            Sign sign = (Sign) getState(block, false);
+            if (!chestShopSign.isValid(sign) || !BlockUtil.getAttachedBlock(sign).equals(baseBlock)) {
+                continue;
+            }
+            if (!accounts.isOwner(player, sign)) {
+                return true;
+            }
+        }
+        return false;
     }
 }

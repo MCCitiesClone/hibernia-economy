@@ -28,7 +28,7 @@ class ShopPriceCheckTest {
     private static ShopServiceImpl newShopService() {
         ChestShopConfiguration config = mock(ChestShopConfiguration.class);
         when(config.getPricePrecision()).thenReturn(2);
-        return new ShopServiceImpl(null, null, null, null, null, null, null, null, config, null, null, null);
+        return new ShopServiceImpl(null, null, null, null, null, null, null, config, null, null, null);
     }
 
     static String[] getPriceString(String prices) {

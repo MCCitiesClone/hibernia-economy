@@ -21,7 +21,7 @@ import static org.mockito.Mockito.when;
 class ShopFreePriceCheckTest {
 
     private final ChestShopConfiguration config = mock(ChestShopConfiguration.class);
-    private final ShopServiceImpl shops = new ShopServiceImpl(null, null, null, null, null, null, null, null, config, null, null, null);
+    private final ShopServiceImpl shops = new ShopServiceImpl(null, null, null, null, null, null, null, config, null, null, null);
 
     {
         when(config.getPricePrecision()).thenReturn(2);
