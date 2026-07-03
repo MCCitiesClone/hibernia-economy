@@ -1,4 +1,5 @@
 package io.paradaux.chestshop.services.impl;
+import lombok.extern.slf4j.Slf4j;
 
 import io.paradaux.chestshop.services.ShopBlockService;
 import io.paradaux.chestshop.services.MarketRecords;
@@ -30,7 +31,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.logging.Level;
 
 /**
  * Rebuilds the live shop registry by scanning the world: for each scanned chunk
@@ -46,6 +46,7 @@ import java.util.logging.Level;
  * untouched until a later scan reaches them.
  */
 @Singleton
+@Slf4j
 public class MarketResyncServiceImpl implements MarketResyncService {
 
     private final JavaPlugin plugin;
@@ -190,7 +191,7 @@ public class MarketResyncServiceImpl implements MarketResyncService {
             MarketHook.market().upsertShop(records.shop(sign, item, owner, stock, capacity));
             return true;
         } catch (RuntimeException e) {
-            plugin.getLogger().log(Level.FINE, "resync: skipped a sign", e);
+            log.debug("resync: skipped a sign", e);
             return false;
         }
     }

@@ -1,4 +1,5 @@
 package io.paradaux.chestshop.services.impl;
+import lombok.extern.slf4j.Slf4j;
 
 import io.paradaux.chestshop.services.ChestShopSign;
 import io.paradaux.chestshop.services.BusinessAccountService;
@@ -28,7 +29,6 @@ import java.util.Date;
 import java.util.Locale;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
-import java.util.logging.Level;
 
 /**
  * Owns the account <em>logic</em>: the username/UUID/short-name caches, get-or-create
@@ -41,6 +41,7 @@ import java.util.logging.Level;
  * plugin reaches through {@link ChestShop#accounts()}.
  */
 @Singleton
+@Slf4j
 public class AccountServiceImpl implements AccountService {
 
     private final AccountMapper accounts;
@@ -123,7 +124,7 @@ public class AccountServiceImpl implements AccountService {
                             return account;
                         }
                     } catch (PersistenceException e) {
-                        ChestShop.getBukkitLogger().log(Level.WARNING, "Error while getting account for " + uuid + ":", e);
+                        log.warn("Error while getting account for " + uuid + ":", e);
                     }
                     throw new Exception("Could not find account for " + uuid);
                 });
@@ -148,7 +149,7 @@ public class AccountServiceImpl implements AccountService {
                             return account;
                         }
                     } catch (PersistenceException e) {
-                        ChestShop.getBukkitLogger().log(Level.WARNING, "Error while getting account for " + fullName + ":", e);
+                        log.warn("Error while getting account for " + fullName + ":", e);
                     }
                     throw new Exception("Could not find account for " + fullName);
                 });
@@ -174,7 +175,7 @@ public class AccountServiceImpl implements AccountService {
                             return a;
                         }
                     } catch (PersistenceException e) {
-                        ChestShop.getBukkitLogger().log(Level.WARNING, "Error while getting account for " + shortName + ":", e);
+                        log.warn("Error while getting account for " + shortName + ":", e);
                     }
                     throw new Exception("Could not find account for " + shortName);
                 });
@@ -226,7 +227,7 @@ public class AccountServiceImpl implements AccountService {
             try {
                 latestAccount = accounts.findByUuidAndName(uuid, player.getName());
             } catch (PersistenceException e) {
-                ChestShop.getBukkitLogger().log(Level.WARNING, "Error while searching for latest account of " + player.getName() + "/" + uuid + ":", e);
+                log.warn("Error while searching for latest account of " + player.getName() + "/" + uuid + ":", e);
                 latestAccount = null;
             }
 
@@ -238,7 +239,7 @@ public class AccountServiceImpl implements AccountService {
             try {
                 storeAccount(latestAccount);
             } catch (PersistenceException e) {
-                ChestShop.getBukkitLogger().log(Level.WARNING, "Error while updating account " + latestAccount + ":", e);
+                log.warn("Error while updating account " + latestAccount + ":", e);
                 return null;
             }
 
@@ -416,7 +417,7 @@ public class AccountServiceImpl implements AccountService {
                 // This happens when the server was ratelimited by Mojang. Unfortunately there is no nice way to check that.
                 // We fall back to the method used by CraftBukkit to generate an OfflinePlayer's UUID
                 adminAccount = new Account(config.getAdminShopName(), UUID.nameUUIDFromBytes(("OfflinePlayer:" + config.getAdminShopName()).getBytes(Charsets.UTF_8)));
-                ChestShop.getBukkitLogger().log(Level.WARNING, "Your server appears to be ratelimited by Mojang and can't query UUID data from their API. If you run into issues with admin shops please report them!");
+                log.warn("Your server appears to be ratelimited by Mojang and can't query UUID data from their API. If you run into issues with admin shops please report them!");
             }
             storeAccount(adminAccount);
 
@@ -429,7 +430,7 @@ public class AccountServiceImpl implements AccountService {
             if (serverEconomyAccount == null || serverEconomyAccount.getUuid() == null) {
                 serverEconomyAccount = null;
                 if (!config.getServerEconomyAccount().isEmpty()) {
-                    ChestShop.getBukkitLogger().log(Level.WARNING, "Server economy account setting '"
+                    log.warn("Server economy account setting '"
                             + config.getServerEconomyAccount()
                             + "' doesn't seem to be the name of a known player account!" +
                             " Please specify the SERVER_ECONOMY_ACCOUNT_UUID" +
@@ -438,7 +439,7 @@ public class AccountServiceImpl implements AccountService {
                 }
             }
         } catch (PersistenceException e) {
-            ChestShop.getBukkitLogger().log(Level.SEVERE, "Error while trying to setup accounts", e);
+            log.error("Error while trying to setup accounts", e);
         }
     }
 

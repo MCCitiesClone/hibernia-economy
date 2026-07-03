@@ -133,12 +133,6 @@ SHOW_TRANSACTION_INFORMATION_CLIENT: true
 # Do you want to show "Somebody bought/sold... " messages?
 SHOW_TRANSACTION_INFORMATION_OWNER: true
 
-# If true, plugin will log transactions in its own file
-LOG_TO_FILE: false
-
-# Do you want ChestShop's transaction messages to show up in console?
-LOG_TO_CONSOLE: true
-
 # Should all shop removals be logged?
 LOG_ALL_SHOP_REMOVALS: true
 

@@ -1,4 +1,5 @@
 package io.paradaux.chestshop.services;
+import lombok.extern.slf4j.Slf4j;
 
 import io.paradaux.chestshop.ChestShop;
 import io.paradaux.business.api.BusinessApi;
@@ -8,7 +9,6 @@ import io.paradaux.treasury.api.TreasuryApi;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.RegisteredServiceProvider;
 
-import java.util.logging.Level;
 
 /**
  * Holds the optional Treasury {@link MarketApi} (which persists the ChestShop
@@ -18,6 +18,7 @@ import java.util.logging.Level;
  * the Treasury economy adapter is wired. If the MarketApi isn't present the
  * tracker is simply inert.
  */
+@Slf4j
 public final class MarketHook {
 
     private static MarketApi market;
@@ -32,9 +33,9 @@ public final class MarketHook {
         shopQuery = load(ShopQueryApi.class);
         treasury = load(TreasuryApi.class);
         business = load(BusinessApi.class);
-        ChestShop.getBukkitLogger().log(Level.INFO, "ChestShop market tracker {0}",
+        log.info("ChestShop market tracker {0}",
                 enabled() ? "enabled" : "disabled (Treasury MarketApi not available)");
-        ChestShop.getBukkitLogger().log(Level.INFO, "ChestShop /find search {0}",
+        log.info("ChestShop /find search {0}",
                 searchEnabled() ? "enabled" : "disabled (Treasury ShopQueryApi not available)");
     }
 

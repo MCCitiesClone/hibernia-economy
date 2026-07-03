@@ -1,4 +1,5 @@
 package io.paradaux.chestshop.integration;
+import lombok.extern.slf4j.Slf4j;
 
 import com.nexomc.nexo.api.NexoItems;
 import com.nexomc.nexo.items.ItemBuilder;
@@ -23,7 +24,6 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.logging.Level;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -45,6 +45,7 @@ import static io.paradaux.chestshop.utils.StringUtil.getMinecraftStringWidth;
  * ChestShop folder. Metadata codes round-trip through ChestShop's own item database
  * (the fork's {@link ItemCodeService}, formerly {@code ChestShop.getItemDatabase()}).
  */
+@Slf4j
 public final class Nexo {
 
     private Nexo() {
@@ -115,7 +116,7 @@ public final class Nexo {
             try {
                 cfg.save(file);
             } catch (IOException e) {
-                ChestShop.getBukkitLogger().log(Level.SEVERE, "Error while saving nexo.yml", e);
+                log.error("Error while saving nexo.yml", e);
             }
         }
 
@@ -201,12 +202,12 @@ public final class Nexo {
             if (!applyDyeTag(stack, dyeTag)) {
                 ItemStack metadataItem = getItemFromMetadataCode(dyeTag);
                 if (metadataItem == null) {
-                    ChestShop.getBukkitLogger().warning("Unknown dye tag or metadata code '" + dyeTag + "' for Nexo item " + id);
+                    log.warn("Unknown dye tag or metadata code '" + dyeTag + "' for Nexo item " + id);
                     return null;
                 }
                 String metadataId = getNexoIdFromItem(metadataItem);
                 if (metadataId == null || !metadataId.equals(id)) {
-                    ChestShop.getBukkitLogger().warning("Metadata code '" + dyeTag + "' does not belong to Nexo item " + id);
+                    log.warn("Metadata code '" + dyeTag + "' does not belong to Nexo item " + id);
                     return null;
                 }
                 stack = metadataItem;
@@ -318,7 +319,7 @@ public final class Nexo {
                 }
             }
         } catch (Exception e) {
-            ChestShop.getBukkitLogger().warning("Error checking ItemsAdder NBT data: " + e.getMessage());
+            log.warn("Error checking ItemsAdder NBT data: " + e.getMessage());
         }
         return null;
     }

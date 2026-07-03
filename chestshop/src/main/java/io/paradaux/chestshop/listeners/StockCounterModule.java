@@ -1,4 +1,5 @@
 package io.paradaux.chestshop.listeners;
+import lombok.extern.slf4j.Slf4j;
 
 import io.paradaux.chestshop.utils.InventoryUtil;
 import io.paradaux.chestshop.services.ShopBlockService;
@@ -34,6 +35,7 @@ import static io.paradaux.chestshop.services.ChestShopSign.QUANTITY_LINE;
  * @author bricefrisco
  */
 @Singleton
+@Slf4j
 public class StockCounterModule implements Listener {
     private static final String PRICE_LINE_WITH_COUNT = "Q %d : C %d";
 
@@ -74,7 +76,7 @@ public class StockCounterModule implements Listener {
         }
 
         if (config.getMaxShopAmount() > 99999) {
-            ChestShop.getBukkitLogger().warning("Stock counter cannot be used if MAX_SHOP_AMOUNT is over 5 digits");
+            log.warn("Stock counter cannot be used if MAX_SHOP_AMOUNT is over 5 digits");
             return;
         }
 
@@ -108,7 +110,7 @@ public class StockCounterModule implements Listener {
             }
 
             if (config.getMaxShopAmount() > 99999) {
-                ChestShop.getBukkitLogger().warning("Stock counter cannot be used if MAX_SHOP_AMOUNT is over 5 digits");
+                log.warn("Stock counter cannot be used if MAX_SHOP_AMOUNT is over 5 digits");
                 if (QuantityUtil.quantityLineContainsCounter(ChestShopSign.getQuantityLine(shopSign))) {
                     removeCounterFromQuantityLine(shopSign);
                 }
@@ -130,7 +132,7 @@ public class StockCounterModule implements Listener {
         }
 
         if (config.getMaxShopAmount() > 99999) {
-            ChestShop.getBukkitLogger().warning("Stock counter cannot be used if MAX_SHOP_AMOUNT is over 5 digits");
+            log.warn("Stock counter cannot be used if MAX_SHOP_AMOUNT is over 5 digits");
             if (QuantityUtil.quantityLineContainsCounter(quantityLine)) {
                 removeCounterFromQuantityLine(event.getSign());
             }

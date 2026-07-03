@@ -1,4 +1,5 @@
 package io.paradaux.chestshop.services.impl;
+import lombok.extern.slf4j.Slf4j;
 
 import io.paradaux.chestshop.utils.BlockUtil;
 import io.paradaux.chestshop.services.ShopBlockService;
@@ -42,7 +43,6 @@ import org.bukkit.inventory.ItemStack;
 
 import java.math.BigDecimal;
 import java.util.Locale;
-import java.util.logging.Level;
 
 import static io.paradaux.chestshop.utils.Permissions.NOFEE;
 import static io.paradaux.chestshop.services.ChestShopSign.AUTOFILL_CODE;
@@ -61,6 +61,7 @@ import static io.paradaux.chestshop.services.ChestShopSign.AUTOFILL_CODE;
  * there is no repository here, only this service.
  */
 @Singleton
+@Slf4j
 public class ShopServiceImpl implements ShopService {
 
     private final AccountService accounts;
@@ -393,7 +394,7 @@ public class ShopServiceImpl implements ShopService {
                     }
                 }
             } catch (Exception e) {
-                ChestShop.getBukkitLogger().log(Level.SEVERE, "Error while trying to check account for name " + name + " with player " + player.getName(), e);
+                log.error("Error while trying to check account for name " + name + " with player " + player.getName(), e);
             }
         }
         ctx.setOwnerAccount(account);
@@ -543,7 +544,7 @@ public class ShopServiceImpl implements ShopService {
             String item = ChestShopSign.getQuantity(event.getSignLines()) + ' ' + ChestShopSign.getItem(event.getSignLines());
             String prices = ChestShopSign.getPrice(event.getSignLines());
             String location = LocationUtil.locationToString(event.getSign().getLocation());
-            ChestShop.getShopLogger().info(String.format(CREATION_LOG, creator, typeOfShop, item, prices, location));
+            log.info(String.format(CREATION_LOG, creator, typeOfShop, item, prices, location));
         });
     }
 
@@ -560,7 +561,7 @@ public class ShopServiceImpl implements ShopService {
             String item = ChestShopSign.getQuantity(event.getSign()) + ' ' + ChestShopSign.getItem(event.getSign());
             String prices = ChestShopSign.getPrice(event.getSign());
             String location = LocationUtil.locationToString(event.getSign().getLocation());
-            ChestShop.getShopLogger().info(String.format(REMOVAL_LOG,
+            log.info(String.format(REMOVAL_LOG,
                     typeOfShop,
                     event.getDestroyer() != null ? event.getDestroyer().getName() : "???",
                     item, prices, location));

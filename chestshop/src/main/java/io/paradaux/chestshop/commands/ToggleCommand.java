@@ -1,4 +1,5 @@
 package io.paradaux.chestshop.commands;
+import lombok.extern.slf4j.Slf4j;
 
 import com.google.inject.Inject;
 import io.paradaux.chestshop.ChestShop;
@@ -12,7 +13,6 @@ import io.paradaux.hibernia.framework.commander.spi.CommandHandler;
 import io.paradaux.hibernia.framework.i18n.Message;
 import org.bukkit.entity.Player;
 
-import java.util.logging.Level;
 
 /**
  * {@code /chestshop notify} — toggle the player's shop sale/stock notifications. The
@@ -23,6 +23,7 @@ import java.util.logging.Level;
  */
 @Command({"chestshop", "cs"})
 @io.paradaux.hibernia.framework.commander.annotations.Permission("ChestShop.toggle")
+@Slf4j
 public class ToggleCommand implements CommandHandler {
 
     private final AccountService accounts;
@@ -46,7 +47,7 @@ public class ToggleCommand implements CommandHandler {
         try {
             accounts.storeAccount(account);
         } catch (Exception e) {
-            ChestShop.getBukkitLogger().log(Level.WARNING, "Error while updating account " + account + ":", e);
+            log.warn("Error while updating account " + account + ":", e);
             message.send(player, "chestshop.ERROR_OCCURRED", "error", "Unable to store account data.");
         }
     }

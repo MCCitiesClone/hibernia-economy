@@ -1,4 +1,5 @@
 package io.paradaux.chestshop.services.impl;
+import lombok.extern.slf4j.Slf4j;
 
 import io.paradaux.chestshop.services.ItemService;
 import io.paradaux.chestshop.services.ChestShopSign;
@@ -35,7 +36,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
-import java.util.logging.Level;
 
 /**
  * The internal economy API: ChestShop's single point of contact with the Treasury
@@ -53,6 +53,7 @@ import java.util.logging.Level;
  * handlers were collapsed into these direct calls.
  */
 @Singleton
+@Slf4j
 public class EconomyServiceImpl implements EconomyService {
 
     private static final int MAX_MESSAGE_LENGTH = 250;
@@ -94,7 +95,7 @@ public class EconomyServiceImpl implements EconomyService {
             String formatted = t.formatAmount(amount);
             return config.isStripPriceColors() ? ChatColor.stripColor(formatted) : formatted;
         } catch (Exception e) {
-            ChestShop.getBukkitLogger().log(Level.WARNING, "Treasury: Could not format amount " + amount, e);
+            log.warn("Treasury: Could not format amount " + amount, e);
             return amount.toPlainString();
         }
     }
@@ -118,7 +119,7 @@ public class EconomyServiceImpl implements EconomyService {
                     systemAccountId, targetAccountId, amount, "ChestShop deposit",
                     BusinessAccountUtil.CHESTSHOP_SYSTEM_UUID, null, "ChestShop", dedupKey));
         } catch (Exception e) {
-            ChestShop.getBukkitLogger().log(Level.WARNING, "Treasury: Could not add " + amount + " to " + resolved, e);
+            log.warn("Treasury: Could not add " + amount + " to " + resolved, e);
         }
     }
 
@@ -139,7 +140,7 @@ public class EconomyServiceImpl implements EconomyService {
                     initiator, null, "ChestShop", dedupKey));
             return true;
         } catch (Exception e) {
-            ChestShop.getBukkitLogger().log(Level.WARNING, "Treasury: Could not subtract " + amount + " from " + resolved, e);
+            log.warn("Treasury: Could not subtract " + amount + " from " + resolved, e);
             return false;
         }
     }
@@ -153,7 +154,7 @@ public class EconomyServiceImpl implements EconomyService {
         try {
             return treasury.hasFunds(resolveAccountId(resolved), amount);
         } catch (Exception e) {
-            ChestShop.getBukkitLogger().log(Level.WARNING, "Treasury: Could not check funds for " + resolved, e);
+            log.warn("Treasury: Could not check funds for " + resolved, e);
             return false;
         }
     }
@@ -173,7 +174,7 @@ public class EconomyServiceImpl implements EconomyService {
                     ? treasury.getBalanceByAccountId(governmentAccountId)
                     : treasury.getBalanceByOwnerUuid(resolved);
         } catch (Exception e) {
-            ChestShop.getBukkitLogger().log(Level.WARNING, "Treasury: Could not get balance for " + resolved, e);
+            log.warn("Treasury: Could not get balance for " + resolved, e);
             return BigDecimal.ZERO;
         }
     }
@@ -195,7 +196,7 @@ public class EconomyServiceImpl implements EconomyService {
                     ? treasury.hasAccountByAccountId(governmentAccountId)
                     : treasury.hasAccountByOwnerUuid(account);
         } catch (Exception e) {
-            ChestShop.getBukkitLogger().log(Level.WARNING, "Treasury: Could not check account for " + account, e);
+            log.warn("Treasury: Could not check account for " + account, e);
             return false;
         }
     }
@@ -237,8 +238,7 @@ public class EconomyServiceImpl implements EconomyService {
             }
             // both admin → no real accounts, nothing moves
         } catch (Exception e) {
-            ChestShop.getBukkitLogger().log(Level.WARNING,
-                    "Treasury: Could not settle " + amount + " from " + sender + " to " + receiver, e);
+            log.warn("Treasury: Could not settle " + amount + " from " + sender + " to " + receiver, e);
             return false;
         }
 
@@ -295,12 +295,11 @@ public class EconomyServiceImpl implements EconomyService {
                 return c.amountCharged();
             }
             if (result instanceof TaxResult.Failed f) {
-                ChestShop.getBukkitLogger().warning(
+                log.warn(
                         "Treasury: sales-tax collection failed for accountId=" + receiverAccountId + ": " + f.errorMessage());
             }
         } catch (Exception e) {
-            ChestShop.getBukkitLogger().log(Level.WARNING,
-                    "Treasury: sales-tax collection threw for receiver " + receiver, e);
+            log.warn("Treasury: sales-tax collection threw for receiver " + receiver, e);
         }
         return BigDecimal.ZERO;
     }
@@ -386,7 +385,7 @@ public class EconomyServiceImpl implements EconomyService {
 
         sign.setLine(ChestShopSign.NAME_LINE, canonical);
         sign.update(true);
-        ChestShop.getBukkitLogger().info("Migrated legacy business shop sign to " + canonical
+        log.info("Migrated legacy business shop sign to " + canonical
                 + " at " + sign.getLocation());
     }
 
@@ -409,8 +408,7 @@ public class EconomyServiceImpl implements EconomyService {
                 return governmentAccounts.get(0).getAccountId();
             }
         } catch (Exception e) {
-            ChestShop.getBukkitLogger().log(Level.WARNING,
-                    "Treasury: government account lookup failed for " + uuid, e);
+            log.warn("Treasury: government account lookup failed for " + uuid, e);
         }
         return null;
     }

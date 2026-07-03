@@ -1,4 +1,5 @@
 package io.paradaux.chestshop.services.impl;
+import lombok.extern.slf4j.Slf4j;
 
 import io.paradaux.chestshop.services.ShopBlockService;
 import io.paradaux.chestshop.services.ItemService;
@@ -48,7 +49,6 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Level;
 
 import static io.paradaux.chestshop.utils.NumberUtil.toRoman;
 import static io.paradaux.chestshop.utils.NumberUtil.toTime;
@@ -70,6 +70,7 @@ import static io.paradaux.chestshop.utils.StringUtil.capitalizeFirstLetter;
  * @author Acrobot
  */
 @Singleton
+@Slf4j
 public class InfoServiceImpl implements InfoService {
 
     private final AccountService accounts;
@@ -200,7 +201,7 @@ public class InfoServiceImpl implements InfoService {
             sender.sendMessage(message.component(messageKey, MessageUtil.values(false, replacementMap)));
         } catch (IllegalArgumentException e) {
             sender.sendMessage(ChatColor.RED + "Error while generating full name. Please contact an admin or take a look at the console/log!");
-            ChestShop.getPlugin().getLogger().log(Level.SEVERE, "Error while generating full item name", e);
+            log.error("Error while generating full item name", e);
             return false;
         }
         return true;

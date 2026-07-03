@@ -1,4 +1,5 @@
 package io.paradaux.chestshop.services.impl;
+import lombok.extern.slf4j.Slf4j;
 
 import io.paradaux.chestshop.services.EconomyService;
 import io.paradaux.chestshop.services.ChestShopSign;
@@ -16,7 +17,6 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Locale;
 import java.util.UUID;
-import java.util.logging.Level;
 
 /**
  * Resolves and access-checks Business-plugin firm accounts against the Treasury/Business APIs
@@ -29,6 +29,7 @@ import java.util.logging.Level;
  * {@link BusinessAccountUtil}.
  */
 @Singleton
+@Slf4j
 public class BusinessAccountServiceImpl implements BusinessAccountService {
 
     private volatile TreasuryApi treasury;
@@ -74,7 +75,7 @@ public class BusinessAccountServiceImpl implements BusinessAccountService {
                 return new Account(displayName, shortName, BusinessAccountUtil.toBusinessUuid(accountId));
             }
         } catch (Exception e) {
-            ChestShop.getBukkitLogger().log(Level.WARNING, "Treasury: Could not resolve business account for " + name, e);
+            log.warn("Treasury: Could not resolve business account for " + name, e);
         }
         return null;
     }
@@ -105,8 +106,7 @@ public class BusinessAccountServiceImpl implements BusinessAccountService {
             return treasury.isAccountMember(playerUuid, accountId)
                     || treasury.isOwnerForAccountId(playerUuid, accountId);
         } catch (Exception e) {
-            ChestShop.getBukkitLogger().log(Level.WARNING,
-                    "Treasury: Could not check access for " + player.getName() + " on account " + account.getShortName(), e);
+            log.warn("Treasury: Could not check access for " + player.getName() + " on account " + account.getShortName(), e);
             return false;
         }
     }

@@ -1,4 +1,5 @@
 package io.paradaux.chestshop.services.impl;
+import lombok.extern.slf4j.Slf4j;
 
 import io.paradaux.chestshop.services.MaterialService;
 import io.paradaux.chestshop.services.ItemCodeService;
@@ -27,7 +28,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
-import java.util.logging.Level;
 
 /**
  * Owns the item-code <em>logic</em>: serialising an {@link ItemStack} to/from the
@@ -41,6 +41,7 @@ import java.util.logging.Level;
  * testable service.
  */
 @Singleton
+@Slf4j
 public class ItemCodeServiceImpl implements ItemCodeService {
 
     private final ItemCodeMapper items;
@@ -67,7 +68,7 @@ public class ItemCodeServiceImpl implements ItemCodeService {
             try {
                 versionConfig.save(versionFile);
             } catch (IOException e) {
-                ChestShop.getBukkitLogger().log(Level.SEVERE, "Error while recording the item-code blob-encoding version", e);
+                log.error("Error while recording the item-code blob-encoding version", e);
             }
         }
 
@@ -81,12 +82,10 @@ public class ItemCodeServiceImpl implements ItemCodeService {
             try {
                 versionConfig.save(versionFile);
             } catch (IOException e) {
-                ChestShop.getBukkitLogger().log(Level.SEVERE,
-                        "Error while updating metadata-version from " + previousVersion + " to " + newVersion, e);
+                log.error("Error while updating metadata-version from " + previousVersion + " to " + newVersion, e);
             }
         } else {
-            ChestShop.getBukkitLogger().log(Level.WARNING,
-                    "Error while updating Item Metadata database! While the plugin will still run it will work less efficiently.");
+            log.warn("Error while updating Item Metadata database! While the plugin will still run it will work less efficiently.");
         }
     }
 
@@ -124,7 +123,7 @@ public class ItemCodeServiceImpl implements ItemCodeService {
             }
             return Base62.encode(id);
         } catch (RuntimeException e) {
-            ChestShop.getBukkitLogger().log(Level.SEVERE, "Unable to get code of item " + item, e);
+            log.error("Unable to get code of item " + item, e);
             return null;
         }
     }
@@ -140,12 +139,11 @@ public class ItemCodeServiceImpl implements ItemCodeService {
         try {
             return yaml.loadAs(decodeBlob(blob), ItemStack.class);
         } catch (YAMLException e) {
-            ChestShop.getBukkitLogger().log(Level.SEVERE,
-                    "YAML of the item with ID " + code + " (" + id + ") is corrupted: \n" + blob);
+            log.error("YAML of the item with ID " + code + " (" + id + ") is corrupted: \n" + blob);
         } catch (IOException | ClassNotFoundException e) {
-            ChestShop.getBukkitLogger().log(Level.SEVERE, "Unable to load item with ID " + code + " (" + id + ")", e);
+            log.error("Unable to load item with ID " + code + " (" + id + ")", e);
         } catch (StackOverflowError e) {
-            ChestShop.getBukkitLogger().log(Level.SEVERE, "Item with ID " + code + " (" + id + ") is corrupted. Sorry :(");
+            log.error("Item with ID " + code + " (" + id + ") is corrupted. Sorry :(");
         }
         return null;
     }
@@ -241,9 +239,9 @@ public class ItemCodeServiceImpl implements ItemCodeService {
 
     private boolean reserialiseAll(int previousVersion, int newVersion) {
         if (previousVersion > -1) {
-            ChestShop.getBukkitLogger().info("Data version change detected! Previous version was " + previousVersion);
+            log.info("Data version change detected! Previous version was " + previousVersion);
         }
-        ChestShop.getBukkitLogger().info("Updating Item Metadata database to data version " + newVersion + "...");
+        log.info("Updating Item Metadata database to data version " + newVersion + "...");
 
         int seen = 0;
         int updated = 0;
@@ -266,29 +264,28 @@ public class ItemCodeServiceImpl implements ItemCodeService {
                             items.updateBlob(id, encodeBlob(yaml.dump(itemStack)));
                             updated++;
                         } catch (RuntimeException e) {
-                            ChestShop.getBukkitLogger().log(Level.SEVERE, "YAML of the item with ID "
+                            log.error("YAML of the item with ID "
                                     + Base62.encode(id) + " (" + id + ") is corrupted: \n"
                                     + serialized + "\n" + e.getMessage());
                         }
                     }
                 } catch (IOException | ClassNotFoundException e) {
-                    ChestShop.getBukkitLogger().log(Level.SEVERE, "Unable to convert item with ID "
+                    log.error("Unable to convert item with ID "
                             + Base62.encode(id) + " (" + id + ")", e);
                 } catch (StackOverflowError e) {
-                    ChestShop.getBukkitLogger().log(Level.SEVERE, "Item with ID "
+                    log.error("Item with ID "
                             + Base62.encode(id) + " (" + id + ") is corrupted. Sorry :(");
                 }
                 if (seen % 1000 == 0) {
-                    ChestShop.getBukkitLogger().info("Checked " + seen + " items. Updated " + updated + "...");
+                    log.info("Checked " + seen + " items. Updated " + updated + "...");
                 }
             }
         } catch (RuntimeException e) {
-            ChestShop.getBukkitLogger().log(Level.SEVERE,
-                    "Unable to update metadata version of all items from " + previousVersion + " to " + newVersion, e);
+            log.error("Unable to update metadata version of all items from " + previousVersion + " to " + newVersion, e);
             return false;
         }
 
-        ChestShop.getBukkitLogger().info("Finished updating database in " + (System.currentTimeMillis() - start) / 1000.0
+        log.info("Finished updating database in " + (System.currentTimeMillis() - start) / 1000.0
                 + "s. " + updated + " items out of " + seen + " were updated!");
         return true;
     }
@@ -330,7 +327,7 @@ public class ItemCodeServiceImpl implements ItemCodeService {
 
     /** Rewrite every stored blob into the plain Base64 format. Idempotent; returns false on a fatal error. */
     private boolean migrateBlobEncoding() {
-        ChestShop.getBukkitLogger().info("Migrating item-code blobs to plain Base64 (PAR-290)...");
+        log.info("Migrating item-code blobs to plain Base64 (PAR-290)...");
         int seen = 0;
         int updated = 0;
         long start = System.currentTimeMillis();
@@ -348,18 +345,17 @@ public class ItemCodeServiceImpl implements ItemCodeService {
                         updated++;
                     }
                 } catch (IOException | ClassNotFoundException | RuntimeException e) {
-                    ChestShop.getBukkitLogger().log(Level.SEVERE,
-                            "Unable to re-encode item-code blob " + Base62.encode(id) + " (" + id + ")", e);
+                    log.error("Unable to re-encode item-code blob " + Base62.encode(id) + " (" + id + ")", e);
                 }
                 if (seen % 1000 == 0) {
-                    ChestShop.getBukkitLogger().info("Re-encoded " + seen + " blobs (" + updated + " rewritten)...");
+                    log.info("Re-encoded " + seen + " blobs (" + updated + " rewritten)...");
                 }
             }
         } catch (RuntimeException e) {
-            ChestShop.getBukkitLogger().log(Level.SEVERE, "Item-code blob encoding migration failed", e);
+            log.error("Item-code blob encoding migration failed", e);
             return false;
         }
-        ChestShop.getBukkitLogger().info("Finished item-code blob encoding migration in "
+        log.info("Finished item-code blob encoding migration in "
                 + (System.currentTimeMillis() - start) / 1000.0 + "s. " + updated + " of " + seen + " rewritten.");
         return true;
     }

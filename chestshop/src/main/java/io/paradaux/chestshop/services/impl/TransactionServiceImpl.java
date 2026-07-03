@@ -1,4 +1,5 @@
 package io.paradaux.chestshop.services.impl;
+import lombok.extern.slf4j.Slf4j;
 
 import io.paradaux.chestshop.services.ShopService;
 import io.paradaux.chestshop.services.ShopBlockService;
@@ -96,6 +97,7 @@ import static io.paradaux.chestshop.utils.PriceUtil.NO_PRICE;
  * stock counter) and the cross-plugin sign listener {@code RestrictedSign} stay.
  */
 @Singleton
+@Slf4j
 public class TransactionServiceImpl implements TransactionService {
 
     /** Cooldown table for owner out-of-stock / full-shop notifications: (owner, msgKey) → last-sent ms. */
@@ -817,7 +819,7 @@ public class TransactionServiceImpl implements TransactionService {
 
     private static void cancelOnShortfall(Transaction event) {
         event.setCancelled(true);
-        ChestShop.getBukkitLogger().severe(
+        log.error(
                 "Aborted a ChestShop transaction at "
                 + (event.getSign() != null ? event.getSign().getLocation() : "<unknown location>")
                 + ": the goods could not be transferred in full, so no money was moved and both "
@@ -859,7 +861,7 @@ public class TransactionServiceImpl implements TransactionService {
                 : transferItems(event.getOwnerInventory(), event.getClientInventory(), event.getStock());
 
         if (!reversed) {
-            ChestShop.getBukkitLogger().severe(
+            log.error(
                     "Failed to reverse the goods of a ChestShop transaction at "
                     + (event.getSign() != null ? event.getSign().getLocation() : "<unknown location>")
                     + " after the money leg failed. The trade may be in an inconsistent state.");
@@ -921,7 +923,7 @@ public class TransactionServiceImpl implements TransactionService {
             if (signType.isItem()) {
                 ownerInventory.addItem(new ItemStack(signType, 1));
             } else {
-                ChestShop.getBukkitLogger().warning("Unable to get item for sign " + signType + " to add to removed shop's container!");
+                log.warn("Unable to get item for sign " + signType + " to add to removed shop's container!");
             }
         }
     }
@@ -956,11 +958,11 @@ public class TransactionServiceImpl implements TransactionService {
         }
 
         // Build the line on the main thread (item-name/account/sign reads), then push the
-        // file write off the tick (ADT-131): per-trade disk I/O otherwise stalls the main
-        // thread on contended shared-host storage. java.util.logging is thread-safe and the
-        // line is self-contained + timestamped, so async logging is order-recoverable and
-        // can never affect the already-committed, synchronous trade. This is the only
-        // post-trade step with no main-thread dependency — the money legs (atomic) and the
+        // log call off the tick (ADT-131): per-trade logging I/O otherwise stalls the main
+        // thread on contended shared-host storage. slf4j is thread-safe and the line is
+        // self-contained + timestamped, so async logging is order-recoverable and can never
+        // affect the already-committed, synchronous trade. This is the only post-trade step
+        // with no main-thread dependency — the money legs (atomic) and the
         // market sync (recordSale fires a synchronous Bukkit event) must stay on-thread.
         String line = String.format(template,
                 event.getClient().getName(),
@@ -968,7 +970,7 @@ public class TransactionServiceImpl implements TransactionService {
                 event.getExactPrice(),
                 event.getOwnerAccount().getName(),
                 LocationUtil.locationToString(event.getSign().getLocation()));
-        ChestShop.runInAsyncThread(() -> ChestShop.getShopLogger().info(line));
+        ChestShop.runInAsyncThread(() -> log.info(line));
     }
 
     /** Notify the buyer and (unless they muted) the owner that a trade settled. */

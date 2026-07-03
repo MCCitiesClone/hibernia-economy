@@ -1,4 +1,5 @@
 package io.paradaux.chestshop.integration;
+import lombok.extern.slf4j.Slf4j;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
@@ -12,7 +13,6 @@ import org.bukkit.plugin.Plugin;
 
 import java.util.HashSet;
 import java.util.Set;
-import java.util.logging.Level;
 
 /**
  * Detects and hooks ChestShop's {@link Integration}s. Replaces the {@code Dependencies}
@@ -25,6 +25,7 @@ import java.util.logging.Level;
  * <em>after</em> ChestShop.
  */
 @Singleton
+@Slf4j
 public class IntegrationRegistrar implements Listener {
 
     private final Set<Integration> integrations;
@@ -51,7 +52,7 @@ public class IntegrationRegistrar implements Listener {
 
         for (Integration integration : integrations) {
             if (integration.required() && !hooked.contains(integration.pluginName())) {
-                ChestShop.getBukkitLogger().severe("Required integration missing: "
+                log.error("Required integration missing: "
                         + integration.pluginName() + " — you need to install it!");
                 return false;
             }
@@ -66,11 +67,11 @@ public class IntegrationRegistrar implements Listener {
         try {
             if (integration.hook(plugin)) {
                 hooked.add(integration.pluginName());
-                ChestShop.getBukkitLogger().info(integration.pluginName() + " "
+                log.info(integration.pluginName() + " "
                         + plugin.getDescription().getVersion() + " hooked.");
             }
         } catch (Exception e) {
-            plugin.getLogger().log(Level.WARNING, "Unable to hook into " + integration.pluginName(), e);
+            log.warn("Unable to hook into " + integration.pluginName(), e);
         }
     }
 

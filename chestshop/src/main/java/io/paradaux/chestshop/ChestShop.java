@@ -1,4 +1,5 @@
 package io.paradaux.chestshop;
+import lombok.extern.slf4j.Slf4j;
 
 import io.paradaux.chestshop.dialogs.FindDialog;
 import io.paradaux.chestshop.model.config.ChestShopConfiguration;
@@ -20,21 +21,12 @@ import io.paradaux.chestshop.listeners.PlayerConnect;
 import io.paradaux.chestshop.listeners.PlayerInteract;
 import io.paradaux.chestshop.listeners.PlayerInventory;
 import io.paradaux.chestshop.listeners.PlayerTeleport;
-import io.paradaux.chestshop.utils.FileFormatter;
 import io.paradaux.chestshop.integration.IntegrationRegistrar;
 import io.paradaux.chestshop.integration.WorldGuardFlags;
 import io.paradaux.chestshop.services.ItemCodeService;
 import io.paradaux.chestshop.listeners.RestrictedSign;
 
 
-import org.apache.logging.log4j.Level;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Marker;
-import org.apache.logging.log4j.core.LogEvent;
-import org.apache.logging.log4j.core.LoggerContext;
-import org.apache.logging.log4j.core.config.LoggerConfig;
-import org.apache.logging.log4j.core.filter.AbstractFilter;
-import org.apache.logging.log4j.message.Message;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Server;
@@ -49,14 +41,13 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.FileHandler;
-import java.util.logging.Logger;
 
 /**
  * Main file of the plugin
  *
  * @author Acrobot
  */
+@Slf4j
 public class ChestShop extends JavaPlugin {
     private static ChestShop plugin;
     private static Server server;
@@ -72,10 +63,6 @@ public class ChestShop extends JavaPlugin {
 
     private static File dataFolder;
 
-    private static Logger logger;
-    private static Logger shopLogger;
-    private FileHandler handler;
-
     private com.google.inject.Injector injector;
     private io.paradaux.hibernia.framework.configurator.ConfigurationLoader configurationLoader;
     // The framework Configurator repopulates this same component instance in place on
@@ -85,9 +72,6 @@ public class ChestShop extends JavaPlugin {
 
     public ChestShop() {
         dataFolder = getDataFolder();
-        logger = getLogger();
-        shopLogger = Logger.getLogger("ChestShop Shops");
-        shopLogger.setParent(logger);
         description = getDescription();
         server = getServer();
         plugin = this;
@@ -105,7 +89,6 @@ public class ChestShop extends JavaPlugin {
 
     @Override
     public void onEnable() {
-        turnOffDatabaseLogging();
 
         // HiberniaFramework DI: loads ChestShopConfiguration from config.yml (and
         // additively reconciles new default keys on upgrade). The framework also
@@ -179,8 +162,7 @@ public class ChestShop extends JavaPlugin {
             try {
                 new io.paradaux.chestshop.listeners.WorldEditShopCleanup(this).register();
             } catch (Throwable t) {
-                getBukkitLogger().log(java.util.logging.Level.WARNING,
-                        "WorldEdit shop-cleanup adapter unavailable", t);
+                log.warn("WorldEdit shop-cleanup adapter unavailable", t);
             }
         }
 
@@ -195,62 +177,6 @@ public class ChestShop extends JavaPlugin {
         config = configurationLoader.getComponent(ChestShopConfiguration.class);
 
         accounts.load();
-
-        if (handler != null) {
-            shopLogger.removeHandler(handler);
-        }
-
-        if (config.isLogToFile()) {
-            if (handler == null) {
-                File log = loadFile("ChestShop.log");
-
-                handler = loadHandler(log.getAbsolutePath());
-                handler.setFormatter(new FileFormatter());
-            }
-            shopLogger.addHandler(handler);
-        }
-
-        shopLogger.setUseParentHandlers(config.isLogToConsole());
-    }
-
-    private void turnOffDatabaseLogging() {
-        LoggerContext ctx = (LoggerContext) LogManager.getContext(false);
-        org.apache.logging.log4j.core.config.Configuration config = ctx.getConfiguration();
-        LoggerConfig loggerConfig = config.getLoggerConfig("");
-
-        loggerConfig.addFilter(new AbstractFilter() {
-            @Override
-            public Result filter(org.apache.logging.log4j.core.Logger logger, Level level, Marker marker, String msg, Object... params) {
-                return filter(logger.getName(), level);
-            }
-
-            @Override
-            public Result filter(org.apache.logging.log4j.core.Logger logger, Level level, Marker marker, Object msg, Throwable t) {
-                return filter(logger.getName(), level);
-            }
-
-            @Override
-            public Result filter(org.apache.logging.log4j.core.Logger logger, Level level, Marker marker, Message msg, Throwable t) {
-                return filter(logger.getName(), level);
-            }
-
-            @Override
-            public Result filter(LogEvent event) {
-                return filter(event.getLoggerName(), event.getLevel());
-            }
-
-            private Result filter(String classname, Level level) {
-                if (level.intLevel() <= Level.ERROR.intLevel() && !classname.contains("SqliteDatabaseType")) {
-                    return Result.NEUTRAL;
-                }
-
-                if (classname.contains("SqliteDatabaseType") || classname.contains("TableUtils")) {
-                    return Result.DENY;
-                } else {
-                    return Result.NEUTRAL;
-                }
-            }
-        });
     }
 
     public static File loadFile(String string) {
@@ -268,23 +194,11 @@ public class ChestShop extends JavaPlugin {
 
                 file.createNewFile();
             } catch (IOException e) {
-                getBukkitLogger().log(java.util.logging.Level.SEVERE, "Unable to load file " + file.getName(), e);
+                log.error("Unable to load file " + file.getName(), e);
             }
         }
 
         return file;
-    }
-
-    private static FileHandler loadHandler(String path) {
-        FileHandler handler = null;
-
-        try {
-            handler = new FileHandler(path, true);
-        } catch (IOException ex) {
-            getBukkitLogger().log(java.util.logging.Level.SEVERE, "Unable to load handler " + path, ex);
-        }
-
-        return handler;
     }
 
     public void onDisable() {
@@ -295,11 +209,6 @@ public class ChestShop extends JavaPlugin {
 
         if (injector != null) {
             injector.getInstance(io.paradaux.chestshop.database.ChestShopDatabases.class).close();
-        }
-
-        if (handler != null) {
-            handler.close();
-            getLogger().removeHandler(handler);
         }
     }
 
@@ -317,17 +226,9 @@ public class ChestShop extends JavaPlugin {
         return dataFolder;
     }
 
-    public static Logger getShopLogger() {
-        return shopLogger;
-    }
-
-    public static Logger getBukkitLogger() {
-        return logger;
-    }
-
     public static void logDebug(String message) {
         if (plugin.config != null && plugin.config.isDebug()) {
-            getBukkitLogger().info("[DEBUG] " + message);
+            log.info("[DEBUG] " + message);
         }
     }
 

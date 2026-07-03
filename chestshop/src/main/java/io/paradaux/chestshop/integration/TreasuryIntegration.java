@@ -1,4 +1,5 @@
 package io.paradaux.chestshop.integration;
+import lombok.extern.slf4j.Slf4j;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
@@ -16,7 +17,6 @@ import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.RegisteredServiceProvider;
 
 import java.util.List;
-import java.util.logging.Level;
 
 /**
  * Treasury integration — ChestShop's economy boundary, and its one {@linkplain #required()
@@ -31,6 +31,7 @@ import java.util.logging.Level;
  * {@code adapters/TreasuryEconomyProvider} (PAR-307).
  */
 @Singleton
+@Slf4j
 public class TreasuryIntegration implements Integration {
 
     private final EconomyService economy;
@@ -57,7 +58,7 @@ public class TreasuryIntegration implements Integration {
         RegisteredServiceProvider<TreasuryApi> rsp =
                 Bukkit.getServicesManager().getRegistration(TreasuryApi.class);
         if (rsp == null) {
-            ChestShop.getBukkitLogger().warning("Treasury plugin found but TreasuryApi service not registered!");
+            log.warn("Treasury plugin found but TreasuryApi service not registered!");
             return false;
         }
         TreasuryApi treasury = rsp.getProvider();
@@ -77,19 +78,19 @@ public class TreasuryIntegration implements Integration {
                 systemAccountId = systemAccount.getAccountId();
             }
         } catch (Exception e) {
-            ChestShop.getBukkitLogger().log(Level.SEVERE, "Failed to initialize Treasury SYSTEM account!", e);
+            log.error("Failed to initialize Treasury SYSTEM account!", e);
             return false;
         }
-        ChestShop.getBukkitLogger().info("Treasury SYSTEM account initialized (ID: " + systemAccountId + ")");
+        log.info("Treasury SYSTEM account initialized (ID: " + systemAccountId + ")");
 
         // Resolve TaxApi for sales-tax routing into Treasury's default tax account (typically
         // DCGovernment). Treasury exposes it as a separate service so we don't need a second lookup.
         TaxApi taxApi = treasury.getTaxApi();
         if (taxApi == null) {
-            ChestShop.getBukkitLogger().warning(
+            log.warn(
                     "Treasury loaded but TaxApi unavailable — ChestShop sales tax will not be collected.");
         }
-        ChestShop.getBukkitLogger().info("Sales tax now routed via Treasury TaxApi → "
+        log.info("Sales tax now routed via Treasury TaxApi → "
                 + (taxApi != null ? taxApi.getDefaultTaxAccountName() : "(disabled)"));
 
         // Optionally integrate with the Business plugin for CHESTSHOP permission checks.
@@ -99,9 +100,9 @@ public class TreasuryIntegration implements Integration {
                     Bukkit.getServicesManager().getRegistration(BusinessApi.class);
             if (businessRsp != null) {
                 businessApi = businessRsp.getProvider();
-                ChestShop.getBukkitLogger().info("Business API integrated: firm CHESTSHOP permissions will gate shop access.");
+                log.info("Business API integrated: firm CHESTSHOP permissions will gate shop access.");
             } else {
-                ChestShop.getBukkitLogger().warning("Business plugin found but BusinessApi service not registered — falling back to Treasury membership checks.");
+                log.warn("Business plugin found but BusinessApi service not registered — falling back to Treasury membership checks.");
             }
         }
 

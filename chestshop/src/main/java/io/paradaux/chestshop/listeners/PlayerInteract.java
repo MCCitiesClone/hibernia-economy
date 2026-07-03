@@ -1,4 +1,5 @@
 package io.paradaux.chestshop.listeners;
+import lombok.extern.slf4j.Slf4j;
 
 import io.paradaux.chestshop.utils.BlockUtil;
 import io.paradaux.chestshop.services.AdminBypass;
@@ -35,7 +36,6 @@ import org.bukkit.inventory.ItemStack;
 
 import java.util.Map;
 import java.util.WeakHashMap;
-import java.util.logging.Level;
 
 import static io.paradaux.chestshop.utils.BlockUtil.getState;
 import static io.paradaux.chestshop.utils.BlockUtil.isSign;
@@ -47,6 +47,7 @@ import static org.bukkit.event.block.Action.RIGHT_CLICK_BLOCK;
 /**
  * @author Acrobot
  */
+@Slf4j
 public class PlayerInteract implements Listener {
 
     /**
@@ -130,7 +131,7 @@ public class PlayerInteract implements Listener {
                         itemCode = items.getSignName(item);
                     } catch (IllegalArgumentException e) {
                         player.sendMessage(ChatColor.RED + "Error while generating shop sign item name. Please contact an admin or take a look at the console/log!");
-                        io.paradaux.chestshop.ChestShop.getPlugin().getLogger().log(Level.SEVERE, "Error while generating shop sign item name", e);
+                        log.error("Error while generating shop sign item name", e);
                         return;
                     }
                     String[] lines = sign.getLines();

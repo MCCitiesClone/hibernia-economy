@@ -1,4 +1,5 @@
 package io.paradaux.chestshop.commands;
+import lombok.extern.slf4j.Slf4j;
 
 import com.google.inject.Inject;
 import io.paradaux.chestshop.utils.MaterialUtil;
@@ -19,13 +20,13 @@ import org.bukkit.entity.HumanEntity;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.Map;
-import java.util.logging.Level;
 
 /**
  * @author Acrobot
  */
 @Command({"iteminfo", "iinfo"})
 @io.paradaux.hibernia.framework.commander.annotations.Permission("ChestShop.iteminfo")
+@Slf4j
 public class ItemInfoCommand implements CommandHandler {
 
     private final InfoService info;
@@ -67,7 +68,7 @@ public class ItemInfoCommand implements CommandHandler {
             message.send(sender, "chestshop.iteminfo_shopname", "prefix", "", "item", items.getSignName(item));
         } catch (IllegalArgumentException e) {
             sender.sendMessage(ChatColor.RED + "Error while generating shop sign name. Please contact an admin or take a look at the console/log!");
-            ChestShop.getPlugin().getLogger().log(Level.SEVERE, "Error while generating shop sign item name", e);
+            log.error("Error while generating shop sign item name", e);
             return;
         }
 

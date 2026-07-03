@@ -1,4 +1,5 @@
 package io.paradaux.chestshop.model.config;
+import lombok.extern.slf4j.Slf4j;
 
 import io.paradaux.chestshop.ChestShop;
 import io.paradaux.hibernia.framework.configurator.annotations.ConfigurationComponent;
@@ -13,7 +14,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
-import java.util.logging.Level;
 
 /**
  * ChestShop's configuration, loaded by HiberniaFramework's Configurator from
@@ -32,6 +32,7 @@ import java.util.logging.Level;
  */
 @ConfigurationComponent
 @Getter
+@Slf4j
 public class ChestShopConfiguration {
 
     @ConfigurationValue(path = "DEBUG", defaultValue = "false")
@@ -160,12 +161,6 @@ public class ChestShopConfiguration {
     @ConfigurationValue(path = "SHOW_TRANSACTION_INFORMATION_OWNER", defaultValue = "true")
     private boolean showTransactionInformationOwner;
 
-    @ConfigurationValue(path = "LOG_TO_FILE", defaultValue = "false")
-    private boolean logToFile;
-
-    @ConfigurationValue(path = "LOG_TO_CONSOLE", defaultValue = "true")
-    private boolean logToConsole;
-
     @ConfigurationValue(path = "LOG_ALL_SHOP_REMOVALS", defaultValue = "true")
     private boolean logAllShopRemovals;
 
@@ -220,7 +215,7 @@ public class ChestShopConfiguration {
                 if (m != null) {
                     set.add(m);
                 } else {
-                    ChestShop.getBukkitLogger().log(Level.WARNING, name + " is not a valid Material name in the config!");
+                    log.warn(name + " is not a valid Material name in the config!");
                 }
             }
         }

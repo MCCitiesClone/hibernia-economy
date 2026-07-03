@@ -1,4 +1,5 @@
 package io.paradaux.chestshop.services;
+import lombok.extern.slf4j.Slf4j;
 
 import io.paradaux.chestshop.ChestShop;
 import com.google.common.collect.BiMap;
@@ -12,7 +13,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Locale;
 import java.util.Map;
-import java.util.logging.Level;
 
 import static io.paradaux.chestshop.utils.StringUtil.getMinecraftStringWidth;
 
@@ -25,6 +25,7 @@ import static io.paradaux.chestshop.utils.StringUtil.getMinecraftStringWidth;
  * @author Acrobot
  */
 @Singleton
+@Slf4j
 public class ItemAliasModule {
     private YamlConfiguration configuration;
     /**
@@ -58,7 +59,7 @@ public class ItemAliasModule {
                 configuration.options().copyDefaults(true);
                 configuration.save(ChestShop.loadFile("itemAliases.yml"));
             } catch (IOException e) {
-                ChestShop.getBukkitLogger().log(Level.SEVERE, "Error while saving item aliases config", e);
+                log.error("Error while saving item aliases config", e);
             }
         }
 
@@ -136,7 +137,7 @@ public class ItemAliasModule {
         if (maxWidth > 0) {
             int width = getMinecraftStringWidth(newCode);
             if (width > maxWidth) {
-                ChestShop.getBukkitLogger().warning("Can't use configured alias " + newCode + " as it's width (" + width + ") was wider than the allowed max width of " + maxWidth);
+                log.warn("Can't use configured alias " + newCode + " as it's width (" + width + ") was wider than the allowed max width of " + maxWidth);
                 return itemString;
             }
         }
