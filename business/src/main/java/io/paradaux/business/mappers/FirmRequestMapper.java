@@ -132,6 +132,32 @@ public interface FirmRequestMapper {
                               @Param("expiresAt") LocalDateTime expiresAt);
 
     /**
+     * Record a forced proprietor override ({@code /firm admin set proprietor}) as
+     * a terminal {@code ADMIN_OVERRIDE} row, so a staff/DOC reassignment is
+     * auditable in the same handover log as consent transfers (who, from whom, to
+     * whom, when). {@code actorUuid} is the acting staff member; {@code token} is
+     * an unused sentinel that satisfies the NOT NULL / UNIQUE column contract, and
+     * {@code expires_at} is set to now (irrelevant for a completed override).
+     */
+    @Insert("""
+            INSERT INTO firm_transfer_requests
+                (firm_id, from_uuid_bin, to_uuid_bin, actor_uuid_bin, token, status, created_at, expires_at)
+            VALUES (#{firmId},
+                    uuid_to_bin(#{fromUuid}),
+                    uuid_to_bin(#{toUuid}),
+                    uuid_to_bin(#{actorUuid}),
+                    #{token},
+                    'ADMIN_OVERRIDE',
+                    CURRENT_TIMESTAMP,
+                    CURRENT_TIMESTAMP)
+            """)
+    int recordAdminOverride(@Param("firmId") int firmId,
+                            @Param("fromUuid") String fromUuid,
+                            @Param("toUuid") String toUuid,
+                            @Param("actorUuid") String actorUuid,
+                            @Param("token") String token);
+
+    /**
      * Confirm a transfer iff token matches, it is PENDING, and not expired.
      * Returns 1 if flipped to CONFIRMED, 0 otherwise.
      */

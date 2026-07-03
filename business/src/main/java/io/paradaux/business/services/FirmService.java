@@ -32,8 +32,13 @@ public interface FirmService {
     /** Set a firm's Discord URL without the ADMIN firm-permission check. */
     void adminSetDiscord(String firmName, String url);
 
-    /** Reassign a firm's proprietor without the transfer-acceptance flow. */
-    void adminSetProprietor(String firmName, UUID newProprietor);
+    /**
+     * Reassign a firm's proprietor without the transfer-acceptance flow (staff/DOC
+     * override). Reassigns the firm's treasury accounts to the new proprietor and
+     * records the forced handover as an ADMIN_OVERRIDE audit row. {@code actorId}
+     * is the staff member performing the override.
+     */
+    void adminSetProprietor(String firmName, UUID newProprietor, UUID actorId);
 
     /**
      * Re-points a firm's default treasury account. System-initiated (no actor /

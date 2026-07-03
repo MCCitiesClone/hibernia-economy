@@ -5,6 +5,7 @@ import io.paradaux.hibernia.framework.exceptions.ExceedsLimitException;
 import io.paradaux.hibernia.framework.exceptions.NoPermissionException;
 import io.paradaux.business.mappers.FirmAccountsMapper;
 import io.paradaux.business.mappers.FirmMapper;
+import io.paradaux.business.mappers.FirmRequestMapper;
 import io.paradaux.business.mappers.FirmRoleMapper;
 import io.paradaux.business.model.Firm;
 import io.paradaux.business.model.FirmAccount;
@@ -49,6 +50,7 @@ class FirmServiceImplTest {
     @Mock TreasuryApi treasury;
     @Mock FirmAccountsMapper accounts;
     @Mock FirmRoleMapper roles;
+    @Mock FirmRequestMapper requests;
     @Mock FirmStaffService staffService;
     @Mock FirmAccountService firmAccountService;
     @Mock FirmConfiguration firmConfig;
@@ -59,7 +61,7 @@ class FirmServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        svc = new FirmServiceImpl(firms, treasury, accounts, roles, () -> staffService, () -> firmAccountService, firmConfig, areas);
+        svc = new FirmServiceImpl(firms, treasury, accounts, roles, requests, () -> staffService, () -> firmAccountService, firmConfig, areas);
         bukkit = org.mockito.Mockito.mockStatic(Bukkit.class);
         // Default to the production limit of 3 (lenient — not every test reaches the check).
         org.mockito.Mockito.lenient().when(firmConfig.hasOwnedFirmLimit()).thenReturn(true);
@@ -470,13 +472,16 @@ class FirmServiceImplTest {
     }
 
     @Test
-    void adminSetProprietor_updatesProprietorAndReassignsAccounts() {
+    void adminSetProprietor_updatesProprietorReassignsAccountsAndAudits() {
+        UUID oldOwner = UUID.randomUUID();
         UUID newOwner = UUID.randomUUID();
+        UUID admin = UUID.randomUUID();
         Firm firm = new Firm();
         firm.setFirmId(1);
+        firm.setProprietorUuid(oldOwner.toString());
         when(firms.getFirmByName("Acme")).thenReturn(firm);
 
-        svc.adminSetProprietor("Acme", newOwner);
+        svc.adminSetProprietor("Acme", newOwner, admin);
 
         ArgumentCaptor<Firm> update = ArgumentCaptor.forClass(Firm.class);
         verify(firms).updateFirm(update.capture());
@@ -485,6 +490,9 @@ class FirmServiceImplTest {
         // new proprietor, or they'd be locked out of the firm's money (PAR-141).
         verify(firmAccountService).reassignAccountsToNewProprietor(1, newOwner);
         verify(staffService, never()).resignFromFirm(any(), any());
+        // The forced handover must be audited (from old, to new, by the admin) — PAR-315.
+        verify(requests).recordAdminOverride(eq(1), eq(oldOwner.toString()),
+                eq(newOwner.toString()), eq(admin.toString()), any());
     }
 
     @Test
@@ -492,10 +500,11 @@ class FirmServiceImplTest {
         UUID newOwner = UUID.randomUUID();
         Firm firm = new Firm();
         firm.setFirmId(1);
+        firm.setProprietorUuid(UUID.randomUUID().toString());
         when(firms.getFirmByName("Acme")).thenReturn(firm);
         when(staffService.isEmployedBy(1, newOwner)).thenReturn(true);
 
-        svc.adminSetProprietor("Acme", newOwner);
+        svc.adminSetProprietor("Acme", newOwner, UUID.randomUUID());
 
         // A proprietor cannot also hold an employee slot: resign, then hand over.
         verify(staffService).resignFromFirm("Acme", newOwner);

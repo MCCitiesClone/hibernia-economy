@@ -9,6 +9,7 @@ import io.paradaux.hibernia.framework.exceptions.ExceedsLimitException;
 import io.paradaux.hibernia.framework.exceptions.NoPermissionException;
 import io.paradaux.hibernia.framework.utils.StringUtils;
 import io.paradaux.business.mappers.FirmMapper;
+import io.paradaux.business.mappers.FirmRequestMapper;
 import io.paradaux.business.mappers.FirmRoleMapper;
 import io.paradaux.business.model.Firm;
 import io.paradaux.business.model.FirmRole;
@@ -47,6 +48,7 @@ public class FirmServiceImpl implements FirmService {
     private final TreasuryApi treasury;
     private final FirmAccountsMapper accounts;
     private final FirmRoleMapper roles;
+    private final FirmRequestMapper requests;
     /** Lazy-injected to break the FirmService ↔ FirmStaffService cycle. */
     private final Provider<FirmStaffService> staffProvider;
     /** Lazy-injected to break the FirmService ↔ FirmAccountService cycle. */
@@ -59,6 +61,7 @@ public class FirmServiceImpl implements FirmService {
                            TreasuryApi treasury,
                            FirmAccountsMapper accounts,
                            FirmRoleMapper roles,
+                           FirmRequestMapper requests,
                            Provider<FirmStaffService> staffProvider,
                            Provider<FirmAccountService> firmAccountServiceProvider,
                            FirmConfiguration firmConfig,
@@ -67,6 +70,7 @@ public class FirmServiceImpl implements FirmService {
         this.treasury = treasury;
         this.accounts = accounts;
         this.roles = roles;
+        this.requests = requests;
         this.staffProvider = staffProvider;
         this.firmAccountServiceProvider = firmAccountServiceProvider;
         this.firmConfig = firmConfig;
@@ -386,12 +390,15 @@ public class FirmServiceImpl implements FirmService {
      * owner/authorizers stay on the previous proprietor and the new one is locked
      * out of the firm's money — the exact stranding the transfer flow prevents at
      * FirmRequestServiceImpl#completeTransferProprietorship (PAR-141). Wrapped in
-     * a transaction so the proprietor update rolls back if reassignment fails.
+     * a transaction so the proprietor update, account reassignment, and audit row
+     * commit or roll back together.
      */
     @Transactional
     @Override
-    public void adminSetProprietor(String firmName, UUID newProprietor) {
+    public void adminSetProprietor(String firmName, UUID newProprietor, UUID actorId) {
         Firm firm = requireFirm(firmName);
+        // Capture the outgoing proprietor before the update for the audit row.
+        UUID previousProprietor = UUID.fromString(firm.getProprietorUuid());
 
         // A proprietor cannot also occupy an employee slot (mirrors the transfer flow).
         if (staffProvider.get().isEmployedBy(firm.getFirmId(), newProprietor)) {
@@ -400,6 +407,12 @@ public class FirmServiceImpl implements FirmService {
 
         updateProprietor(firm.getFirmId(), newProprietor);
         firmAccountServiceProvider.get().reassignAccountsToNewProprietor(firm.getFirmId(), newProprietor);
+
+        // Audit the forced handover in the same log as consent transfers, so a
+        // staff/DOC override is traceable (who did it, from whom, to whom) instead
+        // of an invisible proprietor change (PAR-315).
+        requests.recordAdminOverride(firm.getFirmId(), previousProprietor.toString(),
+                newProprietor.toString(), actorId.toString(), StringUtils.random32());
     }
 
     private Firm requireFirm(String firmName) {

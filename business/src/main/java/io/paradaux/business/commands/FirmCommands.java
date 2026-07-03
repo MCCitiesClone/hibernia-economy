@@ -392,7 +392,7 @@ public class FirmCommands implements CommandHandler {
             message.send(sender, "business.general.player-not-found");
             return;
         }
-        firms.adminSetProprietor(firm, target.getUniqueId());
+        firms.adminSetProprietor(firm, target.getUniqueId(), sender.getUniqueId());
         String targetName = target.getName() != null ? target.getName() : target.getUniqueId().toString();
         message.send(sender, "business.firm.admin.proprietor.success", "firm", f.getDisplayName(), "player", targetName);
     }

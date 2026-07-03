@@ -315,11 +315,12 @@ export interface FirmSale {
 
 export interface FirmTransferRequests {
   activeOnly: Generated<number | null>;
+  actorUuidBin: Buffer | null;
   createdAt: Generated<Date>;
   expiresAt: Date;
   firmId: number;
   fromUuidBin: Buffer;
-  status: Generated<"ACCEPTED" | "CANCELLED" | "CONFIRMED" | "EXPIRED" | "PENDING">;
+  status: Generated<"ACCEPTED" | "ADMIN_OVERRIDE" | "CANCELLED" | "CONFIRMED" | "EXPIRED" | "PENDING">;
   token: string;
   toUuidBin: Buffer;
   transferId: Generated<number>;
