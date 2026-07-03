@@ -10,10 +10,10 @@ import java.util.List;
  * The stateful block↔shop-sign geometry split out of {@code ShopBlockUtil} (PAR-282):
  * resolving the sign a container is attached to (and vice-versa), and deciding whether a
  * block/holder is a shop container (config {@code SHOP_CONTAINERS}). The block-level
- * {@code isShopBlock}/{@code isShopChest} predicates moved here off {@link ChestShopSign} —
+ * {@code isShopBlock}/{@code isShopChest} predicates moved here off {@link SignService} —
  * they are block detection, not sign-line logic, and hosting them here lets this service
- * depend on {@link ChestShopSign} <em>directly</em> (for {@link ChestShopSign#isValid})
- * with no back-edge, so the former {@code ShopBlockUtil ↔ ChestShopSign} construction
+ * depend on {@link SignService} <em>directly</em> (for {@link SignService#isValid})
+ * with no back-edge, so the former {@code ShopBlockUtil ↔ SignService} construction
  * cycle (and its {@code Provider<>} work-around) is gone. The pure block geometry
  * (findNeighbor, the face arrays) stays static on {@link ShopBlockUtil}.
  *

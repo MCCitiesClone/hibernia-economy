@@ -214,10 +214,10 @@ public class MarketRecords {
     public ChestShopShopRecord shop(Sign sign, ItemStack item, Owner owner,
                              Integer currentStock, Integer estimatedCapacity) {
         Location l = sign.getLocation();
-        String priceLine = sign.getLine(ChestShopSign.PRICE_LINE);
+        String priceLine = sign.getLine(SignService.PRICE_LINE);
         int batch;
         try {
-            batch = ChestShopSign.getQuantity(sign);
+            batch = SignService.getQuantity(sign);
         } catch (RuntimeException e) {
             batch = Math.max(1, item.getAmount());
         }

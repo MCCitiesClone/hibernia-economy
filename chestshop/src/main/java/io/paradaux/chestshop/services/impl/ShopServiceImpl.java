@@ -6,8 +6,8 @@ import io.paradaux.chestshop.services.ShopBlockService;
 import io.paradaux.chestshop.services.ProtectionService;
 import io.paradaux.chestshop.services.ItemService;
 import io.paradaux.chestshop.services.EconomyService;
-import io.paradaux.chestshop.services.ChestShopSign;
-import io.paradaux.chestshop.services.AdminBypass;
+import io.paradaux.chestshop.services.SignService;
+import io.paradaux.chestshop.services.AdminBypassService;
 import io.paradaux.chestshop.services.AccountService;
 import io.paradaux.chestshop.services.ShopService;
 import com.google.inject.Inject;
@@ -44,7 +44,7 @@ import java.math.BigDecimal;
 import java.util.Locale;
 
 import static io.paradaux.chestshop.utils.Permissions.NOFEE;
-import static io.paradaux.chestshop.services.ChestShopSign.AUTOFILL_CODE;
+import static io.paradaux.chestshop.services.SignService.AUTOFILL_CODE;
 
 /**
  * Owns the whole shop lifecycle: creation validation ({@link #create}), the post-creation
@@ -71,14 +71,14 @@ public class ShopServiceImpl implements ShopService {
     private final Message message;
     private final MarketListener market;
     private final ChestShopConfiguration config;
-    private final ChestShopSign chestShopSign;
+    private final SignService signService;
     private final ShopBlockService shopBlockService;
 
-    private final AdminBypass adminBypass;
+    private final AdminBypassService adminBypass;
 
     @Inject
     public ShopServiceImpl(AccountService accounts, EconomyService economy, ItemService items, ProtectionService protection, StockCounterListener stockCounter, Message message, MarketListener market,
-                       ChestShopConfiguration config, ChestShopSign chestShopSign, ShopBlockService shopBlockService, AdminBypass adminBypass) {
+                       ChestShopConfiguration config, SignService signService, ShopBlockService shopBlockService, AdminBypassService adminBypass) {
         this.adminBypass = adminBypass;
         this.accounts = accounts;
         this.economy = economy;
@@ -88,7 +88,7 @@ public class ShopServiceImpl implements ShopService {
         this.message = message;
         this.market = market;
         this.config = config;
-        this.chestShopSign = chestShopSign;
+        this.signService = signService;
         this.shopBlockService = shopBlockService;
     }
 
@@ -132,7 +132,7 @@ public class ShopServiceImpl implements ShopService {
 
     /** Resolve/normalise the item line; autofill from the chest, or reject an invalid item. */
     private void checkItem(ShopCreation ctx) {
-        String itemCode = ChestShopSign.getItem(ctx.getSignLines());
+        String itemCode = SignService.getItem(ctx.getSignLines());
         ItemStack item = items.parse(itemCode);
 
         if (item == null) {
@@ -147,7 +147,7 @@ public class ShopServiceImpl implements ShopService {
                     }
                 }
                 if (item == null) {
-                    ctx.setSignLine(ChestShopSign.ITEM_LINE, ChatColor.BOLD + ChestShopSign.AUTOFILL_CODE);
+                    ctx.setSignLine(SignService.ITEM_LINE, ChatColor.BOLD + SignService.AUTOFILL_CODE);
                     ctx.setOutcome(CreationOutcome.ITEM_AUTOFILL);
                     return;
                 }
@@ -162,13 +162,13 @@ public class ShopServiceImpl implements ShopService {
             ctx.setOutcome(CreationOutcome.INVALID_ITEM);
             return;
         }
-        ctx.setSignLine(ChestShopSign.ITEM_LINE, itemCode);
+        ctx.setSignLine(SignService.ITEM_LINE, itemCode);
     }
 
     /** Normalise the price line (B/S prefixes, precision, multipliers) and reject if invalid.
      *  Package-private so the price-parser unit test can exercise it directly. */
     void checkPrice(ShopCreation ctx) {
-        String line = ChestShopSign.getPrice(ctx.getSignLines()).toUpperCase(Locale.ROOT);
+        String line = SignService.getPrice(ctx.getSignLines()).toUpperCase(Locale.ROOT);
         if (config.getPricePrecision() <= 0) {
             line = line.replaceAll("\\.\\d*", ""); // remove too many decimal places
         } else {
@@ -207,7 +207,7 @@ public class ShopServiceImpl implements ShopService {
                 return;
             }
         }
-        ctx.setSignLine(ChestShopSign.PRICE_LINE, line);
+        ctx.setSignLine(SignService.PRICE_LINE, line);
         if (!PriceUtil.hasBuyPrice(line) && !PriceUtil.hasSellPrice(line)) {
             ctx.setOutcome(CreationOutcome.INVALID_PRICE);
         }
@@ -226,7 +226,7 @@ public class ShopServiceImpl implements ShopService {
     private void checkQuantity(ShopCreation ctx) {
         int amount = -1;
         try {
-            amount = ChestShopSign.getQuantity(ctx.getSignLines());
+            amount = SignService.getQuantity(ctx.getSignLines());
         } catch (NumberFormatException ignored) {} // not a quantity on the line
         if (amount < 1 || amount > config.getMaxShopAmount()) {
             ctx.setOutcome(CreationOutcome.INVALID_QUANTITY);
@@ -235,11 +235,11 @@ public class ShopServiceImpl implements ShopService {
 
     /** Require a backing chest (non-admin) the creator may access. */
     private void checkChest(ShopCreation ctx) {
-        String nameLine = ChestShopSign.getOwner(ctx.getSignLines());
+        String nameLine = SignService.getOwner(ctx.getSignLines());
         Container connectedContainer = shopBlockService.findConnectedContainer(ctx.getSign().getBlock());
 
         if (connectedContainer == null) {
-            if (!chestShopSign.isAdminShop(nameLine)) {
+            if (!signService.isAdminShop(nameLine)) {
                 ctx.setOutcome(CreationOutcome.NO_CHEST);
             }
             return;
@@ -257,7 +257,7 @@ public class ShopServiceImpl implements ShopService {
     private void checkCreationFunds(ShopCreation ctx) {
         BigDecimal shopCreationPrice = config.getShopCreationPrice();
         if (shopCreationPrice.compareTo(BigDecimal.ZERO) == 0
-                || chestShopSign.isAdminShop(ctx.getSignLines())
+                || signService.isAdminShop(ctx.getSignLines())
                 || adminBypass.has(ctx.getPlayer(), NOFEE)) {
             return;
         }
@@ -272,7 +272,7 @@ public class ShopServiceImpl implements ShopService {
         if (config.isAllowFreeShops()) {
             return;
         }
-        String price = ChestShopSign.getPrice(ctx.getSignLines());
+        String price = SignService.getPrice(ctx.getSignLines());
         if (isFreePrice(PriceUtil.getExactBuyPrice(price)) || isFreePrice(PriceUtil.getExactSellPrice(price))) {
             ctx.setOutcome(CreationOutcome.INVALID_PRICE);
         }
@@ -298,7 +298,7 @@ public class ShopServiceImpl implements ShopService {
 
     /** Optionally reject a shop whose sell price exceeds its buy price. */
     private void checkPriceRatio(ShopCreation ctx) {
-        String priceLine = ChestShopSign.getPrice(ctx.getSignLines());
+        String priceLine = SignService.getPrice(ctx.getSignLines());
         if (PriceUtil.hasBuyPrice(priceLine) && PriceUtil.hasSellPrice(priceLine)
                 && PriceUtil.getExactSellPrice(priceLine).compareTo(PriceUtil.getExactBuyPrice(priceLine)) > 0) {
             ctx.setOutcome(CreationOutcome.SELL_PRICE_HIGHER_THAN_BUY_PRICE);
@@ -311,13 +311,13 @@ public class ShopServiceImpl implements ShopService {
 
         if (ctx.getOwnerAccount() != null
                 && !accounts.canUseName(player, Permissions.OTHER_NAME_CREATE, ctx.getOwnerAccount().getShortName())) {
-            ctx.setSignLine(ChestShopSign.NAME_LINE, "");
+            ctx.setSignLine(SignService.NAME_LINE, "");
             ctx.setOutcome(CreationOutcome.NO_PERMISSION);
             return;
         }
 
-        String priceLine = ChestShopSign.getPrice(ctx.getSignLines());
-        String itemLine = ChestShopSign.getItem(ctx.getSignLines());
+        String priceLine = SignService.getPrice(ctx.getSignLines());
+        String itemLine = SignService.getItem(ctx.getSignLines());
         ItemStack item = items.parse(itemLine);
 
         if (item == null) {
@@ -363,10 +363,10 @@ public class ShopServiceImpl implements ShopService {
 
     /** Resolve the owner account from the name line (player or B:&lt;id&gt; business). */
     private void resolveName(ShopCreation ctx) {
-        String name = ChestShopSign.getOwner(ctx.getSignLines());
+        String name = SignService.getOwner(ctx.getSignLines());
         Player player = ctx.getPlayer();
 
-        if (ChestShopSign.isBusinessAccount(name)) {
+        if (SignService.isBusinessAccount(name)) {
             resolveBusinessName(ctx, player, name);
             return;
         }
@@ -396,9 +396,9 @@ public class ShopServiceImpl implements ShopService {
         }
         ctx.setOwnerAccount(account);
         if (account != null) {
-            ctx.setSignLine(ChestShopSign.NAME_LINE, account.getShortName());
+            ctx.setSignLine(SignService.NAME_LINE, account.getShortName());
         } else {
-            ctx.setSignLine(ChestShopSign.NAME_LINE, "");
+            ctx.setSignLine(SignService.NAME_LINE, "");
             ctx.setOutcome(CreationOutcome.UNKNOWN_PLAYER);
         }
     }
@@ -431,12 +431,12 @@ public class ShopServiceImpl implements ShopService {
             return;
         }
         ctx.setOwnerAccount(account);
-        int accountId = ChestShopSign.getBusinessAccountId(account.getShortName());
-        ctx.setSignLine(ChestShopSign.NAME_LINE, ChestShopSign.businessAccountSignName(accountId));
+        int accountId = SignService.getBusinessAccountId(account.getShortName());
+        ctx.setSignLine(SignService.NAME_LINE, SignService.businessAccountSignName(accountId));
     }
 
     private void failName(ShopCreation ctx) {
-        ctx.setSignLine(ChestShopSign.NAME_LINE, "");
+        ctx.setSignLine(SignService.NAME_LINE, "");
         ctx.setOutcome(CreationOutcome.UNKNOWN_PLAYER);
     }
 
@@ -486,7 +486,7 @@ public class ShopServiceImpl implements ShopService {
 
     /** Stick a freshly-created shop sign onto its chest (config-gated, never for admin shops). */
     private void stickSignToChest(CreatedShop event) {
-        if (!config.isStickSignsToChests() || chestShopSign.isAdminShop(event.getSignLines())) {
+        if (!config.isStickSignsToChests() || signService.isAdminShop(event.getSignLines())) {
             return;
         }
 
@@ -534,12 +534,12 @@ public class ShopServiceImpl implements ShopService {
     private void logCreation(CreatedShop event) {
         ChestShop.runInAsyncThread(() -> {
             String creator = event.getPlayer().getName();
-            String shopOwner = ChestShopSign.getOwner(event.getSignLines());
-            String typeOfShop = chestShopSign.isAdminShop(shopOwner)
+            String shopOwner = SignService.getOwner(event.getSignLines());
+            String typeOfShop = signService.isAdminShop(shopOwner)
                     ? "an Admin Shop"
                     : "a shop" + (event.createdByOwner() ? "" : " for " + event.getOwnerAccount().getName());
-            String item = ChestShopSign.getQuantity(event.getSignLines()) + ' ' + ChestShopSign.getItem(event.getSignLines());
-            String prices = ChestShopSign.getPrice(event.getSignLines());
+            String item = SignService.getQuantity(event.getSignLines()) + ' ' + SignService.getItem(event.getSignLines());
+            String prices = SignService.getPrice(event.getSignLines());
             String location = LocationUtil.locationToString(event.getSign().getLocation());
             log.info(String.format(CREATION_LOG, creator, typeOfShop, item, prices, location));
         });
@@ -551,12 +551,12 @@ public class ShopServiceImpl implements ShopService {
             return;
         }
         ChestShop.runInAsyncThread(() -> {
-            String shopOwner = ChestShopSign.getOwner(event.getSign());
-            String typeOfShop = chestShopSign.isAdminShop(shopOwner)
+            String shopOwner = SignService.getOwner(event.getSign());
+            String typeOfShop = signService.isAdminShop(shopOwner)
                     ? "An Admin Shop"
                     : "A shop belonging to " + shopOwner;
-            String item = ChestShopSign.getQuantity(event.getSign()) + ' ' + ChestShopSign.getItem(event.getSign());
-            String prices = ChestShopSign.getPrice(event.getSign());
+            String item = SignService.getQuantity(event.getSign()) + ' ' + SignService.getItem(event.getSign());
+            String prices = SignService.getPrice(event.getSign());
             String location = LocationUtil.locationToString(event.getSign().getLocation());
             log.info(String.format(REMOVAL_LOG,
                     typeOfShop,
@@ -570,7 +570,7 @@ public class ShopServiceImpl implements ShopService {
         BigDecimal price = config.getShopCreationPrice();
 
         if (price.compareTo(BigDecimal.ZERO) == 0
-                || chestShopSign.isAdminShop(signLines)
+                || signService.isAdminShop(signLines)
                 || adminBypass.has(player, NOFEE)) {
             return true;
         }
@@ -592,11 +592,11 @@ public class ShopServiceImpl implements ShopService {
             return;
         }
 
-        if (ChatColor.stripColor(ChestShopSign.getItem(sign)).equals(AUTOFILL_CODE)) {
+        if (ChatColor.stripColor(SignService.getItem(sign)).equals(AUTOFILL_CODE)) {
             return;
         }
 
-        Account account = accounts.resolveAccount(ChestShopSign.getOwner(sign));
+        Account account = accounts.resolveAccount(SignService.getOwner(sign));
         if (account == null) {
             return;
         }

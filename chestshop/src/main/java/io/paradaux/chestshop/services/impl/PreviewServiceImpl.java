@@ -1,6 +1,6 @@
 package io.paradaux.chestshop.services.impl;
 
-import io.paradaux.chestshop.services.PreviewHandler;
+import io.paradaux.chestshop.services.PreviewService;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import io.paradaux.treasury.api.market.ShopResult;
@@ -29,7 +29,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * who turns previews off has every display hidden for them only.
  */
 @Singleton
-public class PreviewHandlerImpl implements PreviewHandler {
+public class PreviewServiceImpl implements PreviewService {
 
     private static final float SCALE = 0.5f;
 
@@ -41,7 +41,7 @@ public class PreviewHandlerImpl implements PreviewHandler {
     private final Set<UUID> previewHidden = ConcurrentHashMap.newKeySet();
 
     @Inject
-    public PreviewHandlerImpl(JavaPlugin plugin) {
+    public PreviewServiceImpl(JavaPlugin plugin) {
         this.plugin = plugin;
     }
 

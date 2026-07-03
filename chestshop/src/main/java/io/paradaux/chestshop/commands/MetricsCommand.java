@@ -1,7 +1,7 @@
 package io.paradaux.chestshop.commands;
 
 import com.google.inject.Inject;
-import io.paradaux.chestshop.services.MetricsModule;
+import io.paradaux.chestshop.services.MetricsService;
 import io.paradaux.chestshop.services.AccountService;
 import io.paradaux.hibernia.framework.commander.annotations.Command;
 import io.paradaux.hibernia.framework.commander.annotations.Description;
@@ -21,8 +21,11 @@ public class MetricsCommand implements CommandHandler {
     private final AccountService accounts;
     private final Message message;
 
+    private final io.paradaux.chestshop.services.MetricsService metrics;
+
     @Inject
-    public MetricsCommand(AccountService accounts, Message message) {
+    public MetricsCommand(AccountService accounts, Message message, MetricsService metrics) {
+        this.metrics = metrics;
         this.accounts = accounts;
         this.message = message;
     }
@@ -32,12 +35,12 @@ public class MetricsCommand implements CommandHandler {
     public void metrics(@Sender CommandSender sender) {
         message.send(sender, "chestshop.METRICS", "prefix", "",
                 "accounts", String.valueOf(accounts.getAccountCount()),
-                "totalTransactions", String.valueOf(MetricsModule.getTotalTransactions()),
-                "buyTransactions", String.valueOf(MetricsModule.getBuyTransactions()),
-                "sellTransactions", String.valueOf(MetricsModule.getSellTransactions()),
-                "totalItems", String.valueOf(MetricsModule.getTotalItemsCount()),
-                "boughtItems", String.valueOf(MetricsModule.getBoughtItemsCount()),
-                "soldItems", String.valueOf(MetricsModule.getSoldItemsCount())
+                "totalTransactions", String.valueOf(metrics.getTotalTransactions()),
+                "buyTransactions", String.valueOf(metrics.getBuyTransactions()),
+                "sellTransactions", String.valueOf(metrics.getSellTransactions()),
+                "totalItems", String.valueOf(metrics.getTotalItemsCount()),
+                "boughtItems", String.valueOf(metrics.getBoughtItemsCount()),
+                "soldItems", String.valueOf(metrics.getSoldItemsCount())
         );
     }
 }

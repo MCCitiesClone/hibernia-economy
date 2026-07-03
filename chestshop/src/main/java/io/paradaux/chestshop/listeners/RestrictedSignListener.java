@@ -1,7 +1,7 @@
 package io.paradaux.chestshop.listeners;
 
-import io.paradaux.chestshop.services.AdminBypass;
-import io.paradaux.chestshop.services.ChestShopSign;
+import io.paradaux.chestshop.services.AdminBypassService;
+import io.paradaux.chestshop.services.SignService;
 import com.google.inject.Inject;
 import io.paradaux.chestshop.utils.BlockUtil;
 import io.paradaux.chestshop.model.PendingTransaction;
@@ -31,16 +31,16 @@ public class RestrictedSignListener implements Listener {
 
     private final Message message;
     private final AccountService accounts;
-    private final ChestShopSign chestShopSign;
+    private final SignService signService;
 
-    private final AdminBypass adminBypass;
+    private final AdminBypassService adminBypass;
 
     @Inject
-    public RestrictedSignListener(Message message, AccountService accounts, ChestShopSign chestShopSign, AdminBypass adminBypass) {
+    public RestrictedSignListener(Message message, AccountService accounts, SignService signService, AdminBypassService adminBypass) {
         this.adminBypass = adminBypass;
         this.message = message;
         this.accounts = accounts;
-        this.chestShopSign = chestShopSign;
+        this.signService = signService;
     }
 
     @EventHandler(ignoreCancelled = true)
@@ -70,7 +70,7 @@ public class RestrictedSignListener implements Listener {
             }
             Block connectedSign = event.getBlock().getRelative(BlockFace.DOWN);
 
-            if (!adminBypass.has(player, ADMIN) || !chestShopSign.isValid(connectedSign)) {
+            if (!adminBypass.has(player, ADMIN) || !signService.isValid(connectedSign)) {
                 dropSignAndCancelEvent(event);
                 return;
             }

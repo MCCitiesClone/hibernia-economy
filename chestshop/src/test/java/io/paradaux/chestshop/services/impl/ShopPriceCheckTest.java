@@ -1,6 +1,6 @@
 package io.paradaux.chestshop.services.impl;
 
-import io.paradaux.chestshop.services.ChestShopSign;
+import io.paradaux.chestshop.services.SignService;
 import io.paradaux.chestshop.model.config.ChestShopConfiguration;
 import io.paradaux.chestshop.model.ShopCreation;
 import io.paradaux.chestshop.utils.PriceUtil;
@@ -39,11 +39,11 @@ class ShopPriceCheckTest {
     public void testLegalBuyPrice() {
         ShopCreation event = new ShopCreation(null, null, getPriceString("B 1"));
         shops.checkPrice(event);
-        assertEquals(PriceUtil.getExactBuyPrice(ChestShopSign.getPrice(event.getSignLines())), BigDecimal.valueOf(1));
+        assertEquals(PriceUtil.getExactBuyPrice(SignService.getPrice(event.getSignLines())), BigDecimal.valueOf(1));
 
         event = new ShopCreation(null, null, getPriceString("B FREE"));
         shops.checkPrice(event);
-        assertEquals(PriceUtil.FREE, PriceUtil.getExactBuyPrice(ChestShopSign.getPrice(event.getSignLines())));
+        assertEquals(PriceUtil.FREE, PriceUtil.getExactBuyPrice(SignService.getPrice(event.getSignLines())));
 
         assertFalse(event.isCancelled());
     }
@@ -66,11 +66,11 @@ class ShopPriceCheckTest {
     public void testLegalSellPrice() {
         ShopCreation event = new ShopCreation(null, null, getPriceString("S 1"));
         shops.checkPrice(event);
-        assertEquals(PriceUtil.getExactSellPrice(ChestShopSign.getPrice(event.getSignLines())), BigDecimal.valueOf(1));
+        assertEquals(PriceUtil.getExactSellPrice(SignService.getPrice(event.getSignLines())), BigDecimal.valueOf(1));
 
         event = new ShopCreation(null, null, getPriceString("S FREE"));
         shops.checkPrice(event);
-        assertEquals(PriceUtil.getExactSellPrice(ChestShopSign.getPrice(event.getSignLines())), PriceUtil.FREE);
+        assertEquals(PriceUtil.getExactSellPrice(SignService.getPrice(event.getSignLines())), PriceUtil.FREE);
 
         assertFalse(event.isCancelled());
     }
@@ -150,15 +150,15 @@ class ShopPriceCheckTest {
 
     private String normalisedPrice(String priceLine) {
         ShopCreation event = createEventFromString(priceLine);
-        return ChestShopSign.getPrice(event.getSignLines());
+        return SignService.getPrice(event.getSignLines());
     }
 
     private static BigDecimal getExactSellPrice(ShopCreation event) {
-        return PriceUtil.getExactSellPrice(ChestShopSign.getPrice(event.getSignLines()));
+        return PriceUtil.getExactSellPrice(SignService.getPrice(event.getSignLines()));
     }
 
     private static BigDecimal getExactBuyPrice(ShopCreation event) {
-        return PriceUtil.getExactBuyPrice(ChestShopSign.getPrice(event.getSignLines()));
+        return PriceUtil.getExactBuyPrice(SignService.getPrice(event.getSignLines()));
     }
 
     private ShopCreation createEventFromString(String priceString) {

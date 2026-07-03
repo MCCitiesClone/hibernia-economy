@@ -28,12 +28,12 @@ import static io.paradaux.chestshop.utils.MaterialUtil.METADATA;
  * @author Acrobot
  */
 @Singleton
-public class ChestShopSign {
+public class SignService {
 
     private final ChestShopConfiguration config;
 
     @Inject
-    public ChestShopSign(ChestShopConfiguration config) {
+    public SignService(ChestShopConfiguration config) {
         this.config = config;
     }
 
@@ -166,7 +166,7 @@ public class ChestShopSign {
     // isShopChest/isShopBlock (block-level shop detection) moved to ShopBlockService
     // (PAR-282) — they are block geometry, not sign-line logic, and hosting them there
     // lets ShopBlockService depend on this class directly (isValid) with no back-edge,
-    // dissolving the former ShopBlockUtil↔ChestShopSign construction cycle.
+    // dissolving the former ShopBlockUtil↔SignService construction cycle.
 
     public Block getShopBlock(InventoryHolder holder) {
         if (holder instanceof DoubleChest) {

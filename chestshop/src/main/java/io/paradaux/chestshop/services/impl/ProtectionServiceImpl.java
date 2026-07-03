@@ -6,7 +6,7 @@ import io.paradaux.chestshop.model.BuildPermission;
 import io.paradaux.chestshop.model.ProtectionCheck;
 import io.paradaux.chestshop.model.config.ChestShopConfiguration;
 import io.paradaux.chestshop.services.AccountService;
-import io.paradaux.chestshop.services.ChestShopSign;
+import io.paradaux.chestshop.services.SignService;
 import io.paradaux.chestshop.services.ProtectionService;
 import io.paradaux.chestshop.services.ShopBlockService;
 import io.paradaux.chestshop.utils.BlockUtil;
@@ -38,7 +38,7 @@ public class ProtectionServiceImpl implements ProtectionService {
 
     private final AccountService accounts;
     private final ChestShopConfiguration config;
-    private final ChestShopSign chestShopSign;
+    private final SignService signService;
     private final ShopBlockService shopBlockService;
 
     @Nullable private volatile Consumer<ProtectionCheck> worldGuardProtection;
@@ -47,10 +47,10 @@ public class ProtectionServiceImpl implements ProtectionService {
 
     @Inject
     public ProtectionServiceImpl(AccountService accounts, ChestShopConfiguration config,
-                                 ChestShopSign chestShopSign, ShopBlockService shopBlockService) {
+                                 SignService signService, ShopBlockService shopBlockService) {
         this.accounts = accounts;
         this.config = config;
-        this.chestShopSign = chestShopSign;
+        this.signService = signService;
         this.shopBlockService = shopBlockService;
     }
 
@@ -127,7 +127,7 @@ public class ProtectionServiceImpl implements ProtectionService {
 
         if (isSign(block)) {
             Sign sign = (Sign) getState(block, false);
-            if (!chestShopSign.isValid(sign)) {
+            if (!signService.isValid(sign)) {
                 return true;
             }
             if (!isShopMember(player, sign)) {
@@ -182,7 +182,7 @@ public class ProtectionServiceImpl implements ProtectionService {
                 continue;
             }
             Sign sign = (Sign) getState(block, false);
-            if (!chestShopSign.isValid(sign) || !BlockUtil.getAttachedBlock(sign).equals(baseBlock)) {
+            if (!signService.isValid(sign) || !BlockUtil.getAttachedBlock(sign).equals(baseBlock)) {
                 continue;
             }
             if (!accounts.isOwner(player, sign)) {

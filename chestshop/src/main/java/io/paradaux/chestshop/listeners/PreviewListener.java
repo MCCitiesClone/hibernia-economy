@@ -1,6 +1,6 @@
 package io.paradaux.chestshop.listeners;
 
-import io.paradaux.chestshop.services.PreviewHandler;
+import io.paradaux.chestshop.services.PreviewService;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import io.paradaux.chestshop.services.MarketHook;
@@ -29,10 +29,10 @@ public final class PreviewListener implements Listener {
     private static final boolean DEFAULT_PREVIEW_VISIBLE = true;
 
     private final JavaPlugin plugin;
-    private final PreviewHandler previews;
+    private final PreviewService previews;
 
     @Inject
-    public PreviewListener(JavaPlugin plugin, PreviewHandler previews) {
+    public PreviewListener(JavaPlugin plugin, PreviewService previews) {
         this.plugin = plugin;
         this.previews = previews;
     }

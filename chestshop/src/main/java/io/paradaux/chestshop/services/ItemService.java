@@ -15,7 +15,7 @@ import org.bukkit.inventory.ItemStack;
  *   <li>{@link #parseMaterial}: a single resolver.</li>
  * </ul>
  *
- * <p>Sign-format validation is pure and lives on {@code ChestShopSign.validateSign}.</p>
+ * <p>Sign-format validation is pure and lives on {@code SignService.validateSign}.</p>
  *
  * <p>The optional custom-item integration (a softdepend such as Nexo) registers a
  * {@link CustomItemResolver} when it hooks — the service never references the integration's

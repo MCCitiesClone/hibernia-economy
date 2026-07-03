@@ -5,7 +5,7 @@ import io.paradaux.chestshop.services.ShopBlockService;
 import io.paradaux.chestshop.services.MarketRecords;
 import io.paradaux.chestshop.services.MarketHook;
 import io.paradaux.chestshop.services.ItemCodeService;
-import io.paradaux.chestshop.services.ChestShopSign;
+import io.paradaux.chestshop.services.SignService;
 import io.paradaux.chestshop.services.AccountService;
 import io.paradaux.chestshop.services.MarketResyncService;
 import com.google.inject.Inject;
@@ -51,7 +51,7 @@ public class MarketResyncServiceImpl implements MarketResyncService {
 
     private final JavaPlugin plugin;
     private final MarketRecords records;
-    private final ChestShopSign chestShopSign;
+    private final SignService signService;
     private final ShopBlockService shopBlockService;
     private final ItemCodeService itemCodes;
     private final AccountService accounts;
@@ -60,12 +60,12 @@ public class MarketResyncServiceImpl implements MarketResyncService {
     private final AtomicBoolean running = new AtomicBoolean(false);
 
     @Inject
-    public MarketResyncServiceImpl(JavaPlugin plugin, MarketRecords records, ChestShopSign chestShopSign,
+    public MarketResyncServiceImpl(JavaPlugin plugin, MarketRecords records, SignService signService,
                                ShopBlockService shopBlockService, ItemCodeService itemCodes,
                                AccountService accounts, Message message) {
         this.plugin = plugin;
         this.records = records;
-        this.chestShopSign = chestShopSign;
+        this.signService = signService;
         this.shopBlockService = shopBlockService;
         this.itemCodes = itemCodes;
         this.accounts = accounts;
@@ -145,7 +145,7 @@ public class MarketResyncServiceImpl implements MarketResyncService {
         Set<String> seen = new HashSet<>();
         int upserted = 0;
         for (BlockState state : chunk.getTileEntities(false)) {
-            if (state instanceof Sign sign && chestShopSign.isValid(sign)) {
+            if (state instanceof Sign sign && signService.isValid(sign)) {
                 if (upsertSign(sign)) {
                     upserted++;
                     seen.add(posKey(sign.getX(), sign.getY(), sign.getZ()));
@@ -169,17 +169,17 @@ public class MarketResyncServiceImpl implements MarketResyncService {
     /** Build and upsert a registry row from a live sign. False if it can't be resolved. */
     private boolean upsertSign(Sign sign) {
         try {
-            String itemCode = ChestShopSign.getItem(sign);
+            String itemCode = SignService.getItem(sign);
             ItemStack item = itemCode != null ? itemCodes.decode(itemCode) : null;
             if (item == null) {
                 return false;
             }
-            boolean admin = chestShopSign.isAdminShop(sign);
+            boolean admin = signService.isAdminShop(sign);
             MarketRecords.Owner owner;
             if (admin) {
                 owner = records.ownerFromUuid(null, true);
             } else {
-                Account account = accounts.resolveAccount(ChestShopSign.getOwner(sign));
+                Account account = accounts.resolveAccount(SignService.getOwner(sign));
                 if (account == null || account.getUuid() == null) {
                     return false; // owner not resolvable — skip rather than write a half row
                 }

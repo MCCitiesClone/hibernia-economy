@@ -12,7 +12,7 @@ import org.bukkit.inventory.ItemStack;
  * the chunk. Per-player visibility is honoured with {@code hideEntity}: a player
  * who turns previews off has every display hidden for them only.
  */
-public interface PreviewHandler {
+public interface PreviewService {
 
     /** Render the hologram for a registry shop (no-op if its hologram flag is off). */
     void render(ShopResult shop);

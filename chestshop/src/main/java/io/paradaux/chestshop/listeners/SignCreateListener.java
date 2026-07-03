@@ -10,7 +10,7 @@ import io.paradaux.chestshop.model.CreatedShop;
 import io.paradaux.chestshop.services.AccountService;
 import io.paradaux.chestshop.services.ItemService;
 import io.paradaux.chestshop.services.ShopService;
-import io.paradaux.chestshop.services.ChestShopSign;
+import io.paradaux.chestshop.services.SignService;
 import org.bukkit.block.Block;
 import org.bukkit.block.Sign;
 import org.bukkit.event.EventHandler;
@@ -28,17 +28,17 @@ public class SignCreateListener implements Listener {
     private final ItemService items;
     private final ShopService shops;
     private final SignBreakListener signBreak;
-    private final ChestShopSign chestShopSign;
+    private final SignService signService;
     private final ShopBlockService shopBlockService;
 
     @Inject
     public SignCreateListener(AccountService accounts, ItemService items, ShopService shops, SignBreakListener signBreak,
-                      ChestShopSign chestShopSign, ShopBlockService shopBlockService) {
+                      SignService signService, ShopBlockService shopBlockService) {
         this.accounts = accounts;
         this.items = items;
         this.shops = shops;
         this.signBreak = signBreak;
-        this.chestShopSign = chestShopSign;
+        this.signService = signService;
         this.shopBlockService = shopBlockService;
     }
 
@@ -52,7 +52,7 @@ public class SignCreateListener implements Listener {
 
         Sign sign = (Sign) BlockUtil.getState(signBlock, false);
 
-        if (chestShopSign.isValid(sign) && !accounts.canAccess(event.getPlayer(), sign)) {
+        if (signService.isValid(sign) && !accounts.canAccess(event.getPlayer(), sign)) {
             // There was already a shop here, but the player does not have permission to change it
             event.setCancelled(true);
             sign.update();
@@ -60,18 +60,18 @@ public class SignCreateListener implements Listener {
             return;
         }
 
-        if (chestShopSign.isValid(event.getLines()) && !accounts.canUseName(event.getPlayer(), OTHER_NAME_DESTROY, ChestShopSign.getOwner(event.getLines()))) {
+        if (signService.isValid(event.getLines()) && !accounts.canUseName(event.getPlayer(), OTHER_NAME_DESTROY, SignService.getOwner(event.getLines()))) {
             event.setCancelled(true);
             sign.update();
-            ChestShop.logDebug("Shop sign creation at " + sign.getLocation() + " by " + event.getPlayer().getName() + " was cancelled as they weren't able to create a shop for the account '" + ChestShopSign.getOwner(event.getLines()) + "'");
+            ChestShop.logDebug("Shop sign creation at " + sign.getLocation() + " by " + event.getPlayer().getName() + " was cancelled as they weren't able to create a shop for the account '" + SignService.getOwner(event.getLines()) + "'");
             return;
         }
 
         String[] lines = StringUtil.stripColourCodes(event.getLines());
 
-        if (!chestShopSign.validateSign(lines)) {
+        if (!signService.validateSign(lines)) {
             // Check if a valid shop already existed previously
-            if (chestShopSign.isValid(sign)) {
+            if (signService.isValid(sign)) {
                 signBreak.sendShopDestroyed(sign, event.getPlayer());
             }
             return;

@@ -6,7 +6,7 @@ import io.paradaux.chestshop.services.ItemService;
 import io.paradaux.chestshop.services.ItemInfoLines;
 import io.paradaux.chestshop.services.InventoryService;
 import io.paradaux.chestshop.services.EconomyService;
-import io.paradaux.chestshop.services.ChestShopSign;
+import io.paradaux.chestshop.services.SignService;
 import io.paradaux.chestshop.services.AccountService;
 import io.paradaux.chestshop.services.InfoService;
 import io.paradaux.chestshop.utils.MessageUtil;
@@ -78,20 +78,20 @@ public class InfoServiceImpl implements InfoService {
     private final ItemService items;
     private final Message message;
     private final ChestShopConfiguration config;
-    private final ChestShopSign chestShopSign;
+    private final SignService signService;
     private final ShopBlockService shopBlockService;
     private final InventoryService inventoryService;
 
     @Inject
     public InfoServiceImpl(AccountService accounts, EconomyService economy, ItemService items, Message message,
-                       ChestShopConfiguration config, ChestShopSign chestShopSign, ShopBlockService shopBlockService,
+                       ChestShopConfiguration config, SignService signService, ShopBlockService shopBlockService,
                        InventoryService inventoryService) {
         this.accounts = accounts;
         this.economy = economy;
         this.items = items;
         this.message = message;
         this.config = config;
-        this.chestShopSign = chestShopSign;
+        this.signService = signService;
         this.shopBlockService = shopBlockService;
         this.inventoryService = inventoryService;
     }
@@ -101,20 +101,20 @@ public class InfoServiceImpl implements InfoService {
     /** Render the {@code /shopinfo} (or middle-click) output for a shop sign. */
     @Override
     public void showShopInfo(Player sender, Sign sign) {
-        if (!chestShopSign.isValid(sign)) {
+        if (!signService.isValid(sign)) {
             message.send(sender, "chestshop.INVALID_SHOP_DETECTED");
             return;
         }
 
-        String nameLine = ChestShopSign.getOwner(sign);
+        String nameLine = SignService.getOwner(sign);
         int amount;
         try {
-            amount = ChestShopSign.getQuantity(sign);
+            amount = SignService.getQuantity(sign);
         } catch (NumberFormatException notANumber) {
             message.send(sender, "chestshop.INVALID_SHOP_DETECTED");
             return;
         }
-        String pricesLine = ChestShopSign.getPrice(sign);
+        String pricesLine = SignService.getPrice(sign);
 
         Account account = accounts.resolveAccount(nameLine);
         if (account == null) {
@@ -125,7 +125,7 @@ public class InfoServiceImpl implements InfoService {
         String ownerName = account.getName();
         ownerName = ownerName != null ? ownerName : nameLine;
 
-        ItemStack item = items.parse(ChestShopSign.getItem(sign));
+        ItemStack item = items.parse(SignService.getItem(sign));
         if (item == null || amount < 1) {
             message.send(sender, "chestshop.INVALID_SHOP_DETECTED");
             return;

@@ -25,7 +25,7 @@ import java.util.UUID;
  * stateful {@code @Singleton} service (PAR-305), so the permission checks that consult it are
  * injected rather than reached statically.
  */
-public interface AdminBypass {
+public interface AdminBypassService {
 
     /** Whether {@code player} has switched their admin bypass OFF (playing as a normal player). */
     boolean isDisabled(Player player);

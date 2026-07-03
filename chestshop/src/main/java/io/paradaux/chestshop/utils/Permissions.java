@@ -9,7 +9,7 @@ import java.util.Locale;
  * {@code @Permission} annotation can't express: the per-material buy/sell/create nodes
  * (built by concatenation), the raw {@link #hasNode} check, the set-false rule, and the
  * {@link #isGated} classifier for the elevated staff nodes. The bypass-aware check that
- * consults a player's opt-out state lives on the {@code AdminBypass} service (PAR-305).
+ * consults a player's opt-out state lives on the {@code AdminBypassService} service (PAR-305).
  *
  * @author Acrobot
  */

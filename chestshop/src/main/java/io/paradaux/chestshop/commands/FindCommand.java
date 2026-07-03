@@ -3,13 +3,13 @@ package io.paradaux.chestshop.commands;
 import io.paradaux.chestshop.dialogs.FindDialog;
 import io.paradaux.chestshop.dialogs.FindState;
 import com.google.inject.Inject;
-import io.paradaux.chestshop.services.PreviewHandler;
+import io.paradaux.chestshop.services.PreviewService;
 import io.paradaux.chestshop.services.MarketHook;
 import io.paradaux.chestshop.services.MarketResyncService;
 import io.paradaux.chestshop.utils.Permissions;
 import io.paradaux.chestshop.services.ItemCodeService;
 import io.paradaux.chestshop.services.ItemService;
-import io.paradaux.chestshop.services.ChestShopSign;
+import io.paradaux.chestshop.services.SignService;
 import io.paradaux.chestshop.utils.MaterialUtil;
 import io.paradaux.hibernia.framework.commander.annotations.Arg;
 import io.paradaux.hibernia.framework.commander.annotations.Command;
@@ -40,19 +40,19 @@ public final class FindCommand implements CommandHandler {
     private final DialogManager dialogs;
     private final ItemService items;
     private final ItemCodeService itemCodes;
-    private final ChestShopSign chestShopSign;
+    private final SignService signService;
     private final MarketResyncService resync;
-    private final PreviewHandler previews;
+    private final PreviewService previews;
     private final Message message;
 
     @Inject
     public FindCommand(DialogManager dialogs, ItemService items, ItemCodeService itemCodes,
-                       ChestShopSign chestShopSign, MarketResyncService resync,
-                       PreviewHandler previews, Message message) {
+                       SignService signService, MarketResyncService resync,
+                       PreviewService previews, Message message) {
         this.dialogs = dialogs;
         this.items = items;
         this.itemCodes = itemCodes;
-        this.chestShopSign = chestShopSign;
+        this.signService = signService;
         this.resync = resync;
         this.previews = previews;
         this.message = message;
@@ -129,7 +129,7 @@ public final class FindCommand implements CommandHandler {
         String world = l.getWorld().getName();
         MarketHook.market().setShopHologram(world, l.getBlockX(), l.getBlockY(), l.getBlockZ(), visible);
         if (visible) {
-            String itemCode = ChestShopSign.getItem(sign);
+            String itemCode = SignService.getItem(sign);
             ItemStack item = itemCode != null ? itemCodes.decode(itemCode) : null;
             if (item != null) {
                 previews.render(world, l.getBlockX(), l.getBlockY(), l.getBlockZ(), item);
@@ -181,11 +181,11 @@ public final class FindCommand implements CommandHandler {
             message.send(player, "find.sign-target");
             return null;
         }
-        if (!chestShopSign.isValid(sign)) {
+        if (!signService.isValid(sign)) {
             message.send(player, "find.sign-target");
             return null;
         }
-        String owner = ChestShopSign.getOwner(sign);
+        String owner = SignService.getOwner(sign);
         if (!player.getName().equalsIgnoreCase(owner) && !player.hasPermission(Permissions.ADMIN)) {
             message.send(player, "find.sign-no-access");
             return null;

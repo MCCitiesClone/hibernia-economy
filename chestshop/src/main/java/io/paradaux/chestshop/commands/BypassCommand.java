@@ -1,7 +1,7 @@
 package io.paradaux.chestshop.commands;
 
 import com.google.inject.Inject;
-import io.paradaux.chestshop.services.AdminBypass;
+import io.paradaux.chestshop.services.AdminBypassService;
 import io.paradaux.hibernia.framework.commander.annotations.Command;
 import io.paradaux.hibernia.framework.commander.annotations.Description;
 import io.paradaux.hibernia.framework.commander.annotations.Route;
@@ -22,10 +22,10 @@ import org.bukkit.entity.Player;
 public class BypassCommand implements CommandHandler {
 
     private final Message message;
-    private final AdminBypass adminBypass;
+    private final AdminBypassService adminBypass;
 
     @Inject
-    public BypassCommand(Message message, AdminBypass adminBypass) {
+    public BypassCommand(Message message, AdminBypassService adminBypass) {
         this.message = message;
         this.adminBypass = adminBypass;
     }

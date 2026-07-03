@@ -1,12 +1,12 @@
 package io.paradaux.chestshop.listeners;
 
 import io.paradaux.chestshop.utils.BlockUtil;
-import io.paradaux.chestshop.services.AdminBypass;
+import io.paradaux.chestshop.services.AdminBypassService;
 import io.paradaux.chestshop.services.ShopBlockService;
 import com.google.inject.Inject;
 import io.paradaux.chestshop.utils.Permissions;
 import io.paradaux.chestshop.services.ProtectionService;
-import io.paradaux.chestshop.services.ChestShopSign;
+import io.paradaux.chestshop.services.SignService;
 import io.paradaux.hibernia.framework.i18n.Message;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -27,17 +27,17 @@ public class BlockPlaceListener implements Listener {
 
     private final Message message;
     private final ProtectionService protection;
-    private final ChestShopSign chestShopSign;
+    private final SignService signService;
     private final ShopBlockService shopBlockService;
 
-    private final AdminBypass adminBypass;
+    private final AdminBypassService adminBypass;
 
     @Inject
-    public BlockPlaceListener(Message message, ProtectionService protection, ChestShopSign chestShopSign, ShopBlockService shopBlockService, AdminBypass adminBypass) {
+    public BlockPlaceListener(Message message, ProtectionService protection, SignService signService, ShopBlockService shopBlockService, AdminBypassService adminBypass) {
         this.adminBypass = adminBypass;
         this.message = message;
         this.protection = protection;
-        this.chestShopSign = chestShopSign;
+        this.signService = signService;
         this.shopBlockService = shopBlockService;
     }
 
@@ -74,7 +74,7 @@ public class BlockPlaceListener implements Listener {
     public void onPlaceAgainstSign(BlockPlaceEvent event) {
         Block against = event.getBlockAgainst();
 
-        if (!chestShopSign.isValid(against)) {
+        if (!signService.isValid(against)) {
             return;
         }
 

@@ -4,7 +4,7 @@ import io.paradaux.chestshop.services.MaterialService;
 import io.paradaux.chestshop.services.ItemCodeService;
 import io.paradaux.chestshop.services.ItemAliasModule;
 import io.paradaux.chestshop.services.InventoryService;
-import io.paradaux.chestshop.services.ChestShopSign;
+import io.paradaux.chestshop.services.SignService;
 import io.paradaux.chestshop.services.CustomItemResolver;
 import io.paradaux.chestshop.services.ItemService;
 import com.google.inject.Inject;
@@ -32,7 +32,7 @@ import static io.paradaux.chestshop.utils.StringUtil.getMinecraftStringWidth;
  *   <li>{@link #parseMaterial}: a single resolver.</li>
  * </ul>
  *
- * <p>Sign-format validation is pure and lives on {@code ChestShopSign.validateSign}.</p>
+ * <p>Sign-format validation is pure and lives on {@code SignService.validateSign}.</p>
  *
  * <p>The optional custom-item integration (a softdepend such as Nexo) registers a
  * {@link CustomItemResolver} when it hooks — this service never references the integration's

@@ -2,9 +2,9 @@ package io.paradaux.chestshop.services.impl;
 import lombok.extern.slf4j.Slf4j;
 
 import io.paradaux.chestshop.services.ItemService;
-import io.paradaux.chestshop.services.ChestShopSign;
+import io.paradaux.chestshop.services.SignService;
 import io.paradaux.chestshop.services.BusinessAccountService;
-import io.paradaux.chestshop.services.AdminBypass;
+import io.paradaux.chestshop.services.AdminBypassService;
 import io.paradaux.chestshop.services.AccountService;
 import io.paradaux.chestshop.services.EconomyService;
 import io.paradaux.chestshop.utils.BusinessAccountUtil;
@@ -66,10 +66,10 @@ public class EconomyServiceImpl implements EconomyService {
     private final ItemService items;
     private final ChestShopConfiguration config;
 
-    private final AdminBypass adminBypass;
+    private final AdminBypassService adminBypass;
 
     @Inject
-    public EconomyServiceImpl(AccountService accounts, ItemService items, ChestShopConfiguration config, AdminBypass adminBypass) {
+    public EconomyServiceImpl(AccountService accounts, ItemService items, ChestShopConfiguration config, AdminBypassService adminBypass) {
         this.adminBypass = adminBypass;
         this.accounts = accounts;
         this.items = items;
@@ -348,7 +348,7 @@ public class EconomyServiceImpl implements EconomyService {
                 // Code didn't round-trip — fall back to the sign line below.
             }
         }
-        return ChestShopSign.getItem(txn.getSign());
+        return SignService.getItem(txn.getSign());
     }
 
     /**
@@ -379,11 +379,11 @@ public class EconomyServiceImpl implements EconomyService {
         }
 
         String canonical = owner.getShortName();
-        if (canonical == null || canonical.equals(ChestShopSign.getOwner(sign))) {
+        if (canonical == null || canonical.equals(SignService.getOwner(sign))) {
             return;
         }
 
-        sign.setLine(ChestShopSign.NAME_LINE, canonical);
+        sign.setLine(SignService.NAME_LINE, canonical);
         sign.update(true);
         log.info("Migrated legacy business shop sign to " + canonical
                 + " at " + sign.getLocation());

@@ -2,7 +2,7 @@ package io.paradaux.chestshop.services.impl;
 import lombok.extern.slf4j.Slf4j;
 
 import io.paradaux.chestshop.services.EconomyService;
-import io.paradaux.chestshop.services.ChestShopSign;
+import io.paradaux.chestshop.services.SignService;
 import io.paradaux.chestshop.services.AccountService;
 import io.paradaux.chestshop.services.BusinessAccountService;
 import com.google.inject.Singleton;
@@ -71,7 +71,7 @@ public class BusinessAccountServiceImpl implements BusinessAccountService {
 
             if (treasuryAccount != null) {
                 String displayName = treasuryAccount.getDisplayName();
-                String shortName = ChestShopSign.businessAccountSignName(accountId);
+                String shortName = SignService.businessAccountSignName(accountId);
                 return new Account(displayName, shortName, BusinessAccountUtil.toBusinessUuid(accountId));
             }
         } catch (Exception e) {

@@ -9,7 +9,7 @@ import io.paradaux.chestshop.model.config.ChestShopConfiguration;
 import io.paradaux.chestshop.model.DestroyedShop;
 import io.paradaux.chestshop.services.AccountService;
 import io.paradaux.chestshop.services.ShopService;
-import io.paradaux.chestshop.services.ChestShopSign;
+import io.paradaux.chestshop.services.SignService;
 import io.paradaux.hibernia.framework.i18n.Message;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -47,17 +47,17 @@ public class SignBreakListener implements Listener {
     private final ShopService shops;
     private final Message message;
     private final ChestShopConfiguration config;
-    private final ChestShopSign chestShopSign;
+    private final SignService signService;
     private final ShopBlockService shopBlockService;
 
     @Inject
     public SignBreakListener(AccountService accounts, ShopService shops, Message message,
-                     ChestShopConfiguration config, ChestShopSign chestShopSign, ShopBlockService shopBlockService) {
+                     ChestShopConfiguration config, SignService signService, ShopBlockService shopBlockService) {
         this.accounts = accounts;
         this.shops = shops;
         this.message = message;
         this.config = config;
-        this.chestShopSign = chestShopSign;
+        this.signService = signService;
         this.shopBlockService = shopBlockService;
     }
 
@@ -69,7 +69,7 @@ public class SignBreakListener implements Listener {
         Sign sign = (Sign) getState(block, false);
         Block attachedBlock = BlockUtil.getAttachedBlock(sign);
 
-        if (attachedBlock.getType() == Material.AIR && chestShopSign.isValid(sign)) {
+        if (attachedBlock.getType() == Material.AIR && signService.isValid(sign)) {
             sendShopDestroyed((Sign) block.getState(), block.hasMetadata(METADATA_NAME)
                     ? (Player) block.getMetadata(METADATA_NAME).get(0).value()
                     : null);
@@ -89,7 +89,7 @@ public class SignBreakListener implements Listener {
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
     public void onBrokenSign(BlockBreakEvent event) {
-        if (chestShopSign.isValid(event.getBlock())) {
+        if (signService.isValid(event.getBlock())) {
             sendShopDestroyed((Sign) event.getBlock().getState(), event.getPlayer());
         }
     }
@@ -150,11 +150,11 @@ public class SignBreakListener implements Listener {
 
         for (Sign sign : attachedSigns) {
 
-            if (!canBeBroken || !chestShopSign.isValid(sign)) {
+            if (!canBeBroken || !signService.isValid(sign)) {
                 continue;
             }
 
-            if (config.isTurnOffSignProtection() || canDestroyShop(breaker, ChestShopSign.getOwner(sign))) {
+            if (config.isTurnOffSignProtection() || canDestroyShop(breaker, SignService.getOwner(sign))) {
                 brokenBlocks.add(sign);
             } else {
                 canBeBroken = false;

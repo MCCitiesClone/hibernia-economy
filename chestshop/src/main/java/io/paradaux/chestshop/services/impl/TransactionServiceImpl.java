@@ -3,13 +3,13 @@ import lombok.extern.slf4j.Slf4j;
 
 import io.paradaux.chestshop.services.ShopService;
 import io.paradaux.chestshop.services.ShopBlockService;
-import io.paradaux.chestshop.services.MetricsModule;
+import io.paradaux.chestshop.services.MetricsService;
 import io.paradaux.chestshop.services.MaterialService;
 import io.paradaux.chestshop.services.ItemService;
 import io.paradaux.chestshop.services.InventoryService;
 import io.paradaux.chestshop.services.EconomyService;
-import io.paradaux.chestshop.services.ChestShopSign;
-import io.paradaux.chestshop.services.AdminBypass;
+import io.paradaux.chestshop.services.SignService;
+import io.paradaux.chestshop.services.AdminBypassService;
 import io.paradaux.chestshop.services.AccountService;
 import io.paradaux.chestshop.services.TransactionService;
 import io.paradaux.chestshop.utils.MessageUtil;
@@ -115,17 +115,20 @@ public class TransactionServiceImpl implements TransactionService {
     private final ItemService items;
     private final MarketListener market;
     private final ChestShopConfiguration config;
-    private final ChestShopSign chestShopSign;
+    private final SignService signService;
     private final ShopBlockService shopBlockService;
     private final InventoryService inventoryService;
     private final MaterialService materialService;
 
-    private final AdminBypass adminBypass;
+    private final AdminBypassService adminBypass;
     private final RestrictedSignListener restrictedSign;
+
+    private final io.paradaux.chestshop.services.MetricsService metrics;
 
     @Inject
     public TransactionServiceImpl(EconomyService economy, ShopService shops, AccountService accounts, SignBreakListener signBreak, StockCounterListener stockCounter, Message message, ItemService items, MarketListener market,
-                              ChestShopConfiguration config, ChestShopSign chestShopSign, ShopBlockService shopBlockService, InventoryService inventoryService, MaterialService materialService, AdminBypass adminBypass, RestrictedSignListener restrictedSign) {
+                              ChestShopConfiguration config, SignService signService, ShopBlockService shopBlockService, InventoryService inventoryService, MaterialService materialService, AdminBypassService adminBypass, RestrictedSignListener restrictedSign, MetricsService metrics) {
+        this.metrics = metrics;
         this.restrictedSign = restrictedSign;
         this.adminBypass = adminBypass;
         this.economy = economy;
@@ -137,7 +140,7 @@ public class TransactionServiceImpl implements TransactionService {
         this.items = items;
         this.market = market;
         this.config = config;
-        this.chestShopSign = chestShopSign;
+        this.signService = signService;
         this.shopBlockService = shopBlockService;
         this.inventoryService = inventoryService;
         this.materialService = materialService;
@@ -150,9 +153,9 @@ public class TransactionServiceImpl implements TransactionService {
 
     @Override
     public PendingTransaction prepare(Sign sign, Player player, Action action) {
-        String name = ChestShopSign.getOwner(sign);
-        String prices = ChestShopSign.getPrice(sign);
-        String material = ChestShopSign.getItem(sign);
+        String name = SignService.getOwner(sign);
+        String prices = SignService.getPrice(sign);
+        String material = SignService.getItem(sign);
 
         Account account = accounts.resolveAccount(name);
         if (account == null) {
@@ -160,7 +163,7 @@ public class TransactionServiceImpl implements TransactionService {
             return null;
         }
 
-        boolean adminShop = chestShopSign.isAdminShop(sign);
+        boolean adminShop = signService.isAdminShop(sign);
 
         // check if player exists in economy
         if (!adminShop && !economy.hasAccount(account.getUuid())) {
@@ -182,7 +185,7 @@ public class TransactionServiceImpl implements TransactionService {
 
         int amount = -1;
         try {
-            amount = ChestShopSign.getQuantity(sign);
+            amount = SignService.getQuantity(sign);
         } catch (NumberFormatException ignored) {} // There is no quantity number on the sign
 
         if (amount < 1 || amount > config.getMaxShopAmount()) {
@@ -296,7 +299,7 @@ public class TransactionServiceImpl implements TransactionService {
             return;
         }
         String name = ctx.getClient().getName();
-        if (chestShopSign.isAdminShop(name) || !playernamePattern().matcher(name).matches()) {
+        if (signService.isAdminShop(name) || !playernamePattern().matcher(name).matches()) {
             ctx.setCancelled(INVALID_CLIENT_NAME);
         }
     }
@@ -326,7 +329,7 @@ public class TransactionServiceImpl implements TransactionService {
         if (sign == null) {
             return;
         }
-        String price = ChestShopSign.getPrice(sign);
+        String price = SignService.getPrice(sign);
         if (!isFree(PriceUtil.getExactBuyPrice(price)) && !isFree(PriceUtil.getExactSellPrice(price))) {
             return;
         }
@@ -370,7 +373,7 @@ public class TransactionServiceImpl implements TransactionService {
             ctx.setCancelled(INVALID_SHOP);
             return;
         }
-        if (!chestShopSign.isAdminShop(ctx.getSign()) && ctx.getOwnerInventory() == null) {
+        if (!signService.isAdminShop(ctx.getSign()) && ctx.getOwnerInventory() == null) {
             ctx.setCancelled(INVALID_SHOP);
         }
     }
@@ -413,7 +416,7 @@ public class TransactionServiceImpl implements TransactionService {
         Player client = ctx.getClient();
         boolean buy = ctx.getTransactionType() == BUY;
 
-        String itemLine = ChestShopSign.getItem(ctx.getSign());
+        String itemLine = SignService.getItem(ctx.getSign());
         if (itemLine.contains("#") && Permissions.hasPermissionSetFalse(client, (buy ? Permissions.BUY_ID : Permissions.SELL_ID) + itemLine)) {
             ctx.setCancelled(CLIENT_DOES_NOT_HAVE_PERMISSION);
             return;
@@ -790,7 +793,7 @@ public class TransactionServiceImpl implements TransactionService {
         market.onTransaction(event);   // genuine market-DB sync — stays
         logTransaction(event);                 // was @MONITOR TransactionLogger
         sendTransactionMessages(event);        // was @MONITOR TransactionMessageSender
-        MetricsModule.onTransaction(event);    // updates the /csmetrics transaction counters
+        metrics.onTransaction(event);    // updates the /csmetrics transaction counters
     }
 
     @Override
@@ -928,7 +931,7 @@ public class TransactionServiceImpl implements TransactionService {
             return;
         }
         Sign sign = event.getSign();
-        if (chestShopSign.isAdminShop(sign)) {
+        if (signService.isAdminShop(sign)) {
             return;
         }
         Inventory ownerInventory = event.getOwnerInventory();

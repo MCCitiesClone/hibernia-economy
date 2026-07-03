@@ -1,18 +1,18 @@
 package io.paradaux.chestshop.tests;
 
-import io.paradaux.chestshop.services.ChestShopSign;
+import io.paradaux.chestshop.services.SignService;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.regex.Pattern;
 
-import static io.paradaux.chestshop.services.ChestShopSign.ITEM_LINE;
-import static io.paradaux.chestshop.services.ChestShopSign.PRICE_LINE;
-import static io.paradaux.chestshop.services.ChestShopSign.QUANTITY_LINE;
+import static io.paradaux.chestshop.services.SignService.ITEM_LINE;
+import static io.paradaux.chestshop.services.SignService.PRICE_LINE;
+import static io.paradaux.chestshop.services.SignService.QUANTITY_LINE;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class ChestShopSignTest {
+public class SignServiceTest {
 
     @ParameterizedTest
     @ValueSource(strings = {
@@ -100,7 +100,7 @@ public class ChestShopSignTest {
     }
 
     private boolean validateSignLine(int lineNumber, String line) {
-        for (Pattern pattern : ChestShopSign.SHOP_SIGN_PATTERN[lineNumber - 1]) {
+        for (Pattern pattern : SignService.SHOP_SIGN_PATTERN[lineNumber - 1]) {
             if (pattern.matcher(line).matches()) {
                 return true;
             }

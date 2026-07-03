@@ -3,7 +3,7 @@ package io.paradaux.chestshop.commands;
 import io.paradaux.chestshop.services.ShopBlockService;
 import com.google.inject.Inject;
 import io.paradaux.chestshop.services.InfoService;
-import io.paradaux.chestshop.services.ChestShopSign;
+import io.paradaux.chestshop.services.SignService;
 import io.paradaux.hibernia.framework.commander.annotations.Command;
 import io.paradaux.hibernia.framework.commander.annotations.Route;
 import io.paradaux.hibernia.framework.commander.annotations.Sender;
@@ -24,14 +24,14 @@ public class ShopInfoCommand implements CommandHandler {
 
     private final InfoService info;
     private final Message message;
-    private final ChestShopSign chestShopSign;
+    private final SignService signService;
     private final ShopBlockService shopBlockService;
 
     @Inject
-    public ShopInfoCommand(InfoService info, Message message, ChestShopSign chestShopSign, ShopBlockService shopBlockService) {
+    public ShopInfoCommand(InfoService info, Message message, SignService signService, ShopBlockService shopBlockService) {
         this.info = info;
         this.message = message;
-        this.chestShopSign = chestShopSign;
+        this.signService = signService;
         this.shopBlockService = shopBlockService;
     }
 
@@ -41,7 +41,7 @@ public class ShopInfoCommand implements CommandHandler {
             Block target = ((Player) sender).getTargetBlockExact(5);
             if (target != null) {
                 Sign sign = null;
-                if (chestShopSign.isValid(target)) {
+                if (signService.isValid(target)) {
                     sign = (Sign) target.getState();
                 } else if (shopBlockService.couldBeShopContainer(target)) {
                     sign = shopBlockService.getConnectedSign(target);

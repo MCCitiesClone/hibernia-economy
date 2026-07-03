@@ -1,14 +1,14 @@
 package io.paradaux.chestshop.listeners;
 
 import io.paradaux.chestshop.utils.InventoryUtil;
-import io.paradaux.chestshop.services.AdminBypass;
+import io.paradaux.chestshop.services.AdminBypassService;
 import io.paradaux.chestshop.services.ShopBlockService;
 import com.google.inject.Inject;
 import io.paradaux.chestshop.model.config.ChestShopConfiguration;
 import io.paradaux.chestshop.utils.Permissions;
 import io.paradaux.chestshop.services.ProtectionService;
 import io.paradaux.chestshop.services.InfoService;
-import io.paradaux.chestshop.services.ChestShopSign;
+import io.paradaux.chestshop.services.SignService;
 import io.paradaux.hibernia.framework.i18n.Message;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
@@ -36,20 +36,20 @@ public class PlayerInventoryListener implements Listener {
     private final Message message;
     private final ProtectionService protection;
     private final ChestShopConfiguration config;
-    private final ChestShopSign chestShopSign;
+    private final SignService signService;
     private final ShopBlockService shopBlockService;
 
-    private final AdminBypass adminBypass;
+    private final AdminBypassService adminBypass;
 
     @Inject
     public PlayerInventoryListener(InfoService info, Message message, ProtectionService protection,
-                           ChestShopConfiguration config, ChestShopSign chestShopSign, ShopBlockService shopBlockService, AdminBypass adminBypass) {
+                           ChestShopConfiguration config, SignService signService, ShopBlockService shopBlockService, AdminBypassService adminBypass) {
         this.adminBypass = adminBypass;
         this.info = info;
         this.message = message;
         this.protection = protection;
         this.config = config;
-        this.chestShopSign = chestShopSign;
+        this.signService = signService;
         this.shopBlockService = shopBlockService;
     }
 

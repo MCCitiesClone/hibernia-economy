@@ -1,7 +1,7 @@
 package io.paradaux.chestshop.services.impl;
 
 import io.paradaux.chestshop.utils.InventoryUtil;
-import io.paradaux.chestshop.services.ChestShopSign;
+import io.paradaux.chestshop.services.SignService;
 import io.paradaux.chestshop.services.ShopBlockService;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
@@ -29,10 +29,10 @@ import static io.paradaux.chestshop.utils.BlockUtil.getState;
  * The stateful block↔shop-sign geometry split out of {@code ShopBlockUtil} (PAR-282):
  * resolving the sign a container is attached to (and vice-versa), and deciding whether a
  * block/holder is a shop container (config {@code SHOP_CONTAINERS}). The block-level
- * {@code isShopBlock}/{@code isShopChest} predicates moved here off {@link ChestShopSign} —
+ * {@code isShopBlock}/{@code isShopChest} predicates moved here off {@link SignService} —
  * they are block detection, not sign-line logic, and hosting them here lets this service
- * depend on {@link ChestShopSign} <em>directly</em> (for {@link ChestShopSign#isValid})
- * with no back-edge, so the former {@code ShopBlockUtil ↔ ChestShopSign} construction
+ * depend on {@link SignService} <em>directly</em> (for {@link SignService#isValid})
+ * with no back-edge, so the former {@code ShopBlockUtil ↔ SignService} construction
  * cycle (and its {@code Provider<>} work-around) is gone. The pure block geometry
  * (findNeighbor, the face arrays) stays static on {@link ShopBlockUtil}.
  *
@@ -42,12 +42,12 @@ import static io.paradaux.chestshop.utils.BlockUtil.getState;
 public class ShopBlockServiceImpl implements ShopBlockService {
 
     private final ChestShopConfiguration config;
-    private final ChestShopSign chestShopSign;
+    private final SignService signService;
 
     @Inject
-    public ShopBlockServiceImpl(ChestShopConfiguration config, ChestShopSign chestShopSign) {
+    public ShopBlockServiceImpl(ChestShopConfiguration config, SignService signService) {
         this.config = config;
-        this.chestShopSign = chestShopSign;
+        this.signService = signService;
     }
 
     @Override
@@ -164,7 +164,7 @@ public class ShopBlockServiceImpl implements ShopBlockService {
                 continue;
             }
 
-            if (chestShopSign.isValid(sign)) {
+            if (signService.isValid(sign)) {
                 result.add(sign);
             }
         }
@@ -192,7 +192,7 @@ public class ShopBlockServiceImpl implements ShopBlockService {
 
             Sign sign = (Sign) getState(faceBlock, false);
 
-            if (chestShopSign.isValid(sign)) {
+            if (signService.isValid(sign)) {
                 return sign;
             }
         }

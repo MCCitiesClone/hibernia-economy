@@ -1,6 +1,6 @@
 package io.paradaux.chestshop.services.impl;
 
-import io.paradaux.chestshop.services.AdminBypass;
+import io.paradaux.chestshop.services.AdminBypassService;
 import com.google.inject.Singleton;
 import io.paradaux.chestshop.utils.Permissions;
 import org.bukkit.command.CommandSender;
@@ -31,7 +31,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * injected rather than reached statically.
  */
 @Singleton
-public class AdminBypassImpl implements AdminBypass {
+public class AdminBypassServiceImpl implements AdminBypassService {
 
     private final Set<UUID> optedOut = ConcurrentHashMap.newKeySet();
 

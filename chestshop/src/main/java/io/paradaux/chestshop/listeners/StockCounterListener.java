@@ -13,7 +13,7 @@ import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.model.config.ChestShopConfiguration;
 import io.paradaux.chestshop.model.ShopCreation;
 import io.paradaux.chestshop.model.Transaction;
-import io.paradaux.chestshop.services.ChestShopSign;
+import io.paradaux.chestshop.services.SignService;
 import org.bukkit.block.Block;
 import org.bukkit.block.Container;
 import org.bukkit.block.Sign;
@@ -28,7 +28,7 @@ import org.bukkit.inventory.ItemStack;
 import java.util.IllegalFormatException;
 
 import static io.paradaux.chestshop.utils.InventoryUtil.getHolder;
-import static io.paradaux.chestshop.services.ChestShopSign.QUANTITY_LINE;
+import static io.paradaux.chestshop.services.SignService.QUANTITY_LINE;
 
 
 /**
@@ -41,17 +41,17 @@ public class StockCounterListener implements Listener {
 
     private final ItemService items;
     private final ChestShopConfiguration config;
-    private final ChestShopSign chestShopSign;
+    private final SignService signService;
     private final ShopBlockService shopBlockService;
     private final InventoryService inventoryService;
     private final MaterialService materialService;
 
     @Inject
-    public StockCounterListener(ItemService items, ChestShopConfiguration config, ChestShopSign chestShopSign,
+    public StockCounterListener(ItemService items, ChestShopConfiguration config, SignService signService,
                               ShopBlockService shopBlockService, InventoryService inventoryService, MaterialService materialService) {
         this.items = items;
         this.config = config;
-        this.chestShopSign = chestShopSign;
+        this.signService = signService;
         this.shopBlockService = shopBlockService;
         this.inventoryService = inventoryService;
         this.materialService = materialService;
@@ -61,17 +61,17 @@ public class StockCounterListener implements Listener {
     public void onPreShopCreation(ShopCreation event) {
         int quantity;
         try {
-            quantity = ChestShopSign.getQuantity(event.getSignLines());
+            quantity = SignService.getQuantity(event.getSignLines());
         } catch (IllegalArgumentException invalidQuantity) {
             return;
         }
 
-        if (QuantityUtil.quantityLineContainsCounter(ChestShopSign.getQuantityLine(event.getSignLines()))) {
+        if (QuantityUtil.quantityLineContainsCounter(SignService.getQuantityLine(event.getSignLines()))) {
             event.setSignLine(QUANTITY_LINE, Integer.toString(quantity));
         }
 
         if (!config.isUseStockCounter()
-                || (config.isForceUnlimitedAdminShop() && chestShopSign.isAdminShop(event.getSignLines()))) {
+                || (config.isForceUnlimitedAdminShop() && signService.isAdminShop(event.getSignLines()))) {
             return;
         }
 
@@ -80,7 +80,7 @@ public class StockCounterListener implements Listener {
             return;
         }
 
-        ItemStack itemTradedByShop = determineItemTradedByShop(ChestShopSign.getItem(event.getSignLines()));
+        ItemStack itemTradedByShop = determineItemTradedByShop(SignService.getItem(event.getSignLines()));
         if (itemTradedByShop != null) {
             Container container = shopBlockService.findConnectedContainer(event.getSign());
             if (container != null) {
@@ -102,8 +102,8 @@ public class StockCounterListener implements Listener {
 
         for (Sign shopSign : shopBlockService.findConnectedShopSigns(holder)) {
             if (!config.isUseStockCounter()
-                    || (config.isForceUnlimitedAdminShop() && chestShopSign.isAdminShop(shopSign))) {
-                if (QuantityUtil.quantityLineContainsCounter(ChestShopSign.getQuantityLine(shopSign))) {
+                    || (config.isForceUnlimitedAdminShop() && signService.isAdminShop(shopSign))) {
+                if (QuantityUtil.quantityLineContainsCounter(SignService.getQuantityLine(shopSign))) {
                     removeCounterFromQuantityLine(shopSign);
                 }
                 continue;
@@ -111,7 +111,7 @@ public class StockCounterListener implements Listener {
 
             if (config.getMaxShopAmount() > 99999) {
                 log.warn("Stock counter cannot be used if MAX_SHOP_AMOUNT is over 5 digits");
-                if (QuantityUtil.quantityLineContainsCounter(ChestShopSign.getQuantityLine(shopSign))) {
+                if (QuantityUtil.quantityLineContainsCounter(SignService.getQuantityLine(shopSign))) {
                     removeCounterFromQuantityLine(shopSign);
                 }
                 return;
@@ -123,7 +123,7 @@ public class StockCounterListener implements Listener {
 
     // Invoked directly by TransactionService#process (was a @HIGH Transaction listener).
     public void onTransaction(final Transaction event) {
-        String quantityLine = ChestShopSign.getQuantityLine(event.getSign());
+        String quantityLine = SignService.getQuantityLine(event.getSign());
         if (!config.isUseStockCounter()) {
             if (QuantityUtil.quantityLineContainsCounter(quantityLine)) {
                 removeCounterFromQuantityLine(event.getSign());
@@ -139,7 +139,7 @@ public class StockCounterListener implements Listener {
             return;
         }
 
-        if (config.isForceUnlimitedAdminShop() && chestShopSign.isAdminShop(event.getSign())) {
+        if (config.isForceUnlimitedAdminShop() && signService.isAdminShop(event.getSign())) {
             return;
         }
 
@@ -162,7 +162,7 @@ public class StockCounterListener implements Listener {
 
         int quantity;
         try {
-            quantity = ChestShopSign.getQuantity(sign);
+            quantity = SignService.getQuantity(sign);
         } catch (IllegalFormatException invalidQuantity) {
             return;
         }
@@ -191,7 +191,7 @@ public class StockCounterListener implements Listener {
     }
 
     public void updateCounterOnItemMoveEvent(ItemStack toAdd, InventoryHolder destinationHolder) {
-        Block shopBlock = chestShopSign.getShopBlock(destinationHolder);
+        Block shopBlock = signService.getShopBlock(destinationHolder);
         Sign connectedSign = shopBlockService.getConnectedSign(shopBlock);
 
         updateCounterOnQuantityLine(connectedSign, destinationHolder.getInventory(), toAdd);
@@ -200,7 +200,7 @@ public class StockCounterListener implements Listener {
     public void removeCounterFromQuantityLine(Sign sign) {
         int quantity;
         try {
-            quantity = ChestShopSign.getQuantity(sign);
+            quantity = SignService.getQuantity(sign);
         } catch (IllegalFormatException invalidQuantity) {
             return;
         }
@@ -216,7 +216,7 @@ public class StockCounterListener implements Listener {
     }
 
     public ItemStack determineItemTradedByShop(Sign sign) {
-        return determineItemTradedByShop(ChestShopSign.getItem(sign));
+        return determineItemTradedByShop(SignService.getItem(sign));
     }
 
     public ItemStack determineItemTradedByShop(String material) {

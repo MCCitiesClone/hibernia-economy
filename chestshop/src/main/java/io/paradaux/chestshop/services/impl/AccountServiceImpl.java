@@ -1,9 +1,9 @@
 package io.paradaux.chestshop.services.impl;
 import lombok.extern.slf4j.Slf4j;
 
-import io.paradaux.chestshop.services.ChestShopSign;
+import io.paradaux.chestshop.services.SignService;
 import io.paradaux.chestshop.services.BusinessAccountService;
-import io.paradaux.chestshop.services.AdminBypass;
+import io.paradaux.chestshop.services.AdminBypassService;
 import io.paradaux.chestshop.services.AccountService;
 import com.google.common.base.Charsets;
 import com.google.common.base.Preconditions;
@@ -57,22 +57,22 @@ public class AccountServiceImpl implements AccountService {
     private final SimpleCache<String, Boolean> invalidPlayers;
 
     private final ChestShopConfiguration config;
-    private final ChestShopSign chestShopSign;
+    private final SignService signService;
 
     private Account adminAccount;
     private Account serverEconomyAccount;
     private int uuidVersion = -1;
 
-    private final AdminBypass adminBypass;
+    private final AdminBypassService adminBypass;
 
     @Inject
     public AccountServiceImpl(AccountMapper accounts, BusinessAccountService businessAccounts,
-                          ChestShopConfiguration config, ChestShopSign chestShopSign, AdminBypass adminBypass) {
+                          ChestShopConfiguration config, SignService signService, AdminBypassService adminBypass) {
         this.adminBypass = adminBypass;
         this.accounts = accounts;
         this.businessAccounts = businessAccounts;
         this.config = config;
-        this.chestShopSign = chestShopSign;
+        this.signService = signService;
         this.usernameToAccount = new SimpleCache<>(config.getCacheSize());
         this.uuidToAccount = new SimpleCache<>(config.getCacheSize());
         this.shortToAccount = new SimpleCache<>(config.getCacheSize());
@@ -284,7 +284,7 @@ public class AccountServiceImpl implements AccountService {
 
     @Override
     public boolean canUseName(Player player, String base, String name) {
-        if (chestShopSign.isAdminShop(name)) {
+        if (signService.isAdminShop(name)) {
             if (adminBypass.has(player, Permissions.ADMIN_SHOP)) {
                 return true;
             } else {
@@ -293,7 +293,7 @@ public class AccountServiceImpl implements AccountService {
             }
         }
 
-        boolean isBusinessAccount = ChestShopSign.isBusinessAccount(name);
+        boolean isBusinessAccount = SignService.isBusinessAccount(name);
 
         // For business accounts, skip permission-based shortcuts — access is controlled
         // solely by Treasury/Business via canAccess(). Only ChestShop admins bypass this.
@@ -337,14 +337,14 @@ public class AccountServiceImpl implements AccountService {
         return false;
     }
 
-    // ---- shop-sign access predicates (were the static ChestShopSign methods; PAR-282) ----
+    // ---- shop-sign access predicates (were the static SignService methods; PAR-282) ----
 
     @Override
     public boolean hasPermission(Player player, String base, Sign sign) {
         if (player == null) return false;
         if (sign == null) return true;
 
-        String name = ChestShopSign.getOwner(sign);
+        String name = SignService.getOwner(sign);
         if (name == null || name.isEmpty()) return true;
 
         return canUseName(player, base, name);
@@ -355,7 +355,7 @@ public class AccountServiceImpl implements AccountService {
     public boolean isOwner(Player player, Sign sign) {
         if (player == null || sign == null) return false;
 
-        String name = ChestShopSign.getOwner(sign);
+        String name = SignService.getOwner(sign);
         if (name == null || name.isEmpty()) return false;
 
         Account account = resolveAccount(name);
@@ -365,7 +365,7 @@ public class AccountServiceImpl implements AccountService {
 
         // For business accounts the UUID is synthetic and never matches a player UUID;
         // delegate to canAccess so firm membership/ownership is checked via the API.
-        if (ChestShopSign.isBusinessAccount(name)) {
+        if (SignService.isBusinessAccount(name)) {
             return canAccess(player, account);
         }
 

@@ -2,7 +2,7 @@ package io.paradaux.chestshop.listeners;
 import lombok.extern.slf4j.Slf4j;
 
 import io.paradaux.chestshop.utils.BlockUtil;
-import io.paradaux.chestshop.services.AdminBypass;
+import io.paradaux.chestshop.services.AdminBypassService;
 import io.paradaux.chestshop.services.ShopBlockService;
 import com.google.inject.Inject;
 import io.paradaux.chestshop.utils.*;
@@ -17,7 +17,7 @@ import io.paradaux.chestshop.services.AccountService;
 import io.paradaux.chestshop.services.InfoService;
 import io.paradaux.chestshop.services.ItemService;
 import io.paradaux.chestshop.services.TransactionService;
-import io.paradaux.chestshop.services.ChestShopSign;
+import io.paradaux.chestshop.services.SignService;
 import io.paradaux.hibernia.framework.i18n.Message;
 import org.bukkit.ChatColor;
 import org.bukkit.GameMode;
@@ -40,7 +40,7 @@ import java.util.WeakHashMap;
 import static io.paradaux.chestshop.utils.BlockUtil.getState;
 import static io.paradaux.chestshop.utils.BlockUtil.isSign;
 import static io.paradaux.chestshop.utils.Permissions.OTHER_NAME_CREATE;
-import static io.paradaux.chestshop.services.ChestShopSign.*;
+import static io.paradaux.chestshop.services.SignService.*;
 import static org.bukkit.event.block.Action.LEFT_CLICK_BLOCK;
 import static org.bukkit.event.block.Action.RIGHT_CLICK_BLOCK;
 
@@ -65,15 +65,15 @@ public class PlayerInteractListener implements Listener {
     private final Message message;
     private final ProtectionService protection;
     private final ChestShopConfiguration config;
-    private final ChestShopSign chestShopSign;
+    private final SignService signService;
     private final ShopBlockService shopBlockService;
 
-    private final AdminBypass adminBypass;
+    private final AdminBypassService adminBypass;
 
     @Inject
     public PlayerInteractListener(TransactionService transactions, InfoService info, AccountService accounts,
                           ItemService items, Message message, ProtectionService protection,
-                          ChestShopConfiguration config, ChestShopSign chestShopSign, ShopBlockService shopBlockService, AdminBypass adminBypass) {
+                          ChestShopConfiguration config, SignService signService, ShopBlockService shopBlockService, AdminBypassService adminBypass) {
         this.adminBypass = adminBypass;
         this.transactions = transactions;
         this.info = info;
@@ -82,7 +82,7 @@ public class PlayerInteractListener implements Listener {
         this.message = message;
         this.protection = protection;
         this.config = config;
-        this.chestShopSign = chestShopSign;
+        this.signService = signService;
         this.shopBlockService = shopBlockService;
     }
 
@@ -117,11 +117,11 @@ public class PlayerInteractListener implements Listener {
             return;
 
         Sign sign = (Sign) getState(block, false);
-        if (!chestShopSign.isValid(sign)) {
+        if (!signService.isValid(sign)) {
             return;
         }
 
-        if (config.isAllowAutoItemFill() && ChatColor.stripColor(ChestShopSign.getItem(sign)).equals(AUTOFILL_CODE)) {
+        if (config.isAllowAutoItemFill() && ChatColor.stripColor(SignService.getItem(sign)).equals(AUTOFILL_CODE)) {
             if (accounts.hasPermission(player, OTHER_NAME_CREATE, sign)) {
                 ItemStack item = player.getInventory().getItemInMainHand();
                 if (!MaterialUtil.isEmpty(item)) {
@@ -170,7 +170,7 @@ public class PlayerInteractListener implements Listener {
             }
         }
 
-        if (notAllowedToTrade && accounts.canAccess(player, sign) && !chestShopSign.isAdminShop(sign)) {
+        if (notAllowedToTrade && accounts.canAccess(player, sign) && !signService.isAdminShop(sign)) {
             if (config.isAllowSignChestOpen() && !(config.isIgnoreCreativeMode() && player.getGameMode() == GameMode.CREATIVE)) {
                 if (player.isSneaking() || player.isInsideVehicle()
                         || (config.isAllowLeftClickDestroying() && action == LEFT_CLICK_BLOCK)) {
