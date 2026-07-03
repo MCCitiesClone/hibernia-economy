@@ -8,7 +8,6 @@ import io.paradaux.treasury.api.TaxApi;
 import io.paradaux.treasury.api.TreasuryApi;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.Inventory;
 import java.math.BigDecimal;
 import java.util.UUID;
 
@@ -36,11 +35,11 @@ public interface EconomyService {
     String format(BigDecimal amount);
 
     /**
-     * Whether a shop with this owner inventory actually moves money: a normal (non-admin)
-     * shop always does; an admin shop only when a server-economy account is configured.
-     * (Was the static {@code Economy.isOwnerEconomicallyActive}.)
+     * Whether the shop owner actually moves money on a sell: a normal shop always does; an
+     * unlimited admin shop only when a server-economy account is configured (otherwise its
+     * infinite side needs no funds check). (Was the static {@code Economy.isOwnerEconomicallyActive}.)
      */
-    boolean isOwnerEconomicallyActive(Inventory inventory);
+    boolean isOwnerEconomicallyActive(boolean unlimitedOwner);
 
     /**
      * Credit {@code amount} to {@code target} (a SYSTEM→target transfer). Admin-shop

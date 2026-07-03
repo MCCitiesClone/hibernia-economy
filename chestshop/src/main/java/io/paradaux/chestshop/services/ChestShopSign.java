@@ -6,7 +6,6 @@ import io.paradaux.chestshop.utils.QuantityUtil;
 import io.paradaux.chestshop.utils.StringUtil;
 import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.model.config.ChestShopConfiguration;
-import io.paradaux.chestshop.utils.AdminInventory;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import org.bukkit.block.Block;
@@ -76,10 +75,6 @@ public class ChestShopSign {
 
     public static String businessAccountSignName(int accountId) {
         return "B:" + Integer.toString(accountId, 36).toUpperCase(Locale.ROOT);
-    }
-
-    public static boolean isAdminShop(Inventory ownerInventory) {
-        return ownerInventory instanceof AdminInventory;
     }
 
     public boolean isAdminShop(String owner) {

@@ -25,6 +25,9 @@ public class Transaction {
 
     private final Inventory ownerInventory;
     private final Inventory clientInventory;
+    // An unlimited admin shop: no owner container (infinite stock/space) — the trade moves
+    // items on the client side only.
+    private final boolean unlimitedOwner;
 
     private final Player client;
     private final Account ownerAccount;
@@ -61,6 +64,7 @@ public class Transaction {
 
         this.ownerInventory = event.getOwnerInventory();
         this.clientInventory = event.getClientInventory();
+        this.unlimitedOwner = event.isUnlimitedOwner();
 
         this.client = event.getClient();
         this.ownerAccount = event.getOwnerAccount();
@@ -109,6 +113,14 @@ public class Transaction {
      */
     public Inventory getOwnerInventory() {
         return ownerInventory;
+    }
+
+    /**
+     * @return whether this is an unlimited admin shop — no owner container, infinite stock and
+     *         space, so the trade moves items on the client side only
+     */
+    public boolean isUnlimitedOwner() {
+        return unlimitedOwner;
     }
 
     /**

@@ -31,6 +31,10 @@ public class PendingTransaction {
     private final Inventory ownerInventory;
     private final Inventory clientInventory;
 
+    // An unlimited admin shop: no owner container (infinite stock/space), so the owner side of
+    // stock/space validation is skipped and the trade moves items on the client side only.
+    private final boolean unlimitedOwner;
+
     // The only state the validation steps compute: the outcome (verdict), an optional
     // partial-fill resize of the stock + price, and the deferred free-shop rejection flag.
     private ItemStack[] items;
@@ -42,7 +46,7 @@ public class PendingTransaction {
     // rather than mutating the world mid-validation (ADT-139).
     private boolean rejectedAsFreeShop = false;
 
-    public PendingTransaction(Inventory ownerInventory, Inventory clientInventory, ItemStack[] items, BigDecimal exactPrice, Player client, Account ownerAccount, Sign sign, TransactionType type) {
+    public PendingTransaction(Inventory ownerInventory, Inventory clientInventory, ItemStack[] items, BigDecimal exactPrice, Player client, Account ownerAccount, Sign sign, TransactionType type, boolean unlimitedOwner) {
         this.ownerInventory = ownerInventory;
         this.clientInventory = (clientInventory == null ? client.getInventory() : clientInventory);
 
@@ -54,6 +58,15 @@ public class PendingTransaction {
 
         this.sign = sign;
         this.transactionType = type;
+        this.unlimitedOwner = unlimitedOwner;
+    }
+
+    /**
+     * @return whether this is an unlimited admin shop — no owner container, infinite stock and
+     *         space, so the owner side of the trade is skipped
+     */
+    public boolean isUnlimitedOwner() {
+        return unlimitedOwner;
     }
 
     /** @return whether this trade was rejected because it is a legacy free (price-0) shop (ADT-139). */

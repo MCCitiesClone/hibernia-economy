@@ -101,8 +101,8 @@ public class EconomyServiceImpl implements EconomyService {
     }
 
     @Override
-    public boolean isOwnerEconomicallyActive(Inventory inventory) {
-        return !ChestShopSign.isAdminShop(inventory) || accounts.getServerEconomyAccount() != null;
+    public boolean isOwnerEconomicallyActive(boolean unlimitedOwner) {
+        return !unlimitedOwner || accounts.getServerEconomyAccount() != null;
     }
 
     @Override

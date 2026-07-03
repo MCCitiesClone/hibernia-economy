@@ -14,8 +14,6 @@ import io.paradaux.chestshop.services.AccountService;
 import io.paradaux.chestshop.services.TransactionService;
 import io.paradaux.chestshop.utils.MessageUtil;
 import org.bukkit.event.block.Action;
-import io.paradaux.chestshop.utils.AdminInventory;
-import java.util.Arrays;
 import io.paradaux.chestshop.model.Transaction.TransactionType;
 import static org.bukkit.event.block.Action.LEFT_CLICK_BLOCK;
 import static org.bukkit.event.block.Action.RIGHT_CLICK_BLOCK;
@@ -219,16 +217,14 @@ public class TransactionServiceImpl implements TransactionService {
 
         ItemStack[] items = inventoryService.getItemsStacked(item);
 
-        // Create virtual admin inventory if
-        // - it's an admin shop
-        // - there is no container for the shop sign
-        // - the config doesn't force unlimited admin shop stock
-        if (adminShop && (ownerInventory == null || config.isForceUnlimitedAdminShop())) {
-            ownerInventory = new AdminInventory(action == buy ? Arrays.stream(items).map(ItemStack::clone).toArray(ItemStack[]::new) : new ItemStack[0], materialService);
-        }
+        // An unlimited admin shop has no owner container — infinite stock and space — when it's
+        // an admin shop and either there's no chest or the config forces unlimited stock. The
+        // trade skips the owner side entirely (no fake inventory): buys spawn items for the
+        // client, sells vanish them, money routes via the server account.
+        boolean unlimitedOwner = adminShop && (ownerInventory == null || config.isForceUnlimitedAdminShop());
 
         TransactionType transactionType = (action == buy ? BUY : SELL);
-        return new PendingTransaction(ownerInventory, player.getInventory(), items, price, player, account, sign, transactionType);
+        return new PendingTransaction(ownerInventory, player.getInventory(), items, price, player, account, sign, transactionType, unlimitedOwner);
     }
 
     private boolean isAllowedForShift(boolean buyTransaction) {
@@ -395,7 +391,7 @@ public class TransactionServiceImpl implements TransactionService {
                 ctx.setCancelled(CLIENT_DOES_NOT_HAVE_ENOUGH_MONEY);
                 return;
             }
-            if (!inventoryService.hasItems(ctx.getStock(), ctx.getOwnerInventory())) {
+            if (!ctx.isUnlimitedOwner() && !inventoryService.hasItems(ctx.getStock(), ctx.getOwnerInventory())) {
                 ctx.setCancelled(NOT_ENOUGH_STOCK_IN_CHEST);
             }
         } else {
@@ -443,7 +439,7 @@ public class TransactionServiceImpl implements TransactionService {
             return;
         }
         if (ctx.getTransactionType() == SELL) {
-            if (!inventoryService.fits(ctx.getStock(), ctx.getOwnerInventory())) {
+            if (!ctx.isUnlimitedOwner() && !inventoryService.fits(ctx.getStock(), ctx.getOwnerInventory())) {
                 ctx.setCancelled(NOT_ENOUGH_SPACE_IN_CHEST);
             }
         } else {
@@ -482,7 +478,7 @@ public class TransactionServiceImpl implements TransactionService {
             ctx.setStock(getCountedItemStack(ctx.getStock(), amountAffordable));
         }
 
-        if (!inventoryService.hasItems(ctx.getStock(), ctx.getOwnerInventory())) {
+        if (!ctx.isUnlimitedOwner() && !inventoryService.hasItems(ctx.getStock(), ctx.getOwnerInventory())) {
             ItemStack[] itemsHad = getItems(ctx.getStock(), ctx.getOwnerInventory());
             int possessed = InventoryUtil.countItems(itemsHad);
             if (possessed <= 0) {
@@ -531,7 +527,7 @@ public class TransactionServiceImpl implements TransactionService {
         UUID owner = ctx.getOwnerAccount().getUuid();
         BigDecimal pricePerItem = ctx.getExactPrice().divide(BigDecimal.valueOf(itemCount), MathContext.DECIMAL128);
 
-        if (economy.isOwnerEconomicallyActive(ctx.getOwnerInventory())
+        if (economy.isOwnerEconomicallyActive(ctx.isUnlimitedOwner())
                 && !economy.hasFunds(owner, ctx.getExactPrice())) {
             BigDecimal walletMoney = economy.getBalance(owner);
             int amountAffordable = getAmountOfAffordableItems(walletMoney, pricePerItem);
@@ -564,7 +560,7 @@ public class TransactionServiceImpl implements TransactionService {
             ctx.setStock(itemsHad);
         }
 
-        if (!inventoryService.fits(ctx.getStock(), ctx.getOwnerInventory())) {
+        if (!ctx.isUnlimitedOwner() && !inventoryService.fits(ctx.getStock(), ctx.getOwnerInventory())) {
             ItemStack[] itemsFit = getItemsThatFit(ctx.getStock(), ctx.getOwnerInventory());
             int possessed = InventoryUtil.countItems(itemsFit);
             if (possessed <= 0) {
@@ -801,9 +797,16 @@ public class TransactionServiceImpl implements TransactionService {
     public void execute(Transaction event) {
         boolean buy = event.getTransactionType() == BUY;
 
-        Inventory from = buy ? event.getOwnerInventory() : event.getClientInventory();
-        Inventory to = buy ? event.getClientInventory() : event.getOwnerInventory();
-        if (!transferItems(from, to, event.getStock())) {
+        // An unlimited admin shop has no owner container: a buy spawns the stock into the
+        // client, a sell vanishes it from the client. Otherwise move between the two real
+        // inventories (owner chest <-> client).
+        boolean moved = event.isUnlimitedOwner()
+                ? moveUnlimited(event.getClientInventory(), event.getStock(), buy)
+                : transferItems(
+                        buy ? event.getOwnerInventory() : event.getClientInventory(),
+                        buy ? event.getClientInventory() : event.getOwnerInventory(),
+                        event.getStock());
+        if (!moved) {
             cancelOnShortfall(event);
             return;
         }
@@ -854,11 +857,40 @@ public class TransactionServiceImpl implements TransactionService {
         return true;
     }
 
+    /**
+     * The client-side half of an unlimited admin-shop trade: the owner side is infinite (no
+     * container), so a buy ({@code add}) spawns the stock into the client and a sell removes it.
+     * Snapshots the client inventory and restores it on any shortfall, returning {@code false}
+     * so the caller can cancel before money moves — the same atomicity contract as
+     * {@link #transferItems}.
+     */
+    boolean moveUnlimited(Inventory client, ItemStack[] items, boolean add) {
+        ItemStack[] snapshot = cloneContents(client);
+
+        int leftOver = 0;
+        for (ItemStack item : items) {
+            leftOver += add
+                    ? (config.isStackTo64() ? inventoryService.add(item, client, 64) : inventoryService.add(item, client))
+                    : inventoryService.remove(item, client);
+        }
+
+        if (leftOver > 0) {
+            client.setContents(snapshot);
+            return false;
+        }
+
+        update(client.getHolder());
+        return true;
+    }
+
     /** Reverse a completed goods move after a failed money leg, keeping the trade atomic. */
     void reverseTransfer(Transaction event) {
-        boolean reversed = event.getTransactionType() == BUY
-                ? transferItems(event.getClientInventory(), event.getOwnerInventory(), event.getStock())
-                : transferItems(event.getOwnerInventory(), event.getClientInventory(), event.getStock());
+        boolean buy = event.getTransactionType() == BUY;
+        boolean reversed = event.isUnlimitedOwner()
+                ? moveUnlimited(event.getClientInventory(), event.getStock(), !buy)
+                : (buy
+                        ? transferItems(event.getClientInventory(), event.getOwnerInventory(), event.getStock())
+                        : transferItems(event.getOwnerInventory(), event.getClientInventory(), event.getStock()));
 
         if (!reversed) {
             log.error(
@@ -910,7 +942,7 @@ public class TransactionServiceImpl implements TransactionService {
         Material signType = sign.getType();
         sign.getBlock().setType(Material.AIR);
 
-        if (config.isRemoveEmptyChests() && !ChestShopSign.isAdminShop(ownerInventory) && InventoryUtil.isEmpty(ownerInventory)) {
+        if (config.isRemoveEmptyChests() && InventoryUtil.isEmpty(ownerInventory)) {
             if (connectedContainer != null) {
                 connectedContainer.getBlock().setType(Material.AIR);
             }
