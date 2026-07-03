@@ -38,7 +38,6 @@ repositories {
     maven("https://repo.minebench.de/")
     maven("https://jitpack.io")
     maven("https://ci.nyaacat.com/maven/")
-    maven("https://raw.githubusercontent.com/FabioZumbi12/RedProtect/mvn-repo/")
     maven("https://s01.oss.sonatype.org/content/repositories/snapshots/")
     maven("https://repo.paradaux.io/releases")
     maven("https://repo.paradaux.io/snapshots")
@@ -77,7 +76,6 @@ dependencies {
     // --- server API: keep transitive (Bukkit compilation needs its deps:
     //     configurate/yaml/guava/etc.).
     compileOnly(libs.paper.api)
-    compileOnly("org.apache.logging.log4j:log4j-core:2.17.2")
     compileOnly("com.google.code.findbugs:jsr305:3.0.2")
 
     // Lombok — @Getter on the framework @ConfigurationComponent (matches treasury/business).
@@ -107,9 +105,7 @@ dependencies {
     compileOnly("com.sk89q.worldguard:worldguard-core:7.1.0-SNAPSHOT") { isTransitive = false }
     compileOnly("com.sk89q.worldguard:worldguard-bukkit:7.1.0-SNAPSHOT") { isTransitive = false }
     compileOnly("com.github.TechFortress:GriefPrevention:16.12.0") { isTransitive = false }
-    compileOnly("com.github.jojodmo:ItemBridge:b0054538c1") { isTransitive = false }
     compileOnly("com.nexomc:nexo:1.15.0") { isTransitive = false }
-    compileOnly("de.themoep.showitem:api:1.6.3") { isTransitive = false }
     // Direct project dependencies on the in-repo API modules (ADT stale-chestshop-substitution-comment):
     // this is a single Gradle build (settings.gradle.kts include(...)), NOT a composite with
     // includeBuild substitution, so there is no version pin to manage. compileOnly because

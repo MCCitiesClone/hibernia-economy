@@ -815,7 +815,7 @@ public class TransactionServiceImpl implements TransactionService {
         }
 
         if (!economy.settle(event.getExactPrice(), event.getClient(),
-                event.getOwnerAccount().getUuid(), buy, event)) {
+                event.getOwnerAccount().getUuid(), event)) {
             // The goods already moved but the money didn't settle — put the goods
             // back and cancel, keeping the trade atomic.
             reverseTransfer(event);

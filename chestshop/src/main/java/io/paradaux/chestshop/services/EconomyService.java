@@ -101,7 +101,7 @@ public interface EconomyService {
      * failing ledger degrades to a cancelled trade rather than a held tick. The sales-tax leg
      * is best-effort and runs only after the primary has already committed.
      */
-    boolean settle(BigDecimal amount, Player initiator, UUID partner, boolean buy, Transaction txn);
+    boolean settle(BigDecimal amount, Player initiator, UUID partner, Transaction txn);
 
     /**
      * Lazily migrate a legacy business shop sign to the native account-id format.

@@ -1,4 +1,5 @@
 package io.paradaux.chestshop.listeners;
+import lombok.extern.slf4j.Slf4j;
 
 import io.paradaux.chestshop.services.MarketService;
 import io.paradaux.chestshop.services.ShopBlockService;
@@ -39,6 +40,7 @@ import java.util.UUID;
  * disrupt a trade.
  */
 @Singleton
+@Slf4j
 public class MarketListener implements Listener {
 
     private final MarketService marketService;
@@ -75,7 +77,8 @@ public class MarketListener implements Listener {
             market.recordSale(marketService.sale(sign, item, quantity, event.getClient().getUniqueId(),
                     owner, event.getExactPrice(), event.getSalesTax(), direction, shopStock, event.getSettlementTxnId()));
             market.upsertShop(marketService.shop(sign, item, owner, shopStock, capacity));
-        } catch (Throwable ignored) {
+        } catch (Throwable t) {
+            log.debug("market analytics hook failed (non-fatal)", t);
             // analytics only
         }
     }
@@ -95,7 +98,8 @@ public class MarketListener implements Listener {
             Integer stock = container != null ? marketService.stockOf(item, container) : null;
             Integer capacity = container != null ? marketService.capacityOf(item, container) : null;
             marketService.market().upsertShop(marketService.shop(sign, item, owner, stock, capacity));
-        } catch (Throwable ignored) {
+        } catch (Throwable t) {
+            log.debug("market analytics hook failed (non-fatal)", t);
         }
     }
 
@@ -107,7 +111,8 @@ public class MarketListener implements Listener {
             marketService.market().deactivateShop(
                     l.getWorld() != null ? l.getWorld().getName() : null,
                     l.getBlockX(), l.getBlockY(), l.getBlockZ());
-        } catch (Throwable ignored) {
+        } catch (Throwable t) {
+            log.debug("market analytics hook failed (non-fatal)", t);
         }
     }
 
@@ -132,7 +137,8 @@ public class MarketListener implements Listener {
                         l.getBlockX(), l.getBlockY(), l.getBlockZ(),
                         marketService.stockOf(item, inv), marketService.capacityOf(item, inv));
             }
-        } catch (Throwable ignored) {
+        } catch (Throwable t) {
+            log.debug("market analytics hook failed (non-fatal)", t);
         }
     }
 }

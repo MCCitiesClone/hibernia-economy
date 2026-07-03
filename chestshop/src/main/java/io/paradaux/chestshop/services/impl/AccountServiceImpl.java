@@ -180,7 +180,9 @@ public class AccountServiceImpl implements AccountService {
                     throw new Exception("Could not find account for " + shortName);
                 });
             }
-        } catch (ExecutionException ignored) {}
+        } catch (ExecutionException e) {
+            // The cache loader logged the cause above before throwing; fall through with a null account.
+        }
         return account;
     }
 

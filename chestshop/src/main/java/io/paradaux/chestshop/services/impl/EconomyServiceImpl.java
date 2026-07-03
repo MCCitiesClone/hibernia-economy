@@ -202,7 +202,8 @@ public class EconomyServiceImpl implements EconomyService {
     }
 
     @Override
-    public boolean settle(BigDecimal amount, Player initiator, UUID partner, boolean buy, Transaction txn) {
+    public boolean settle(BigDecimal amount, Player initiator, UUID partner, Transaction txn) {
+        boolean buy = txn.getTransactionType() == io.paradaux.chestshop.model.Transaction.TransactionType.BUY;
         UUID resolvedPartner = partner;
         if (accounts.isAdminShop(resolvedPartner) && !accounts.isServerEconomyAccount(resolvedPartner)) {
             Account server = accounts.getServerEconomyAccount();
