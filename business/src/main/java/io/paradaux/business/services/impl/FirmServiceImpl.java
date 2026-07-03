@@ -16,6 +16,7 @@ import io.paradaux.business.model.FirmRolePermission;
 import io.paradaux.business.model.RolePermission;
 import io.paradaux.business.mappers.FirmAccountsMapper;
 import io.paradaux.business.model.config.FirmConfiguration;
+import io.paradaux.business.services.FirmAccountService;
 import io.paradaux.business.services.FirmAreaShopService;
 import io.paradaux.business.services.FirmService;
 import io.paradaux.business.services.FirmStaffService;
@@ -48,6 +49,8 @@ public class FirmServiceImpl implements FirmService {
     private final FirmRoleMapper roles;
     /** Lazy-injected to break the FirmService ↔ FirmStaffService cycle. */
     private final Provider<FirmStaffService> staffProvider;
+    /** Lazy-injected to break the FirmService ↔ FirmAccountService cycle. */
+    private final Provider<FirmAccountService> firmAccountServiceProvider;
     private final FirmConfiguration firmConfig;
     private final FirmAreaShopService areas;
 
@@ -57,6 +60,7 @@ public class FirmServiceImpl implements FirmService {
                            FirmAccountsMapper accounts,
                            FirmRoleMapper roles,
                            Provider<FirmStaffService> staffProvider,
+                           Provider<FirmAccountService> firmAccountServiceProvider,
                            FirmConfiguration firmConfig,
                            FirmAreaShopService areas) {
         this.firms = firms;
@@ -64,6 +68,7 @@ public class FirmServiceImpl implements FirmService {
         this.accounts = accounts;
         this.roles = roles;
         this.staffProvider = staffProvider;
+        this.firmAccountServiceProvider = firmAccountServiceProvider;
         this.firmConfig = firmConfig;
         this.areas = areas;
     }
@@ -373,10 +378,28 @@ public class FirmServiceImpl implements FirmService {
         firms.updateFirm(update);
     }
 
+    /**
+     * Admin-forced proprietor change. This is the direct-override analog of a
+     * player transfer, so it must do everything the transfer-accept flow does
+     * besides the request gating: hand the firm's treasury accounts to the new
+     * proprietor and re-sync access. Without the reassignment the account
+     * owner/authorizers stay on the previous proprietor and the new one is locked
+     * out of the firm's money — the exact stranding the transfer flow prevents at
+     * FirmRequestServiceImpl#completeTransferProprietorship (PAR-141). Wrapped in
+     * a transaction so the proprietor update rolls back if reassignment fails.
+     */
+    @Transactional
     @Override
     public void adminSetProprietor(String firmName, UUID newProprietor) {
         Firm firm = requireFirm(firmName);
+
+        // A proprietor cannot also occupy an employee slot (mirrors the transfer flow).
+        if (staffProvider.get().isEmployedBy(firm.getFirmId(), newProprietor)) {
+            staffProvider.get().resignFromFirm(firmName, newProprietor);
+        }
+
         updateProprietor(firm.getFirmId(), newProprietor);
+        firmAccountServiceProvider.get().reassignAccountsToNewProprietor(firm.getFirmId(), newProprietor);
     }
 
     private Firm requireFirm(String firmName) {

@@ -15,6 +15,7 @@ import io.paradaux.business.services.FirmRequestService;
 import io.paradaux.business.services.FirmService;
 import io.paradaux.business.services.FirmStaffService;
 import org.apache.ibatis.exceptions.PersistenceException;
+import org.mybatis.guice.transactional.Transactional;
 
 import java.sql.SQLIntegrityConstraintViolationException;
 import java.time.LocalDateTime;
@@ -249,6 +250,18 @@ public class FirmRequestServiceImpl implements FirmRequestService {
      *         callers can notify the outgoing owner. Read up front rather than
      *         from the now-stale local firm after the update (ADT-56).
      */
+    // Atomic: the proprietor handover and the treasury-account reassignment must
+    // commit or roll back together. Before this was transactional, a failure in
+    // reassignAccountsToNewProprietor (e.g. a stale firm_accounts row whose
+    // account no longer resolves in Treasury) left the just-committed proprietor
+    // change in place with the account owner/authorizers still on the previous
+    // owner — the new proprietor was locked out of the firm's money. Wrapping the
+    // method rolls the proprietor change back on any such failure so the transfer
+    // fails cleanly and can be retried, never stranding the account (PAR-141).
+    // (Treasury writes are cross-plugin IPC and can't enrol in this JDBC
+    // transaction, but the common failure — the first reassignOwner throwing —
+    // occurs before any Treasury write, so rollback is clean.)
+    @Transactional
     @Override
     public UUID completeTransferProprietorship(String firmName, UUID newProprietorId) {
         Firm firm = firms.getFirmByNameOrId(firmName);
