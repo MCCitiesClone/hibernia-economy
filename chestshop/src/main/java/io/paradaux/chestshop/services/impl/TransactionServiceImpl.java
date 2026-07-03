@@ -30,10 +30,10 @@ import io.paradaux.chestshop.model.Account;
 import io.paradaux.chestshop.model.PendingTransaction;
 import io.paradaux.chestshop.model.DestroyedShop;
 import io.paradaux.chestshop.model.Transaction;
-import io.paradaux.chestshop.listeners.SignBreak;
-import io.paradaux.chestshop.listeners.StockCounterModule;
+import io.paradaux.chestshop.listeners.SignBreakListener;
+import io.paradaux.chestshop.listeners.StockCounterListener;
 import io.paradaux.chestshop.listeners.MarketListener;
-import io.paradaux.chestshop.listeners.RestrictedSign;
+import io.paradaux.chestshop.listeners.RestrictedSignListener;
 import io.paradaux.chestshop.utils.InventoryUtil;
 import io.paradaux.chestshop.utils.LocationUtil;
 import io.paradaux.chestshop.utils.PriceUtil;
@@ -92,7 +92,7 @@ import static io.paradaux.chestshop.utils.PriceUtil.NO_PRICE;
  * <p>The money leg settles directly through {@link ChestShop#economy()} (a single
  * buyer→seller {@code TreasuryApi} transfer); the goods are reversed if it fails, so a
  * trade is all-or-nothing. The genuine cross-cutting hooks (market-DB sync,
- * stock counter) and the cross-plugin sign listener {@code RestrictedSign} stay.
+ * stock counter) and the cross-plugin sign listener {@code RestrictedSignListener} stay.
  */
 @Singleton
 @Slf4j
@@ -109,8 +109,8 @@ public class TransactionServiceImpl implements TransactionService {
     private final EconomyService economy;
     private final ShopService shops;
     private final AccountService accounts;
-    private final SignBreak signBreak;
-    private final StockCounterModule stockCounter;
+    private final SignBreakListener signBreak;
+    private final StockCounterListener stockCounter;
     private final Message message;
     private final ItemService items;
     private final MarketListener market;
@@ -121,11 +121,11 @@ public class TransactionServiceImpl implements TransactionService {
     private final MaterialService materialService;
 
     private final AdminBypass adminBypass;
-    private final RestrictedSign restrictedSign;
+    private final RestrictedSignListener restrictedSign;
 
     @Inject
-    public TransactionServiceImpl(EconomyService economy, ShopService shops, AccountService accounts, SignBreak signBreak, StockCounterModule stockCounter, Message message, ItemService items, MarketListener market,
-                              ChestShopConfiguration config, ChestShopSign chestShopSign, ShopBlockService shopBlockService, InventoryService inventoryService, MaterialService materialService, AdminBypass adminBypass, RestrictedSign restrictedSign) {
+    public TransactionServiceImpl(EconomyService economy, ShopService shops, AccountService accounts, SignBreakListener signBreak, StockCounterListener stockCounter, Message message, ItemService items, MarketListener market,
+                              ChestShopConfiguration config, ChestShopSign chestShopSign, ShopBlockService shopBlockService, InventoryService inventoryService, MaterialService materialService, AdminBypass adminBypass, RestrictedSignListener restrictedSign) {
         this.restrictedSign = restrictedSign;
         this.adminBypass = adminBypass;
         this.economy = economy;
@@ -263,7 +263,7 @@ public class TransactionServiceImpl implements TransactionService {
             adjustPartialSell(ctx);
         }
 
-        // RestrictedSign is a genuine cross-plugin sign listener; its pre-trade access
+        // RestrictedSignListener is a genuine cross-plugin sign listener; its pre-trade access
         // gate stays where it lives and is invoked here in the former @LOW slot.
         restrictedSign.onPreTransaction(ctx);
 
@@ -688,7 +688,7 @@ public class TransactionServiceImpl implements TransactionService {
 
     // ---- error messaging (was the MONITOR ErrorMessageSender) -------------------
 
-    /** Drop a player's notification-cooldown rows (called from PlayerConnect on quit). */
+    /** Drop a player's notification-cooldown rows (called from PlayerConnectListener on quit). */
     @Override
     public void clearNotificationCooldowns(UUID playerUuid) {
         if (config.getNotificationMessageCooldown() > 0) {

@@ -48,7 +48,7 @@ import static org.bukkit.event.block.Action.RIGHT_CLICK_BLOCK;
  * @author Acrobot
  */
 @Slf4j
-public class PlayerInteract implements Listener {
+public class PlayerInteractListener implements Listener {
 
     /**
      * Per-player timestamp of the last shop-trade click, used to throttle the
@@ -71,7 +71,7 @@ public class PlayerInteract implements Listener {
     private final AdminBypass adminBypass;
 
     @Inject
-    public PlayerInteract(TransactionService transactions, InfoService info, AccountService accounts,
+    public PlayerInteractListener(TransactionService transactions, InfoService info, AccountService accounts,
                           ItemService items, Message message, Security security,
                           ChestShopConfiguration config, ChestShopSign chestShopSign, ShopBlockService shopBlockService, AdminBypass adminBypass) {
         this.adminBypass = adminBypass;

@@ -15,13 +15,13 @@ import io.paradaux.chestshop.services.TransactionService;
 /**
  * @author Acrobot
  */
-public class PlayerConnect implements Listener {
+public class PlayerConnectListener implements Listener {
 
     private final AccountService accounts;
     private final TransactionService transactions;
 
     @Inject
-    public PlayerConnect(AccountService accounts, TransactionService transactions) {
+    public PlayerConnectListener(AccountService accounts, TransactionService transactions) {
         this.accounts = accounts;
         this.transactions = transactions;
     }

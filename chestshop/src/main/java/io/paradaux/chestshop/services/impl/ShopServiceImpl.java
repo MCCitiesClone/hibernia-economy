@@ -22,7 +22,7 @@ import io.paradaux.chestshop.model.ShopCreation;
 import io.paradaux.chestshop.model.CreatedShop;
 import io.paradaux.chestshop.model.DestroyedShop;
 import io.paradaux.chestshop.model.ShopCreation.CreationOutcome;
-import io.paradaux.chestshop.listeners.StockCounterModule;
+import io.paradaux.chestshop.listeners.StockCounterListener;
 import io.paradaux.chestshop.listeners.MarketListener;
 import io.paradaux.chestshop.utils.LocationUtil;
 import io.paradaux.chestshop.utils.MaterialUtil;
@@ -68,7 +68,7 @@ public class ShopServiceImpl implements ShopService {
     private final EconomyService economy;
     private final ItemService items;
     private final ProtectionService protection;
-    private final StockCounterModule stockCounter;
+    private final StockCounterListener stockCounter;
     private final Message message;
     private final Security security;
     private final MarketListener market;
@@ -79,7 +79,7 @@ public class ShopServiceImpl implements ShopService {
     private final AdminBypass adminBypass;
 
     @Inject
-    public ShopServiceImpl(AccountService accounts, EconomyService economy, ItemService items, ProtectionService protection, StockCounterModule stockCounter, Message message, Security security, MarketListener market,
+    public ShopServiceImpl(AccountService accounts, EconomyService economy, ItemService items, ProtectionService protection, StockCounterListener stockCounter, Message message, Security security, MarketListener market,
                        ChestShopConfiguration config, ChestShopSign chestShopSign, ShopBlockService shopBlockService, AdminBypass adminBypass) {
         this.adminBypass = adminBypass;
         this.accounts = accounts;
@@ -118,7 +118,7 @@ public class ShopServiceImpl implements ShopService {
         if (!ctx.isCancelled()) { // CreationFeeGetter ran @HIGH with ignoreCancelled=true
             chargeCreationFeeStep(ctx);
         }
-        // StockCounterModule ran @HIGH with the default ignoreCancelled=false, so it
+        // StockCounterListener ran @HIGH with the default ignoreCancelled=false, so it
         // fires regardless: it normalises the quantity line and seeds the stock counter.
         stockCounter.onPreShopCreation(ctx);
         // HIGHEST — the name second pass (ignoreCancelled=true)

@@ -18,7 +18,7 @@ import org.bukkit.event.entity.EntityExplodeEvent;
 /**
  * @author Acrobot
  */
-public class ChestBreak implements Listener {
+public class ChestBreakListener implements Listener {
 
     private final Message message;
     private final AccountService accounts;
@@ -26,7 +26,7 @@ public class ChestBreak implements Listener {
     private final ShopBlockService shopBlockService;
 
     @Inject
-    public ChestBreak(Message message, AccountService accounts, ChestShopConfiguration config, ShopBlockService shopBlockService) {
+    public ChestBreakListener(Message message, AccountService accounts, ChestShopConfiguration config, ShopBlockService shopBlockService) {
         this.message = message;
         this.accounts = accounts;
         this.config = config;

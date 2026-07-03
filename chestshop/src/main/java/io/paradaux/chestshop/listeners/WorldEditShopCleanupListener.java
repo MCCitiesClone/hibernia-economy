@@ -33,14 +33,14 @@ import java.util.concurrent.ConcurrentLinkedDeque;
  * WorldEdit is present (guarded in the plugin bootstrap). Deactivation is a no-op
  * for any captured position that wasn't actually a shop.
  */
-public final class WorldEditShopCleanup implements Listener {
+public final class WorldEditShopCleanupListener implements Listener {
 
     private record Pos(String world, int x, int y, int z) {}
 
     private final JavaPlugin plugin;
     private final Queue<Pos> queue = new ConcurrentLinkedDeque<>();
 
-    public WorldEditShopCleanup(JavaPlugin plugin) {
+    public WorldEditShopCleanupListener(JavaPlugin plugin) {
         this.plugin = plugin;
     }
 

@@ -22,17 +22,17 @@ import static io.paradaux.chestshop.utils.Permissions.OTHER_NAME_DESTROY;
 /**
  * @author Acrobot
  */
-public class SignCreate implements Listener {
+public class SignCreateListener implements Listener {
 
     private final AccountService accounts;
     private final ItemService items;
     private final ShopService shops;
-    private final SignBreak signBreak;
+    private final SignBreakListener signBreak;
     private final ChestShopSign chestShopSign;
     private final ShopBlockService shopBlockService;
 
     @Inject
-    public SignCreate(AccountService accounts, ItemService items, ShopService shops, SignBreak signBreak,
+    public SignCreateListener(AccountService accounts, ItemService items, ShopService shops, SignBreakListener signBreak,
                       ChestShopSign chestShopSign, ShopBlockService shopBlockService) {
         this.accounts = accounts;
         this.items = items;

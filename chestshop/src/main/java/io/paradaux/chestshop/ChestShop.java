@@ -10,21 +10,21 @@ import io.paradaux.chestshop.commands.ToggleCommand;
 import io.paradaux.chestshop.commands.VersionCommand;
 import io.paradaux.chestshop.services.MarketHook;
 import io.paradaux.chestshop.listeners.MarketListener;
-import io.paradaux.chestshop.listeners.BlockPlace;
-import io.paradaux.chestshop.listeners.ChestBreak;
-import io.paradaux.chestshop.listeners.SignBreak;
-import io.paradaux.chestshop.listeners.SignCreate;
+import io.paradaux.chestshop.listeners.BlockPlaceListener;
+import io.paradaux.chestshop.listeners.ChestBreakListener;
+import io.paradaux.chestshop.listeners.SignBreakListener;
+import io.paradaux.chestshop.listeners.SignCreateListener;
 import io.paradaux.chestshop.listeners.GarbageTextListener;
 import io.paradaux.chestshop.listeners.ItemMoveListener;
-import io.paradaux.chestshop.listeners.StockCounterModule;
-import io.paradaux.chestshop.listeners.PlayerConnect;
-import io.paradaux.chestshop.listeners.PlayerInteract;
-import io.paradaux.chestshop.listeners.PlayerInventory;
-import io.paradaux.chestshop.listeners.PlayerTeleport;
+import io.paradaux.chestshop.listeners.StockCounterListener;
+import io.paradaux.chestshop.listeners.PlayerConnectListener;
+import io.paradaux.chestshop.listeners.PlayerInteractListener;
+import io.paradaux.chestshop.listeners.PlayerInventoryListener;
+import io.paradaux.chestshop.listeners.PlayerTeleportListener;
 import io.paradaux.chestshop.integration.IntegrationRegistrar;
 import io.paradaux.chestshop.integration.WorldGuardFlags;
 import io.paradaux.chestshop.services.ItemCodeService;
-import io.paradaux.chestshop.listeners.RestrictedSign;
+import io.paradaux.chestshop.listeners.RestrictedSignListener;
 
 
 
@@ -113,21 +113,21 @@ public class ChestShop extends JavaPlugin {
                         // registered in one call via ListenerManager#registerAll (PAR-282).
                         .listeners(
                                 IntegrationRegistrar.class,
-                                SignBreak.class,
-                                io.paradaux.chestshop.listeners.PhysicsBreak.class,
+                                SignBreakListener.class,
+                                io.paradaux.chestshop.listeners.PhysicsBreakListener.class,
                                 io.paradaux.chestshop.listeners.PaperBlockDestroyListener.class,
-                                ChestBreak.class,
-                                SignCreate.class,
-                                BlockPlace.class,
-                                io.paradaux.chestshop.listeners.SignBacksideProtector.class,
+                                ChestBreakListener.class,
+                                SignCreateListener.class,
+                                BlockPlaceListener.class,
+                                io.paradaux.chestshop.listeners.SignBacksideProtectorListener.class,
                                 MarketListener.class,
-                                PlayerConnect.class,
-                                PlayerInteract.class,
-                                PlayerInventory.class,
-                                PlayerTeleport.class,
+                                PlayerConnectListener.class,
+                                PlayerInteractListener.class,
+                                PlayerInventoryListener.class,
+                                PlayerTeleportListener.class,
                                 GarbageTextListener.class,
-                                RestrictedSign.class,
-                                StockCounterModule.class,
+                                RestrictedSignListener.class,
+                                StockCounterListener.class,
                                 ItemMoveListener.class,
                                 io.paradaux.chestshop.listeners.PreviewListener.class)
                         .build();
@@ -160,7 +160,7 @@ public class ChestShop extends JavaPlugin {
         if (getServer().getPluginManager().getPlugin("WorldEdit") != null
                 || getServer().getPluginManager().getPlugin("FastAsyncWorldEdit") != null) {
             try {
-                new io.paradaux.chestshop.listeners.WorldEditShopCleanup(this).register();
+                new io.paradaux.chestshop.listeners.WorldEditShopCleanupListener(this).register();
             } catch (Throwable t) {
                 log.warn("WorldEdit shop-cleanup adapter unavailable", t);
             }

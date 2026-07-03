@@ -9,15 +9,15 @@ import org.bukkit.event.Listener;
 /**
  * Removes a shop when its sign is destroyed by physics via Paper's
  * {@link BlockDestroyEvent} (the Paper-native counterpart to the Spigot
- * {@code BlockPhysicsEvent} path handled by {@link PhysicsBreak}). Was the
+ * {@code BlockPhysicsEvent} path handled by {@link PhysicsBreakListener}). Was the
  * version-named {@code adapter/Paper_1_13_2}.
  */
 public class PaperBlockDestroyListener implements Listener {
 
-    private final SignBreak signBreak;
+    private final SignBreakListener signBreak;
 
     @Inject
-    public PaperBlockDestroyListener(SignBreak signBreak) {
+    public PaperBlockDestroyListener(SignBreakListener signBreak) {
         this.signBreak = signBreak;
     }
 

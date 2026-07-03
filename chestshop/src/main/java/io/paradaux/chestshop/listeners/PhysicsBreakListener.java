@@ -6,12 +6,12 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockPhysicsEvent;
 
-public class PhysicsBreak implements Listener {
+public class PhysicsBreakListener implements Listener {
 
-    private final SignBreak signBreak;
+    private final SignBreakListener signBreak;
 
     @Inject
-    public PhysicsBreak(SignBreak signBreak) {
+    public PhysicsBreakListener(SignBreakListener signBreak) {
         this.signBreak = signBreak;
     }
 

@@ -17,13 +17,13 @@ import org.bukkit.event.block.SignChangeEvent;
  * payload can't be circumvented. Was the sign half of the version-named
  * {@code adapter/Spigot_1_20}.
  */
-public class SignBacksideProtector implements Listener {
+public class SignBacksideProtectorListener implements Listener {
 
     private final Message message;
     private final ChestShopSign chestShopSign;
 
     @Inject
-    public SignBacksideProtector(Message message, ChestShopSign chestShopSign) {
+    public SignBacksideProtectorListener(Message message, ChestShopSign chestShopSign) {
         this.message = message;
         this.chestShopSign = chestShopSign;
     }

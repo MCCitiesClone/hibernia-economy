@@ -18,12 +18,12 @@ import static io.paradaux.chestshop.utils.InventoryUtil.getHolder;
  */
 public class ItemMoveListener implements Listener {
 
-    private final StockCounterModule stockCounter;
+    private final StockCounterListener stockCounter;
     private final ChestShopConfiguration config;
     private final ShopBlockService shopBlockService;
 
     @Inject
-    public ItemMoveListener(StockCounterModule stockCounter, ChestShopConfiguration config, ShopBlockService shopBlockService) {
+    public ItemMoveListener(StockCounterListener stockCounter, ChestShopConfiguration config, ShopBlockService shopBlockService) {
         this.stockCounter = stockCounter;
         this.config = config;
         this.shopBlockService = shopBlockService;

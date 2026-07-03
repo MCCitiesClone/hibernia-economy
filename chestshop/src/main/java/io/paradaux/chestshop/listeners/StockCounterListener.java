@@ -36,7 +36,7 @@ import static io.paradaux.chestshop.services.ChestShopSign.QUANTITY_LINE;
  */
 @Singleton
 @Slf4j
-public class StockCounterModule implements Listener {
+public class StockCounterListener implements Listener {
     private static final String PRICE_LINE_WITH_COUNT = "Q %d : C %d";
 
     private final ItemService items;
@@ -47,7 +47,7 @@ public class StockCounterModule implements Listener {
     private final MaterialService materialService;
 
     @Inject
-    public StockCounterModule(ItemService items, ChestShopConfiguration config, ChestShopSign chestShopSign,
+    public StockCounterListener(ItemService items, ChestShopConfiguration config, ChestShopSign chestShopSign,
                               ShopBlockService shopBlockService, InventoryService inventoryService, MaterialService materialService) {
         this.items = items;
         this.config = config;

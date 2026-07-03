@@ -30,7 +30,7 @@ import static io.paradaux.chestshop.utils.InventoryUtil.getRightSide;
 /**
  * @author Acrobot
  */
-public class PlayerInventory implements Listener {
+public class PlayerInventoryListener implements Listener {
 
     private final InfoService info;
     private final Message message;
@@ -42,7 +42,7 @@ public class PlayerInventory implements Listener {
     private final AdminBypass adminBypass;
 
     @Inject
-    public PlayerInventory(InfoService info, Message message, Security security,
+    public PlayerInventoryListener(InfoService info, Message message, Security security,
                            ChestShopConfiguration config, ChestShopSign chestShopSign, ShopBlockService shopBlockService, AdminBypass adminBypass) {
         this.adminBypass = adminBypass;
         this.info = info;

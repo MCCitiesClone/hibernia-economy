@@ -23,7 +23,7 @@ import java.util.List;
 /**
  * @author Acrobot
  */
-public class BlockPlace implements Listener {
+public class BlockPlaceListener implements Listener {
 
     private final Message message;
     private final Security security;
@@ -33,7 +33,7 @@ public class BlockPlace implements Listener {
     private final AdminBypass adminBypass;
 
     @Inject
-    public BlockPlace(Message message, Security security, ChestShopSign chestShopSign, ShopBlockService shopBlockService, AdminBypass adminBypass) {
+    public BlockPlaceListener(Message message, Security security, ChestShopSign chestShopSign, ShopBlockService shopBlockService, AdminBypass adminBypass) {
         this.adminBypass = adminBypass;
         this.message = message;
         this.security = security;

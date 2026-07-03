@@ -4,7 +4,7 @@ import org.bukkit.event.block.Action;
 import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.model.PendingTransaction;
 import io.paradaux.chestshop.model.Transaction;
-import io.paradaux.chestshop.listeners.RestrictedSign;
+import io.paradaux.chestshop.listeners.RestrictedSignListener;
 import org.bukkit.Bukkit;
 import org.bukkit.block.Sign;
 import org.bukkit.entity.Player;
@@ -22,7 +22,7 @@ import java.util.UUID;
  * <p>The money leg settles directly through {@link ChestShop#economy()} (a single
  * buyer→seller {@code TreasuryApi} transfer); the goods are reversed if it fails, so a
  * trade is all-or-nothing. The genuine cross-cutting hooks (market-DB sync,
- * stock counter) and the cross-plugin sign listener {@code RestrictedSign} stay.
+ * stock counter) and the cross-plugin sign listener {@code RestrictedSignListener} stay.
  */
 public interface TransactionService {
 
@@ -31,7 +31,7 @@ public interface TransactionService {
      * account, price the trade (honouring shift-sell-in-stacks / shift-sell-everything), and
      * assemble the stacked items + (virtual admin) shop inventory. Returns {@code null} — after
      * messaging the player — when the click can't become a trade. First step of the trade
-     * lifecycle (prepare -> validate -> process -> execute); moved off the PlayerInteract
+     * lifecycle (prepare -> validate -> process -> execute); moved off the PlayerInteractListener
      * listener so the whole lifecycle lives in this service (PAR-299).
      */
     PendingTransaction prepare(Sign sign, Player player, Action action);
@@ -46,7 +46,7 @@ public interface TransactionService {
      */
     void validate(PendingTransaction ctx);
 
-    /** Drop a player's notification-cooldown rows (called from PlayerConnect on quit). */
+    /** Drop a player's notification-cooldown rows (called from PlayerConnectListener on quit). */
     void clearNotificationCooldowns(UUID playerUuid);
 
     /**
@@ -57,7 +57,7 @@ public interface TransactionService {
      * messages, metrics) run.
      *
      * <p><b>Main-thread contract (ADT-131).</b> This runs synchronously on the Bukkit main
-     * thread from the {@code PlayerInteract} handler, and most of it must: goods move via
+     * thread from the {@code PlayerInteractListener} handler, and most of it must: goods move via
      * the main-thread-only inventory API, and the money legs are settled inline so the
      * goods can be reversed if settlement fails ({@link #execute}) — a trade is all-or-nothing.
      * That makes the per-click {@code TreasuryApi.transfer} (one MariaDB write, two with tax)

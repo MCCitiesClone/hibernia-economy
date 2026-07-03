@@ -18,12 +18,12 @@ import static io.paradaux.chestshop.utils.InventoryUtil.getHolder;
  *
  * @author Acrobot
  */
-public class PlayerTeleport implements Listener {
+public class PlayerTeleportListener implements Listener {
 
     private final ShopBlockService shopBlockService;
 
     @Inject
-    public PlayerTeleport(ShopBlockService shopBlockService) {
+    public PlayerTeleportListener(ShopBlockService shopBlockService) {
         this.shopBlockService = shopBlockService;
     }
 

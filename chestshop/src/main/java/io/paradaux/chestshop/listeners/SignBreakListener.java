@@ -39,7 +39,7 @@ import static io.paradaux.chestshop.utils.Permissions.OTHER_NAME_DESTROY;
  * @author Acrobot
  */
 @Singleton
-public class SignBreak implements Listener {
+public class SignBreakListener implements Listener {
     private static final BlockFace[] SIGN_CONNECTION_FACES = {BlockFace.SOUTH, BlockFace.NORTH, BlockFace.EAST, BlockFace.WEST, BlockFace.UP};
     public static final String METADATA_NAME = "shop_destroyer";
 
@@ -51,7 +51,7 @@ public class SignBreak implements Listener {
     private final ShopBlockService shopBlockService;
 
     @Inject
-    public SignBreak(AccountService accounts, ShopService shops, Message message,
+    public SignBreakListener(AccountService accounts, ShopService shops, Message message,
                      ChestShopConfiguration config, ChestShopSign chestShopSign, ShopBlockService shopBlockService) {
         this.accounts = accounts;
         this.shops = shops;

@@ -26,7 +26,7 @@ public interface ShopService {
 
     /**
      * Run a shop-sign creation through the validation steps and return the result context
-     * for the caller ({@code SignCreate}) to act on. The steps run in the exact order the
+     * for the caller ({@code SignCreateListener}) to act on. The steps run in the exact order the
      * former priority-ordered validators fired; like the originals (almost all
      * {@code ignoreCancelled=false}) each runs unconditionally and may overwrite the
      * outcome — so the reported failure is the last problem found. The two former

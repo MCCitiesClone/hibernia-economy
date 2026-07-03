@@ -26,7 +26,7 @@ import static io.paradaux.chestshop.utils.Permissions.ADMIN;
 /**
  * @author Acrobot
  */
-public class RestrictedSign implements Listener {
+public class RestrictedSignListener implements Listener {
     private static final BlockFace[] SIGN_CONNECTION_FACES = {BlockFace.SELF, BlockFace.UP, BlockFace.EAST, BlockFace.WEST, BlockFace.NORTH, BlockFace.SOUTH};
 
     private final Message message;
@@ -36,7 +36,7 @@ public class RestrictedSign implements Listener {
     private final AdminBypass adminBypass;
 
     @Inject
-    public RestrictedSign(Message message, AccountService accounts, ChestShopSign chestShopSign, AdminBypass adminBypass) {
+    public RestrictedSignListener(Message message, AccountService accounts, ChestShopSign chestShopSign, AdminBypass adminBypass) {
         this.adminBypass = adminBypass;
         this.message = message;
         this.accounts = accounts;
