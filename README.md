@@ -79,6 +79,7 @@ internals.
 | **`treasury-api-plugin/`** | Paper plugin | Issues and manages **JWT API keys** that authenticate callers of the REST API. (Not the same as the `treasury-api` jar.) |
 | **`treasury-rest-api/`** | Spring Boot service | A REST/HTTP surface over the ledger for tooling and integrations, with API-key auth and rate limiting. Ships as a Docker image. |
 | **`economy-flyway/`** | Flyway migrations | The **authoritative shared database schema**. All schema changes are versioned migrations here; deploys run through gated workflows. |
+| **`common/`** | Library jar | Framework-free shared kernel used by the MariaDB-writing modules: `UuidBin` (UUID↔BINARY(16)), `JwtKeys` (the single source of the mint/verify HMAC key derivation), `DataSourceProvider`, `BalanceTaxBrackets`. |
 | **`chestshop/`** | Paper plugin (fork) | Sign-based automated shops, integrated with Treasury and Business. A vendored fork of ChestShop-3, built as a single Gradle module against the Paper 1.21.11 API (the old per-server-version adapter modules were folded into the core). |
 | **`economy-explorer/`** | Next.js app | The public, read-side web explorer (balances, prices, money flow) **and** the player/admin documentation site served at `/docs`. |
 | **`realty/`** | Paper plugin *(submodule)* | Property and land: buying, renting, offers, and auctions. Maintained upstream; consumed here. |
@@ -99,7 +100,8 @@ hibernia-economy/
 ├── treasury-api-plugin/       # JWT API-key issuer
 ├── treasury-rest-api/         # Spring Boot REST service (Dockerized)
 ├── economy-flyway/            # the shared database schema (Flyway migrations)
-├── chestshop/                 #   plugin/  (sign shops; shades to chestshop-<version>.jar)
+├── common/                    # framework-free shared kernel (UuidBin, JwtKeys, DataSourceProvider)
+├── chestshop/                 # sign shops — single module, shades to chestshop-<version>.jar
 ├── economy-explorer/          # Next.js explorer + /docs user guide (npm, not Gradle)
 └── .github/workflows/         # CI for every component (build, test, publish, deploy)
 ```

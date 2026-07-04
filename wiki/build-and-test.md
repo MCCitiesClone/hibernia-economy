@@ -100,14 +100,19 @@ lives at `chestshop/src` like every other project).
 
 Things worth knowing if you touch it:
 
-- **Shading & relocations.** `:chestshop`'s shadowJar bundles a whitelisted
-  set of libraries (adventure/kyori, minedown, bStats, ORMLite, javax.persistence)
-  and relocates them under `io.paradaux.chestshop.Libs.*` / `.Metrics.*` /
-  `.Updater`. The server/soft-depend APIs are `compileOnly` and never bundled.
-- **Folded-in adapters.** The former version-adapter classes (ItemInfo tooltips,
-  non-snapshot holder/state) now live in the core under
-  `io/paradaux/chestshop/Adapter/` and are still discovered + registered at runtime
-  by the jar-scan in `ChestShop#registerVersionedAdapters`.
+- **Shading & relocations.** `:chestshop`'s shadowJar bundles HiberniaFramework,
+  Guice, Reflections and MyBatis, and relocates only `com.google.inject` /
+  `javax.inject` / `org.aopalliance` under `io.paradaux.chestshop.Libs.*`
+  (`mergeServiceFiles()`). Adventure is **provided natively by Paper** — `compileOnly`,
+  not bundled or relocated (the old bundled+relocated Adventure and the de.themoep
+  MineDown/lang libs were removed — MineDown broke against a now-sealed Adventure
+  interface). The server/soft-depend APIs are `compileOnly` and never bundled.
+- **Persistence is MyBatis over SQLite (PAR-282).** The old ORMLite layer was
+  migrated to the same service→mapper/MyBatis annotation-SQL layer the other plugins
+  use — just against the existing SQLite files (`users.db`/`items.db`), not MariaDB.
+  The SQLite JDBC driver (`org.sqlite.JDBC`) is server-provided at runtime, as it was
+  for ORMLite. There are no version-adapter modules or a runtime adapter jar-scan any
+  more — the single 1.21.11 core replaced them.
 - **Soft-depend APIs are resolved non-transitively.** Gradle's `compileOnly` pulls
   transitives that Maven's `provided` didn't, dragging in dead/incompatible
   artifacts; the build pins them off. WorldEdit is force-pinned to **7.3.9** (the
