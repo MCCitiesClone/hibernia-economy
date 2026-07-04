@@ -138,6 +138,76 @@ class GoodsTransferTest extends ServerTest {
         assertThat(count(client, Material.DIAMOND)).isZero();
     }
 
+    @Test
+    void reverse_sellUnlimited_addsTheStockBackToTheClient() {
+        Inventory client = chestWith(27, item(Material.DIAMOND, 5));
+        Transaction event = txn(SELL, true, null, client, item(Material.DIAMOND, 5));
+        transfer.reverse(event); // SELL+unlimited -> moveUnlimited(client, stock, add=true)
+        assertThat(count(client, Material.DIAMOND)).isEqualTo(10);
+    }
+
+    @Test
+    void reverse_failure_logsTheKnownSignLocation() {
+        Inventory client = chest(27); // empty -> unlimited remove fails
+        org.bukkit.block.Sign sign = Mockito.mock(org.bukkit.block.Sign.class);
+        when(sign.getLocation()).thenReturn(new org.bukkit.Location(null, 1, 2, 3));
+        Transaction event = Mockito.mock(Transaction.class);
+        when(event.getTransactionType()).thenReturn(BUY);
+        when(event.isUnlimitedOwner()).thenReturn(true);
+        when(event.getClientInventory()).thenReturn(client);
+        when(event.getStock()).thenReturn(new ItemStack[]{item(Material.DIAMOND, 5)});
+        when(event.getSign()).thenReturn(sign);
+        transfer.reverse(event); // fails -> logs sign.getLocation() (getSign() != null branch)
+        assertThat(count(client, Material.DIAMOND)).isZero();
+    }
+
+    @Test
+    void transfer_usesStackTo64_whenConfigured() {
+        TestConfigs.with(config, "stackTo64", true);
+        Inventory source = chestWith(27, item(Material.DIAMOND, 32));
+        Inventory target = chest(27);
+        assertThat(transfer.transfer(source, target, new ItemStack[]{item(Material.DIAMOND, 32)})).isTrue();
+        assertThat(count(target, Material.DIAMOND)).isEqualTo(32);
+    }
+
+    @Test
+    void moveUnlimited_usesStackTo64_whenConfigured() {
+        TestConfigs.with(config, "stackTo64", true);
+        Inventory client = chest(27);
+        assertThat(transfer.moveUnlimited(client, new ItemStack[]{item(Material.DIAMOND, 10)}, true)).isTrue();
+        assertThat(count(client, Material.DIAMOND)).isEqualTo(10);
+    }
+
+    @Test
+    void update_refreshesEachHolderType_andNoOpsForAPlainHolder() throws Exception {
+        java.lang.reflect.Method update = GoodsTransfer.class.getDeclaredMethod(
+                "update", org.bukkit.inventory.InventoryHolder.class);
+        update.setAccessible(true);
+
+        org.bukkit.entity.Player player = Mockito.mock(org.bukkit.entity.Player.class);
+        update.invoke(null, player);
+        Mockito.verify(player).updateInventory();
+
+        org.bukkit.inventory.InventoryHolder state = Mockito.mock(org.bukkit.inventory.InventoryHolder.class,
+                Mockito.withSettings().extraInterfaces(org.bukkit.block.BlockState.class));
+        update.invoke(null, state);
+        Mockito.verify((org.bukkit.block.BlockState) state).update();
+
+        // A double chest recurses into its two halves' holders.
+        org.bukkit.block.DoubleChest dc = Mockito.mock(org.bukkit.block.DoubleChest.class);
+        org.bukkit.entity.Player left = Mockito.mock(org.bukkit.entity.Player.class); // Player is an InventoryHolder
+        org.bukkit.inventory.InventoryHolder right = Mockito.mock(org.bukkit.inventory.InventoryHolder.class,
+                Mockito.withSettings().extraInterfaces(org.bukkit.block.BlockState.class));
+        when(dc.getLeftSide(false)).thenReturn(left);
+        when(dc.getRightSide(false)).thenReturn(right);
+        update.invoke(null, dc);
+        Mockito.verify(left).updateInventory();
+        Mockito.verify((org.bukkit.block.BlockState) right).update();
+
+        // A plain holder matches none of the branches — must not throw.
+        update.invoke(null, Mockito.mock(org.bukkit.inventory.InventoryHolder.class));
+    }
+
     private Transaction txn(Transaction.TransactionType type, boolean unlimited,
                             Inventory owner, Inventory client, ItemStack... stock) {
         Transaction t = Mockito.mock(Transaction.class);
