@@ -40,6 +40,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.after;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.timeout;
@@ -952,5 +953,128 @@ class ShopServiceImplTest extends ServerTest {
         Field f = io.paradaux.chestshop.ChestShop.class.getDeclaredField("server");
         f.setAccessible(true);
         f.set(null, server);
+    }
+
+    // ---- residual branches ------------------------------------------------------
+
+    private ShopServiceImpl pricedService(String priceField, Object value) {
+        ChestShopConfiguration cfg = TestConfigs.with(TestConfigs.defaults(), priceField, value);
+        return new ShopServiceImpl(accounts, economy, items, protection, stockCounter, message,
+                market, cfg, new SignService(cfg), shopBlockService, adminBypass);
+    }
+
+    @Test
+    void create_creationFunds_skippedForAdminShop() {
+        // Creation price > 0 but an admin shop -> the funds check short-circuits (261 true).
+        ShopServiceImpl svc = pricedService("shopCreationPrice", new BigDecimal("10"));
+        Account adminAccount = new Account("Admin Shop", "Admin Shop", UUID.randomUUID());
+        when(accounts.canUseName(any(Player.class), anyString(), eq("Admin Shop"))).thenReturn(true);
+        when(accounts.resolveAccount("Admin Shop")).thenReturn(adminAccount); // keep the admin name
+        svc.create(player, sign, new String[]{"Admin Shop", "64", "B 5", "Diamond"});
+        verify(economy, never()).hasFunds(any(UUID.class), any(BigDecimal.class));
+    }
+
+    @Test
+    void create_creationFunds_skippedWithNoFeePermission() {
+        // Creation price > 0, not an admin shop, but the player has the no-fee node (262 true).
+        ShopServiceImpl svc = pricedService("shopCreationPrice", new BigDecimal("10"));
+        when(adminBypass.has(player, Permissions.NOFEE)).thenReturn(true);
+        svc.create(player, sign, VALID);
+        verify(economy, never()).hasFunds(any(UUID.class), any(BigDecimal.class));
+    }
+
+    @Test
+    void create_permission_unknownItem_buyGranted_noSellPrice() {
+        // item==null with a buy price the player IS allowed to create, no sell price:
+        // the permission guard's first operand is false and hasSellPrice is false (326 arc).
+        when(items.parse("Rubbish")).thenReturn(null);
+        when(adminBypass.has(any(Player.class), anyString())).thenReturn(false);
+        when(adminBypass.has(player, Permissions.SHOP_CREATION_BUY)).thenReturn(true);
+        ShopCreation ctx = create(new String[]{"Notch", "64", "B 5", "Rubbish"});
+        assertThat(ctx.isCancelled()).isTrue(); // still INVALID_ITEM from checkItem
+    }
+
+    @Test
+    void create_permission_unknownItem_sellGranted_noBuyPrice() {
+        // item==null, sell price the player IS allowed to create: the permission guard's second
+        // operand's `!has(SHOP_CREATION_SELL)` is false (326's has-sell-permission arc).
+        when(items.parse("Rubbish")).thenReturn(null);
+        when(adminBypass.has(any(Player.class), anyString())).thenReturn(false);
+        when(adminBypass.has(player, Permissions.SHOP_CREATION_SELL)).thenReturn(true);
+        ShopCreation ctx = create(new String[]{"Notch", "64", "S 5", "Rubbish"});
+        assertThat(ctx.isCancelled()).isTrue(); // still INVALID_ITEM from checkItem
+    }
+
+    @Test
+    void create_itemById_notDeniedWhenPermissionNotSetFalse() {
+        // itemLine carries a '#' (parts.length == 2) but no explicit false permission (334 false).
+        when(items.parse("Diamond#3")).thenReturn(diamond);
+        when(items.getSignName(diamond)).thenReturn("Diamond#3");
+        when(adminBypass.has(any(Player.class), anyString())).thenReturn(true);
+        ShopCreation ctx = create(new String[]{"Notch", "64", "B 5", "Diamond#3"});
+        assertThat(ctx.isCancelled()).isFalse();
+    }
+
+    @Test
+    void create_buyPermission_deniedWhenMaterialNodeSetButSideNodeMissing() {
+        // canCreateForItem: has(SHOP_CREATION_ID+mat) true but has(side) false -> 354 && false.
+        when(adminBypass.has(any(Player.class), anyString())).thenReturn(false);
+        when(adminBypass.has(player, Permissions.SHOP_CREATION_ID + "diamond")).thenReturn(true);
+        ShopCreation ctx = create(VALID);
+        assertThat(ctx.getOutcome()).isEqualTo(CreationOutcome.NO_PERMISSION);
+    }
+
+    @Test
+    void create_business_accessGrantedViaCanAccess() {
+        // Not a ChestShop admin, but canAccess the firm -> resolveBusinessName's guard is false (429).
+        loadTreasuryPlugin();
+        Account firm = new Account("Firm", "B:1A", UUID.randomUUID());
+        when(adminBypass.has(any(Player.class), anyString())).thenReturn(true);
+        when(adminBypass.has(player, Permissions.ADMIN)).thenReturn(false);
+        when(accounts.resolveAccount("B:1A")).thenReturn(firm);
+        when(accounts.canAccess(player, firm)).thenReturn(true);
+        when(accounts.canUseName(any(Player.class), anyString(), eq("B:1A"))).thenReturn(true);
+        ShopCreation ctx = create(new String[]{"B:1A", "64", "B 5", "Diamond"});
+        assertThat(ctx.getSignLine(SignService.NAME_LINE)).startsWith("B:");
+    }
+
+    @Test
+    void create_sendCreationError_defaultOutcomeSendsNoMessage() {
+        // A collaborator cancels the creation with the generic OTHER outcome; sendCreationError's
+        // switch falls to default (449/461) and skips the send (463 false).
+        doAnswer(inv -> {
+            ((ShopCreation) inv.getArgument(0)).setCancelled(true); // -> CreationOutcome.OTHER
+            return null;
+        }).when(stockCounter).onPreShopCreation(any());
+        ShopCreation ctx = create(VALID);
+        assertThat(ctx.getOutcome()).isEqualTo(CreationOutcome.OTHER);
+        verify(message, never()).send(any(Player.class), anyString());
+    }
+
+    @Test
+    void onCreated_stick_returnsWhenSignMaterialLacksSignName() {
+        // Defensive guard: a block whose data is a standing Sign but whose material name has no
+        // "SIGN" (an inconsistent state that only a mock can produce) -> index < 0 -> return (511/512).
+        ChestShopConfiguration cfg = TestConfigs.with(TestConfigs.defaults(), "stickSignsToChests", true);
+        ShopServiceImpl svc = new ShopServiceImpl(accounts, economy, items, protection, stockCounter,
+                message, market, cfg, new SignService(cfg), shopBlockService, adminBypass);
+
+        Block signBlock = mock(Block.class);
+        when(signBlock.getBlockData()).thenReturn(mock(org.bukkit.block.data.type.Sign.class));
+        when(signBlock.getType()).thenReturn(Material.STONE); // name() has no "SIGN"
+        when(signBlock.getRelative(any(org.bukkit.block.BlockFace.class))).thenReturn(chestBlock);
+        when(shopBlockService.couldBeShopContainer(any(Block.class))).thenReturn(true);
+        Sign mockSign = mock(Sign.class);
+        when(mockSign.getBlock()).thenReturn(signBlock);
+        when(mockSign.getLocation()).thenReturn(sign.getLocation());
+
+        CreatedShop event = mock(CreatedShop.class);
+        when(event.getPlayer()).thenReturn(player);
+        when(event.getSign()).thenReturn(mockSign);
+        when(event.getSignLines()).thenReturn(new String[]{"Notch", "64", "B 5", "Diamond"});
+        when(event.createdByOwner()).thenReturn(true);
+
+        svc.onCreated(event); // stickSignToChest returns at the index<0 guard
+        verify(message).send(player, "chestshop.SHOP_CREATED");
     }
 }
