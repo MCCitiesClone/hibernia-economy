@@ -2,6 +2,7 @@ package io.paradaux.treasury.services.impl;
 
 import com.google.inject.Inject;
 import lombok.extern.slf4j.Slf4j;
+import io.paradaux.common.OverdraftPolicy;
 import io.paradaux.treasury.mappers.AccountMapper;
 import io.paradaux.treasury.mappers.LedgerMapper;
 import io.paradaux.treasury.model.Page;
@@ -209,10 +210,10 @@ public class LedgerServiceImpl implements LedgerService {
         if (lockedFrom == null) {
             throw new IllegalArgumentException("Account not found (from=" + fromId + ")");
         }
-        boolean sourceLimited = !lockedFrom.isAllowOverdraft()
-                || lockedFrom.getCreditLimit() == null
-                || lockedFrom.getCreditLimit().signum() >= 0;
-        if (sourceLimited) {
+        // Unlimited faucet/sink sources need no balance check (and thus no balance lock);
+        // any limited source is checked against the shared OverdraftPolicy floor so this
+        // engine and treasury-rest-api decide identically (ADT/PAR overdraft-parity).
+        if (!OverdraftPolicy.isUnlimited(lockedFrom.isAllowOverdraft(), lockedFrom.getCreditLimit())) {
             AccountBalance fromBal = null;
             for (AccountBalance b : accountMapper.lockBalances(List.of(fromId, toId))) {
                 if (b.getAccountId() == fromId) { fromBal = b; break; }
@@ -220,12 +221,8 @@ public class LedgerServiceImpl implements LedgerService {
             if (fromBal == null) {
                 throw new IllegalStateException("Missing balance row for source account " + fromId);
             }
-            BigDecimal newFrom = fromBal.getBalance().subtract(Money.normalize(req.amount()));
-            if (!lockedFrom.isAllowOverdraft()) {
-                if (newFrom.signum() < 0) {
-                    throw new IllegalStateException("Insufficient funds");
-                }
-            } else if (newFrom.compareTo(lockedFrom.getCreditLimit().negate()) < 0) {
+            if (!OverdraftPolicy.isWithinFloor(fromBal.getBalance(), Money.normalize(req.amount()),
+                    lockedFrom.isAllowOverdraft(), lockedFrom.getCreditLimit())) {
                 throw new IllegalStateException("Insufficient funds");
             }
         }

@@ -1,5 +1,6 @@
 package io.paradaux.treasuryrestapi.service;
 
+import io.paradaux.common.OverdraftPolicy;
 import io.paradaux.treasuryrestapi.dto.FirmTransferRequest;
 import io.paradaux.treasuryrestapi.dto.PlayerTransferRequest;
 import io.paradaux.treasuryrestapi.dto.TransferRequest;
@@ -231,16 +232,20 @@ public class TransferService {
                 fromAccountId, sourceBalance.getBalance(), sourceBalance.getVersion(),
                 toAccountId, destBalance.getBalance(), destBalance.getVersion());
 
-        // Step 10: overdraft check (after both locks held — order is irrelevant for the check itself)
-        if (!source.isAllowOverdraft()) {
-            BigDecimal creditLimit = source.getCreditLimit() != null
-                    ? source.getCreditLimit() : BigDecimal.ZERO;
-            if (sourceBalance.getBalance().subtract(amount).compareTo(creditLimit.negate()) < 0) {
-                log.warn("Transfer rejected: insufficient funds on accountId={} (balance={}, amount={}, creditLimit={})",
-                        fromAccountId, sourceBalance.getBalance(), amount, creditLimit);
-                throw new ApiException(HttpStatus.UNPROCESSABLE_CONTENT, "INSUFFICIENT_FUNDS",
-                        "Source account has insufficient funds.");
-            }
+        // Step 10: overdraft check (after both locks held — order is irrelevant for the check itself).
+        // Defers to the shared OverdraftPolicy so this engine and the in-process Treasury plugin
+        // interpret (allow_overdraft, credit_limit) identically:
+        //   allow_overdraft = false                   → floor 0 (credit_limit ignored)
+        //   allow_overdraft = true, credit_limit < 0  → unlimited faucet/sink
+        //   allow_overdraft = true, credit_limit >= 0 → floor -credit_limit
+        if (!OverdraftPolicy.isWithinFloor(sourceBalance.getBalance(), amount,
+                source.isAllowOverdraft(), source.getCreditLimit())) {
+            log.warn("Transfer rejected: insufficient funds on accountId={} (balance={}, amount={}, "
+                    + "allowOverdraft={}, creditLimit={})",
+                    fromAccountId, sourceBalance.getBalance(), amount,
+                    source.isAllowOverdraft(), source.getCreditLimit());
+            throw new ApiException(HttpStatus.UNPROCESSABLE_CONTENT, "INSUFFICIENT_FUNDS",
+                    "Source account has insufficient funds.");
         }
 
         Instant now = Instant.now();
