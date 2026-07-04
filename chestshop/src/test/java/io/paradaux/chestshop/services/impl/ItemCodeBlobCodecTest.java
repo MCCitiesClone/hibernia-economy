@@ -41,6 +41,42 @@ class ItemCodeBlobCodecTest {
     }
 
     @Test
+    void decode_emptyBlob_yieldsEmptyString() throws Exception {
+        // An empty blob decodes to zero bytes (length < 2) -> plain empty string, no legacy path.
+        assertThat(ItemCodeServiceImpl.decodeBlob("")).isEmpty();
+    }
+
+    @Test
+    void decode_readsLineBrokenLegacyBlob() throws Exception {
+        // Old wrapped legacy output: a legacy blob with newlines inserted (76-col wrapping). The
+        // strict java.util.Base64 decoder rejects the newlines, so decodeBlob uses the vendored one.
+        String legacy = Base64.encodeObject(YAML);
+        StringBuilder wrapped = new StringBuilder();
+        for (int i = 0; i < legacy.length(); i++) {
+            wrapped.append(legacy.charAt(i));
+            if ((i + 1) % 76 == 0) {
+                wrapped.append('\n');
+            }
+        }
+        wrapped.append('\n');
+        assertThat(ItemCodeServiceImpl.decodeBlob(wrapped.toString())).isEqualTo(YAML);
+    }
+
+    @Test
+    void decode_rejectsLegacyNonStringPayload() throws Exception {
+        // A legacy blob serialising a non-String object must be rejected by the String-only filter.
+        java.io.ByteArrayOutputStream bos = new java.io.ByteArrayOutputStream();
+        try (java.io.ObjectOutputStream oos = new java.io.ObjectOutputStream(bos)) {
+            oos.writeObject(new java.util.ArrayList<>());
+        }
+        String blob = java.util.Base64.getEncoder().encodeToString(bos.toByteArray());
+        assertThat(java.util.Arrays.equals(new byte[]{(byte) 0xAC, (byte) 0xED},
+                java.util.Arrays.copyOf(bos.toByteArray(), 2))).isTrue();
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> ItemCodeServiceImpl.decodeBlob(blob))
+                .isInstanceOf(java.io.IOException.class);
+    }
+
+    @Test
     void plainEncoding_isNotNativeDeserialization() {
         // A plain blob's bytes are the UTF-8 YAML itself — no ObjectOutputStream header.
         byte[] raw = java.util.Base64.getDecoder().decode(ItemCodeServiceImpl.encodeBlob(YAML));
