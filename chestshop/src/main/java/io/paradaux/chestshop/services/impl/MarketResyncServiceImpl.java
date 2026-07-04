@@ -78,11 +78,11 @@ public class MarketResyncServiceImpl implements MarketResyncService {
             return;
         }
         if (!running.compareAndSet(false, true)) {
-            message.send(initiator, "find.resync.busy");
+            message.send(initiator, "chestshop.resync.busy");
             return;
         }
         int perTick = Math.max(1, chunksPerTick);
-        message.send(initiator, "find.resync.queued");
+        message.send(initiator, "chestshop.resync.queued");
         // The only off-main step: enumerate known shop locations, then hand back to the main thread.
         plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
             Map<String, Set<String>> knownByChunk;
@@ -91,7 +91,7 @@ public class MarketResyncServiceImpl implements MarketResyncService {
             } catch (RuntimeException e) {
                 running.set(false);
                 plugin.getServer().getScheduler().runTask(plugin,
-                        () -> message.send(initiator, "find.resync.failed"));
+                        () -> message.send(initiator, "chestshop.resync.failed"));
                 return;
             }
             plugin.getServer().getScheduler().runTask(plugin,
@@ -107,7 +107,7 @@ public class MarketResyncServiceImpl implements MarketResyncService {
             }
         }
         int total = queue.size();
-        message.send(initiator, "find.resync.started", "chunks", total);
+        message.send(initiator, "chestshop.resync.started", "chunks", total);
 
         new BukkitRunnable() {
             int processed = 0;
@@ -128,10 +128,10 @@ public class MarketResyncServiceImpl implements MarketResyncService {
                 if (queue.isEmpty()) {
                     cancel();
                     running.set(false);
-                    message.send(initiator, "find.resync.complete",
+                    message.send(initiator, "chestshop.resync.complete",
                             "upserted", upserted, "deactivated", deactivated);
                 } else if (total > 0 && processed % (perTick * 200) == 0) {
-                    message.send(initiator, "find.resync.progress",
+                    message.send(initiator, "chestshop.resync.progress",
                             "done", processed, "total", total);
                 }
             }

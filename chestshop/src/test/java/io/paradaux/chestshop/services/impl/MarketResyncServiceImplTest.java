@@ -164,7 +164,7 @@ class MarketResyncServiceImplTest {
         ((AtomicBoolean) running.get(service)).set(true);
 
         service.resync(initiator, 4);
-        verify(message).send(initiator, "find.resync.busy");
+        verify(message).send(initiator, "chestshop.resync.busy");
         verify(scheduler, never()).runTaskAsynchronously(any(), any(Runnable.class));
     }
 
@@ -172,8 +172,8 @@ class MarketResyncServiceImplTest {
     void resync_enumerationFailure_reportsFailed_andReleasesTheLock() throws Exception {
         when(shopQueryApi.activeShopLocations(null)).thenThrow(new RuntimeException("db down"));
         service.resync(initiator, 4);
-        verify(message).send(initiator, "find.resync.queued");
-        verify(message).send(initiator, "find.resync.failed");
+        verify(message).send(initiator, "chestshop.resync.queued");
+        verify(message).send(initiator, "chestshop.resync.failed");
 
         // The running lock was released, so a subsequent resync can start again.
         Field running = MarketResyncServiceImpl.class.getDeclaredField("running");
@@ -281,8 +281,8 @@ class MarketResyncServiceImplTest {
 
         verify(marketApi, times(3)).upsertShop(any()); // personalOk, adminOk, personalNoChest
         verify(marketApi).deactivateShop("world", 9, 64, 9);
-        verify(message).send(initiator, "find.resync.started", "chunks", 2);
-        verify(message).send(initiator, "find.resync.complete", "upserted", 3, "deactivated", 1);
+        verify(message).send(initiator, "chestshop.resync.started", "chunks", 2);
+        verify(message).send(initiator, "chestshop.resync.complete", "upserted", 3, "deactivated", 1);
     }
 
     @Test
@@ -302,8 +302,8 @@ class MarketResyncServiceImplTest {
         service.resync(initiator, 0); // chunksPerTick 0 -> perTick max(1,0) == 1
         driveScan();
 
-        verify(message).send(initiator, "find.resync.progress", "done", 200, "total", 201);
-        verify(message).send(initiator, "find.resync.complete", "upserted", 0, "deactivated", 0);
+        verify(message).send(initiator, "chestshop.resync.progress", "done", 200, "total", 201);
+        verify(message).send(initiator, "chestshop.resync.complete", "upserted", 0, "deactivated", 0);
     }
 
     @Test
@@ -316,8 +316,8 @@ class MarketResyncServiceImplTest {
         service.resync(initiator, 2);
         driveScan();
 
-        verify(message).send(initiator, "find.resync.started", "chunks", 0);
-        verify(message).send(initiator, "find.resync.complete", "upserted", 0, "deactivated", 0);
-        verify(message, never()).send(eq(initiator), eq("find.resync.progress"), any(), any(), any(), any());
+        verify(message).send(initiator, "chestshop.resync.started", "chunks", 0);
+        verify(message).send(initiator, "chestshop.resync.complete", "upserted", 0, "deactivated", 0);
+        verify(message, never()).send(eq(initiator), eq("chestshop.resync.progress"), any(), any(), any(), any());
     }
 }
