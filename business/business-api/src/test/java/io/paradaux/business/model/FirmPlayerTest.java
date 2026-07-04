@@ -5,7 +5,6 @@ import org.junit.jupiter.api.Test;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class FirmPlayerTest {
 
@@ -31,9 +30,12 @@ class FirmPlayerTest {
     }
 
     @Test
-    void malformedUuidStillThrows() {
+    void malformedUuidReturnsNull() {
+        // A getter must not throw on a malformed stored value; getUniqueId() catches
+        // the IllegalArgumentException and returns null per the documented nullable
+        // contract (ADT-35), rather than surprising callers.
         FirmPlayer p = new FirmPlayer();
         p.setPlayerUuid("not-a-uuid");
-        assertThatThrownBy(p::getUniqueId).isInstanceOf(IllegalArgumentException.class);
+        assertThat(p.getUniqueId()).isNull();
     }
 }
