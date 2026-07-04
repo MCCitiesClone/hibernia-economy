@@ -139,13 +139,16 @@ dependencies {
 
     // --- tests
     // Server API on the test runtime (tests mock/instantiate org.bukkit.* types).
-    testRuntimeOnly(libs.paper.api)
+    testImplementation(libs.paper.api)
     testImplementation(platform(libs.junit.bom))
     testImplementation(libs.junit.jupiter)
     testRuntimeOnly(libs.junit.platform.launcher)
     testImplementation(libs.mockito.core)
     testImplementation(libs.mockito.junit.jupiter)
     testImplementation(libs.assertj.core)
+    // MockBukkit — a real in-memory server so Bukkit-coupled services are exercised for
+    // real (ItemStacks, inventories, signs) rather than mock-verified.
+    testImplementation("org.mockbukkit.mockbukkit:mockbukkit-v1.21:4.110.0")
 }
 
 // plugin.yml carries ${bukkit.plugin.version}; substitute the plain project
@@ -167,8 +170,24 @@ tasks.test {
     jvmArgs("-XX:+EnableDynamicAgentLoading")
 }
 
-// Same in-scope set as the Maven jacoco config: exclude Bukkit-coupled glue and
-// the vendored Base64. No coverage gate — visibility only (matches upstream).
+// Coverage targets apply to the in-scope set — the service/logic layer (services, model,
+// utils). Bukkit/framework glue that can't be exercised without a live server or soft-dep
+// plugins is excluded, matching the treasury/business standard: the plugin main, command &
+// listener entrypoints, Usher dialog UI, the soft-depend integrations (WorldGuard/GriefPrevention/
+// Nexo), the Guice module, the MyBatis mappers, and the vendored Base64.
+val jacocoExcludes = listOf(
+    "io/paradaux/chestshop/utils/encoding/Base64.class",
+    "io/paradaux/chestshop/utils/encoding/Base64\$*.class",
+    "io/paradaux/chestshop/ChestShop.class",
+    "io/paradaux/chestshop/ChestShop\$*.class",
+    "io/paradaux/chestshop/listeners/**",
+    "io/paradaux/chestshop/commands/**",
+    "io/paradaux/chestshop/dialogs/**",
+    "io/paradaux/chestshop/integration/**",
+    "io/paradaux/chestshop/guice/**",
+    "io/paradaux/chestshop/mappers/**",
+)
+
 tasks.jacocoTestReport {
     dependsOn(tasks.test)
     reports {
@@ -176,23 +195,35 @@ tasks.jacocoTestReport {
         html.required.set(true)
     }
     classDirectories.setFrom(
-        files(classDirectories.files.map {
-            fileTree(it) {
-                exclude(
-                    "io/paradaux/chestshop/utils/encoding/Base64.class",
-                    "io/paradaux/chestshop/ChestShop.class",
-                    "io/paradaux/chestshop/listeners/**",
-                    "io/paradaux/chestshop/commands/**",
-                    "io/paradaux/chestshop/plugins/**",
-                    "io/paradaux/chestshop/economy/**",
-                    "io/paradaux/chestshop/database/**",
-                )
-            }
-        })
+        files(classDirectories.files.map { fileTree(it) { exclude(jacocoExcludes) } })
     )
 }
 
+tasks.jacocoTestCoverageVerification {
+    dependsOn(tasks.jacocoTestReport)
+    classDirectories.setFrom(
+        files(classDirectories.files.map { fileTree(it) { exclude(jacocoExcludes) } })
+    )
+    violationRules {
+        rule {
+            element = "BUNDLE"
+            limit {
+                counter = "LINE"
+                value = "COVEREDRATIO"
+                minimum = "1.00".toBigDecimal()
+            }
+            limit {
+                counter = "BRANCH"
+                value = "COVEREDRATIO"
+                minimum = "1.00".toBigDecimal()
+            }
+        }
+    }
+}
+
 tasks.test { finalizedBy(tasks.jacocoTestReport) }
+// NOTE: jacocoTestCoverageVerification (100% LINE+BRANCH on the in-scope set) is wired into
+// `check` in the final commit of the coverage push, once the target is met.
 
 // =====================================================================
 // Shaded chestshop-<version>.jar (formerly produced by the separate :assemble module).
