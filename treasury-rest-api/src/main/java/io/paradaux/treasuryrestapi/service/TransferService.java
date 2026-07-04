@@ -234,16 +234,18 @@ public class TransferService {
 
         // Step 10: overdraft check (after both locks held — order is irrelevant for the check itself).
         // Defers to the shared OverdraftPolicy so this engine and the in-process Treasury plugin
-        // interpret (allow_overdraft, credit_limit) identically:
+        // interpret (allow_overdraft, credit_limit) identically (PAR-319):
+        //   SYSTEM account                            → unlimited (ignores credit limits)
         //   allow_overdraft = false                   → floor 0 (credit_limit ignored)
         //   allow_overdraft = true, credit_limit < 0  → unlimited faucet/sink
         //   allow_overdraft = true, credit_limit >= 0 → floor -credit_limit
+        boolean sourceIsSystem = "SYSTEM".equals(source.getAccountType());
         if (!OverdraftPolicy.isWithinFloor(sourceBalance.getBalance(), amount,
-                source.isAllowOverdraft(), source.getCreditLimit())) {
+                source.isAllowOverdraft(), source.getCreditLimit(), sourceIsSystem)) {
             log.warn("Transfer rejected: insufficient funds on accountId={} (balance={}, amount={}, "
-                    + "allowOverdraft={}, creditLimit={})",
+                    + "allowOverdraft={}, creditLimit={}, accountType={})",
                     fromAccountId, sourceBalance.getBalance(), amount,
-                    source.isAllowOverdraft(), source.getCreditLimit());
+                    source.isAllowOverdraft(), source.getCreditLimit(), source.getAccountType());
             throw new ApiException(HttpStatus.UNPROCESSABLE_CONTENT, "INSUFFICIENT_FUNDS",
                     "Source account has insufficient funds.");
         }

@@ -298,8 +298,17 @@ public class AccountServiceImpl implements AccountService {
         account.setDisplayName(displayName);
         account.setRequiresAuthorization(false);
         account.setArchived(false);
-        account.setAllowOverdraft(false);
-        account.setCreditLimit(BigDecimal.ZERO);
+        if (accountType == AccountType.SYSTEM) {
+            // SYSTEM accounts are faucets/sinks that mint and burn freely — they ignore
+            // credit limits. Default them to the -1 sentinel so the sentinel and the
+            // type-based OverdraftPolicy check agree (PAR-319). Mirrors the direct
+            // faucet defaults in getOrCreateSystemAccountId.
+            account.setAllowOverdraft(true);
+            account.setCreditLimit(BigDecimal.valueOf(-1));
+        } else {
+            account.setAllowOverdraft(false);
+            account.setCreditLimit(BigDecimal.ZERO);
+        }
 
         accountMapper.insertAccount(account);
         accountMapper.seedBalance(account.getAccountId());

@@ -10,15 +10,18 @@ import java.math.BigDecimal;
  * ({@code LedgerServiceImpl.transferInternal}) and the out-of-process
  * {@code treasury-rest-api} ({@code TransferService.executeTransfer}). They live in
  * different JVMs (different hosts/datacenters) and cannot share a call path, so before
- * this class they each re-implemented the overdraft check — and had drifted: the REST
- * engine skipped the check entirely whenever {@code allow_overdraft} was true, ignoring
- * a finite {@code credit_limit}, while the plugin honoured the limit. The two therefore
- * disagreed on any account configured {@code allow_overdraft = true, credit_limit >= 0}
- * (e.g. the {@code ChestShop System} account). Both engines now defer to the pure
- * functions here so they decide identically.
+ * this class they each re-implemented the overdraft check and had drifted. Both engines
+ * now defer to the pure functions here so they decide identically.
  *
- * <p><b>Floor semantics</b> — the resulting balance ({@code balance - amount}) must not
- * fall below the account's floor:
+ * <p><b>SYSTEM accounts ignore credit limits.</b> A {@code SYSTEM}-type account is a
+ * faucet/sink that mints and burns freely, so it is always unlimited regardless of its
+ * {@code allow_overdraft}/{@code credit_limit} columns. This is enforced two ways that
+ * agree: by type here, and by the {@code credit_limit = -1} sentinel that SYSTEM accounts
+ * are created with — the type check makes the invariant hold even for a SYSTEM account
+ * whose columns were left at a non-sentinel value.
+ *
+ * <p><b>Floor semantics</b> for a non-SYSTEM account — the resulting balance
+ * ({@code balance - amount}) must not fall below the account's floor:
  * <pre>
  *   allow_overdraft = false                    → floor 0        (credit_limit ignored)
  *   allow_overdraft = true,  credit_limit &lt; 0  → unlimited      (the -1 faucet/sink sentinel)
@@ -32,23 +35,25 @@ public final class OverdraftPolicy {
     private OverdraftPolicy() {}
 
     /**
-     * True when the source is a faucet/sink that may go arbitrarily negative — i.e.
-     * {@code allow_overdraft = true} with the {@code credit_limit < 0} sentinel. Callers
-     * can use this to skip taking the balance lock at all for unlimited sources.
+     * True when the source may go arbitrarily negative — a {@code SYSTEM}-type account
+     * (always), or {@code allow_overdraft = true} with the {@code credit_limit < 0}
+     * sentinel. Callers can use this to skip taking the balance lock at all.
      */
-    public static boolean isUnlimited(boolean allowOverdraft, BigDecimal creditLimit) {
-        return allowOverdraft && creditLimit != null && creditLimit.signum() < 0;
+    public static boolean isUnlimited(boolean allowOverdraft, BigDecimal creditLimit, boolean systemAccount) {
+        return systemAccount || (allowOverdraft && creditLimit != null && creditLimit.signum() < 0);
     }
 
     /**
      * Whether debiting {@code amount} from {@code balance} keeps the account at or above
-     * its floor. {@code amount} is the (positive) magnitude of the debit.
+     * its floor. {@code amount} is the (positive) magnitude of the debit; {@code systemAccount}
+     * is whether the source is a {@code SYSTEM}-type account (always unlimited).
      *
      * @return {@code true} if the transfer is permitted; {@code false} means insufficient funds
      */
     public static boolean isWithinFloor(BigDecimal balance, BigDecimal amount,
-                                        boolean allowOverdraft, BigDecimal creditLimit) {
-        if (isUnlimited(allowOverdraft, creditLimit)) {
+                                        boolean allowOverdraft, BigDecimal creditLimit,
+                                        boolean systemAccount) {
+        if (isUnlimited(allowOverdraft, creditLimit, systemAccount)) {
             return true;
         }
         BigDecimal floor = (allowOverdraft && creditLimit != null)
