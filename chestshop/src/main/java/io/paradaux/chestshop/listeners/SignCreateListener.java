@@ -1,4 +1,5 @@
 package io.paradaux.chestshop.listeners;
+import io.paradaux.chestshop.utils.SignText;
 
 import io.paradaux.chestshop.services.ShopBlockService;
 import com.google.inject.Inject;
@@ -87,7 +88,7 @@ public class SignCreateListener implements Listener {
         }
 
         for (byte i = 0; i < preEvent.getSignLines().length && i < 4; ++i) {
-            event.setLine(i, preEvent.getSignLine(i));
+            SignText.setLine(event, i, preEvent.getSignLine(i));
         }
 
         if (preEvent.isCancelled()) {

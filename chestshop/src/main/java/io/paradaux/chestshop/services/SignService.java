@@ -1,4 +1,5 @@
 package io.paradaux.chestshop.services;
+import io.paradaux.chestshop.utils.SignText;
 
 import io.paradaux.chestshop.utils.InventoryUtil;
 import io.paradaux.chestshop.utils.BlockUtil;
@@ -246,7 +247,7 @@ public class SignService {
      * @return The price line
      */
     public static String getPrice(Sign sign) {
-        return StringUtil.strip(StringUtil.stripColourCodes(sign.getLine(PRICE_LINE)));
+        return StringUtil.strip(StringUtil.stripColourCodes(SignText.getLine(sign, PRICE_LINE)));
     }
 
     /**

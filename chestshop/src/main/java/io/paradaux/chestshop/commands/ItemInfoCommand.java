@@ -1,4 +1,5 @@
 package io.paradaux.chestshop.commands;
+import io.paradaux.chestshop.utils.Colours;
 import lombok.extern.slf4j.Slf4j;
 
 import com.google.inject.Inject;
@@ -14,7 +15,6 @@ import io.paradaux.hibernia.framework.commander.annotations.Sender;
 import io.paradaux.hibernia.framework.commander.spi.CommandHandler;
 import io.paradaux.hibernia.framework.i18n.Message;
 import net.kyori.adventure.text.Component;
-import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.HumanEntity;
 import org.bukkit.inventory.ItemStack;
@@ -67,7 +67,7 @@ public class ItemInfoCommand implements CommandHandler {
         try {
             message.send(sender, "chestshop.iteminfo_shopname", "prefix", "", "item", items.getSignName(item));
         } catch (IllegalArgumentException e) {
-            sender.sendMessage(ChatColor.RED + "Error while generating shop sign name. Please contact an admin or take a look at the console/log!");
+            sender.sendMessage(Colours.RED + "Error while generating shop sign name. Please contact an admin or take a look at the console/log!");
             log.error("Error while generating shop sign item name", e);
             return;
         }

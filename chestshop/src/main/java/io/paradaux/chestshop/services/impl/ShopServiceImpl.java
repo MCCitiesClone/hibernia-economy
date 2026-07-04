@@ -1,4 +1,6 @@
 package io.paradaux.chestshop.services.impl;
+import io.paradaux.chestshop.utils.Colours;
+import io.paradaux.chestshop.utils.SignText;
 import lombok.extern.slf4j.Slf4j;
 
 import io.paradaux.chestshop.utils.BlockUtil;
@@ -28,7 +30,6 @@ import io.paradaux.chestshop.utils.MaterialUtil;
 import io.paradaux.chestshop.utils.PriceUtil;
 import io.paradaux.chestshop.utils.StringUtil;
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -147,7 +148,7 @@ public class ShopServiceImpl implements ShopService {
                     }
                 }
                 if (item == null) {
-                    ctx.setSignLine(SignService.ITEM_LINE, ChatColor.BOLD + SignService.AUTOFILL_CODE);
+                    ctx.setSignLine(SignService.ITEM_LINE, Colours.BOLD + SignService.AUTOFILL_CODE);
                     ctx.setOutcome(CreationOutcome.ITEM_AUTOFILL);
                     return;
                 }
@@ -520,7 +521,7 @@ public class ShopServiceImpl implements ShopService {
 
         String[] lines = event.getSignLines();
         for (int i = 0; i < lines.length; ++i) {
-            sign.setLine(i, lines[i]);
+            SignText.setLine(sign, i, lines[i]);
         }
         sign.update(true);
     }
@@ -592,7 +593,7 @@ public class ShopServiceImpl implements ShopService {
             return;
         }
 
-        if (ChatColor.stripColor(SignService.getItem(sign)).equals(AUTOFILL_CODE)) {
+        if (StringUtil.stripColourCodes(SignService.getItem(sign)).equals(AUTOFILL_CODE)) {
             return;
         }
 

@@ -1,4 +1,5 @@
 package io.paradaux.chestshop.listeners;
+import io.paradaux.chestshop.utils.SignText;
 import lombok.extern.slf4j.Slf4j;
 
 import io.paradaux.chestshop.utils.InventoryUtil;
@@ -182,11 +183,11 @@ public class StockCounterListener implements Listener {
         // avoiding a no-op sign.update(true) keeps busy hopper setups off the
         // main-thread hot path.
         String counterLine = String.format(PRICE_LINE_WITH_COUNT, quantity, numTradedItemsInChest);
-        if (counterLine.equals(sign.getLine(QUANTITY_LINE))) {
+        if (counterLine.equals(SignText.getLine(sign, QUANTITY_LINE))) {
             return;
         }
 
-        sign.setLine(QUANTITY_LINE, counterLine);
+        SignText.setLine(sign, QUANTITY_LINE, counterLine);
         sign.update(true);
     }
 
@@ -205,7 +206,7 @@ public class StockCounterListener implements Listener {
             return;
         }
 
-        sign.setLine(QUANTITY_LINE, Integer.toString(quantity));
+        SignText.setLine(sign, QUANTITY_LINE, Integer.toString(quantity));
         sign.update(true);
     }
 

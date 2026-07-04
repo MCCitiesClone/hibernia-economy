@@ -1,6 +1,5 @@
 package io.paradaux.chestshop.utils;
 
-import org.bukkit.ChatColor;
 
 import java.util.Arrays;
 import java.util.LinkedHashMap;
@@ -54,7 +53,7 @@ public final class StringUtil {
      * @return Stripped string
      */
     public static String stripColourCodes(String string) {
-        return ChatColor.stripColor(string);
+        return string == null ? null : string.replaceAll("(?i)§[0-9A-FK-OR]", "");
     }
 
     /**
@@ -82,7 +81,7 @@ public final class StringUtil {
      * @return The width of the character (will return 10 for characters that we don't know the width of)
      */
     public static int getMinecraftCharWidth(char c) {
-        if (c != ChatColor.COLOR_CHAR) {
+        if (c != Colours.SECTION_CHAR) {
             int index = characters.indexOf(c);
             if (index > -1) {
                 return extraWidth[index];

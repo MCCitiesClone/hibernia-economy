@@ -1,4 +1,5 @@
 package io.paradaux.chestshop.services.impl;
+import io.paradaux.chestshop.utils.Colours;
 import lombok.extern.slf4j.Slf4j;
 
 import io.paradaux.chestshop.services.ShopBlockService;
@@ -20,7 +21,6 @@ import io.paradaux.chestshop.model.Account;
 import io.paradaux.chestshop.utils.PriceUtil;
 import io.paradaux.chestshop.utils.StringUtil;
 import net.kyori.adventure.text.Component;
-import org.bukkit.ChatColor;
 import org.bukkit.Color;
 import org.bukkit.NamespacedKey;
 import org.bukkit.block.Container;
@@ -200,7 +200,7 @@ public class InfoServiceImpl implements InfoService {
             Map<String, String> replacementMap = ImmutableMap.of("item", items.getName(item));
             sender.sendMessage(message.component(messageKey, MessageUtil.values(false, replacementMap)));
         } catch (IllegalArgumentException e) {
-            sender.sendMessage(ChatColor.RED + "Error while generating full name. Please contact an admin or take a look at the console/log!");
+            sender.sendMessage(Colours.RED + "Error while generating full name. Please contact an admin or take a look at the console/log!");
             log.error("Error while generating full item name", e);
             return false;
         }
@@ -223,14 +223,14 @@ public class InfoServiceImpl implements InfoService {
         List<String> enchantLines = new ArrayList<>();
 
         for (Map.Entry<Enchantment, Integer> enchantment : item.getEnchantments().entrySet()) {
-            enchantLines.add(ChatColor.AQUA + capitalizeFirstLetter(enchantment.getKey().getName(), '_') + ' ' + toRoman(enchantment.getValue()));
+            enchantLines.add(Colours.AQUA + capitalizeFirstLetter(enchantment.getKey().getName(), '_') + ' ' + toRoman(enchantment.getValue()));
         }
 
         if (item.hasItemMeta()) {
             ItemMeta meta = item.getItemMeta();
             if (meta instanceof EnchantmentStorageMeta) {
                 for (Map.Entry<Enchantment, Integer> enchantment : ((EnchantmentStorageMeta) meta).getStoredEnchants().entrySet()) {
-                    enchantLines.add(ChatColor.YELLOW + capitalizeFirstLetter(enchantment.getKey().getName(), '_') + ' ' + toRoman(enchantment.getValue()));
+                    enchantLines.add(Colours.YELLOW + capitalizeFirstLetter(enchantment.getKey().getName(), '_') + ' ' + toRoman(enchantment.getValue()));
                 }
             }
         }
@@ -259,7 +259,7 @@ public class InfoServiceImpl implements InfoService {
             if (meta instanceof KnowledgeBookMeta && !((KnowledgeBookMeta) meta).getRecipes().isEmpty()) {
                 lines.addMessage("chestshop.iteminfo_recipes");
                 for (NamespacedKey recipe : ((KnowledgeBookMeta) meta).getRecipes()) {
-                    lines.getSender().sendMessage(ChatColor.GRAY + recipe.toString());
+                    lines.getSender().sendMessage(Colours.GRAY + recipe.toString());
                 }
             }
         }
@@ -314,7 +314,7 @@ public class InfoServiceImpl implements InfoService {
         PotionMeta potionMeta = (PotionMeta) meta;
 
         StringBuilder message = new StringBuilder();
-        message.append(ChatColor.GRAY);
+        message.append(Colours.GRAY);
         message.append(capitalizeFirstLetter(item.getType().name(), '_')).append(" of ");
         message.append(capitalizeFirstLetter(potionMeta.getBasePotionData().getType().name(), '_')).append(' ');
         if (potionMeta.getBasePotionData().isUpgraded()) {
@@ -324,7 +324,7 @@ public class InfoServiceImpl implements InfoService {
         }
 
         for (PotionEffect effect : potionMeta.getCustomEffects()) {
-            message.append("\n" + ChatColor.DARK_GRAY + capitalizeFirstLetter(effect.getType().getName(), '_') + ' ' + toTime(effect.getDuration() / 20));
+            message.append("\n" + Colours.DARK_GRAY + capitalizeFirstLetter(effect.getType().getName(), '_') + ' ' + toTime(effect.getDuration() / 20));
         }
         lines.addRawMessage("iteminfo_potion", message.toString());
     }
@@ -371,7 +371,7 @@ public class InfoServiceImpl implements InfoService {
                     for (Map.Entry<String, Component> entry : projectile.getMessages()) {
                         lines.addRawMessage("crossbow_projectile_" + chargedProjectile.hashCode() + "_" + entry.getKey(), entry.getValue());
                     }
-                    lines.addRawMessage("crossbow_projectile_" + chargedProjectile.hashCode() + "_divider", ChatColor.GRAY + "---");
+                    lines.addRawMessage("crossbow_projectile_" + chargedProjectile.hashCode() + "_divider", Colours.GRAY + "---");
                 }
             }
         }
@@ -443,7 +443,7 @@ public class InfoServiceImpl implements InfoService {
 
         StringBuilder message = new StringBuilder();
         if (potionMeta.getBasePotionType() != null) {
-            message.append(ChatColor.GRAY);
+            message.append(Colours.GRAY);
             message.append(capitalizeFirstLetter(item.getType().name(), '_')).append(" of ");
             message.append(capitalizeFirstLetter(potionMeta.getBasePotionType().getKey().getKey(), '_')).append(' ');
         }
@@ -452,7 +452,7 @@ public class InfoServiceImpl implements InfoService {
             if (message.length() > 0) {
                 message.append('\n');
             }
-            message.append(ChatColor.DARK_GRAY + capitalizeFirstLetter(effect.getType().getKey().getKey(), '_')
+            message.append(Colours.DARK_GRAY + capitalizeFirstLetter(effect.getType().getKey().getKey(), '_')
                     + ' ' + (effect.getAmplifier() + 1) + ' ' + toTime(effect.getDuration() / 20));
         }
         if (message.length() > 0) {

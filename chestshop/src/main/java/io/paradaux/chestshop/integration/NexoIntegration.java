@@ -1,4 +1,5 @@
 package io.paradaux.chestshop.integration;
+import io.paradaux.chestshop.utils.StringUtil;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
@@ -399,7 +400,7 @@ public class NexoIntegration implements Integration, CustomItemResolver {
                         meta.lore(null);
                     }
                 }
-                if (meta.hasDisplayName()) {
+                if (meta.displayName() != null) {
                     Component name = meta.displayName();
                     if (name == null || LegacyComponentSerializer.legacySection().serialize(name).trim().isEmpty()) {
                         meta.displayName(null);

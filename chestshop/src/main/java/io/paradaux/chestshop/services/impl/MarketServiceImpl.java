@@ -1,4 +1,5 @@
 package io.paradaux.chestshop.services.impl;
+import io.paradaux.chestshop.utils.SignText;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
@@ -19,7 +20,6 @@ import io.paradaux.treasury.api.market.ChestShopShopRecord;
 import io.paradaux.treasury.model.economy.Account;
 import lombok.extern.slf4j.Slf4j;
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.block.Sign;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -170,10 +170,11 @@ public class MarketServiceImpl implements MarketService {
     private String itemName(ItemStack item) {
         if (item.hasItemMeta()) {
             ItemMeta meta = item.getItemMeta();
-            if (meta != null && meta.hasDisplayName()) {
-                String name = ChatColor.stripColor(meta.getDisplayName());
-                if (name != null && !name.trim().isEmpty()) {
-                    return name.trim();
+            net.kyori.adventure.text.Component displayName = meta != null ? meta.displayName() : null;
+            if (displayName != null) {
+                String name = net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText().serialize(displayName).trim();
+                if (!name.isEmpty()) {
+                    return name;
                 }
             }
         }
@@ -272,7 +273,7 @@ public class MarketServiceImpl implements MarketService {
     public ChestShopShopRecord shop(Sign sign, ItemStack item, Owner owner,
                                     Integer currentStock, Integer estimatedCapacity) {
         Location l = sign.getLocation();
-        String priceLine = sign.getLine(SignService.PRICE_LINE);
+        String priceLine = SignText.getLine(sign, SignService.PRICE_LINE);
         int batch;
         try {
             batch = SignService.getQuantity(sign);

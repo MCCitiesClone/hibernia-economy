@@ -1,4 +1,7 @@
 package io.paradaux.chestshop.listeners;
+import io.paradaux.chestshop.utils.StringUtil;
+import io.paradaux.chestshop.utils.Colours;
+import io.paradaux.chestshop.utils.SignText;
 import lombok.extern.slf4j.Slf4j;
 
 import io.paradaux.chestshop.utils.BlockUtil;
@@ -19,7 +22,6 @@ import io.paradaux.chestshop.services.ItemService;
 import io.paradaux.chestshop.services.TransactionService;
 import io.paradaux.chestshop.services.SignService;
 import io.paradaux.hibernia.framework.i18n.Message;
-import org.bukkit.ChatColor;
 import org.bukkit.GameMode;
 import org.bukkit.block.Block;
 import org.bukkit.block.Container;
@@ -121,7 +123,7 @@ public class PlayerInteractListener implements Listener {
             return;
         }
 
-        if (config.isAllowAutoItemFill() && ChatColor.stripColor(SignService.getItem(sign)).equals(AUTOFILL_CODE)) {
+        if (config.isAllowAutoItemFill() && StringUtil.stripColourCodes(SignService.getItem(sign)).equals(AUTOFILL_CODE)) {
             if (accounts.hasPermission(player, OTHER_NAME_CREATE, sign)) {
                 ItemStack item = player.getInventory().getItemInMainHand();
                 if (!MaterialUtil.isEmpty(item)) {
@@ -130,7 +132,7 @@ public class PlayerInteractListener implements Listener {
                     try {
                         itemCode = items.getSignName(item);
                     } catch (IllegalArgumentException e) {
-                        player.sendMessage(ChatColor.RED + "Error while generating shop sign item name. Please contact an admin or take a look at the console/log!");
+                        player.sendMessage(Colours.RED + "Error while generating shop sign item name. Please contact an admin or take a look at the console/log!");
                         log.error("Error while generating shop sign item name", e);
                         return;
                     }
@@ -141,8 +143,8 @@ public class PlayerInteractListener implements Listener {
                     io.paradaux.chestshop.ChestShop.callEvent(changeEvent);
                     if (!changeEvent.isCancelled()) {
                         for (byte i = 0; i < changeEvent.getLines().length; ++i) {
-                            String line = changeEvent.getLine(i);
-                            sign.setLine(i, line != null ? line : "");
+                            String line = SignText.getLine(changeEvent, i);
+                            SignText.setLine(sign, i, line != null ? line : "");
                         }
                         sign.update();
                     }

@@ -1,4 +1,5 @@
 package io.paradaux.chestshop.commands;
+import io.paradaux.chestshop.utils.Colours;
 
 import com.google.inject.Inject;
 import io.paradaux.chestshop.ChestShop;
@@ -8,7 +9,6 @@ import io.paradaux.hibernia.framework.commander.annotations.Description;
 import io.paradaux.hibernia.framework.commander.annotations.Route;
 import io.paradaux.hibernia.framework.commander.annotations.Sender;
 import io.paradaux.hibernia.framework.commander.spi.CommandHandler;
-import org.bukkit.ChatColor;
 import org.bukkit.command.CommandSender;
 
 /**
@@ -28,7 +28,7 @@ public class VersionCommand implements CommandHandler {
     @Route("version")
     @Description("Show the ChestShop plugin version")
     public void version(@Sender CommandSender sender) {
-        sender.sendMessage(ChatColor.GRAY + ChestShop.getPluginName() + "'s version is: " + ChatColor.GREEN + ChestShop.getVersion());
+        sender.sendMessage(Colours.GRAY + ChestShop.getPluginName() + "'s version is: " + Colours.GREEN + ChestShop.getVersion());
     }
 
     @Route("reload")
@@ -38,6 +38,6 @@ public class VersionCommand implements CommandHandler {
         // aliases (ItemAliasModule). Both run directly now.
         ChestShop.getPlugin().loadConfig();
         items.reloadAliases();
-        sender.sendMessage(ChatColor.DARK_GREEN + "The config was reloaded.");
+        sender.sendMessage(Colours.DARK_GREEN + "The config was reloaded.");
     }
 }

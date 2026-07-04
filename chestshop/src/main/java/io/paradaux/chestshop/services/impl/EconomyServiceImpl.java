@@ -1,4 +1,6 @@
 package io.paradaux.chestshop.services.impl;
+import io.paradaux.chestshop.utils.StringUtil;
+import io.paradaux.chestshop.utils.SignText;
 import lombok.extern.slf4j.Slf4j;
 
 import io.paradaux.chestshop.services.ItemService;
@@ -22,7 +24,6 @@ import io.paradaux.treasury.model.economy.AccountType;
 import io.paradaux.treasury.model.economy.TransferRequest;
 import io.paradaux.treasury.model.tax.TaxResult;
 import io.paradaux.treasury.utils.Idempotency;
-import org.bukkit.ChatColor;
 import org.bukkit.World;
 import org.bukkit.block.Sign;
 import org.bukkit.entity.Player;
@@ -93,7 +94,7 @@ public class EconomyServiceImpl implements EconomyService {
         }
         try {
             String formatted = t.formatAmount(amount);
-            return config.isStripPriceColors() ? ChatColor.stripColor(formatted) : formatted;
+            return config.isStripPriceColors() ? StringUtil.stripColourCodes(formatted) : formatted;
         } catch (Exception e) {
             log.warn("Treasury: Could not format amount " + amount, e);
             return amount.toPlainString();
@@ -384,7 +385,7 @@ public class EconomyServiceImpl implements EconomyService {
             return;
         }
 
-        sign.setLine(SignService.NAME_LINE, canonical);
+        SignText.setLine(sign, SignService.NAME_LINE, canonical);
         sign.update(true);
         log.info("Migrated legacy business shop sign to " + canonical
                 + " at " + sign.getLocation());

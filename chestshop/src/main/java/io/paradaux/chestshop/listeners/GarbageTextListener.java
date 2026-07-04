@@ -1,4 +1,5 @@
 package io.paradaux.chestshop.listeners;
+import io.paradaux.chestshop.utils.SignText;
 
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -15,7 +16,7 @@ public class GarbageTextListener implements Listener {
     @EventHandler(priority = EventPriority.LOWEST)
     public static void filterGarbage(SignChangeEvent event) {
         for (int i = 0; i < 4; ++i) {
-            String line = event.getLine(i);
+            String line = SignText.getLine(event, i);
             if (line != null) {
                 StringBuilder output = new StringBuilder(line.length());
 
@@ -25,7 +26,7 @@ public class GarbageTextListener implements Listener {
                     }
                 }
 
-                event.setLine(i, output.toString());
+                SignText.setLine(event, i, output.toString());
             }
         }
     }

@@ -1,4 +1,5 @@
 package io.paradaux.chestshop.commands;
+import io.paradaux.chestshop.utils.StringUtil;
 
 import io.paradaux.chestshop.dialogs.FindDialog;
 import io.paradaux.chestshop.dialogs.FindState;
@@ -220,9 +221,11 @@ public final class FindCommand implements CommandHandler {
     }
 
     private String displayName(ItemStack item) {
-        if (item.hasItemMeta() && item.getItemMeta() != null && item.getItemMeta().hasDisplayName()) {
-            String name = org.bukkit.ChatColor.stripColor(item.getItemMeta().getDisplayName());
-            if (name != null && !name.isBlank()) {
+        net.kyori.adventure.text.Component display =
+                item.hasItemMeta() && item.getItemMeta() != null ? item.getItemMeta().displayName() : null;
+        if (display != null) {
+            String name = net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer.plainText().serialize(display);
+            if (!name.isBlank()) {
                 return name.trim();
             }
         }

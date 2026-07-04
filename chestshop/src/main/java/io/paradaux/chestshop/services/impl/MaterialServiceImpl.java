@@ -62,7 +62,7 @@ public class MaterialServiceImpl implements MaterialService {
         // Special check for explorer maps/every item with a localised name (See SPIGOT-4672)
         // Special check for legacy spawn eggs (See ChestShop#264)
         if (one.getType() != two.getType()
-                || one.getDurability() != two.getDurability()
+                || durability(one) != durability(two)
                 || (one.hasItemMeta() && two.hasItemMeta() && one.getItemMeta().getClass() != two.getItemMeta().getClass())) {
             return false;
         }
@@ -148,5 +148,10 @@ public class MaterialServiceImpl implements MaterialService {
             materialCache.put(formatted, material);
         }
         return material;
+    }
+
+    /** The item's damage (was the deprecated {@code ItemStack.getDurability()}); 0 for non-damageable items. */
+    private static int durability(ItemStack item) {
+        return item.getItemMeta() instanceof org.bukkit.inventory.meta.Damageable damageable ? damageable.getDamage() : 0;
     }
 }

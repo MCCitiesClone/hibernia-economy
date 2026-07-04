@@ -1,4 +1,5 @@
 package io.paradaux.chestshop.commands;
+import io.paradaux.chestshop.utils.Colours;
 
 import io.paradaux.chestshop.services.ShopBlockService;
 import com.google.inject.Inject;
@@ -9,7 +10,6 @@ import io.paradaux.hibernia.framework.commander.annotations.Route;
 import io.paradaux.hibernia.framework.commander.annotations.Sender;
 import io.paradaux.hibernia.framework.commander.spi.CommandHandler;
 import io.paradaux.hibernia.framework.i18n.Message;
-import org.bukkit.ChatColor;
 import org.bukkit.block.Block;
 import org.bukkit.block.Sign;
 import org.bukkit.command.CommandSender;
@@ -54,7 +54,7 @@ public class ShopInfoCommand implements CommandHandler {
                 }
             }
         } else {
-            sender.sendMessage(ChatColor.RED + "Command must be run by a player!");
+            sender.sendMessage(Colours.RED + "Command must be run by a player!");
         }
     }
 }
