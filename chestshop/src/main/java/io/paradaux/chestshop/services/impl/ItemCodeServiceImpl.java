@@ -26,6 +26,9 @@ import org.yaml.snakeyaml.nodes.Tag;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.ByteArrayInputStream;
+import java.io.ObjectInputFilter;
+import java.io.ObjectInputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
@@ -295,10 +298,10 @@ public class ItemCodeServiceImpl implements ItemCodeService {
     // ---- item-code blob codec (PAR-290 / ADT-136) ----
     // New rows store the YAML string as plain Base64 of its UTF-8 bytes
     // (java.util.Base64). Legacy rows are a Java-serialized String produced by the
-    // vendored Base64#encodeObject — the native-deserialization sink ADT-136 flags, and
+    // vendored Base64#encodeObject — the native-deserialization sink ADT-136 flagged, now
     // gross overkill for a plain string. decodeBlob reads both (plain first, falling back
     // to the legacy object decoder), and migrateBlobEncoding() rewrites every legacy row
-    // to plain so decodeToObject is never reached again after a single migration.
+    // to plain, so the legacy path is transitional; readObject is String-filtered regardless.
 
     private static final int BLOB_ENCODING_PLAIN = 1;
 
@@ -319,12 +322,32 @@ public class ItemCodeServiceImpl implements ItemCodeService {
         try {
             raw = java.util.Base64.getDecoder().decode(blob);
         } catch (IllegalArgumentException notStandardBase64) {
-            return (String) Base64.decodeToObject(blob);
+            // Line-broken legacy Base64 the strict decoder rejects: the vendored decoder
+            // handles the exact legacy byte layout, then a String-only filter guards readObject.
+            return deserializeLegacyString(Base64.decode(blob));
         }
         if (raw.length >= 2 && (raw[0] & 0xFF) == 0xAC && (raw[1] & 0xFF) == 0xED) {
-            return (String) Base64.decodeToObject(blob);
+            return deserializeLegacyString(raw);
         }
         return new String(raw, StandardCharsets.UTF_8);
+    }
+
+    /**
+     * Deserialize a legacy Java-serialized {@code String} blob through an {@link ObjectInputFilter}
+     * that permits only {@code String} — closing the native-deserialization RCE sink ADT-136 flagged
+     * while still reading pre-PAR-290 rows (the migration rewrites them to plain Base64 so this path
+     * is transitional). Any other class in the stream is rejected before it can be constructed.
+     */
+    private static String deserializeLegacyString(byte[] serialized) throws IOException, ClassNotFoundException {
+        try (ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(serialized))) {
+            ois.setObjectInputFilter(info -> {
+                Class<?> c = info.serialClass();
+                return (c == null || c == String.class)
+                        ? ObjectInputFilter.Status.ALLOWED
+                        : ObjectInputFilter.Status.REJECTED;
+            });
+            return (String) ois.readObject();
+        }
     }
 
     /** Rewrite every stored blob into the plain Base64 format. Idempotent; returns false on a fatal error. */
