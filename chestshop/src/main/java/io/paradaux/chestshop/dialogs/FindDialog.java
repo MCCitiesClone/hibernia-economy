@@ -292,12 +292,24 @@ public final class FindDialog implements DialogHandler {
     }
 
     private static Component priceSummary(FoundShop shop) {
+        // Presence-based, not shopType()-based: a registry row with BOTH prices null
+        // classifies as BUY (shopType's fallback), and formatting a null price throws
+        // "Cannot format given Object as a Number" and kills the whole results screen.
+        // Render only the sides that actually have a price.
+        boolean hasBuy = shop.buyPriceValue() != null;
+        boolean hasSell = shop.sellPriceValue() != null;
         TextComponent.Builder b = Component.text();
-        switch (shop.shopType()) {
-            case BUY -> b.append(buyPart(shop));
-            case SELL -> b.append(sellPart(shop));
-            case BOTH -> b.append(buyPart(shop)).append(Component.text(" / ", NamedTextColor.DARK_GRAY))
-                    .append(sellPart(shop));
+        if (hasBuy) {
+            b.append(buyPart(shop));
+        }
+        if (hasBuy && hasSell) {
+            b.append(Component.text(" / ", NamedTextColor.DARK_GRAY));
+        }
+        if (hasSell) {
+            b.append(sellPart(shop));
+        }
+        if (!hasBuy && !hasSell) {
+            b.append(Component.text("no price", NamedTextColor.DARK_GRAY));
         }
         return b.build();
     }
