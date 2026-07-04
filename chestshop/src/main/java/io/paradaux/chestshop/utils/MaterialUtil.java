@@ -197,19 +197,8 @@ public final class MaterialUtil {
             return null;
         }
 
-        String data = m.group();
-
-        if (data == null || data.isEmpty()) {
-            return null;
-        }
-
-        data = data.substring(1);
-
-        try {
-            return Integer.parseInt(data);
-        } catch (NumberFormatException e) {
-            return 0;
-        }
+        // The DURABILITY pattern (":\d+") guarantees a non-empty, always-parseable digit run.
+        return Integer.parseInt(m.group().substring(1));
     }
 
     /**
