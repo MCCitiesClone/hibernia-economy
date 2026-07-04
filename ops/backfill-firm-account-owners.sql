@@ -22,6 +22,12 @@
 -- back, add:  AND f.firm_id NOT IN (3113,3122,3144)  to the INSERT ... SELECT below.
 -- ============================================================================
 
+-- The step-1 UPDATE scopes rows via a JOIN to the temp table rather than a WHERE,
+-- which trips MySQL safe-update mode (and GUI "UPDATE without WHERE" guards).
+-- Disable it for this session (resets when the connection closes); a WHERE is
+-- also added below so clients that lint the text don't warn either.
+SET SQL_SAFE_UPDATES = 0;
+
 START TRANSACTION;
 
 -- Snapshot the accounts to fix BEFORE any mutation changes the owner<>proprietor
@@ -40,9 +46,12 @@ JOIN accounts a       ON a.account_id = fa.account_id AND a.is_archived = 0
 WHERE f.is_archived = 0
   AND a.owner_uuid_bin <> f.proprietor_uuid_bin;
 
--- (1) Owner -> current proprietor.
+-- (1) Owner -> current proprietor. The JOIN to _fix already scopes this to the
+--     accounts being fixed; the WHERE is redundant but silences UPDATE-without-WHERE
+--     guards and skips no-op rows.
 UPDATE accounts a JOIN _fix x ON x.account_id = a.account_id
-SET a.owner_uuid_bin = x.new_owner;
+SET a.owner_uuid_bin = x.new_owner
+WHERE a.owner_uuid_bin <> x.new_owner;
 
 -- (2) Proprietor is an active member (reactivate a left row, else insert).
 INSERT INTO account_members (account_id, member_uuid_bin, added_by_uuid_bin)
