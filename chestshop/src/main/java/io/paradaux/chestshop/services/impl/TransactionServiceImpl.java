@@ -4,7 +4,6 @@ import lombok.extern.slf4j.Slf4j;
 import io.paradaux.chestshop.services.ShopService;
 import io.paradaux.chestshop.services.ShopBlockService;
 import io.paradaux.chestshop.services.MetricsService;
-import io.paradaux.chestshop.services.MaterialService;
 import io.paradaux.chestshop.services.ItemService;
 import io.paradaux.chestshop.services.InventoryService;
 import io.paradaux.chestshop.services.EconomyService;
@@ -53,9 +52,7 @@ import org.bukkit.inventory.ItemStack;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.math.RoundingMode;
-import java.util.Collections;
 import java.util.LinkedHashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -82,17 +79,10 @@ import static io.paradaux.chestshop.utils.PriceUtil.NO_PRICE;
 
 /**
  * Owns a shop trade end to end: pre-trade validation ({@link #validate}), the atomic
- * goods+money settlement ({@link #execute}), and the post-trade reactions
- * ({@link #process}). This replaces ChestShop's old "Bukkit events as middleware"
- * design — a {@code PendingTransaction}/{@code Transaction} fanned out to ~20
- * priority-ordered listener classes coordinating through a mutable bag — with one
- * service whose steps are ordinary, ordered private methods (PAR-282). It is the
- * atomicity guarantee ADT-4 asked for, readable and unit-testable in one place.
- *
- * <p>The money leg settles directly through {@link ChestShop#economy()} (a single
- * buyer→seller {@code TreasuryApi} transfer); the goods are reversed if it fails, so a
- * trade is all-or-nothing. The genuine cross-cutting hooks (market-DB sync,
- * stock counter) and the cross-plugin sign listener {@code RestrictedSignListener} stay.
+ * goods+money settlement ({@link #execute}), and the post-trade reactions ({@link #process}).
+ * The money leg is a single buyer→seller Treasury transfer; the goods are reversed if it
+ * fails, so a trade is all-or-nothing. Partial fills are resized by {@link PartialFillCalculator}
+ * and the goods move through {@link GoodsTransfer}.
  */
 @Singleton
 @Slf4j
@@ -118,16 +108,20 @@ public class TransactionServiceImpl implements TransactionService {
     private final SignService signService;
     private final ShopBlockService shopBlockService;
     private final InventoryService inventoryService;
-    private final MaterialService materialService;
 
     private final AdminBypassService adminBypass;
     private final RestrictedSignListener restrictedSign;
 
     private final io.paradaux.chestshop.services.MetricsService metrics;
 
+    private final PartialFillCalculator partialFill;
+    private final GoodsTransfer goodsTransfer;
+
     @Inject
     public TransactionServiceImpl(EconomyService economy, ShopService shops, AccountService accounts, SignBreakListener signBreak, StockCounterListener stockCounter, Message message, ItemService items, MarketListener market,
-                              ChestShopConfiguration config, SignService signService, ShopBlockService shopBlockService, InventoryService inventoryService, MaterialService materialService, AdminBypassService adminBypass, RestrictedSignListener restrictedSign, MetricsService metrics) {
+                              ChestShopConfiguration config, SignService signService, ShopBlockService shopBlockService, InventoryService inventoryService, AdminBypassService adminBypass, RestrictedSignListener restrictedSign, MetricsService metrics, PartialFillCalculator partialFill, GoodsTransfer goodsTransfer) {
+        this.partialFill = partialFill;
+        this.goodsTransfer = goodsTransfer;
         this.metrics = metrics;
         this.restrictedSign = restrictedSign;
         this.adminBypass = adminBypass;
@@ -143,7 +137,6 @@ public class TransactionServiceImpl implements TransactionService {
         this.signService = signService;
         this.shopBlockService = shopBlockService;
         this.inventoryService = inventoryService;
-        this.materialService = materialService;
     }
 
     private static final String BUY_LOG = "%1$s bought %2$s for %3$.2f from %4$s at %5$s";
@@ -262,8 +255,8 @@ public class TransactionServiceImpl implements TransactionService {
         rejectInvalidShop(ctx);
 
         if (config.isAllowPartialTransactions()) {
-            adjustPartialBuy(ctx);
-            adjustPartialSell(ctx);
+            partialFill.adjustBuy(ctx);
+            partialFill.adjustSell(ctx);
         }
 
         // RestrictedSignListener is a genuine cross-plugin sign listener; its pre-trade access
@@ -280,7 +273,7 @@ public class TransactionServiceImpl implements TransactionService {
 
         // Side effects run only after validation has fully concluded: a legacy free shop
         // flagged above is removed here, exactly once, so the validation steps themselves
-        // stay pure outcome-setters (ADT-139).
+        // stay pure outcome-setters.
         removeFlaggedFreeShop(ctx);
     }
 
@@ -452,244 +445,8 @@ public class TransactionServiceImpl implements TransactionService {
         }
     }
 
-    // ---- partial-fulfilment maths (was PartialTransactionModule) ----------------
 
-    private void adjustPartialBuy(PendingTransaction ctx) {
-        if (ctx.isCancelled() || ctx.getTransactionType() != BUY) {
-            return;
-        }
-        int itemCount = InventoryUtil.countItems(ctx.getStock());
-        if (itemCount <= 0) {
-            return;
-        }
-        Player client = ctx.getClient();
-        BigDecimal pricePerItem = ctx.getExactPrice().divide(BigDecimal.valueOf(itemCount), MathContext.DECIMAL128);
-        BigDecimal walletMoney = economy.getBalance(client.getUniqueId());
-
-        if (!economy.hasFunds(client.getUniqueId(), ctx.getExactPrice())) {
-            int amountAffordable = getAmountOfAffordableItems(walletMoney, pricePerItem);
-            if (amountAffordable < 1) {
-                ctx.setCancelled(CLIENT_DOES_NOT_HAVE_ENOUGH_MONEY);
-                return;
-            }
-            BigDecimal scaled = scalePrice(pricePerItem, amountAffordable);
-            if (roundedToZero(pricePerItem, scaled)) {
-                ctx.setCancelled(CLIENT_DOES_NOT_HAVE_ENOUGH_MONEY);
-                return;
-            }
-            ctx.setExactPrice(scaled);
-            ctx.setStock(getCountedItemStack(ctx.getStock(), amountAffordable));
-        }
-
-        if (!ctx.isUnlimitedOwner() && !inventoryService.hasItems(ctx.getStock(), ctx.getOwnerInventory())) {
-            ItemStack[] itemsHad = getItems(ctx.getStock(), ctx.getOwnerInventory());
-            int possessed = InventoryUtil.countItems(itemsHad);
-            if (possessed <= 0) {
-                ctx.setCancelled(NOT_ENOUGH_STOCK_IN_CHEST);
-                return;
-            }
-            BigDecimal scaled = scalePrice(pricePerItem, possessed);
-            if (roundedToZero(pricePerItem, scaled)) {
-                ctx.setCancelled(NOT_ENOUGH_STOCK_IN_CHEST);
-                return;
-            }
-            ctx.setExactPrice(scaled);
-            ctx.setStock(itemsHad);
-        }
-
-        if (!inventoryService.fits(ctx.getStock(), ctx.getClientInventory())) {
-            ItemStack[] itemsFit = getItemsThatFit(ctx.getStock(), ctx.getClientInventory());
-            int possessed = InventoryUtil.countItems(itemsFit);
-            if (possessed <= 0) {
-                ctx.setCancelled(NOT_ENOUGH_SPACE_IN_INVENTORY);
-                return;
-            }
-            BigDecimal scaled = scalePrice(pricePerItem, possessed);
-            if (roundedToZero(pricePerItem, scaled)) {
-                ctx.setCancelled(NOT_ENOUGH_SPACE_IN_INVENTORY);
-                return;
-            }
-            ctx.setExactPrice(scaled);
-            ctx.setStock(itemsFit);
-        }
-
-        if (!economy.canHold(ctx.getOwnerAccount().getUuid(), ctx.getExactPrice())) {
-            ctx.setCancelled(SHOP_DEPOSIT_FAILED);
-        }
-    }
-
-    private void adjustPartialSell(PendingTransaction ctx) {
-        if (ctx.isCancelled() || ctx.getTransactionType() != SELL) {
-            return;
-        }
-        int itemCount = InventoryUtil.countItems(ctx.getStock());
-        if (itemCount <= 0) {
-            return;
-        }
-        Player client = ctx.getClient();
-        UUID owner = ctx.getOwnerAccount().getUuid();
-        BigDecimal pricePerItem = ctx.getExactPrice().divide(BigDecimal.valueOf(itemCount), MathContext.DECIMAL128);
-
-        if (economy.isOwnerEconomicallyActive(ctx.isUnlimitedOwner())
-                && !economy.hasFunds(owner, ctx.getExactPrice())) {
-            BigDecimal walletMoney = economy.getBalance(owner);
-            int amountAffordable = getAmountOfAffordableItems(walletMoney, pricePerItem);
-            if (amountAffordable < 1) {
-                ctx.setCancelled(SHOP_DOES_NOT_HAVE_ENOUGH_MONEY);
-                return;
-            }
-            BigDecimal scaled = scalePrice(pricePerItem, amountAffordable);
-            if (roundedToZero(pricePerItem, scaled)) {
-                ctx.setCancelled(SHOP_DOES_NOT_HAVE_ENOUGH_MONEY);
-                return;
-            }
-            ctx.setExactPrice(scaled);
-            ctx.setStock(getCountedItemStack(ctx.getStock(), amountAffordable));
-        }
-
-        if (!inventoryService.hasItems(ctx.getStock(), ctx.getClientInventory())) {
-            ItemStack[] itemsHad = getItems(ctx.getStock(), ctx.getClientInventory());
-            int possessed = InventoryUtil.countItems(itemsHad);
-            if (possessed <= 0) {
-                ctx.setCancelled(NOT_ENOUGH_STOCK_IN_INVENTORY);
-                return;
-            }
-            BigDecimal scaled = scalePrice(pricePerItem, possessed);
-            if (roundedToZero(pricePerItem, scaled)) {
-                ctx.setCancelled(NOT_ENOUGH_STOCK_IN_INVENTORY);
-                return;
-            }
-            ctx.setExactPrice(scaled);
-            ctx.setStock(itemsHad);
-        }
-
-        if (!ctx.isUnlimitedOwner() && !inventoryService.fits(ctx.getStock(), ctx.getOwnerInventory())) {
-            ItemStack[] itemsFit = getItemsThatFit(ctx.getStock(), ctx.getOwnerInventory());
-            int possessed = InventoryUtil.countItems(itemsFit);
-            if (possessed <= 0) {
-                ctx.setCancelled(NOT_ENOUGH_SPACE_IN_CHEST);
-                return;
-            }
-            BigDecimal scaled = scalePrice(pricePerItem, possessed);
-            if (roundedToZero(pricePerItem, scaled)) {
-                ctx.setCancelled(NOT_ENOUGH_SPACE_IN_CHEST);
-                return;
-            }
-            ctx.setExactPrice(scaled);
-            ctx.setStock(itemsFit);
-        }
-
-        if (!economy.canHold(client.getUniqueId(), ctx.getExactPrice())) {
-            ctx.setCancelled(CLIENT_DEPOSIT_FAILED);
-        }
-    }
-
-    // Package-private so the money-math is unit-testable directly (ADT-138): these
-    // are the exact spots where a scale/rounding/off-by-one slip would leak or
-    // destroy currency on a partial fill.
-    BigDecimal scalePrice(BigDecimal pricePerItem, int count) {
-        return pricePerItem.multiply(new BigDecimal(count)).setScale(config.getPricePrecision(), RoundingMode.HALF_UP);
-    }
-
-    /** A positive per-item price that scales to zero means the partial amount is unaffordable. */
-    static boolean roundedToZero(BigDecimal pricePerItem, BigDecimal scaled) {
-        return pricePerItem.compareTo(BigDecimal.ZERO) > 0 && scaled.compareTo(BigDecimal.ZERO) == 0;
-    }
-
-    static int getAmountOfAffordableItems(BigDecimal walletMoney, BigDecimal pricePerItem) {
-        return walletMoney.divide(pricePerItem, 0, RoundingMode.FLOOR).intValueExact();
-    }
-
-    private ItemStack[] getItems(ItemStack[] stock, Inventory inventory) {
-        List<ItemStack> toReturn = new LinkedList<>();
-        for (Map.Entry<ItemStack, Integer> entry : inventoryService.getItemCounts(stock).entrySet()) {
-            int amount = inventoryService.getAmount(entry.getKey(), inventory);
-            Collections.addAll(toReturn, inventoryService.getItemStacked(entry.getKey(), Math.min(amount, entry.getValue())));
-        }
-        return toReturn.toArray(new ItemStack[0]);
-    }
-
-    private ItemStack[] getCountedItemStack(ItemStack[] stock, int numberOfItems) {
-        int left = numberOfItems;
-        LinkedList<ItemStack> stacks = new LinkedList<>();
-
-        for (ItemStack stack : stock) {
-            int count = stack.getAmount();
-            ItemStack toAdd;
-            if (left > count) {
-                toAdd = stack;
-                left -= count;
-            } else {
-                ItemStack clone = stack.clone();
-                clone.setAmount(left);
-                toAdd = clone;
-                left = 0;
-            }
-
-            boolean added = false;
-            int maxStackSize = inventoryService.getMaxStackSize(stack);
-            for (ItemStack iStack : stacks) {
-                if (iStack.getAmount() < maxStackSize && materialService.equals(toAdd, iStack)) {
-                    int newAmount = iStack.getAmount() + toAdd.getAmount();
-                    if (newAmount > maxStackSize) {
-                        iStack.setAmount(maxStackSize);
-                        toAdd.setAmount(newAmount - maxStackSize);
-                    } else {
-                        iStack.setAmount(newAmount);
-                        added = true;
-                    }
-                    break;
-                }
-            }
-
-            if (!added) {
-                Collections.addAll(stacks, inventoryService.getItemsStacked(toAdd));
-            }
-            if (left <= 0) {
-                break;
-            }
-        }
-        return stacks.toArray(new ItemStack[0]);
-    }
-
-    private ItemStack[] getItemsThatFit(ItemStack[] stock, Inventory inventory) {
-        List<ItemStack> resultStock = new LinkedList<>();
-        int emptySlots = InventoryUtil.countEmpty(inventory);
-
-        for (Map.Entry<ItemStack, Integer> entry : inventoryService.getItemCounts(stock).entrySet()) {
-            ItemStack item = entry.getKey();
-            int amount = entry.getValue();
-            int maxStackSize = inventoryService.getMaxStackSize(item);
-            int free = 0;
-            for (ItemStack itemInInventory : inventory.getContents()) {
-                if (materialService.equals(item, itemInInventory) && itemInInventory != null) {
-                    free += (maxStackSize - itemInInventory.getAmount()) % maxStackSize;
-                }
-            }
-
-            if (free == 0 && emptySlots == 0) {
-                continue;
-            }
-
-            if (amount > free) {
-                if (emptySlots > 0) {
-                    int requiredSlots = (int) Math.ceil(((double) amount - free) / maxStackSize);
-                    if (requiredSlots <= emptySlots) {
-                        emptySlots = emptySlots - requiredSlots;
-                    } else {
-                        amount = free + maxStackSize * emptySlots;
-                        emptySlots = 0;
-                    }
-                } else {
-                    amount = free;
-                }
-            }
-            Collections.addAll(resultStock, inventoryService.getItemStacked(item, amount));
-        }
-        return resultStock.toArray(new ItemStack[0]);
-    }
-
-    // ---- error messaging (was the MONITOR ErrorMessageSender) -------------------
+    // ---- error messaging ----
 
     /** Drop a player's notification-cooldown rows (called from PlayerConnectListener on quit). */
     @Override
@@ -780,7 +537,7 @@ public class TransactionServiceImpl implements TransactionService {
     public void process(Transaction event) {
         execute(event);
 
-        // Runs regardless of cancellation (was @HIGH ignoreCancelled=false).
+        // Runs regardless of cancellation.
         stockCounter.onTransaction(event);
 
         if (event.isCancelled()) {
@@ -804,8 +561,8 @@ public class TransactionServiceImpl implements TransactionService {
         // client, a sell vanishes it from the client. Otherwise move between the two real
         // inventories (owner chest <-> client).
         boolean moved = event.isUnlimitedOwner()
-                ? moveUnlimited(event.getClientInventory(), event.getStock(), buy)
-                : transferItems(
+                ? goodsTransfer.moveUnlimited(event.getClientInventory(), event.getStock(), buy)
+                : goodsTransfer.transfer(
                         buy ? event.getOwnerInventory() : event.getClientInventory(),
                         buy ? event.getClientInventory() : event.getOwnerInventory(),
                         event.getStock());
@@ -818,7 +575,7 @@ public class TransactionServiceImpl implements TransactionService {
                 event.getOwnerAccount().getUuid(), event)) {
             // The goods already moved but the money didn't settle — put the goods
             // back and cancel, keeping the trade atomic.
-            reverseTransfer(event);
+            goodsTransfer.reverse(event);
             event.setCancelled(true);
         }
     }
@@ -833,97 +590,8 @@ public class TransactionServiceImpl implements TransactionService {
                 + "PreTransaction checks validate stock and space beforehand.");
     }
 
-    /**
-     * Move every stack from {@code source} to {@code target}. Both inventories are
-     * snapshotted first; on any shortfall both are restored and {@code false} is
-     * returned so the caller can cancel before money moves.
-     */
-    boolean transferItems(Inventory source, Inventory target, ItemStack[] items) {
-        ItemStack[] sourceSnapshot = cloneContents(source);
-        ItemStack[] targetSnapshot = cloneContents(target);
 
-        int leftOver = 0;
-        for (ItemStack item : items) {
-            leftOver += config.isStackTo64()
-                    ? inventoryService.transfer(item, source, target, 64)
-                    : inventoryService.transfer(item, source, target);
-        }
-
-        if (leftOver > 0) {
-            source.setContents(sourceSnapshot);
-            target.setContents(targetSnapshot);
-            return false;
-        }
-
-        update(source.getHolder());
-        update(target.getHolder());
-        return true;
-    }
-
-    /**
-     * The client-side half of an unlimited admin-shop trade: the owner side is infinite (no
-     * container), so a buy ({@code add}) spawns the stock into the client and a sell removes it.
-     * Snapshots the client inventory and restores it on any shortfall, returning {@code false}
-     * so the caller can cancel before money moves — the same atomicity contract as
-     * {@link #transferItems}.
-     */
-    boolean moveUnlimited(Inventory client, ItemStack[] items, boolean add) {
-        ItemStack[] snapshot = cloneContents(client);
-
-        int leftOver = 0;
-        for (ItemStack item : items) {
-            leftOver += add
-                    ? (config.isStackTo64() ? inventoryService.add(item, client, 64) : inventoryService.add(item, client))
-                    : inventoryService.remove(item, client);
-        }
-
-        if (leftOver > 0) {
-            client.setContents(snapshot);
-            return false;
-        }
-
-        update(client.getHolder());
-        return true;
-    }
-
-    /** Reverse a completed goods move after a failed money leg, keeping the trade atomic. */
-    void reverseTransfer(Transaction event) {
-        boolean buy = event.getTransactionType() == BUY;
-        boolean reversed = event.isUnlimitedOwner()
-                ? moveUnlimited(event.getClientInventory(), event.getStock(), !buy)
-                : (buy
-                        ? transferItems(event.getClientInventory(), event.getOwnerInventory(), event.getStock())
-                        : transferItems(event.getOwnerInventory(), event.getClientInventory(), event.getStock()));
-
-        if (!reversed) {
-            log.error(
-                    "Failed to reverse the goods of a ChestShop transaction at "
-                    + (event.getSign() != null ? event.getSign().getLocation() : "<unknown location>")
-                    + " after the money leg failed. The trade may be in an inconsistent state.");
-        }
-    }
-
-    private static ItemStack[] cloneContents(Inventory inventory) {
-        ItemStack[] contents = inventory.getContents();
-        ItemStack[] copy = new ItemStack[contents.length];
-        for (int i = 0; i < contents.length; i++) {
-            copy[i] = contents[i] == null ? null : contents[i].clone();
-        }
-        return copy;
-    }
-
-    private static void update(InventoryHolder holder) {
-        if (holder instanceof Player player) {
-            player.updateInventory();
-        } else if (holder instanceof BlockState blockState) {
-            blockState.update();
-        } else if (holder instanceof DoubleChest doubleChest) {
-            update(InventoryUtil.getLeftSide(doubleChest, false));
-            update(InventoryUtil.getRightSide(doubleChest, false));
-        }
-    }
-
-    // ---- post-transaction reactions (were the posttransaction listeners) --------
+    // ---- post-transaction reactions ----
 
     /** Remove a shop whose container ran dry after a buy (config-gated, never admin shops). */
     private void deleteEmptyShop(Transaction event) {
@@ -993,7 +661,7 @@ public class TransactionServiceImpl implements TransactionService {
         }
 
         // Build the line on the main thread (item-name/account/sign reads), then push the
-        // log call off the tick (ADT-131): per-trade logging I/O otherwise stalls the main
+        // log call off the tick: per-trade logging I/O otherwise stalls the main
         // thread on contended shared-host storage. slf4j is thread-safe and the line is
         // self-contained + timestamped, so async logging is order-recoverable and can never
         // affect the already-committed, synchronous trade. This is the only post-trade step

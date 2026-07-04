@@ -33,7 +33,7 @@ import static org.mockito.Mockito.when;
 class TransactionServiceTest {
 
     private InventoryService inventoryService;
-    private TransactionServiceImpl service;
+    private GoodsTransfer service;
 
     @BeforeEach
     void setUp() {
@@ -41,8 +41,7 @@ class TransactionServiceTest {
         // away here — the transfer overloads under test are stubbed directly.
         inventoryService = mock(InventoryService.class);
         ChestShopConfiguration config = mock(ChestShopConfiguration.class);
-        service = new TransactionServiceImpl(null, null, null, null, null, null, null, null,
-                config, null, null, inventoryService, null, null, null, null);
+        service = new GoodsTransfer(inventoryService, config);
     }
 
     @Test
@@ -55,7 +54,7 @@ class TransactionServiceTest {
 
         when(inventoryService.transfer(any(ItemStack.class), eq(source), eq(target))).thenReturn(0);
 
-        boolean moved = service.transferItems(source, target, items);
+        boolean moved = service.transfer(source, target, items);
 
         assertThat(moved).isTrue();
 
@@ -77,7 +76,7 @@ class TransactionServiceTest {
         // Report leftovers — the target could not hold everything.
         when(inventoryService.transfer(any(ItemStack.class), eq(source), eq(target))).thenReturn(3);
 
-        boolean moved = service.transferItems(source, target, items);
+        boolean moved = service.transfer(source, target, items);
 
         assertThat(moved).isFalse();
 
@@ -103,7 +102,7 @@ class TransactionServiceTest {
 
         when(inventoryService.transfer(any(ItemStack.class), eq(clientInv), eq(ownerInv))).thenReturn(0);
 
-        service.reverseTransfer(event);
+        service.reverse(event);
 
         // A buy moved owner -> client, so the reversal must move client -> owner.
         verify(inventoryService).transfer(any(ItemStack.class), eq(clientInv), eq(ownerInv));
@@ -123,7 +122,7 @@ class TransactionServiceTest {
 
         when(inventoryService.transfer(any(ItemStack.class), eq(ownerInv), eq(clientInv))).thenReturn(0);
 
-        service.reverseTransfer(event);
+        service.reverse(event);
 
         // A sell moved client -> owner, so the reversal must move owner -> client.
         verify(inventoryService).transfer(any(ItemStack.class), eq(ownerInv), eq(clientInv));
