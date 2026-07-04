@@ -149,10 +149,14 @@ dependencies {
     // MockBukkit — a real in-memory server so Bukkit-coupled services are exercised for
     // real (ItemStacks, inventories, signs) rather than mock-verified.
     testImplementation("org.mockbukkit.mockbukkit:mockbukkit-v1.21:4.110.0")
-    // The API jars are compileOnly (non-transitive) on the main classpath; tests need them on
-    // the test classpath to construct/mock the Treasury & Business boundary types.
-    testImplementation(project(":treasury:treasury-api"))
-    testImplementation(project(":business:business-api"))
+    // The in-repo Treasury/Business API classes are on the test *compile* classpath already
+    // (testCompileOnly extendsFrom compileOnly, above); add them to the test *runtime* so the
+    // market/account services (which mock TreasuryApi/MarketApi/ShopQueryApi/BusinessApi and
+    // build their DTOs) can actually be loaded and exercised for coverage. Non-transitive, so
+    // this does NOT drag the soft-deps' closures (worldguard's second Bukkit API) that the note
+    // above deliberately keeps off the runtime — these modules' own deps are all compileOnly.
+    testRuntimeOnly(project(":treasury:treasury-api")) { isTransitive = false }
+    testRuntimeOnly(project(":business:business-api")) { isTransitive = false }
 }
 
 // plugin.yml carries ${bukkit.plugin.version}; substitute the plain project
