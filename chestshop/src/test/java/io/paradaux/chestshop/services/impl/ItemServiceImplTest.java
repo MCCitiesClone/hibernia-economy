@@ -366,4 +366,40 @@ class ItemServiceImplTest extends ServerTest {
     void reloadAliases_withoutResolver_justReloadsFile() {
         newService().reloadAliases(); // must not throw with no resolver
     }
+
+    // ---- residual branches ------------------------------------------------------
+
+    @Test
+    void getName_nullWhenQueryStringYieldsNull() {
+        // itemCodes.encode returns null (no resolver, no alias) -> queryString returns null via
+        // applyAlias(null) (242 true / 243), so getName's `code != null` guard is false (142 false).
+        io.paradaux.chestshop.services.ItemCodeService codes =
+                mock(io.paradaux.chestshop.services.ItemCodeService.class);
+        when(codes.encode(any(), anyInt())).thenReturn(null);
+        MaterialServiceImpl material = new MaterialServiceImpl(config);
+        InventoryServiceImpl inventory = new InventoryServiceImpl(config, material);
+        ItemServiceImpl svc = new ItemServiceImpl(codes, material, inventory, dataFolder);
+        assertThat(svc.getName(item(Material.DIAMOND, 1), 0)).isNull();
+    }
+
+    @Test
+    void getName_shortens_hashAtIndexZero() {
+        // A resolver code whose '#' is at index 0: poundIndex==0 so the 152 guard (pound>0) is
+        // false, and 155's (pound<0 || colon<pound) is also false -> material stays the whole code.
+        assertShorteningThrows("#NetheriteSwordExtraLong:5", 20);
+    }
+
+    @Test
+    void loadAliases_swallowsIoError_whenDefaultFileCannotBeSaved() throws Exception {
+        // Point the data folder at a regular file so createParentDirs for itemAliases.yml fails
+        // -> the default-file save throws IOException, which loadAliases logs and swallows (195/196).
+        File blocker = new File(dataFolder, "blocker");
+        Files.writeString(blocker.toPath(), "x", StandardCharsets.UTF_8);
+        ItemCodeServiceImpl codes = new ItemCodeServiceImpl(new FakeMapper(), new MaterialServiceImpl(config), dataFolder);
+        MaterialServiceImpl material = new MaterialServiceImpl(config);
+        InventoryServiceImpl inventory = new InventoryServiceImpl(config, material);
+        ItemServiceImpl svc = new ItemServiceImpl(codes, material, inventory, blocker);
+        // Construction did not throw; the alias map is simply empty.
+        assertThat(svc.parse("Diamond").getType()).isEqualTo(Material.DIAMOND);
+    }
 }
