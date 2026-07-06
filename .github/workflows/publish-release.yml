@@ -1,0 +1,190 @@
+name: Publish Release
+
+# Builds every plugin on each push. As long as AT LEAST ONE plugin builds
+# successfully, a fresh GitHub release is cut with the latest shaded jar from
+# each plugin that built attached. No manual tagging — `gh release create`
+# creates the tag from the pushed commit, and the version auto-increments with
+# every push (major.minor from the root Gradle version, patch = commit count).
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'treasury/**'
+      - 'business/**'
+      - 'treasury-api-plugin/**'
+      - 'chestshop/**'
+      - '*.gradle.kts'
+      - 'gradle/**'
+      - 'gradlew'
+      - '.github/workflows/publish-release.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write   # create the tag + GitHub release
+
+concurrency:
+  group: publish-release-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Compute the auto-bumped version once, so every plugin jar in a given run
+  # shares it and the release tag is derived deterministically.
+  # ---------------------------------------------------------------------------
+  setup:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.ver.outputs.version }}
+      tag: ${{ steps.ver.outputs.tag }}
+      prerelease: ${{ steps.ver.outputs.prerelease }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # full history so `git rev-list --count` is stable
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Make Gradle wrapper executable
+        run: chmod +x ./gradlew
+
+      - name: Compute version
+        id: ver
+        run: |
+          # major.minor come from the root project's declared version; the patch
+          # is the commit count, so each push (commit) yields a higher version.
+          BASE="$(./gradlew -q properties | awk -F': ' '/^version:/ {print $2}' | head -n1)"
+          CORE="${BASE%-SNAPSHOT}"
+          MAJ_MIN="${CORE%.*}"
+          COUNT="$(git rev-list --count HEAD)"
+          VERSION="${MAJ_MIN}.${COUNT}"
+          TAG="v${VERSION}"
+
+          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            PRERELEASE=false
+          else
+            PRERELEASE=true
+          fi
+
+          echo "version=$VERSION"       >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG"               >> "$GITHUB_OUTPUT"
+          echo "prerelease=$PRERELEASE" >> "$GITHUB_OUTPUT"
+          echo "Release $TAG (version $VERSION, prerelease=$PRERELEASE)"
+
+  # ---------------------------------------------------------------------------
+  # One job per plugin. `fail-fast: false` keeps a single plugin's compile
+  # failure from cancelling the others, and a failed job simply produces no
+  # artifact — the publish job then releases whatever jars did get built.
+  # ---------------------------------------------------------------------------
+  build:
+    needs: setup
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: treasury
+            project: ':treasury'
+            libs: treasury/build/libs
+          - name: business
+            project: ':business'
+            libs: business/build/libs
+          - name: treasury-api-plugin
+            project: ':treasury-api-plugin'
+            libs: treasury-api-plugin/build/libs
+          - name: chestshop
+            project: ':chestshop'
+            libs: chestshop/build/libs
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Make Gradle wrapper executable
+        run: chmod +x ./gradlew
+
+      - name: Build Shadow JAR (${{ matrix.name }})
+        run: >
+          ./gradlew --no-daemon
+          ${{ matrix.project }}:clean ${{ matrix.project }}:shadowJar
+          -Pci=true -Pversion=${{ needs.setup.outputs.version }}
+
+      - name: Upload jar
+        uses: actions/upload-artifact@v4
+        with:
+          name: plugin-${{ matrix.name }}
+          path: ${{ matrix.libs }}/*.jar
+          if-no-files-found: error
+
+  # ---------------------------------------------------------------------------
+  # Runs whenever the build matrix has finished (`always()`), regardless of how
+  # many plugins failed. Collects every uploaded jar and, as long as at least
+  # one exists, cuts the release. Idempotent: re-running the same commit
+  # re-uploads assets to the existing release instead of erroring.
+  # ---------------------------------------------------------------------------
+  publish:
+    needs: [ setup, build ]
+    if: always() && needs.setup.result == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download plugin jars
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+          pattern: plugin-*
+          merge-multiple: true
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.setup.outputs.tag }}
+          VERSION: ${{ needs.setup.outputs.version }}
+          PRERELEASE: ${{ needs.setup.outputs.prerelease }}
+        run: |
+          shopt -s nullglob
+          JARS=(dist/*.jar)
+          if [ ${#JARS[@]} -eq 0 ]; then
+            echo "No plugin built successfully — nothing to release."
+            exit 0
+          fi
+
+          echo "Attaching ${#JARS[@]} jar(s):"
+          printf '  %s\n' "${JARS[@]}"
+
+          PRERELEASE_FLAG=""
+          if [ "$PRERELEASE" = "true" ]; then
+            PRERELEASE_FLAG="--prerelease"
+          fi
+
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release $TAG exists — refreshing assets."
+            gh release upload "$TAG" "${JARS[@]}" --clobber
+          else
+            gh release create "$TAG" \
+              --target "$GITHUB_SHA" \
+              --title "$VERSION" \
+              --generate-notes \
+              $PRERELEASE_FLAG \
+              "${JARS[@]}"
+          fi
