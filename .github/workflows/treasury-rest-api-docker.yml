@@ -1,4 +1,4 @@
-name: Treasury REST API · Build and Push Docker Image to Harbor
+name: Treasury REST API · Build and Push Docker Image to GHCR
 
 on:
   push:
@@ -18,6 +18,7 @@ on:
 permissions:
   contents: read
   checks: write
+  packages: write   # push images to GitHub Container Registry
 
 jobs:
   # Gate the image on the real test suite (ADT-19): the money service must not
@@ -63,8 +64,8 @@ jobs:
         run: |
           # Treasury is one shared image used by all in-cluster instances
           # (UAT in development namespace; DemocracyCraft + StateCraft in
-          # production namespace). Single Harbor repo —
-          # paradaux-public/treasury-rest-api — backs everything; runtime
+          # production namespace). Single GHCR repo —
+          # ghcr.io/<owner>/treasury-rest-api — backs everything; runtime
           # differences (DB url, JWT secret, rate-limit Redis) are env-var-only.
           #
           # Env-prefixed immutable tag — Argo CD Image Updater watches
@@ -89,25 +90,28 @@ jobs:
           echo "SHA_TAG=${ENV_NAME}-sha-${SHORT_SHA}" >> "$GITHUB_OUTPUT"
           echo "MUTABLE_TAG=${MUTABLE}" >> "$GITHUB_OUTPUT"
 
-      - name: Log in to Harbor registry
+          # GHCR requires the image path to be lowercase; the owner slug can
+          # contain uppercase (e.g. ParadauxIO), so normalise it here.
+          IMAGE=$(echo "ghcr.io/${{ github.repository_owner }}/treasury-rest-api" | tr '[:upper:]' '[:lower:]')
+          echo "IMAGE=${IMAGE}" >> "$GITHUB_OUTPUT"
+
+      - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
         with:
-          registry: ${{ secrets.HARBOR_REGISTRY }}
-          username: ${{ secrets.HARBOR_USERNAME }}
-          password: ${{ secrets.HARBOR_PASSWORD }}
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-      # Build + push via docker/build-push-action so images carry provenance
-      # attestations and an SBOM (global/infra/0004). Pinned to the current major
-      # tag: an exact SHA pin isn't knowable offline — resolve to a commit SHA when
-      # network access is available. Immutable env-sha tag + mutable tag and the
-      # Harbor registry auth (docker/login-action above) are unchanged.
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v6
-        with:
-          context: treasury-rest-api
-          push: true
-          provenance: true
-          sbom: true
-          tags: |
-            ${{ secrets.HARBOR_REGISTRY }}/paradaux-public/treasury-rest-api:${{ steps.tags.outputs.SHA_TAG }}
-            ${{ secrets.HARBOR_REGISTRY }}/paradaux-public/treasury-rest-api:${{ steps.tags.outputs.MUTABLE_TAG }}
+      - name: Build Docker image
+        run: |
+          IMAGE=${{ steps.tags.outputs.IMAGE }}
+          docker build \
+            -t "${IMAGE}:${{ steps.tags.outputs.SHA_TAG }}" \
+            -t "${IMAGE}:${{ steps.tags.outputs.MUTABLE_TAG }}" \
+            treasury-rest-api
+
+      - name: Push Docker image
+        run: |
+          IMAGE=${{ steps.tags.outputs.IMAGE }}
+          docker push "${IMAGE}:${{ steps.tags.outputs.SHA_TAG }}"
+          docker push "${IMAGE}:${{ steps.tags.outputs.MUTABLE_TAG }}"
