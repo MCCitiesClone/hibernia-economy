@@ -31,21 +31,36 @@ class TransactionMathTest {
 
     @Test
     void affordableItems_floorsToWholeItems() {
-        assertThat(PartialFillCalculator.getAmountOfAffordableItems(new BigDecimal("10.00"), new BigDecimal("3.00"))).isEqualTo(3); // 3.33 -> 3
-        assertThat(PartialFillCalculator.getAmountOfAffordableItems(new BigDecimal("9.00"), new BigDecimal("3.00"))).isEqualTo(3);  // exact
+        assertThat(PartialFillCalculator.getAmountOfAffordableItems(new BigDecimal("10.00"), new BigDecimal("3.00"), 64)).isEqualTo(3); // 3.33 -> 3
+        assertThat(PartialFillCalculator.getAmountOfAffordableItems(new BigDecimal("9.00"), new BigDecimal("3.00"), 64)).isEqualTo(3);  // exact
     }
 
     @Test
     void affordableItems_isZeroWhenCannotAffordEvenOne() {
-        assertThat(PartialFillCalculator.getAmountOfAffordableItems(new BigDecimal("2.99"), new BigDecimal("3.00"))).isEqualTo(0);
-        assertThat(PartialFillCalculator.getAmountOfAffordableItems(BigDecimal.ZERO, new BigDecimal("3.00"))).isEqualTo(0);
+        assertThat(PartialFillCalculator.getAmountOfAffordableItems(new BigDecimal("2.99"), new BigDecimal("3.00"), 64)).isEqualTo(0);
+        assertThat(PartialFillCalculator.getAmountOfAffordableItems(BigDecimal.ZERO, new BigDecimal("3.00"), 64)).isEqualTo(0);
     }
 
     @Test
     void affordableItems_handlesNonTerminatingPerItemPrice() {
         // pricePerItem = 10 / 3 = 3.333...; with 10 in the wallet you can afford 3.
         BigDecimal pricePerItem = new BigDecimal("10.00").divide(new BigDecimal(3), MathContext.DECIMAL128);
-        assertThat(PartialFillCalculator.getAmountOfAffordableItems(new BigDecimal("10.00"), pricePerItem)).isEqualTo(3);
+        assertThat(PartialFillCalculator.getAmountOfAffordableItems(new BigDecimal("10.00"), pricePerItem, 64)).isEqualTo(3);
+    }
+
+    @Test
+    void affordableItems_clampsToCap_notExceedingRequestedCount() {
+        // A far larger wallet than the requested count → the result is the cap, never more.
+        assertThat(PartialFillCalculator.getAmountOfAffordableItems(new BigDecimal("1000000"), new BigDecimal("1.00"), 64)).isEqualTo(64);
+    }
+
+    @Test
+    void affordableItems_doesNotOverflow_whenQuotientExceedsIntMax() {
+        // chestshop/behaviour/0003: an unbounded wallet (Double.MAX_VALUE) over a tiny per-item
+        // price yields a quotient far beyond Integer.MAX_VALUE. intValueExact() would throw and
+        // abort the trade; the cap must bound it instead.
+        assertThat(PartialFillCalculator.getAmountOfAffordableItems(
+                BigDecimal.valueOf(Double.MAX_VALUE), new BigDecimal("0.0001"), 10)).isEqualTo(10);
     }
 
     // ── scalePrice: pricePerItem * count, rounded HALF_UP to PRICE_PRECISION ────

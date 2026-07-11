@@ -45,8 +45,12 @@ public interface EconomyService {
      * Credit {@code amount} to {@code target} (a SYSTEM→target transfer). Admin-shop
      * targets are redirected to the configured server-economy account, or swallowed
      * if none is configured (was {@code CurrencyAddEvent} + {@code ServerAccountCorrector}).
+     *
+     * @return whether the credit was confirmed. A no-op admin-shop credit (no server-economy
+     *         account configured — the deliberate faucet) counts as success; only a failed
+     *         ledger transfer returns {@code false}, so callers can gate a mirrored leg on it.
      */
-    void deposit(UUID target, BigDecimal amount, World world);
+    boolean deposit(UUID target, BigDecimal amount, World world);
 
     /**
      * Debit {@code amount} from {@code target} (a target→SYSTEM transfer). Returns

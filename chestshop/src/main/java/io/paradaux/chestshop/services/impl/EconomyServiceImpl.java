@@ -107,10 +107,10 @@ public class EconomyServiceImpl implements EconomyService {
     }
 
     @Override
-    public void deposit(UUID target, BigDecimal amount, World world) {
+    public boolean deposit(UUID target, BigDecimal amount, World world) {
         UUID resolved = normaliseAdminTarget(target);
         if (resolved == null) {
-            return; // admin shop with no server-economy account → nothing to credit
+            return true; // admin shop with no server-economy account → deliberate faucet, treated as success
         }
         try {
             int targetAccountId = resolveAccountId(resolved);
@@ -119,8 +119,10 @@ public class EconomyServiceImpl implements EconomyService {
             treasury.transfer(new TransferRequest(
                     systemAccountId, targetAccountId, amount, "ChestShop deposit",
                     BusinessAccountUtil.CHESTSHOP_SYSTEM_UUID, null, "ChestShop", dedupKey));
+            return true;
         } catch (Exception e) {
             log.warn("Treasury: Could not add " + amount + " to " + resolved, e);
+            return false;
         }
     }
 

@@ -69,7 +69,7 @@ class PartialFillCalculator {
         BigDecimal walletMoney = economy.getBalance(client.getUniqueId());
 
         if (!economy.hasFunds(client.getUniqueId(), ctx.getExactPrice())) {
-            int amountAffordable = getAmountOfAffordableItems(walletMoney, pricePerItem);
+            int amountAffordable = getAmountOfAffordableItems(walletMoney, pricePerItem, itemCount);
             if (amountAffordable < 1) {
                 ctx.setCancelled(CLIENT_DOES_NOT_HAVE_ENOUGH_MONEY);
                 return;
@@ -135,7 +135,7 @@ class PartialFillCalculator {
         if (economy.isOwnerEconomicallyActive(ctx.isUnlimitedOwner())
                 && !economy.hasFunds(owner, ctx.getExactPrice())) {
             BigDecimal walletMoney = economy.getBalance(owner);
-            int amountAffordable = getAmountOfAffordableItems(walletMoney, pricePerItem);
+            int amountAffordable = getAmountOfAffordableItems(walletMoney, pricePerItem, itemCount);
             if (amountAffordable < 1) {
                 ctx.setCancelled(SHOP_DOES_NOT_HAVE_ENOUGH_MONEY);
                 return;
@@ -195,8 +195,15 @@ class PartialFillCalculator {
         return pricePerItem.compareTo(BigDecimal.ZERO) > 0 && scaled.compareTo(BigDecimal.ZERO) == 0;
     }
 
-    static int getAmountOfAffordableItems(BigDecimal walletMoney, BigDecimal pricePerItem) {
-        return walletMoney.divide(pricePerItem, 0, RoundingMode.FLOOR).intValueExact();
+    static int getAmountOfAffordableItems(BigDecimal walletMoney, BigDecimal pricePerItem, int cap) {
+        // The wallet can be effectively unbounded (getBalance returns Double.MAX_VALUE for an
+        // unlimited server-less admin shop), so the quotient can far exceed Integer.MAX_VALUE.
+        // intValueExact() would throw ArithmeticException and abort the trade on the main thread.
+        // The affordable amount is only ever used to scale the fill down, so it never needs to
+        // exceed the requested item count — clamp to that cap before converting to int.
+        BigDecimal affordable = walletMoney.divide(pricePerItem, 0, RoundingMode.FLOOR)
+                .min(BigDecimal.valueOf(cap));
+        return affordable.intValue();
     }
 
     private ItemStack[] getItems(ItemStack[] stock, Inventory inventory) {

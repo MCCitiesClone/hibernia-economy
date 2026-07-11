@@ -681,11 +681,33 @@ class ShopServiceImplTest extends ServerTest {
         when(economy.withdraw(any(UUID.class), any(BigDecimal.class), any())).thenReturn(true);
         Account serverAcc = new Account("Server", "Server", UUID.randomUUID());
         when(accounts.getServerEconomyAccount()).thenReturn(serverAcc);
+        when(economy.deposit(eq(serverAcc.getUuid()), any(BigDecimal.class), any())).thenReturn(true);
         when(economy.format(any(BigDecimal.class))).thenReturn("$10");
 
         assertThat(svc.chargeCreationFee(player, VALID)).isTrue();
         verify(economy).deposit(eq(serverAcc.getUuid()), any(BigDecimal.class), any());
         verify(message).send(eq(player), eq("chestshop.SHOP_FEE_PAID"), eq("amount"), anyString());
+    }
+
+    @Test
+    void chargeCreationFee_doesNotReportPaid_whenServerCreditFails() {
+        // chestshop/behaviour/0002: the player is charged (withdraw true) but mirroring the fee
+        // into the server-economy pool (deposit) fails. SHOP_FEE_PAID must NOT be sent, and the
+        // player must be compensated (refunded via a SYSTEM->player deposit).
+        ChestShopConfiguration cfg = TestConfigs.with(TestConfigs.defaults(), "shopCreationPrice", new BigDecimal("10"));
+        ShopServiceImpl svc = new ShopServiceImpl(accounts, economy, items, protection, stockCounter,
+                message, market, cfg, new SignService(cfg), shopBlockService, adminBypass);
+        Account serverAcc = new Account("Server", "Server", UUID.randomUUID());
+        when(accounts.getServerEconomyAccount()).thenReturn(serverAcc);
+        when(economy.withdraw(eq(player.getUniqueId()), any(BigDecimal.class), any())).thenReturn(true);
+        when(economy.deposit(eq(serverAcc.getUuid()), any(BigDecimal.class), any())).thenReturn(false); // credit fails
+
+        boolean charged = svc.chargeCreationFee(player, VALID);
+
+        verify(message, never()).send(eq(player), eq("chestshop.SHOP_FEE_PAID"), anyString(), anyString());
+        // Player was compensated: a deposit back to the player was attempted.
+        verify(economy).deposit(eq(player.getUniqueId()), any(BigDecimal.class), any());
+        assertThat(charged).isFalse();
     }
 
     @Test
@@ -744,10 +766,44 @@ class ShopServiceImplTest extends ServerTest {
         when(accounts.resolveAccount("Notch")).thenReturn(notchAccount);
         Account serverAcc = new Account("Server", "Server", UUID.randomUUID());
         when(accounts.getServerEconomyAccount()).thenReturn(serverAcc);
+        when(economy.withdraw(eq(serverAcc.getUuid()), any(BigDecimal.class), any())).thenReturn(true);
+        when(economy.deposit(eq(notchAccount.getUuid()), any(BigDecimal.class), any())).thenReturn(true);
         when(economy.format(any(BigDecimal.class))).thenReturn("$5");
         refundService().refundOnRemoval(player, placeShopSign("Notch", "Diamond"));
         verify(economy).deposit(eq(notchAccount.getUuid()), any(BigDecimal.class), any());
         verify(economy).withdraw(eq(serverAcc.getUuid()), any(BigDecimal.class), any());
+        verify(message).send(eq(player), eq("chestshop.SHOP_REFUNDED"), eq("amount"), anyString());
+    }
+
+    @Test
+    void refundOnRemoval_noMintWhenServerDebitFails() {
+        // chestshop/behaviour/0001: the mirror leg (debit the server-economy account) fails.
+        // The owner must NOT be credited (that would be a net mint), and no SHOP_REFUNDED message.
+        when(accounts.resolveAccount("Notch")).thenReturn(notchAccount);
+        Account serverAcc = new Account("Server", "Server", UUID.randomUUID());
+        when(accounts.getServerEconomyAccount()).thenReturn(serverAcc);
+        when(economy.withdraw(eq(serverAcc.getUuid()), any(BigDecimal.class), any())).thenReturn(false); // mirror leg fails
+
+        refundService().refundOnRemoval(player, placeShopSign("Notch", "Diamond"));
+
+        verify(economy, never()).deposit(eq(notchAccount.getUuid()), any(BigDecimal.class), any());
+        verify(message, never()).send(eq(player), eq("chestshop.SHOP_REFUNDED"), anyString(), anyString());
+    }
+
+    @Test
+    void refundOnRemoval_creditsOwnerOnlyWhenServerDebitSucceeds() {
+        // chestshop/behaviour/0001: mirror leg succeeds → owner credited only if that credit
+        // itself confirms success, and only then is SHOP_REFUNDED sent.
+        when(accounts.resolveAccount("Notch")).thenReturn(notchAccount);
+        Account serverAcc = new Account("Server", "Server", UUID.randomUUID());
+        when(accounts.getServerEconomyAccount()).thenReturn(serverAcc);
+        when(economy.withdraw(eq(serverAcc.getUuid()), any(BigDecimal.class), any())).thenReturn(true);
+        when(economy.deposit(eq(notchAccount.getUuid()), any(BigDecimal.class), any())).thenReturn(true);
+        when(economy.format(any(BigDecimal.class))).thenReturn("$5");
+
+        refundService().refundOnRemoval(player, placeShopSign("Notch", "Diamond"));
+
+        verify(economy).deposit(eq(notchAccount.getUuid()), any(BigDecimal.class), any());
         verify(message).send(eq(player), eq("chestshop.SHOP_REFUNDED"), eq("amount"), anyString());
     }
 

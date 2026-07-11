@@ -500,6 +500,27 @@ class PartialFillCalculatorTest {
     }
 
     @Test
+    void adjustSell_doesNotThrow_whenAffordableQuotientOverflowsInt() {
+        // chestshop/behaviour/0003: getBalance can return Double.MAX_VALUE for an unlimited
+        // server-less admin shop. walletMoney / pricePerItem then far exceeds Integer.MAX_VALUE.
+        // intValueExact() would throw ArithmeticException and abort the trade on the main thread;
+        // the affordable amount must instead clamp to the requested item count (10 here).
+        PendingTransaction ctx = ctx(new ItemStack[]{item(Material.STONE, 10)}, new BigDecimal("0.01"), false, SELL);
+        economy.ownerEconomicallyActive = true;
+        economy.hasFunds = (u, a) -> false; // force the scale-to-affordable branch
+        economy.balance = u -> BigDecimal.valueOf(Double.MAX_VALUE); // astronomically large wallet
+        when(inventory.hasItems(any(), eq(clientInv))).thenReturn(true);
+        when(inventory.fits(any(ItemStack[].class), eq(ownerInv))).thenReturn(true);
+        economy.canHold = (u, a) -> true;
+
+        calc.adjustSell(ctx); // must not throw
+
+        // Affordable amount clamped to the 10 requested → full price honoured, not cancelled.
+        assertThat(ctx.isCancelled()).isFalse();
+        assertThat(ctx.getExactPrice()).isEqualByComparingTo("0.01");
+    }
+
+    @Test
     void adjustSell_cancelsWhenClientCannotHoldProceeds() {
         PendingTransaction ctx = ctx(new ItemStack[]{item(Material.STONE, 10)}, new BigDecimal("10.00"), true, SELL);
         economy.ownerEconomicallyActive = false;
@@ -763,7 +784,7 @@ class PartialFillCalculatorTest {
         @Override public void bind(io.paradaux.treasury.api.TreasuryApi treasury, int systemAccountId, io.paradaux.treasury.api.TaxApi taxApi) { /* unused headless */ }
         @Override public String format(java.math.BigDecimal amount) { return amount.toPlainString(); }
         @Override public boolean isOwnerEconomicallyActive(boolean unlimitedOwner) { return ownerEconomicallyActive; }
-        @Override public void deposit(java.util.UUID target, java.math.BigDecimal amount, org.bukkit.World world) { }
+        @Override public boolean deposit(java.util.UUID target, java.math.BigDecimal amount, org.bukkit.World world) { return true; }
         @Override public boolean withdraw(java.util.UUID target, java.math.BigDecimal amount, org.bukkit.World world) { return true; }
         @Override public boolean hasFunds(java.util.UUID account, java.math.BigDecimal amount) { return hasFunds.test(account, amount); }
         @Override public java.math.BigDecimal getBalance(java.util.UUID account) { return balance.apply(account); }

@@ -580,7 +580,16 @@ public class ShopServiceImpl implements ShopService {
             return false;
         }
 
-        creditServerEconomy(price, player.getWorld());
+        // Mirror the collected fee into the server-economy pool. If that leg fails the player
+        // has already been charged, so compensate (refund) rather than pocket the money into the
+        // void and falsely report SHOP_FEE_PAID (chestshop/behaviour/0002).
+        if (!creditServerEconomy(price, player.getWorld())) {
+            log.warn("ChestShop: creation fee charged to " + player.getName()
+                    + " but the server-economy credit failed; refunding the player.");
+            economy.deposit(player.getUniqueId(), price, player.getWorld());
+            return false;
+        }
+
         message.send(player, "chestshop.SHOP_FEE_PAID", "amount", economy.format(price));
         return true;
     }
@@ -602,25 +611,46 @@ public class ShopServiceImpl implements ShopService {
             return;
         }
 
-        economy.deposit(account.getUuid(), refund, sign.getWorld());
+        // Debit the mirror leg (the server-economy account) FIRST and gate on it. Crediting the
+        // owner before confirming the funding leg can succeed risks a net mint if the debit fails
+        // (chestshop/behaviour/0001). Only credit the owner once the mirror leg is covered, and
+        // only announce the refund once the owner credit itself is confirmed.
+        if (!debitServerEconomy(refund, sign.getWorld())) {
+            return;
+        }
 
-        debitServerEconomy(refund, sign.getWorld());
+        if (!economy.deposit(account.getUuid(), refund, sign.getWorld())) {
+            return;
+        }
+
         message.send(destroyer, "chestshop.SHOP_REFUNDED", "amount", economy.format(refund));
     }
 
-    /** Mirror a collected creation fee into the server-economy account, if one is configured. */
-    private void creditServerEconomy(BigDecimal amount, World world) {
+    /**
+     * Mirror a collected creation fee into the server-economy account, if one is configured.
+     *
+     * @return whether the credit was confirmed. No server-economy account configured → the fee
+     *         is a deliberate sink (SYSTEM), which counts as success.
+     */
+    private boolean creditServerEconomy(BigDecimal amount, World world) {
         Account serverAccount = accounts.getServerEconomyAccount();
-        if (serverAccount != null) {
-            economy.deposit(serverAccount.getUuid(), amount, world);
+        if (serverAccount == null) {
+            return true;
         }
+        return economy.deposit(serverAccount.getUuid(), amount, world);
     }
 
-    /** Mirror an issued refund out of the server-economy account, if one is configured. */
-    private void debitServerEconomy(BigDecimal amount, World world) {
+    /**
+     * Mirror an issued refund out of the server-economy account, if one is configured.
+     *
+     * @return whether the debit succeeded. No server-economy account configured → SYSTEM is the
+     *         deliberate faucet, which counts as success.
+     */
+    private boolean debitServerEconomy(BigDecimal amount, World world) {
         Account serverAccount = accounts.getServerEconomyAccount();
-        if (serverAccount != null) {
-            economy.withdraw(serverAccount.getUuid(), amount, world);
+        if (serverAccount == null) {
+            return true;
         }
+        return economy.withdraw(serverAccount.getUuid(), amount, world);
     }
 }
