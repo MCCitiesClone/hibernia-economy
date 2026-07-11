@@ -776,4 +776,61 @@ class FirmServiceImplTest {
         when(firms.listAllActive()).thenReturn(List.of(new Firm(), new Firm()));
         assertThat(svc.listAllActiveFirms()).hasSize(2);
     }
+
+    // ---------- int-id overloads (structure/0004) ----------
+    // Same behaviour as the String overloads, resolving the firm by id
+    // (getFirmById / getAnyFirmById) rather than round-tripping through
+    // getFirmByNameOrId(String.valueOf(id)).
+
+    @Test
+    void disbandFirm_byId_archivesAndDrains() {
+        UUID proprietor = UUID.randomUUID();
+        Firm firm = new Firm();
+        firm.setFirmId(1);
+        firm.setDisplayName("Acme");
+        firm.setProprietorUuid(proprietor.toString());
+        when(firms.getFirmById(1)).thenReturn(firm);
+        when(firms.isProprietorByFirmId(1, proprietor.toString())).thenReturn(true);
+
+        Account personal = new Account();
+        personal.setAccountId(99);
+        when(treasury.resolveOrCreatePersonal(proprietor)).thenReturn(personal);
+        when(accounts.listAccountsByFirm(1)).thenReturn(List.of(new FirmAccount(1, 10, null)));
+        when(firms.archiveFirm(1)).thenReturn(1);
+
+        svc.disbandFirm(1, proprietor);
+
+        verify(treasury).sweepAll(10, 99, "Firm disbanded", proprietor, "BusinessPlugin");
+    }
+
+    @Test
+    void updateFirmHq_byId_updatesHqRegion() {
+        UUID actor = UUID.randomUUID();
+        Firm firm = new Firm();
+        firm.setFirmId(5);
+        when(firms.getFirmById(5)).thenReturn(firm);
+        when(staffService.hasPermission(5, actor, RolePermission.ADMIN)).thenReturn(true);
+        when(areas.isValidPlot("plaza-1")).thenReturn(true);
+
+        svc.updateFirmHq(5, "plaza-1", actor);
+
+        ArgumentCaptor<Firm> cap = ArgumentCaptor.forClass(Firm.class);
+        verify(firms).updateFirm(cap.capture());
+        assertThat(cap.getValue().getHqRegion()).isEqualTo("plaza-1");
+    }
+
+    @Test
+    void updateFirmDiscord_byId_updatesUrl() {
+        UUID actor = UUID.randomUUID();
+        Firm firm = new Firm();
+        firm.setFirmId(8);
+        when(firms.getFirmById(8)).thenReturn(firm);
+        when(staffService.hasPermission(8, actor, RolePermission.ADMIN)).thenReturn(true);
+
+        svc.updateFirmDiscord(8, "https://discord.gg/abc", actor);
+
+        ArgumentCaptor<Firm> cap = ArgumentCaptor.forClass(Firm.class);
+        verify(firms).updateFirm(cap.capture());
+        assertThat(cap.getValue().getDiscordUrl()).isEqualTo("https://discord.gg/abc");
+    }
 }

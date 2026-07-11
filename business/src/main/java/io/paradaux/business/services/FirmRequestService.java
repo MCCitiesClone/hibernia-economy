@@ -9,6 +9,17 @@ public interface FirmRequestService {
     void acceptEmploymentOffer(String firmName, UUID playerId, UUID actorId);
     void rejectEmploymentOffer(String firmName, UUID playerId, UUID actorId);
 
+    // ---- int-id overloads (structure/0004) ----------------------------------
+    // For internal callers (the BusinessApi delegate) that already hold the firm
+    // id: resolve straight by id instead of round-tripping through
+    // getFirmByNameOrId(String.valueOf(id)). The String overloads stay for the
+    // command entrypoints resolving user name-or-id input.
+
+    void offerEmployment(int firmId, UUID playerId, UUID actorId);
+    void rescindEmploymentOffer(int firmId, UUID playerId, UUID actorId);
+    void acceptEmploymentOffer(int firmId, UUID playerId, UUID actorId);
+    void rejectEmploymentOffer(int firmId, UUID playerId, UUID actorId);
+
     String beginTransferProprietorship(String firmName, UUID newProprietorId, UUID actorId);
     boolean confirmTransferProprietorship(String firmName, UUID newProprietorId, String code, UUID actorId);
     void cancelTransferProprietorship(String firmName, UUID newProprietorId, UUID actorId);

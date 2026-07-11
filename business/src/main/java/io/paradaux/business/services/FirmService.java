@@ -16,6 +16,16 @@ public interface FirmService {
     void updateFirmHq(String firmName, String plotName, UUID actorId);
     void updateFirmDiscord(String firmName, String url, UUID actorId);
 
+    // ---- int-id overloads (structure/0004) ----------------------------------
+    // For internal callers (the BusinessApi delegate) that already hold the firm
+    // id: resolve straight by id instead of round-tripping through
+    // getFirmByNameOrId(String.valueOf(id)). The String overloads stay for the
+    // command entrypoints resolving user name-or-id input.
+
+    void disbandFirm(int firmId, UUID actorId);
+    void updateFirmHq(int firmId, String plotName, UUID actorId);
+    void updateFirmDiscord(int firmId, String url, UUID actorId);
+
     // ---- Staff/DOC administrative overrides (PAR-11) -------------------------
     // These bypass the proprietor/firm-permission checks; the calling command is
     // responsible for gating them on the `business.admin.*` permission surface.

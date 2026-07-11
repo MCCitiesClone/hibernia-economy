@@ -500,4 +500,58 @@ class FirmRequestServiceImplTest {
         assertThat(returned).isEqualTo(UUID.fromString(f.getProprietorUuid()));
         verify(requests).rejectTransfer(1, target.toString());
     }
+
+    // ---------- int-id overloads (structure/0004) ----------
+    // Same behaviour as the String overloads, resolving the firm by id
+    // (getFirmById) rather than round-tripping through getFirmByNameOrId.
+
+    @Test
+    void offerEmployment_byId_succeeds() {
+        when(firms.getFirmById(1)).thenReturn(firm());
+        when(staff.hasPermission(1, actor, RolePermission.ADMIN)).thenReturn(true);
+        when(staff.isEmployedBy(1, target)).thenReturn(false);
+        when(requests.hasPendingJobOffer(1, target.toString())).thenReturn(false);
+        when(requests.createInvite(eq(1), eq(target.toString()), eq(actor.toString()), any(LocalDateTime.class))).thenReturn(1);
+
+        svc.offerEmployment(1, target, actor);
+
+        verify(requests).createInvite(eq(1), eq(target.toString()), eq(actor.toString()), any(LocalDateTime.class));
+    }
+
+    @Test
+    void rescindEmploymentOffer_byId_succeeds() {
+        when(firms.getFirmById(1)).thenReturn(firm());
+        when(staff.hasPermission(1, actor, RolePermission.ADMIN)).thenReturn(true);
+        when(staff.isEmployedBy(1, target)).thenReturn(false);
+        when(requests.hasPendingJobOffer(1, target.toString())).thenReturn(true);
+        when(requests.rescindInvite(1, target.toString())).thenReturn(1);
+
+        svc.rescindEmploymentOffer(1, target, actor);
+
+        verify(requests).rescindInvite(1, target.toString());
+    }
+
+    @Test
+    void acceptEmploymentOffer_byId_hiresOnSuccess() {
+        when(firms.getFirmById(1)).thenReturn(firm());
+        when(requests.hasPendingJobOffer(1, target.toString())).thenReturn(true);
+        when(requests.lockPendingInviter(1, target.toString())).thenReturn(actor.toString());
+        when(staff.hasPermission(1, actor, RolePermission.ADMIN)).thenReturn(true);
+        when(requests.acceptInvite(1, target.toString())).thenReturn(1);
+
+        svc.acceptEmploymentOffer(1, target, target);
+
+        verify(staff).hireEmployeeFromInvite(1, target, actor);
+    }
+
+    @Test
+    void rejectEmploymentOffer_byId_succeeds() {
+        when(firms.getFirmById(1)).thenReturn(firm());
+        when(requests.hasPendingJobOffer(1, target.toString())).thenReturn(true);
+        when(requests.rejectInvite(1, target.toString())).thenReturn(1);
+
+        svc.rejectEmploymentOffer(1, target, target);
+
+        verify(requests).rejectInvite(1, target.toString());
+    }
 }

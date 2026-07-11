@@ -349,4 +349,54 @@ class FirmRoleServiceImplTest {
         when(roles.getFirmRolePermissions(1, "Lead")).thenReturn(List.of());
         assertThat(svc.getFirmRolePermissions(1, "Lead")).isEmpty();
     }
+
+    // ---------- int-id overloads (structure/0004) ----------
+    // Same behaviour as the String overloads, resolving the firm by id
+    // (getFirmById) rather than round-tripping through getFirmByNameOrId.
+
+    @Test
+    void createRole_byId_inserts() {
+        when(firms.getFirmById(1)).thenReturn(firm(1));
+        when(staffService.hasPermission(1, actor, RolePermission.ADMIN)).thenReturn(true);
+        when(roles.findMinRankOrder(1)).thenReturn(1);
+        when(roles.insertRole(any())).thenReturn(1);
+
+        svc.createRole(1, "Lead", 3, actor);
+
+        verify(roles).insertRole(any());
+    }
+
+    @Test
+    void deleteRole_byId_succeeds() {
+        when(firms.getFirmById(1)).thenReturn(firm(1));
+        when(staffService.hasPermission(1, actor, RolePermission.ADMIN)).thenReturn(true);
+        when(roles.findProprietorRoleName(1)).thenReturn("Proprietor");
+        when(roles.deleteRole(1, "Lead")).thenReturn(1);
+
+        svc.deleteRole(1, "Lead", actor);
+
+        verify(roles).deleteRole(1, "Lead");
+    }
+
+    @Test
+    void addRolePermission_byId_succeeds() {
+        when(firms.getFirmById(1)).thenReturn(firm(1));
+        when(staffService.hasPermission(1, actor, RolePermission.ADMIN)).thenReturn(true);
+        when(roles.listRolesByFirm(1)).thenReturn(List.of(new FirmRole(1, "Lead", 3)));
+
+        svc.addRolePermission(1, "Lead", "FINANCIAL", actor);
+
+        verify(roles).addRolePermission(any());
+    }
+
+    @Test
+    void removeRolePermission_byId_succeeds() {
+        when(firms.getFirmById(1)).thenReturn(firm(1));
+        when(staffService.hasPermission(1, actor, RolePermission.ADMIN)).thenReturn(true);
+        when(roles.deleteRolePermission(1, "Lead", RolePermission.FINANCIAL)).thenReturn(1);
+
+        svc.removeRolePermission(1, "Lead", "FINANCIAL", actor);
+
+        verify(roles).deleteRolePermission(1, "Lead", RolePermission.FINANCIAL);
+    }
 }

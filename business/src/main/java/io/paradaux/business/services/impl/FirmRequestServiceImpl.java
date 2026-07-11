@@ -50,8 +50,16 @@ public class FirmRequestServiceImpl implements FirmRequestService {
 
     @Override
     public void offerEmployment(String firmName, UUID targetId, UUID actorId) {
+        offerEmployment(firms.getFirmByNameOrId(firmName), targetId, actorId);
+    }
+
+    @Override
+    public void offerEmployment(int firmId, UUID targetId, UUID actorId) {
+        offerEmployment(firms.getFirmById(firmId), targetId, actorId);
+    }
+
+    private void offerEmployment(Firm firm, UUID targetId, UUID actorId) {
         LocalDateTime expiresAt = LocalDateTime.now().plusMinutes(OFFER_EXPIRATION_MINUTES);
-        Firm firm = firms.getFirmByNameOrId(firmName);
 
         if (firm == null) {
             throw new NotFoundException("Firm not found.");
@@ -84,8 +92,15 @@ public class FirmRequestServiceImpl implements FirmRequestService {
 
     @Override
     public void rescindEmploymentOffer(String firmName, UUID playerId, UUID actorId) {
-        Firm firm = firms.getFirmByNameOrId(firmName);
+        rescindEmploymentOffer(firms.getFirmByNameOrId(firmName), playerId, actorId);
+    }
 
+    @Override
+    public void rescindEmploymentOffer(int firmId, UUID playerId, UUID actorId) {
+        rescindEmploymentOffer(firms.getFirmById(firmId), playerId, actorId);
+    }
+
+    private void rescindEmploymentOffer(Firm firm, UUID playerId, UUID actorId) {
         if (firm == null) {
             throw new NotFoundException("Firm not found.");
         }
@@ -114,8 +129,15 @@ public class FirmRequestServiceImpl implements FirmRequestService {
 
     @Override
     public void acceptEmploymentOffer(String firmName, UUID playerId, UUID actorId) {
-        Firm firm = firms.getFirmByNameOrId(firmName);
+        acceptEmploymentOffer(firms.getFirmByNameOrId(firmName), playerId, actorId);
+    }
 
+    @Override
+    public void acceptEmploymentOffer(int firmId, UUID playerId, UUID actorId) {
+        acceptEmploymentOffer(firms.getFirmById(firmId), playerId, actorId);
+    }
+
+    private void acceptEmploymentOffer(Firm firm, UUID playerId, UUID actorId) {
         if (firm == null) {
             throw new NotFoundException("Firm not found.");
         }
@@ -161,8 +183,15 @@ public class FirmRequestServiceImpl implements FirmRequestService {
 
     @Override
     public void rejectEmploymentOffer(String firmName, UUID playerId, UUID actorId) {
-        Firm firm = firms.getFirmByNameOrId(firmName);
+        rejectEmploymentOffer(firms.getFirmByNameOrId(firmName), playerId, actorId);
+    }
 
+    @Override
+    public void rejectEmploymentOffer(int firmId, UUID playerId, UUID actorId) {
+        rejectEmploymentOffer(firms.getFirmById(firmId), playerId, actorId);
+    }
+
+    private void rejectEmploymentOffer(Firm firm, UUID playerId, UUID actorId) {
         if (firm == null) {
             throw new NotFoundException("Firm not found.");
         }

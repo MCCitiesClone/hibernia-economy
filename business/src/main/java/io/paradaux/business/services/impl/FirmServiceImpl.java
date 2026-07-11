@@ -186,12 +186,20 @@ public class FirmServiceImpl implements FirmService {
     @Override
     public void disbandFirm(String firmName, UUID actorId) {
         // Archived-inclusive: a disbanded firm must report "already disbanded", not "not found".
-        Firm firm = getAnyFirmByNameOrId(firmName);
+        disbandFirm(getAnyFirmByNameOrId(firmName), actorId);
+    }
+
+    @Override
+    public void disbandFirm(int firmId, UUID actorId) {
+        disbandFirm(getAnyFirmById(firmId), actorId);
+    }
+
+    private void disbandFirm(Firm firm, UUID actorId) {
         if (firm == null) {
-            throw new BadCommandException("Firm not found: " + firmName);
+            throw new BadCommandException("Firm not found.");
         }
         if (Boolean.TRUE.equals(firm.getArchived())) {
-            throw new BadCommandException("Firm already disbanded: " + firmName);
+            throw new BadCommandException("Firm already disbanded: " + firm.getDisplayName());
         }
         if (!isProprietor(firm.getFirmId(), actorId)) {
             throw new NoPermissionException("Only the proprietor can disband a firm.");
@@ -288,9 +296,17 @@ public class FirmServiceImpl implements FirmService {
 
     @Override
     public void updateFirmHq(String firmName, String plotName, UUID actorId) {
-        Firm firm = getFirmByNameOrId(firmName);
+        updateFirmHq(getFirmByNameOrId(firmName), plotName, actorId);
+    }
+
+    @Override
+    public void updateFirmHq(int firmId, String plotName, UUID actorId) {
+        updateFirmHq(getFirmById(firmId), plotName, actorId);
+    }
+
+    private void updateFirmHq(Firm firm, String plotName, UUID actorId) {
         if (firm == null) {
-            throw new BadCommandException("Firm not found: " + firmName);
+            throw new BadCommandException("Firm not found.");
         }
         if (!canAdministerFirm(firm.getFirmId(), actorId)) {
             throw new NoPermissionException("You don't have permission to manage this firm.");
@@ -310,9 +326,17 @@ public class FirmServiceImpl implements FirmService {
 
     @Override
     public void updateFirmDiscord(String firmName, String url, UUID actorId) {
-        Firm firm = getFirmByNameOrId(firmName);
+        updateFirmDiscord(getFirmByNameOrId(firmName), url, actorId);
+    }
+
+    @Override
+    public void updateFirmDiscord(int firmId, String url, UUID actorId) {
+        updateFirmDiscord(getFirmById(firmId), url, actorId);
+    }
+
+    private void updateFirmDiscord(Firm firm, String url, UUID actorId) {
         if (firm == null) {
-            throw new BadCommandException("Firm not found: " + firmName);
+            throw new BadCommandException("Firm not found.");
         }
         if (!canAdministerFirm(firm.getFirmId(), actorId)) {
             throw new NoPermissionException("You don't have permission to manage this firm.");

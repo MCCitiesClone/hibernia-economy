@@ -118,7 +118,7 @@ public class FirmChatServiceImpl implements FirmChatService {
         }
         // Keyed by UUID so a spy who is also a tuned-in member isn't added twice.
         Map<UUID, Audience> out = new LinkedHashMap<>();
-        for (Player employee : staff.getOnlineEmployees(String.valueOf(firmId))) {
+        for (Player employee : staff.getOnlineEmployees(firmId)) {
             if (firmId.equals(activeFirm.get(employee.getUniqueId()))) {
                 out.put(employee.getUniqueId(), employee);
             }
