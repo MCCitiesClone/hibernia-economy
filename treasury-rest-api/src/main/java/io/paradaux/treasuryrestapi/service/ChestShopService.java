@@ -14,6 +14,7 @@ import io.paradaux.treasuryrestapi.model.ChestShopItemStatsRow;
 import io.paradaux.treasuryrestapi.model.ChestShopMarketStatsRow;
 import io.paradaux.treasuryrestapi.model.ChestShopPriceDayRow;
 import io.paradaux.treasuryrestapi.model.ChestShopShopRow;
+import io.paradaux.treasuryrestapi.util.Pagination;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -163,12 +164,7 @@ public class ChestShopService {
             throw new ApiException(HttpStatus.BAD_REQUEST, "INVALID_PARAM",
                     "Query parameter 'page' must be >= 1.");
         }
-        long offsetLong = (long) (page - 1) * limit;
-        if (offsetLong > Integer.MAX_VALUE) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "INVALID_PARAM",
-                    "Query parameter 'page' is too large.");
-        }
-        return (int) offsetLong;
+        return Pagination.offset(page, limit);
     }
 
     private static int validateDays(int days) {
