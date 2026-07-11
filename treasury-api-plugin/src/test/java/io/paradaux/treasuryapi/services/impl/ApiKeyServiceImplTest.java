@@ -19,7 +19,12 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 
 /**
  * Covers the security-critical JWT mint + key-derivation path (ADT-50): a minted
@@ -143,5 +148,70 @@ class ApiKeyServiceImplTest {
     /** The real production derivation — both mint (here) and the REST verifier use io.paradaux.common.JwtKeys. */
     private static SecretKey deriveKey(String secret) {
         return JwtKeys.deriveHmacKey(secret);
+    }
+
+    // ---- Read/revoke pass-through coverage (ADT treasury-api-plugin/testing/0007) ----
+    // These service methods carry no logic beyond routing to the correct mapper
+    // query; the risk is a mis-wire (e.g. listKeys hitting the business-accessible
+    // query, or the wrong type string). Each test pins the exact mapper call so a
+    // regression that swaps the delegation target fails here.
+
+    @Test
+    void revokeKey_delegatesToMapperRevoke() {
+        ApiKeyMapper mapper = mock(ApiKeyMapper.class);
+        new ApiKeyServiceImpl(mapper, config).revokeKey(77);
+        verify(mapper).revoke(77);
+        verifyNoMoreInteractions(mapper);
+    }
+
+    @Test
+    void getKey_returnsMapperRowById() {
+        ApiKeyMapper mapper = mock(ApiKeyMapper.class);
+        ApiKey found = new ApiKey();
+        found.setKeyId(88);
+        when(mapper.findById(88)).thenReturn(found);
+
+        ApiKey result = new ApiKeyServiceImpl(mapper, config).getKey(88);
+
+        assertSame(found, result, "getKey must return the mapper's findById row unchanged");
+        verify(mapper).findById(88);
+    }
+
+    @Test
+    void getKey_missing_returnsNull() {
+        ApiKeyMapper mapper = mock(ApiKeyMapper.class);
+        when(mapper.findById(99)).thenReturn(null);
+        assertNull(new ApiKeyServiceImpl(mapper, config).getKey(99));
+    }
+
+    @Test
+    void listKeys_queriesByOwnerAndType_notTheEmployeeAccessQuery() {
+        ApiKeyMapper mapper = mock(ApiKeyMapper.class);
+        UUID owner = UUID.randomUUID();
+        ApiKey a = new ApiKey();
+        when(mapper.findByOwnerAndType(owner, "PERSONAL")).thenReturn(List.of(a));
+
+        List<ApiKey> result = new ApiKeyServiceImpl(mapper, config).listKeys(owner, "PERSONAL");
+
+        assertEquals(List.of(a), result);
+        // Must route to the owner/type query with the caller's exact type string —
+        // never the employee-access query.
+        verify(mapper).findByOwnerAndType(owner, "PERSONAL");
+        verifyNoMoreInteractions(mapper);
+    }
+
+    @Test
+    void listBusinessKeysAccessibleByEmployee_queriesTheEmployeeAccessJoin() {
+        ApiKeyMapper mapper = mock(ApiKeyMapper.class);
+        UUID employee = UUID.randomUUID();
+        ApiKey a = new ApiKey();
+        when(mapper.findBusinessAccessibleByEmployee(employee)).thenReturn(List.of(a));
+
+        List<ApiKey> result =
+                new ApiKeyServiceImpl(mapper, config).listBusinessKeysAccessibleByEmployee(employee);
+
+        assertEquals(List.of(a), result);
+        verify(mapper).findBusinessAccessibleByEmployee(employee);
+        verifyNoMoreInteractions(mapper);
     }
 }

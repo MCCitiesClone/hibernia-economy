@@ -60,6 +60,29 @@ dependencies {
     // API, so the test classpath needs both to load the class (even for pure tests).
     testImplementation(libs.paper.api)
     testImplementation(libs.luckperms.api)
+    // The command handlers reference the Treasury/Business public APIs (compileOnly
+    // in production — provided by the sibling plugins at runtime). Tests that exercise
+    // those handlers need the API types on the test classpath.
+    testImplementation(project(":treasury:treasury-api"))
+    testImplementation(project(":business:business-api"))
+
+    // Mapper integration tests run the mappers against a real MariaDB — MariaDB4j
+    // unpacks a real MariaDB binary and runs it on a dynamic port (mirrors the
+    // treasury/business harness). The schema is built from the authoritative
+    // economy-flyway migrations (staged onto the test classpath below), so tests and
+    // production share one source of schema truth — no schema.sql snapshot to drift.
+    testImplementation(libs.assertj.core)
+    testImplementation(libs.mariadb4j)
+    testImplementation(libs.flyway.core)
+    testImplementation(libs.flyway.mysql)
+}
+
+// Stage the economy-flyway migrations onto the test classpath (under db/migration)
+// so the mapper-IT harness can run them with Flyway (classpath:db/migration).
+tasks.named<Copy>("processTestResources") {
+    from(project(":economy-flyway").file("src/main/resources/db/migration")) {
+        into("db/migration")
+    }
 }
 
 tasks {
