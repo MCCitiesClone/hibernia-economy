@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.Map;
 import java.util.NavigableMap;
+import java.util.Objects;
 import java.util.TreeMap;
 import java.util.function.Consumer;
 
@@ -46,30 +47,48 @@ public final class BalanceTaxBrackets {
     /**
      * Builds a bracket model from raw {@code floor -> rate} string entries (e.g. the
      * keys/values of a Bukkit {@code ConfigurationSection}). Entries whose key is not
-     * a number, or whose rate is not a number or falls outside {@code [0,1]}, are
-     * passed to {@code onWarn} and skipped. If no valid entry remains the
-     * {@link #DEFAULTS} are used.
+     * a number, whose rate is missing/blank or not a number, or whose rate falls
+     * outside {@code [0,1]}, are passed to {@code onWarn} (naming the offending field)
+     * and skipped. If no valid entry remains the {@link #DEFAULTS} are used.
      *
      * @param rawEntries floor (as a decimal string) to weekly rate (as a decimal string)
-     * @param onWarn     receives a fully-formatted, human-readable warning per skipped entry
+     * @param onWarn     receives a fully-formatted, human-readable warning per skipped
+     *                   entry; must not be {@code null}
+     * @throws NullPointerException if {@code onWarn} is {@code null}
      */
     public static BalanceTaxBrackets fromRawEntries(Map<String, String> rawEntries, Consumer<String> onWarn) {
+        Objects.requireNonNull(onWarn, "onWarn");
         NavigableMap<BigDecimal, BigDecimal> map = new TreeMap<>();
         if (rawEntries != null) {
             for (Map.Entry<String, String> e : rawEntries.entrySet()) {
                 String key = e.getKey();
+                BigDecimal min;
                 try {
-                    BigDecimal min = new BigDecimal(key);
-                    BigDecimal rate = new BigDecimal(e.getValue() == null ? "0" : e.getValue());
-                    if (rate.compareTo(BigDecimal.ZERO) < 0 || rate.compareTo(BigDecimal.ONE) > 0) {
-                        onWarn.accept("Balance tax bracket rate for floor '" + key
-                                + "' is out of range [0,1]: " + rate + " — skipping");
-                        continue;
-                    }
-                    map.put(min, rate);
+                    min = new BigDecimal(key);
                 } catch (NumberFormatException ex) {
                     onWarn.accept("Invalid balance tax bracket key '" + key + "' — skipping");
+                    continue;
                 }
+
+                String rawRate = e.getValue();
+                if (rawRate == null || rawRate.isBlank()) {
+                    onWarn.accept("Missing balance tax bracket rate for floor '" + key + "' — skipping");
+                    continue;
+                }
+                BigDecimal rate;
+                try {
+                    rate = new BigDecimal(rawRate.trim());
+                } catch (NumberFormatException ex) {
+                    onWarn.accept("Invalid balance tax bracket rate for floor '" + key
+                            + "': '" + rawRate + "' — skipping");
+                    continue;
+                }
+                if (rate.compareTo(BigDecimal.ZERO) < 0 || rate.compareTo(BigDecimal.ONE) > 0) {
+                    onWarn.accept("Balance tax bracket rate for floor '" + key
+                            + "' is out of range [0,1]: " + rate + " — skipping");
+                    continue;
+                }
+                map.put(min, rate);
             }
         }
         if (map.isEmpty()) {

@@ -11,6 +11,8 @@ import java.util.NavigableMap;
 import java.util.TreeMap;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class BalanceTaxBracketsTest {
@@ -74,6 +76,51 @@ class BalanceTaxBracketsTest {
         assertEquals(1, b.size());
         assertEquals(1, warnings.size());
         assertTrue(warnings.get(0).contains("Invalid balance tax bracket key"));
+    }
+
+    @Test
+    void unparseableRateIsNamedAsRateNotKey_andSkipped() {
+        Map<String, String> raw = new LinkedHashMap<>();
+        raw.put("0", "0");
+        raw.put("1000", "notarate");   // key parses, value does not
+        List<String> warnings = new ArrayList<>();
+        BalanceTaxBrackets b = BalanceTaxBrackets.fromRawEntries(raw, warnings::add);
+        assertEquals(1, b.size());     // only 0 -> 0 survives; 1000 skipped, not coerced to 0
+        assertEquals(1, warnings.size());
+        String w = warnings.get(0);
+        assertTrue(w.contains("rate"), "warning must name the rate field: " + w);
+        assertFalse(w.contains("key '"), "warning must not misreport an unparseable rate as a key: " + w);
+        // The skipped bracket must not have been silently added at rate 0.
+        assertEquals(BigDecimal.ZERO, b.weeklyRate(new BigDecimal("1000")));
+    }
+
+    @Test
+    void nullRateValueIsWarnedAndSkipped_notCoercedToZero() {
+        Map<String, String> raw = new LinkedHashMap<>();
+        raw.put("0", "0");
+        raw.put("1000", null);
+        List<String> warnings = new ArrayList<>();
+        BalanceTaxBrackets b = BalanceTaxBrackets.fromRawEntries(raw, warnings::add);
+        assertEquals(1, b.size());
+        assertEquals(1, warnings.size());
+        assertTrue(warnings.get(0).toLowerCase().contains("missing"));
+    }
+
+    @Test
+    void blankRateValueIsWarnedAndSkipped() {
+        Map<String, String> raw = new LinkedHashMap<>();
+        raw.put("1000", "   ");
+        List<String> warnings = new ArrayList<>();
+        BalanceTaxBrackets b = BalanceTaxBrackets.fromRawEntries(raw, warnings::add);
+        // no valid entry -> defaults
+        assertEquals(BalanceTaxBrackets.DEFAULTS.size(), b.size());
+        assertEquals(1, warnings.size());
+    }
+
+    @Test
+    void nullOnWarnConsumerIsRejected() {
+        assertThrows(NullPointerException.class,
+                () -> BalanceTaxBrackets.fromRawEntries(Map.of("bad", "x"), null));
     }
 
     @Test

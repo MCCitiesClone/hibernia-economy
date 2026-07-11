@@ -27,23 +27,31 @@ public final class DataSourceProvider implements AutoCloseable {
 
     private final HikariDataSource ds;
 
-    private DataSourceProvider(Builder b) {
-        // Driver-side statement caching + batch rewrite (opt-in). cachePrepStmts/
-        // useServerPrepStmts let a connection reuse parsed statements;
-        // rewriteBatchedStatements turns a multi-row insert into one round-trip.
-        // utf8 for display names/memos.
+    /**
+     * Assembles the MariaDB JDBC URL from the builder settings. Package-private and
+     * side-effect-free so it can be unit-tested without standing up a pool/DB.
+     *
+     * <p>Driver-side statement caching + batch rewrite are opt-in: {@code cachePrepStmts}/
+     * {@code useServerPrepStmts} let a connection reuse parsed statements, and
+     * {@code rewriteBatchedStatements} turns a multi-row insert into one round-trip.
+     * utf8 is always set for display names/memos.
+     */
+    static String buildJdbcUrl(String host, int port, String db, boolean statementCaching) {
         StringBuilder url = new StringBuilder()
-                .append("jdbc:mariadb://").append(b.host).append(':').append(b.port)
-                .append('/').append(b.db)
+                .append("jdbc:mariadb://").append(host).append(':').append(port)
+                .append('/').append(db)
                 .append("?useUnicode=true&characterEncoding=utf8");
-        if (b.statementCaching) {
+        if (statementCaching) {
             url.append("&useServerPrepStmts=true&cachePrepStmts=true")
                .append("&prepStmtCacheSize=250&prepStmtCacheSqlLimit=2048")
                .append("&rewriteBatchedStatements=true");
         }
+        return url.toString();
+    }
 
+    private DataSourceProvider(Builder b) {
         HikariConfig cfg = new HikariConfig();
-        cfg.setJdbcUrl(url.toString());
+        cfg.setJdbcUrl(buildJdbcUrl(b.host, b.port, b.db, b.statementCaching));
         cfg.setUsername(b.user);
         cfg.setPassword(b.pass);
         cfg.setMaximumPoolSize(b.maximumPoolSize);

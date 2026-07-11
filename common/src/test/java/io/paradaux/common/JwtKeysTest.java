@@ -3,6 +3,9 @@ package io.paradaux.common;
 import org.junit.jupiter.api.Test;
 
 import javax.crypto.SecretKey;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.Base64;
 
@@ -49,6 +52,33 @@ class JwtKeysTest {
     void base64Secret_belowMinimumKeyLength_isRejected() {
         String tooShort = "base64:" + Base64.getEncoder().encodeToString(new byte[16]); // 128-bit
         assertThrows(IllegalStateException.class, () -> JwtKeys.deriveHmacKey(tooShort));
+    }
+
+    @Test
+    void nullSecret_isRejected() {
+        assertThrows(IllegalStateException.class, () -> JwtKeys.deriveHmacKey(null));
+    }
+
+    @Test
+    void emptySecret_isRejected() {
+        assertThrows(IllegalStateException.class, () -> JwtKeys.deriveHmacKey(""));
+    }
+
+    @Test
+    void blankSecret_isRejected() {
+        assertThrows(IllegalStateException.class, () -> JwtKeys.deriveHmacKey("   "));
+    }
+
+    @Test
+    void legacyPassphrase_derivesKeyByPlainSha256OfUtf8Bytes() throws NoSuchAlgorithmException {
+        String passphrase = "legacy-passphrase-at-least-32-chars-long";
+        byte[] expected = MessageDigest.getInstance("SHA-256")
+                .digest(passphrase.getBytes(StandardCharsets.UTF_8));
+
+        SecretKey key = JwtKeys.deriveHmacKey(passphrase);
+        assertEquals("HmacSHA256", key.getAlgorithm());
+        assertArrayEquals(expected, key.getEncoded(),
+                "legacy path must be exactly SHA-256(secret UTF-8) — pinned so mint/verify can't drift");
     }
 
     @Test
