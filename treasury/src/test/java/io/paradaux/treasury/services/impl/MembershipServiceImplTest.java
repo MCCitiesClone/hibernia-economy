@@ -68,6 +68,59 @@ class MembershipServiceImplTest {
         assertThat(svc.isAuthorizer(1, u)).isFalse();
     }
 
+    // ---- Spend authorization (per-account member/authorizer gate) ----
+
+    @Test
+    void canSpend_trueWhenMember_doesNotCheckAuthorizer() {
+        UUID u = UUID.randomUUID();
+        when(membershipMapper.isMember(1, u)).thenReturn(1);
+        assertThat(svc.canSpend(1, u)).isTrue();
+        // Member short-circuits — authorizer lookup is never consulted.
+        verify(membershipMapper, never()).isAuthorizer(anyInt(), any());
+    }
+
+    @Test
+    void canSpend_trueWhenAuthorizerOnly() {
+        UUID u = UUID.randomUUID();
+        when(membershipMapper.isMember(1, u)).thenReturn(0);
+        when(membershipMapper.isAuthorizer(1, u)).thenReturn(1);
+        assertThat(svc.canSpend(1, u)).isTrue();
+    }
+
+    @Test
+    void canSpend_falseWhenNeither() {
+        UUID u = UUID.randomUUID();
+        when(membershipMapper.isMember(1, u)).thenReturn(0);
+        when(membershipMapper.isAuthorizer(1, u)).thenReturn(0);
+        assertThat(svc.canSpend(1, u)).isFalse();
+    }
+
+    @Test
+    void assertCanSpend_throwsNoPermission_whenNeitherMemberNorAuthorizer() {
+        UUID u = UUID.randomUUID();
+        when(membershipMapper.isMember(1, u)).thenReturn(0);
+        when(membershipMapper.isAuthorizer(1, u)).thenReturn(0);
+        assertThatThrownBy(() -> svc.assertCanSpend(1, u))
+                .isInstanceOf(io.paradaux.hibernia.framework.exceptions.NoPermissionException.class);
+    }
+
+    @Test
+    void assertCanSpend_passesForMember() {
+        UUID u = UUID.randomUUID();
+        when(membershipMapper.isMember(1, u)).thenReturn(1);
+        // Does not throw.
+        svc.assertCanSpend(1, u);
+    }
+
+    @Test
+    void assertCanSpend_passesForAuthorizer() {
+        UUID u = UUID.randomUUID();
+        when(membershipMapper.isMember(1, u)).thenReturn(0);
+        when(membershipMapper.isAuthorizer(1, u)).thenReturn(1);
+        // Does not throw.
+        svc.assertCanSpend(1, u);
+    }
+
     // ---- UUID CRUD ----
 
     @Test

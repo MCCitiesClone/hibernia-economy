@@ -315,9 +315,11 @@ public class FineCommand implements CommandHandler {
      * same people who can move a department's money can also manage its fines.
      */
     private boolean canFineFrom(Player player, Account account) {
+        // The per-account member/authorizer check now lives in the service
+        // (MembershipService.canSpend), matching GovCommand.canTransferFrom; the
+        // global admin node and the coarse @Permission gate stay at the command layer.
         return player.hasPermission("treasury.gov.admin")
-                || membershipService.isMember(account.getAccountId(), player.getUniqueId())
-                || membershipService.isAuthorizer(account.getAccountId(), player.getUniqueId());
+                || membershipService.canSpend(account.getAccountId(), player.getUniqueId());
     }
 
     private void listFines(Player sender, OfflinePlayer target) {

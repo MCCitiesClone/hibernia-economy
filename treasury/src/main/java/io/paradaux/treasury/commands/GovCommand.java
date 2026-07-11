@@ -948,14 +948,16 @@ public class GovCommand implements CommandHandler {
     private boolean canTransferFrom(CommandSender sender, Account account) {
         // Console / RCON bypasses the per-account membership gate — the server is
         // the authority. A plain player needs the global transfer/admin node, or
-        // membership/authorizer on this specific account.
+        // membership/authorizer on this specific account. The per-account
+        // member/authorizer check is enforced in the service (MembershipService
+        // .canSpend / assertCanSpend) so it holds regardless of caller; the coarse
+        // @Permission gate and these global nodes stay at the command layer.
         if (!(sender instanceof Player p)) {
             return true;
         }
         return p.hasPermission("treasury.gov.admin")
                 || p.hasPermission("treasury.gov.account.transfer")
-                || membershipService.isMember(account.getAccountId(), p.getUniqueId())
-                || membershipService.isAuthorizer(account.getAccountId(), p.getUniqueId());
+                || membershipService.canSpend(account.getAccountId(), p.getUniqueId());
     }
 
     /**

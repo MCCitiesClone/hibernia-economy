@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import io.paradaux.treasury.mappers.GroupMembershipMapper;
 import io.paradaux.treasury.mappers.MembershipMapper;
 import io.paradaux.treasury.model.economy.AccountMember;
+import io.paradaux.hibernia.framework.exceptions.NoPermissionException;
 import io.paradaux.treasury.services.MembershipService;
 import net.luckperms.api.LuckPerms;
 import net.luckperms.api.model.group.Group;
@@ -74,6 +75,23 @@ public class MembershipServiceImpl implements MembershipService {
         // Members (and authorizers, who are members) can already read; viewers add
         // a read-only tier on top. No spend/management rights are implied.
         return isMember(accountId, uuid) || isViewer(accountId, uuid);
+    }
+
+    @Override
+    @Transactional
+    public boolean canSpend(int accountId, UUID uuid) {
+        // Per-account spend gate: a member or an authorizer of the account may move
+        // its money. Read-only viewers do not qualify. Global permission nodes and
+        // the console/RCON bypass are handled by the command layer before this.
+        return isMember(accountId, uuid) || isAuthorizer(accountId, uuid);
+    }
+
+    @Override
+    @Transactional
+    public void assertCanSpend(int accountId, UUID uuid) {
+        if (!canSpend(accountId, uuid)) {
+            throw new NoPermissionException("treasury.gov.no-access");
+        }
     }
 
     // ── Individual UUID CRUD ──
