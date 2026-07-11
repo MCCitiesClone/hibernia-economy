@@ -13,6 +13,7 @@ import io.paradaux.treasury.model.economy.*;
 import io.paradaux.treasury.services.AccountService;
 import io.paradaux.treasury.services.LedgerService;
 import io.paradaux.treasury.services.MembershipService;
+import io.paradaux.treasury.utils.AccountFactory;
 import io.paradaux.treasury.utils.Idempotency;
 import io.paradaux.treasury.utils.Money;
 import io.paradaux.treasury.services.cache.PersonalAccountCache;
@@ -430,16 +431,9 @@ public class LedgerServiceImpl implements LedgerService {
             return existing;
         }
 
-        Account account = new Account();
-        account.setAccountType(AccountType.GOVERNMENT);
-        account.setOwnerUuid(TreasuryConstants.VIRTUAL_TREASURY_OWNER);
-        account.setDisplayName(name);
-        account.setRequiresAuthorization(false);
-        account.setArchived(false);
-        account.setAllowOverdraft(true);
         // Primitive GOVERNMENT accounts (starting-balances, tax-income, fines, Eco)
         // are system faucets/sinks; the -1 sentinel disables the credit-limit check.
-        account.setCreditLimit(BigDecimal.valueOf(-1));
+        Account account = AccountFactory.primitiveGovernment(name);
         accountMapper.insertAccount(account);
         accountMapper.seedBalance(account.getAccountId());
         log.info("Created GOVERNMENT account '{}' (id={})", name, account.getAccountId());

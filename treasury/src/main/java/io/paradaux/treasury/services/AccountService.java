@@ -112,6 +112,20 @@ public interface AccountService {
     /** Returns the non-archived BUSINESS account with the given display name, or null if not found. */
     Account getBusinessAccountByName(String name);
 
+    /**
+     * Resolves a BUSINESS account from a single {@code word()}-tokenised argument:
+     * the bare token first, then the canonical {@code "<token> Corporate Account"}
+     * display-name convention (FirmServiceImpl). Lets a user type just the firm name
+     * without knowing the suffix. Returns null if neither matches.
+     */
+    default Account resolveBusinessAccountByToken(String token) {
+        Account account = getBusinessAccountByName(token);
+        if (account == null) {
+            account = getBusinessAccountByName(token + " Corporate Account");
+        }
+        return account;
+    }
+
     /** Returns all non-archived GOVERNMENT accounts sorted by display name. */
     List<Account> listGovernmentAccounts();
 

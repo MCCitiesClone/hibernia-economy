@@ -15,17 +15,12 @@ import io.paradaux.treasury.services.LedgerService;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
-
 @Slf4j
 @Command({"transactions", "txns"})
 @Permission("treasury.transactions")
 public class TransactionsCommand implements CommandHandler {
 
     private static final int PAGE_SIZE = 10;
-    private static final DateTimeFormatter TIME_FMT =
-            DateTimeFormatter.ofPattern("MM/dd HH:mm").withZone(ZoneId.systemDefault());
 
     private final AccountService accountService;
     private final LedgerService ledgerService;
@@ -241,26 +236,7 @@ public class TransactionsCommand implements CommandHandler {
 
     private void sendEntries(Player viewer, Page<TransactionEntry> result) {
         for (TransactionEntry entry : result.items()) {
-            String formattedAmount = accountService.formatAmount(entry.getAmount().abs());
-            String sign = entry.getAmount().signum() >= 0 ? "+" : "-";
-            String colorTag = entry.getAmount().signum() >= 0 ? "green" : "red";
-            String coloredAmount = "<" + colorTag + ">" + sign + formattedAmount + "</" + colorTag + ">";
-            String memo = entry.getMemo() != null ? entry.getMemo() : entry.getMessage();
-            if (memo == null) memo = "—";
-            memo = sanitize(memo);
-            String time = entry.getSettlementTime() != null
-                    ? TIME_FMT.format(entry.getSettlementTime()) : "—";
-
-            message.send(viewer, "treasury.transactions.entry",
-                    "txn", String.valueOf(entry.getTxnId()),
-                    "amount", coloredAmount,
-                    "memo", memo,
-                    "time", time);
+            TransactionEntryRenderer.send(viewer, message, accountService, entry);
         }
-    }
-
-    /** Escapes MiniMessage tag syntax in user-supplied strings to prevent injection. */
-    private static String sanitize(String input) {
-        return input.replace("<", "\\<");
     }
 }

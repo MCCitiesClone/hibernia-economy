@@ -6,7 +6,6 @@ import io.paradaux.hibernia.framework.commander.spi.CommandHandler;
 import io.paradaux.hibernia.framework.i18n.Message;
 import io.paradaux.treasury.commands.resolvers.PayTarget;
 import io.paradaux.treasury.model.economy.Account;
-import io.paradaux.treasury.model.economy.TransferRequest;
 import io.paradaux.treasury.services.AccountService;
 import io.paradaux.treasury.services.LedgerService;
 import io.paradaux.treasury.services.PlayerDirectoryService;
@@ -128,79 +127,30 @@ public class PayCommand implements CommandHandler {
         }
 
         int senderAccountId = accountService.getOrCreatePersonalAccountId(sender.getUniqueId());
-        BigDecimal senderBalance = accountService.getBalanceReadOnly(senderAccountId);
-        if (senderBalance.compareTo(normalized) < 0) {
-            message.send(sender, "treasury.pay.insufficient",
-                    "balance", accountService.formatAmount(senderBalance));
-            return;
-        }
-
-        int targetAccountId = accountService.getOrCreatePersonalAccountId(targetUuid);
         String memoLine = "Payment from " + sender.getName() + " to " + targetName
                 + (memo != null ? ": " + memo : "");
-        try {
-            ledgerService.transfer(new TransferRequest(
-                    senderAccountId,
-                    targetAccountId,
-                    normalized,
-                    memoLine,
-                    sender.getUniqueId(),
-                    null,
-                    TreasuryConstants.PAY_PLUGIN_SYSTEM,
-                    null
-            ));
-        } catch (IllegalStateException e) {
-            BigDecimal currentBalance = accountService.getBalanceReadOnly(senderAccountId);
-            message.send(sender, "treasury.pay.insufficient",
-                    "balance", accountService.formatAmount(currentBalance));
-            return;
-        }
 
-        String formattedAmount = accountService.formatAmount(normalized);
-        message.send(sender, "treasury.pay.success",
-                "target", targetName,
-                "amount", formattedAmount);
+        boolean paid = PersonalAccountPayment.pay(sender, senderAccountId,
+                () -> accountService.getOrCreatePersonalAccountId(targetUuid), targetName,
+                normalized, memoLine, TreasuryConstants.PAY_PLUGIN_SYSTEM,
+                accountService, ledgerService, message);
+        if (!paid) return;
 
         Player onlineTarget = Bukkit.getPlayer(targetUuid);
         if (onlineTarget != null) {
             message.send(onlineTarget, "treasury.pay.received",
-                    "amount", formattedAmount,
+                    "amount", accountService.formatAmount(normalized),
                     "sender", sender.getName());
         }
     }
 
     private void payGovernmentAccount(Player sender, Account govAccount, BigDecimal normalized, String memo) {
         int senderAccountId = accountService.getOrCreatePersonalAccountId(sender.getUniqueId());
-        BigDecimal senderBalance = accountService.getBalanceReadOnly(senderAccountId);
-        if (senderBalance.compareTo(normalized) < 0) {
-            message.send(sender, "treasury.pay.insufficient",
-                    "balance", accountService.formatAmount(senderBalance));
-            return;
-        }
-
         String memoLine = "Payment from " + sender.getName() + " to " + govAccount.getDisplayName()
                 + (memo != null ? ": " + memo : "");
-        try {
-            ledgerService.transfer(new TransferRequest(
-                    senderAccountId,
-                    govAccount.getAccountId(),
-                    normalized,
-                    memoLine,
-                    sender.getUniqueId(),
-                    null,
-                    TreasuryConstants.PAY_PLUGIN_SYSTEM,
-                    null
-            ));
-        } catch (IllegalStateException e) {
-            BigDecimal currentBalance = accountService.getBalanceReadOnly(senderAccountId);
-            message.send(sender, "treasury.pay.insufficient",
-                    "balance", accountService.formatAmount(currentBalance));
-            return;
-        }
 
-        String formattedAmount = accountService.formatAmount(normalized);
-        message.send(sender, "treasury.pay.success",
-                "target", govAccount.getDisplayName(),
-                "amount", formattedAmount);
+        PersonalAccountPayment.pay(sender, senderAccountId, govAccount::getAccountId,
+                govAccount.getDisplayName(), normalized, memoLine, TreasuryConstants.PAY_PLUGIN_SYSTEM,
+                accountService, ledgerService, message);
     }
 }

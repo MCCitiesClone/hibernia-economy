@@ -24,14 +24,14 @@ public class TreasuryApiImpl implements TreasuryApi {
     private final MembershipService membershipService;
     private final LedgerService ledgerService;
     private final DataExportService dataExportService;
-    private final TaxApiImpl taxApi;
+    private final TaxApi taxApi;
 
     @Inject
     public TreasuryApiImpl(AccountService accountService,
                            MembershipService membershipService,
                            LedgerService ledgerService,
                            DataExportService dataExportService,
-                           TaxApiImpl taxApi) {
+                           TaxApi taxApi) {
         this.accountService = accountService;
         this.membershipService = membershipService;
         this.ledgerService = ledgerService;

@@ -26,9 +26,6 @@ import org.bukkit.entity.Player;
 
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
 
@@ -39,8 +36,6 @@ public class GovCommand implements CommandHandler {
     private static final int PAGE_SIZE = 10;
     /** Hard cap so /gov account history <name> <huge> can't push MariaDB into a giant OFFSET scan. */
     private static final int MAX_PAGE = 10_000;
-    private static final DateTimeFormatter TIME_FMT =
-            DateTimeFormatter.ofPattern("MM/dd HH:mm").withZone(ZoneId.systemDefault());
 
     private final AccountService accountService;
     private final LedgerService ledgerService;
@@ -685,21 +680,7 @@ public class GovCommand implements CommandHandler {
                 "pages", String.valueOf(result.totalPages()));
 
         for (TransactionEntry entry : result.items()) {
-            String formattedAmount = accountService.formatAmount(entry.getAmount().abs());
-            String sign = entry.getAmount().signum() >= 0 ? "+" : "-";
-            String colorTag = entry.getAmount().signum() >= 0 ? "green" : "red";
-            String coloredAmount = "<" + colorTag + ">" + sign + formattedAmount + "</" + colorTag + ">";
-            String memo = entry.getMemo() != null ? entry.getMemo() : entry.getMessage();
-            if (memo == null) memo = "—";
-            memo = sanitize(memo);
-            String time = entry.getSettlementTime() != null
-                    ? TIME_FMT.format(entry.getSettlementTime()) : "—";
-
-            message.send(sender, "treasury.transactions.entry",
-                    "txn", String.valueOf(entry.getTxnId()),
-                    "amount", coloredAmount,
-                    "memo", memo,
-                    "time", time);
+            TransactionEntryRenderer.send(sender, message, accountService, entry);
         }
 
         if (result.hasMore()) {
@@ -837,10 +818,7 @@ public class GovCommand implements CommandHandler {
             // bare token first, then fall back to the canonical suffix —
             // letting `/gov payout DCGov Acme 100 …` resolve to Acme's
             // corporate account without users having to know the convention.
-            Account businessAccount = accountService.getBusinessAccountByName(toName);
-            if (businessAccount == null) {
-                businessAccount = accountService.getBusinessAccountByName(toName + " Corporate Account");
-            }
+            Account businessAccount = accountService.resolveBusinessAccountByToken(toName);
             if (businessAccount == null) {
                 message.send(sender, "treasury.gov.payout.unknown-recipient", "name", toName);
                 return;
@@ -980,21 +958,11 @@ public class GovCommand implements CommandHandler {
         return !(sender instanceof Player) || sender.hasPermission(node);
     }
 
-    /** The initiator UUID to attribute an action to: the player, or the virtual
-     *  console initiator when run from console / RCON. */
     private static UUID actorOf(CommandSender sender) {
-        return sender instanceof Player p
-                ? p.getUniqueId()
-                : TreasuryConstants.VIRTUAL_TREASURY_INITIATOR;
+        return CommandSenders.actorOf(sender);
     }
 
     private String resolvePlayerName(UUID uuid) {
-        OfflinePlayer op = Bukkit.getOfflinePlayer(uuid);
-        String name = op.getName();
-        return name != null ? name : uuid.toString();
-    }
-
-    private static String sanitize(String input) {
-        return input.replace("<", "\\<");
+        return CommandSenders.resolvePlayerName(uuid);
     }
 }

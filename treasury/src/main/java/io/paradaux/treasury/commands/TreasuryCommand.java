@@ -23,7 +23,6 @@ import io.paradaux.treasury.utils.TreasuryConstants;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.command.CommandSender;
-import org.bukkit.entity.Player;
 import org.bukkit.plugin.RegisteredServiceProvider;
 
 import java.math.BigDecimal;
@@ -78,12 +77,10 @@ public class TreasuryCommand implements CommandHandler {
             configReloadService.reloadAll();
         } catch (RuntimeException e) {
             log.warn("Config reload failed", e);
-            sender.sendMessage("§cReload failed: " + e.getMessage() + " (see console).");
+            message.send(sender, "treasury.admin.reload.failed", "error", e.getMessage());
             return;
         }
-        sender.sendMessage("§aReloaded config.yml and messages.properties "
-                + "(salaries, tax brackets/rates, gov accounts, log level). "
-                + "DB pool, schedules and currency format still need a restart.");
+        message.send(sender, "treasury.admin.reload.success");
     }
 
     @Route("")
@@ -121,23 +118,23 @@ public class TreasuryCommand implements CommandHandler {
             }
         }
         if (target == null) {
-            sender.sendMessage("§cNo ingest plugin is registered for source '" + source
-                    + "'. Install TreasuryIngest (or another implementing plugin) and retry.");
+            message.send(sender, "treasury.admin.ingest.no-provider", "source", source);
             return;
         }
-        sender.sendMessage("§eStarting " + wanted + " ingest…");
+        message.send(sender, "treasury.admin.ingest.starting", "source", wanted);
         try {
             IngestReport report = target.ingest(wanted, sender);
-            sender.sendMessage("§aIngest complete — created=" + report.playersCreated()
-                    + ", skipped=" + report.playersSkipped()
-                    + ", failed=" + report.playersFailed()
-                    + ", scanned=" + report.filesScanned()
-                    + ", total=" + report.totalIngestedAmount()
-                    + ", " + report.durationMillis() + "ms");
+            message.send(sender, "treasury.admin.ingest.complete",
+                    "created", report.playersCreated(),
+                    "skipped", report.playersSkipped(),
+                    "failed", report.playersFailed(),
+                    "scanned", report.filesScanned(),
+                    "total", report.totalIngestedAmount(),
+                    "millis", report.durationMillis());
         } catch (Throwable t) {
             log.error("Ingest from source '{}' failed", wanted, t);
-            sender.sendMessage("§cIngest failed: " + t.getClass().getSimpleName()
-                    + ": " + t.getMessage());
+            message.send(sender, "treasury.admin.ingest.failed",
+                    "error", t.getClass().getSimpleName() + ": " + t.getMessage());
         }
     }
 
@@ -192,7 +189,9 @@ public class TreasuryCommand implements CommandHandler {
         AccountResolver.Resolved r = accountResolver.resolve(sender, "target", type, id, false);
         if (r == null) return;
         BigDecimal balance = accountService.getBalanceReadOnly(r.accountId());
-        sender.sendMessage("§e" + r.label() + " §7balance: §a" + accountService.formatAmount(balance));
+        message.send(sender, "treasury.admin.balance",
+                "label", r.label(),
+                "balance", accountService.formatAmount(balance));
     }
 
     @Route("admin info <type> <id>")
@@ -205,28 +204,33 @@ public class TreasuryCommand implements CommandHandler {
         if (r == null) return;
         Account a = accountService.getAccountById(r.accountId());
         if (a == null) {
-            sender.sendMessage("§cAccount " + r.accountId() + " no longer exists.");
+            message.send(sender, "treasury.admin.info.gone", "id", r.accountId());
             return;
         }
         BigDecimal balance = accountService.getBalanceReadOnly(a.getAccountId());
-        sender.sendMessage("§e--- " + r.label() + " ---");
-        sender.sendMessage("§7id=§f" + a.getAccountId() + " §7type=§f" + a.getAccountType()
-                + " §7name=§f" + a.getDisplayName());
-        sender.sendMessage("§7owner=§f" + a.getOwnerUuid());
-        sender.sendMessage("§7balance=§a" + accountService.formatAmount(balance));
-        sender.sendMessage("§7archived=§f" + a.isArchived()
-                + " §7requiresAuth=§f" + a.isRequiresAuthorization()
-                + " §7overdraft=§f" + a.isAllowOverdraft()
-                + " §7creditLimit=§f" + a.getCreditLimit());
-        sender.sendMessage("§7members=§f" + membershipService.getMembers(a.getAccountId()).size()
-                + " §7authorizers=§f" + membershipService.getAuthorizers(a.getAccountId()).size());
+        message.send(sender, "treasury.admin.info.header", "label", r.label());
+        message.send(sender, "treasury.admin.info.identity",
+                "id", a.getAccountId(),
+                "type", a.getAccountType(),
+                "name", a.getDisplayName());
+        message.send(sender, "treasury.admin.info.owner", "owner", a.getOwnerUuid());
+        message.send(sender, "treasury.admin.info.balance",
+                "balance", accountService.formatAmount(balance));
+        message.send(sender, "treasury.admin.info.flags",
+                "archived", a.isArchived(),
+                "requiresAuth", a.isRequiresAuthorization(),
+                "overdraft", a.isAllowOverdraft(),
+                "creditLimit", a.getCreditLimit());
+        message.send(sender, "treasury.admin.info.members",
+                "members", membershipService.getMembers(a.getAccountId()).size(),
+                "authorizers", membershipService.getAuthorizers(a.getAccountId()).size());
     }
 
     private void doAdminTransfer(CommandSender sender, String fromType, String fromToken,
                                  String toType, String toToken, BigDecimal amount, String reason) {
         BigDecimal normalized = Money.normalize(amount);
         if (normalized.signum() <= 0) {
-            sender.sendMessage("§cAmount must be positive.");
+            message.send(sender, "treasury.admin.transfer.invalid-amount");
             return;
         }
 
@@ -236,13 +240,11 @@ public class TreasuryCommand implements CommandHandler {
         if (to == null) return;
 
         if (from.accountId() == to.accountId()) {
-            sender.sendMessage("§cSource and destination are the same account (" + from.label() + ").");
+            message.send(sender, "treasury.admin.transfer.same-account", "label", from.label());
             return;
         }
 
-        UUID initiator = sender instanceof Player p
-                ? p.getUniqueId()
-                : TreasuryConstants.VIRTUAL_TREASURY_INITIATOR;
+        UUID initiator = CommandSenders.actorOf(sender);
         String memo = reason != null
                 ? "Admin transfer: " + reason
                 : "Admin transfer " + from.label() + " -> " + to.label();
@@ -261,17 +263,20 @@ public class TreasuryCommand implements CommandHandler {
                     dedupKey));
         } catch (IllegalStateException e) {
             BigDecimal balance = accountService.getBalanceReadOnly(from.accountId());
-            sender.sendMessage("§cTransfer failed: insufficient funds in " + from.label()
-                    + " (balance " + accountService.formatAmount(balance) + ").");
+            message.send(sender, "treasury.admin.transfer.insufficient",
+                    "from", from.label(),
+                    "balance", accountService.formatAmount(balance));
             return;
         } catch (RuntimeException e) {
             log.warn("Admin transfer failed ({} -> {}, {})", from.label(), to.label(), normalized, e);
-            sender.sendMessage("§cTransfer failed: " + e.getMessage());
+            message.send(sender, "treasury.admin.transfer.failed", "error", e.getMessage());
             return;
         }
 
-        sender.sendMessage("§aTransferred " + accountService.formatAmount(normalized)
-                + " from " + from.label() + " to " + to.label() + ".");
+        message.send(sender, "treasury.admin.transfer.success",
+                "amount", accountService.formatAmount(normalized),
+                "from", from.label(),
+                "to", to.label());
     }
 
 }

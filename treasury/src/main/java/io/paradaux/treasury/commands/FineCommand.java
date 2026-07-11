@@ -15,6 +15,7 @@ import io.paradaux.treasury.services.FineWebhookService;
 import io.paradaux.treasury.services.GovService;
 import io.paradaux.treasury.services.MembershipService;
 import io.paradaux.treasury.services.PlayerDirectoryService;
+import io.paradaux.treasury.utils.MiniMessageText;
 import io.paradaux.treasury.utils.Money;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
@@ -284,7 +285,7 @@ public class FineCommand implements CommandHandler {
                 "player", playerName,
                 "amount", formattedAmount);
         message.send(sender, "treasury.fine.info.detail",
-                "reason", sanitize(fine.getReason()),
+                "reason", MiniMessageText.sanitize(fine.getReason()),
                 "issuer", issuerName,
                 "date", issuedDate);
 
@@ -336,17 +337,14 @@ public class FineCommand implements CommandHandler {
             message.send(sender, "treasury.fine.list.entry",
                     "id", String.valueOf(fine.getFineId()),
                     "amount", formattedAmount,
-                    "reason", sanitize(fine.getReason()),
+                    "reason", MiniMessageText.sanitize(fine.getReason()),
                     "date", date,
                     "revoked_tag", revokedTag);
         }
     }
 
     private String resolvePlayerName(UUID uuid) {
-        if (uuid == null) return "—";
-        OfflinePlayer op = Bukkit.getOfflinePlayer(uuid);
-        String name = op.getName();
-        return name != null ? name : uuid.toString();
+        return CommandSenders.resolvePlayerName(uuid);
     }
 
     /**
@@ -364,9 +362,5 @@ public class FineCommand implements CommandHandler {
             }
         }
         return "—";
-    }
-
-    private static String sanitize(String input) {
-        return input.replace("<", "\\<");
     }
 }
