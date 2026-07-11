@@ -78,9 +78,13 @@ public final class EmbeddedMariaDb {
             for (String t : new String[]{
                     "accounts", "firm", "firm_accounts", "economy_players", "account_balances_mat",
                     "ledger_txns", "ledger_postings", "chestshop_sale", "chestshop_shop",
-                    "account_access"}) {
+                    "account_access", "firm_role", "firm_role_permission", "firm_employee",
+                    "api_keys", "api_rate_limit_override",
+                    "webhook_delivery", "webhook_subscription", "webhook_cursor"}) {
                 st.execute("TRUNCATE TABLE " + t);
             }
+            // Re-seed the single-row dispatcher watermark that ingest() reads/advances.
+            st.execute("INSERT INTO webhook_cursor (id, last_dispatched_txn_id) VALUES (1, 0)");
             st.execute("SET FOREIGN_KEY_CHECKS = 1");
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -282,6 +286,122 @@ public final class EmbeddedMariaDb {
               FROM account_access
              WHERE level IN ('MEMBER','AUTHORIZER')
                AND removed_at IS NULL
+            """,
+            // account_balances view (mirrors V1) — AccountService.getBalance reads it.
+            """
+            CREATE OR REPLACE VIEW account_balances AS
+            SELECT a.account_id, COALESCE(abm.balance, 0.00) AS balance
+              FROM accounts a
+              LEFT JOIN account_balances_mat abm ON abm.account_id = a.account_id
+            """,
+            // Firm roster tables (mirror V1) — FirmService.listEmployees/listRoles read them.
+            """
+            CREATE TABLE firm_role (
+              role_id            INT         NOT NULL AUTO_INCREMENT,
+              firm_id            INT         NOT NULL,
+              name               VARCHAR(64) NOT NULL,
+              rank_order         INT         NOT NULL,
+              is_proprietor_like TINYINT(1)  NOT NULL DEFAULT 0,
+              is_default         TINYINT(1)  NOT NULL DEFAULT 0,
+              deleted_at         TIMESTAMP   NULL,
+              PRIMARY KEY (role_id),
+              KEY idx_role_active (firm_id, deleted_at)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+            """,
+            """
+            CREATE TABLE firm_role_permission (
+              role_id    INT NOT NULL,
+              permission ENUM('ADMIN','FINANCIAL','CHESTSHOP','DEFAULT') NOT NULL,
+              deleted_at TIMESTAMP NULL,
+              PRIMARY KEY (role_id, permission)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+            """,
+            """
+            CREATE TABLE firm_employee (
+              firm_id         INT        NOT NULL,
+              player_uuid_bin BINARY(16) NOT NULL,
+              role_id         INT        NOT NULL,
+              joined_at       TIMESTAMP  NOT NULL DEFAULT CURRENT_TIMESTAMP,
+              left_at         TIMESTAMP  NULL,
+              PRIMARY KEY (firm_id, player_uuid_bin, joined_at)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+            """,
+            // api_keys (mirrors V1 + V15 SERVICE scope + V23 nullable token). AuthService
+            // rotation and AdminApiKeyService revoke/rotate exercise this table.
+            """
+            CREATE TABLE api_keys (
+              key_id         INT UNSIGNED NOT NULL AUTO_INCREMENT,
+              key_type       ENUM('PERSONAL','BUSINESS','GOVERNMENT','SERVICE') NOT NULL DEFAULT 'PERSONAL',
+              account_id     INT UNSIGNED NULL,
+              firm_id        INT          NULL,
+              owner_uuid_bin BINARY(16)   NOT NULL,
+              jwt_id         CHAR(36)     NOT NULL,
+              token          TEXT         NULL,
+              issued_at      TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+              expires_at     TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+              revoked        TINYINT(1)   NOT NULL DEFAULT 0,
+              PRIMARY KEY (key_id),
+              UNIQUE KEY uq_api_key_jwt_id (jwt_id)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+            """,
+            // Per-issuer rate-limit overrides (mirrors V5).
+            """
+            CREATE TABLE api_rate_limit_override (
+              owner_uuid_bin BINARY(16)   NOT NULL,
+              multiplier     DECIMAL(6,2) NOT NULL DEFAULT 1.00,
+              note           VARCHAR(255) NULL,
+              updated_by_bin BINARY(16)   NULL,
+              updated_at     TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+              PRIMARY KEY (owner_uuid_bin)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+            """,
+            // Webhook tables (mirror V13; api_key_id nullable per V14). FKs omitted to
+            // match this standin schema's style and keep truncateAll() order-free.
+            """
+            CREATE TABLE webhook_subscription (
+              subscription_id      BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+              api_key_id           INT UNSIGNED    NULL,
+              owner_uuid_bin       BINARY(16)      NOT NULL,
+              key_type             ENUM('PERSONAL','BUSINESS','GOVERNMENT') NOT NULL,
+              account_id           INT UNSIGNED    NULL,
+              firm_id              INT             NULL,
+              target_url           VARCHAR(2048)   NOT NULL,
+              secret               CHAR(64)        NOT NULL,
+              active               TINYINT(1)      NOT NULL DEFAULT 1,
+              consecutive_failures INT UNSIGNED    NOT NULL DEFAULT 0,
+              disabled_at          TIMESTAMP       NULL,
+              created_at           TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
+              updated_at           TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+              PRIMARY KEY (subscription_id),
+              KEY idx_websub_active_account (active, account_id),
+              KEY idx_websub_active_firm (active, firm_id)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+            """,
+            """
+            CREATE TABLE webhook_delivery (
+              delivery_id     BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+              subscription_id BIGINT UNSIGNED NOT NULL,
+              txn_id          BIGINT UNSIGNED NOT NULL,
+              account_id      INT UNSIGNED    NOT NULL,
+              status          ENUM('PENDING','DELIVERED','FAILED') NOT NULL DEFAULT 'PENDING',
+              attempts        INT UNSIGNED    NOT NULL DEFAULT 0,
+              http_status     INT             NULL,
+              last_error      VARCHAR(255)    NULL,
+              next_attempt_at TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
+              created_at      TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP,
+              updated_at      TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+              PRIMARY KEY (delivery_id),
+              UNIQUE KEY uq_delivery_sub_txn (subscription_id, txn_id),
+              KEY idx_delivery_due (status, next_attempt_at)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+            """,
+            """
+            CREATE TABLE webhook_cursor (
+              id                     TINYINT UNSIGNED NOT NULL DEFAULT 1,
+              last_dispatched_txn_id BIGINT UNSIGNED  NOT NULL DEFAULT 0,
+              updated_at             TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+              PRIMARY KEY (id)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
             """,
     };
 }
