@@ -1,5 +1,7 @@
 package io.paradaux.chestshop.services.impl;
 
+import io.paradaux.chestshop.services.PostTradeReactions;
+
 import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.model.Account;
 import io.paradaux.chestshop.model.PendingTransaction;
@@ -88,7 +90,7 @@ class PostTradeReactionsTest {
         lenient().when(message.component(anyString(), any(Object[].class)))
                 .thenReturn(mock(net.kyori.adventure.text.Component.class));
 
-        postTrade = new PostTradeReactions(economy, shops, accounts, message, items, config, signService,
+        postTrade = new PostTradeReactionsImpl(economy, shops, accounts, message, items, config, signService,
                 shopBlockService, inventoryService);
     }
 
@@ -502,7 +504,7 @@ class PostTradeReactionsTest {
         Transaction event = txn(BUY, false, s, player("Notch", UUID.randomUUID()), owner,
                 mock(Inventory.class), mock(Inventory.class), new ItemStack[]{item(Material.STONE, 1)}, new BigDecimal("5"));
 
-        var m = PostTradeReactions.class.getDeclaredMethod(
+        var m = PostTradeReactionsImpl.class.getDeclaredMethod(
                 "sendTradeMessage", Player.class, String.class, Transaction.class, String[].class);
         m.setAccessible(true);
         m.invoke(postTrade, recipient, "chestshop.YOU_BOUGHT_FROM_SHOP", event, new String[]{"owner", "Alice"});
@@ -522,7 +524,6 @@ class PostTradeReactionsTest {
         boolean ownerEconomicallyActive = true;
         java.util.function.BiPredicate<java.util.UUID, java.math.BigDecimal> hasFunds = (u, a) -> true;
         java.util.function.Function<java.util.UUID, java.math.BigDecimal> balance = u -> java.math.BigDecimal.ZERO;
-        java.util.function.BiPredicate<java.util.UUID, java.math.BigDecimal> canHold = (u, a) -> true;
         boolean hasAccount = true;
         boolean settleResult = true;
         int settleCalls = 0;
@@ -534,7 +535,6 @@ class PostTradeReactionsTest {
         @Override public boolean withdraw(java.util.UUID target, java.math.BigDecimal amount, org.bukkit.World world) { return true; }
         @Override public boolean hasFunds(java.util.UUID account, java.math.BigDecimal amount) { return hasFunds.test(account, amount); }
         @Override public java.math.BigDecimal getBalance(java.util.UUID account) { return balance.apply(account); }
-        @Override public boolean canHold(java.util.UUID account, java.math.BigDecimal amount) { return canHold.test(account, amount); }
         @Override public boolean hasAccount(java.util.UUID account) { return hasAccount; }
         @Override public boolean settle(java.math.BigDecimal amount, org.bukkit.entity.Player initiator, java.util.UUID partner, io.paradaux.chestshop.model.Transaction txn) { settleCalls++; return settleResult; }
         @Override public void migrateLegacyBusinessSign(io.paradaux.chestshop.model.Transaction event) { migrateCalls++; }

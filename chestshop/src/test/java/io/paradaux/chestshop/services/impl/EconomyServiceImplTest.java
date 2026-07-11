@@ -607,7 +607,7 @@ class EconomyServiceImplTest extends ServerTest {
         assertThat(service.format(new BigDecimal("5.5"))).isEqualTo("5.5");
     }
 
-    // ---- isOwnerEconomicallyActive / canHold -----------------------------------
+    // ---- isOwnerEconomicallyActive --------------------------------------------
 
     @Test
     void isOwnerEconomicallyActive_trueForLimitedOwner() {
@@ -620,11 +620,6 @@ class EconomyServiceImplTest extends ServerTest {
         assertThat(service.isOwnerEconomicallyActive(true)).isFalse();
         when(accounts.getServerEconomyAccount()).thenReturn(new Account("Server", "Server", UUID.randomUUID()));
         assertThat(service.isOwnerEconomicallyActive(true)).isTrue();
-    }
-
-    @Test
-    void canHold_alwaysTrue() {
-        assertThat(service.canHold(UUID.randomUUID(), new BigDecimal("100"))).isTrue();
     }
 
     // ---- deposit ---------------------------------------------------------------

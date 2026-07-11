@@ -1,5 +1,7 @@
 package io.paradaux.chestshop.services.impl;
 
+import io.paradaux.chestshop.services.PartialFillCalculator;
+
 import io.paradaux.chestshop.model.config.ChestShopConfiguration;
 import org.junit.jupiter.api.Test;
 
@@ -20,38 +22,38 @@ import static org.mockito.Mockito.when;
  */
 class TransactionMathTest {
 
-    private PartialFillCalculator serviceWithPrecision(int precision) {
+    private PartialFillCalculatorImpl serviceWithPrecision(int precision) {
         ChestShopConfiguration config = mock(ChestShopConfiguration.class);
         when(config.getPricePrecision()).thenReturn(precision);
         // Only config is consulted by scalePrice; every other collaborator is unused here.
-        return new PartialFillCalculator(null, null, null, config);
+        return new PartialFillCalculatorImpl(null, null, null, config);
     }
 
     // ── getAmountOfAffordableItems: floor(wallet / pricePerItem) ───────────────
 
     @Test
     void affordableItems_floorsToWholeItems() {
-        assertThat(PartialFillCalculator.getAmountOfAffordableItems(new BigDecimal("10.00"), new BigDecimal("3.00"), 64)).isEqualTo(3); // 3.33 -> 3
-        assertThat(PartialFillCalculator.getAmountOfAffordableItems(new BigDecimal("9.00"), new BigDecimal("3.00"), 64)).isEqualTo(3);  // exact
+        assertThat(PartialFillCalculatorImpl.getAmountOfAffordableItems(new BigDecimal("10.00"), new BigDecimal("3.00"), 64)).isEqualTo(3); // 3.33 -> 3
+        assertThat(PartialFillCalculatorImpl.getAmountOfAffordableItems(new BigDecimal("9.00"), new BigDecimal("3.00"), 64)).isEqualTo(3);  // exact
     }
 
     @Test
     void affordableItems_isZeroWhenCannotAffordEvenOne() {
-        assertThat(PartialFillCalculator.getAmountOfAffordableItems(new BigDecimal("2.99"), new BigDecimal("3.00"), 64)).isEqualTo(0);
-        assertThat(PartialFillCalculator.getAmountOfAffordableItems(BigDecimal.ZERO, new BigDecimal("3.00"), 64)).isEqualTo(0);
+        assertThat(PartialFillCalculatorImpl.getAmountOfAffordableItems(new BigDecimal("2.99"), new BigDecimal("3.00"), 64)).isEqualTo(0);
+        assertThat(PartialFillCalculatorImpl.getAmountOfAffordableItems(BigDecimal.ZERO, new BigDecimal("3.00"), 64)).isEqualTo(0);
     }
 
     @Test
     void affordableItems_handlesNonTerminatingPerItemPrice() {
         // pricePerItem = 10 / 3 = 3.333...; with 10 in the wallet you can afford 3.
         BigDecimal pricePerItem = new BigDecimal("10.00").divide(new BigDecimal(3), MathContext.DECIMAL128);
-        assertThat(PartialFillCalculator.getAmountOfAffordableItems(new BigDecimal("10.00"), pricePerItem, 64)).isEqualTo(3);
+        assertThat(PartialFillCalculatorImpl.getAmountOfAffordableItems(new BigDecimal("10.00"), pricePerItem, 64)).isEqualTo(3);
     }
 
     @Test
     void affordableItems_clampsToCap_notExceedingRequestedCount() {
         // A far larger wallet than the requested count → the result is the cap, never more.
-        assertThat(PartialFillCalculator.getAmountOfAffordableItems(new BigDecimal("1000000"), new BigDecimal("1.00"), 64)).isEqualTo(64);
+        assertThat(PartialFillCalculatorImpl.getAmountOfAffordableItems(new BigDecimal("1000000"), new BigDecimal("1.00"), 64)).isEqualTo(64);
     }
 
     @Test
@@ -59,7 +61,7 @@ class TransactionMathTest {
         // chestshop/behaviour/0003: an unbounded wallet (Double.MAX_VALUE) over a tiny per-item
         // price yields a quotient far beyond Integer.MAX_VALUE. intValueExact() would throw and
         // abort the trade; the cap must bound it instead.
-        assertThat(PartialFillCalculator.getAmountOfAffordableItems(
+        assertThat(PartialFillCalculatorImpl.getAmountOfAffordableItems(
                 BigDecimal.valueOf(Double.MAX_VALUE), new BigDecimal("0.0001"), 10)).isEqualTo(10);
     }
 
@@ -67,7 +69,7 @@ class TransactionMathTest {
 
     @Test
     void scalePrice_roundsHalfUpToConfiguredScale() {
-        PartialFillCalculator service = serviceWithPrecision(2);
+        PartialFillCalculatorImpl service = serviceWithPrecision(2);
         // 0.125 * 1 = 0.125 -> HALF_UP at 2dp -> 0.13
         BigDecimal scaled = service.scalePrice(new BigDecimal("0.125"), 1);
         assertThat(scaled).isEqualByComparingTo("0.13");
@@ -76,7 +78,7 @@ class TransactionMathTest {
 
     @Test
     void scalePrice_recombinesNonTerminatingPerItemPriceWithoutDrift() {
-        PartialFillCalculator service = serviceWithPrecision(2);
+        PartialFillCalculatorImpl service = serviceWithPrecision(2);
         BigDecimal pricePerItem = new BigDecimal("10.00").divide(new BigDecimal(3), MathContext.DECIMAL128); // 3.333...
         // 3.333... * 3 = 9.999... -> HALF_UP at 2dp -> 10.00 (not 9.99)
         BigDecimal scaled = service.scalePrice(pricePerItem, 3);
@@ -86,7 +88,7 @@ class TransactionMathTest {
 
     @Test
     void scalePrice_honoursAHigherConfiguredPrecision() {
-        PartialFillCalculator service = serviceWithPrecision(4);
+        PartialFillCalculatorImpl service = serviceWithPrecision(4);
         assertThat(service.scalePrice(new BigDecimal("0.12345"), 1)).isEqualByComparingTo("0.1235"); // HALF_UP at 4dp
     }
 
@@ -94,17 +96,17 @@ class TransactionMathTest {
 
     @Test
     void roundedToZero_trueOnlyWhenPositivePriceScalesToZero() {
-        assertThat(PartialFillCalculator.roundedToZero(new BigDecimal("0.001"), new BigDecimal("0.00"))).isTrue();
+        assertThat(PartialFillCalculatorImpl.roundedToZero(new BigDecimal("0.001"), new BigDecimal("0.00"))).isTrue();
     }
 
     @Test
     void roundedToZero_falseForAFreeShop() {
         // pricePerItem 0 (free shop) is not "rounded to zero" — it is genuinely free.
-        assertThat(PartialFillCalculator.roundedToZero(BigDecimal.ZERO, BigDecimal.ZERO)).isFalse();
+        assertThat(PartialFillCalculatorImpl.roundedToZero(BigDecimal.ZERO, BigDecimal.ZERO)).isFalse();
     }
 
     @Test
     void roundedToZero_falseWhenScaledIsPositive() {
-        assertThat(PartialFillCalculator.roundedToZero(new BigDecimal("0.01"), new BigDecimal("0.01"))).isFalse();
+        assertThat(PartialFillCalculatorImpl.roundedToZero(new BigDecimal("0.01"), new BigDecimal("0.01"))).isFalse();
     }
 }

@@ -13,9 +13,11 @@ import io.paradaux.chestshop.services.AdminBypassService;
 import io.paradaux.chestshop.services.EconomyService;
 import io.paradaux.chestshop.services.InventoryService;
 import io.paradaux.chestshop.services.ItemService;
+import io.paradaux.chestshop.services.PartialFillCalculator;
 import io.paradaux.chestshop.services.RestrictedSignService;
 import io.paradaux.chestshop.services.SignBreakService;
 import io.paradaux.chestshop.services.SignService;
+import io.paradaux.chestshop.services.TradeValidator;
 import io.paradaux.chestshop.utils.MessageUtil;
 import io.paradaux.chestshop.utils.Permissions;
 import io.paradaux.chestshop.utils.PriceUtil;
@@ -56,7 +58,7 @@ import static io.paradaux.chestshop.utils.PriceUtil.NO_PRICE;
  * (chestshop/structure/0001). Partial fills are resized by {@link PartialFillCalculator}.
  */
 @Singleton
-class TradeValidator {
+public class TradeValidatorImpl implements TradeValidator {
 
     /** Cooldown table for owner out-of-stock / full-shop notifications: (owner, msgKey) → last-sent ms. */
     private final Table<UUID, String, Long> notificationCooldowns = HashBasedTable.create();
@@ -82,7 +84,7 @@ class TradeValidator {
     private final LongSupplier clock;
 
     @Inject
-    TradeValidator(EconomyService economy, AccountService accounts, SignBreakService signBreak, Message message,
+    TradeValidatorImpl(EconomyService economy, AccountService accounts, SignBreakService signBreak, Message message,
                    ItemService items, ChestShopConfiguration config, SignService signService, InventoryService inventoryService,
                    AdminBypassService adminBypass, RestrictedSignService restrictedSign, PartialFillCalculator partialFill) {
         this(economy, accounts, signBreak, message, items, config, signService, inventoryService,
@@ -90,7 +92,7 @@ class TradeValidator {
     }
 
     /** Test seam: same as the injected constructor but with a supplied {@code clock}. */
-    TradeValidator(EconomyService economy, AccountService accounts, SignBreakService signBreak, Message message,
+    TradeValidatorImpl(EconomyService economy, AccountService accounts, SignBreakService signBreak, Message message,
                    ItemService items, ChestShopConfiguration config, SignService signService, InventoryService inventoryService,
                    AdminBypassService adminBypass, RestrictedSignService restrictedSign, PartialFillCalculator partialFill,
                    LongSupplier clock) {
@@ -108,7 +110,8 @@ class TradeValidator {
         this.clock = clock;
     }
 
-    void validate(PendingTransaction ctx) {
+    @Override
+    public void validate(PendingTransaction ctx) {
         rejectInvalidClientName(ctx);
         rejectCreativeMode(ctx);
         flagFreeShop(ctx);
@@ -139,7 +142,8 @@ class TradeValidator {
     }
 
     /** Drop a player's notification-cooldown rows (called from PlayerConnectListener on quit). */
-    void clearNotificationCooldowns(UUID playerUuid) {
+    @Override
+    public void clearNotificationCooldowns(UUID playerUuid) {
         if (config.getNotificationMessageCooldown() > 0) {
             notificationCooldowns.rowMap().remove(playerUuid);
         }

@@ -1,5 +1,8 @@
 package io.paradaux.chestshop.services.impl;
 
+import io.paradaux.chestshop.services.PartialFillCalculator;
+import io.paradaux.chestshop.services.TradeValidator;
+
 import io.paradaux.chestshop.model.Account;
 import io.paradaux.chestshop.model.PendingTransaction;
 import io.paradaux.chestshop.model.PendingTransaction.TransactionOutcome;
@@ -96,7 +99,7 @@ class TradeValidatorTest {
         lenient().when(message.component(anyString(), any(Object[].class)))
                 .thenReturn(mock(net.kyori.adventure.text.Component.class));
 
-        validator = new TradeValidator(economy, accounts, signBreak, message, items, config, signService,
+        validator = new TradeValidatorImpl(economy, accounts, signBreak, message, items, config, signService,
                 inventoryService, adminBypass, restrictedSign, partialFill, () -> clockNow[0]);
     }
 
@@ -949,7 +952,6 @@ class TradeValidatorTest {
         boolean ownerEconomicallyActive = true;
         java.util.function.BiPredicate<java.util.UUID, java.math.BigDecimal> hasFunds = (u, a) -> true;
         java.util.function.Function<java.util.UUID, java.math.BigDecimal> balance = u -> java.math.BigDecimal.ZERO;
-        java.util.function.BiPredicate<java.util.UUID, java.math.BigDecimal> canHold = (u, a) -> true;
         boolean hasAccount = true;
         boolean settleResult = true;
         int settleCalls = 0;
@@ -961,7 +963,6 @@ class TradeValidatorTest {
         @Override public boolean withdraw(java.util.UUID target, java.math.BigDecimal amount, org.bukkit.World world) { return true; }
         @Override public boolean hasFunds(java.util.UUID account, java.math.BigDecimal amount) { return hasFunds.test(account, amount); }
         @Override public java.math.BigDecimal getBalance(java.util.UUID account) { return balance.apply(account); }
-        @Override public boolean canHold(java.util.UUID account, java.math.BigDecimal amount) { return canHold.test(account, amount); }
         @Override public boolean hasAccount(java.util.UUID account) { return hasAccount; }
         @Override public boolean settle(java.math.BigDecimal amount, org.bukkit.entity.Player initiator, java.util.UUID partner, io.paradaux.chestshop.model.Transaction txn) { settleCalls++; return settleResult; }
         @Override public void migrateLegacyBusinessSign(io.paradaux.chestshop.model.Transaction event) { migrateCalls++; }

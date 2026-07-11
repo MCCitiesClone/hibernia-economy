@@ -10,6 +10,7 @@ import io.paradaux.chestshop.services.AccountService;
 import io.paradaux.chestshop.services.EconomyService;
 import io.paradaux.chestshop.services.InventoryService;
 import io.paradaux.chestshop.services.ItemService;
+import io.paradaux.chestshop.services.PostTradeReactions;
 import io.paradaux.chestshop.services.ShopBlockService;
 import io.paradaux.chestshop.services.ShopService;
 import io.paradaux.chestshop.services.SignService;
@@ -39,7 +40,7 @@ import static io.paradaux.chestshop.model.Transaction.TransactionType.BUY;
  */
 @Singleton
 @Slf4j
-class PostTradeReactions {
+public class PostTradeReactionsImpl implements PostTradeReactions {
 
     private static final String BUY_LOG = "%1$s bought %2$s for %3$.2f from %4$s at %5$s";
     private static final String SELL_LOG = "%1$s sold %2$s for %3$.2f to %4$s at %5$s";
@@ -55,7 +56,7 @@ class PostTradeReactions {
     private final InventoryService inventoryService;
 
     @Inject
-    PostTradeReactions(EconomyService economy, ShopService shops, AccountService accounts, Message message, ItemService items,
+    PostTradeReactionsImpl(EconomyService economy, ShopService shops, AccountService accounts, Message message, ItemService items,
                        ChestShopConfiguration config, SignService signService, ShopBlockService shopBlockService, InventoryService inventoryService) {
         this.economy = economy;
         this.shops = shops;
@@ -69,7 +70,8 @@ class PostTradeReactions {
     }
 
     /** Remove a shop whose container ran dry after a buy (config-gated, never admin shops). */
-    void deleteEmptyShop(Transaction event) {
+    @Override
+    public void deleteEmptyShop(Transaction event) {
         if (event.getTransactionType() != BUY) {
             return;
         }
@@ -127,7 +129,8 @@ class PostTradeReactions {
     }
 
     /** Write a completed trade to the shop log. */
-    void logTransaction(Transaction event) {
+    @Override
+    public void logTransaction(Transaction event) {
         String template = event.getTransactionType() == BUY ? BUY_LOG : SELL_LOG;
 
         StringBuilder itemList = new StringBuilder(50);
@@ -152,7 +155,8 @@ class PostTradeReactions {
     }
 
     /** Notify the buyer and (unless they muted) the owner that a trade settled. */
-    void sendTransactionMessages(Transaction event) {
+    @Override
+    public void sendTransactionMessages(Transaction event) {
         Player player = event.getClient();
         boolean buy = event.getTransactionType() == BUY;
 

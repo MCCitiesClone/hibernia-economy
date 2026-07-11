@@ -5,6 +5,7 @@ import com.google.inject.Singleton;
 import io.paradaux.chestshop.model.PendingTransaction;
 import io.paradaux.chestshop.model.config.ChestShopConfiguration;
 import io.paradaux.chestshop.services.EconomyService;
+import io.paradaux.chestshop.services.PartialFillCalculator;
 import io.paradaux.chestshop.services.InventoryService;
 import io.paradaux.chestshop.services.MaterialService;
 import io.paradaux.chestshop.utils.InventoryUtil;
@@ -21,13 +22,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import static io.paradaux.chestshop.model.PendingTransaction.TransactionOutcome.CLIENT_DEPOSIT_FAILED;
 import static io.paradaux.chestshop.model.PendingTransaction.TransactionOutcome.CLIENT_DOES_NOT_HAVE_ENOUGH_MONEY;
 import static io.paradaux.chestshop.model.PendingTransaction.TransactionOutcome.NOT_ENOUGH_SPACE_IN_CHEST;
 import static io.paradaux.chestshop.model.PendingTransaction.TransactionOutcome.NOT_ENOUGH_SPACE_IN_INVENTORY;
 import static io.paradaux.chestshop.model.PendingTransaction.TransactionOutcome.NOT_ENOUGH_STOCK_IN_CHEST;
 import static io.paradaux.chestshop.model.PendingTransaction.TransactionOutcome.NOT_ENOUGH_STOCK_IN_INVENTORY;
-import static io.paradaux.chestshop.model.PendingTransaction.TransactionOutcome.SHOP_DEPOSIT_FAILED;
 import static io.paradaux.chestshop.model.PendingTransaction.TransactionOutcome.SHOP_DOES_NOT_HAVE_ENOUGH_MONEY;
 import static io.paradaux.chestshop.model.Transaction.TransactionType.BUY;
 import static io.paradaux.chestshop.model.Transaction.TransactionType.SELL;
@@ -40,7 +39,7 @@ import static io.paradaux.chestshop.model.Transaction.TransactionType.SELL;
  * and unit-tested directly (ADT-138). Extracted from TransactionServiceImpl (PAR-317).
  */
 @Singleton
-class PartialFillCalculator {
+public class PartialFillCalculatorImpl implements PartialFillCalculator {
 
     private final EconomyService economy;
     private final InventoryService inventoryService;
@@ -48,7 +47,7 @@ class PartialFillCalculator {
     private final ChestShopConfiguration config;
 
     @Inject
-    PartialFillCalculator(EconomyService economy, InventoryService inventoryService,
+    PartialFillCalculatorImpl(EconomyService economy, InventoryService inventoryService,
                           MaterialService materialService, ChestShopConfiguration config) {
         this.economy = economy;
         this.inventoryService = inventoryService;
@@ -56,7 +55,8 @@ class PartialFillCalculator {
         this.config = config;
     }
 
-    void adjustBuy(PendingTransaction ctx) {
+    @Override
+    public void adjustBuy(PendingTransaction ctx) {
         if (ctx.isCancelled() || ctx.getTransactionType() != BUY) {
             return;
         }
@@ -114,13 +114,10 @@ class PartialFillCalculator {
             ctx.setExactPrice(scaled);
             ctx.setStock(itemsFit);
         }
-
-        if (!economy.canHold(ctx.getOwnerAccount().getUuid(), ctx.getExactPrice())) {
-            ctx.setCancelled(SHOP_DEPOSIT_FAILED);
-        }
     }
 
-    void adjustSell(PendingTransaction ctx) {
+    @Override
+    public void adjustSell(PendingTransaction ctx) {
         if (ctx.isCancelled() || ctx.getTransactionType() != SELL) {
             return;
         }
@@ -128,7 +125,6 @@ class PartialFillCalculator {
         if (itemCount <= 0) {
             return;
         }
-        Player client = ctx.getClient();
         UUID owner = ctx.getOwnerAccount().getUuid();
         BigDecimal pricePerItem = ctx.getExactPrice().divide(BigDecimal.valueOf(itemCount), MathContext.DECIMAL128);
 
@@ -179,10 +175,6 @@ class PartialFillCalculator {
             }
             ctx.setExactPrice(scaled);
             ctx.setStock(itemsFit);
-        }
-
-        if (!economy.canHold(client.getUniqueId(), ctx.getExactPrice())) {
-            ctx.setCancelled(CLIENT_DEPOSIT_FAILED);
         }
     }
 

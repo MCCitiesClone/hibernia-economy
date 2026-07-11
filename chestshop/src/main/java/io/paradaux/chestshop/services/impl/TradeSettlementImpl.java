@@ -4,6 +4,8 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import io.paradaux.chestshop.model.Transaction;
 import io.paradaux.chestshop.services.EconomyService;
+import io.paradaux.chestshop.services.GoodsTransfer;
+import io.paradaux.chestshop.services.TradeSettlement;
 import lombok.extern.slf4j.Slf4j;
 
 import static io.paradaux.chestshop.model.Transaction.TransactionType.BUY;
@@ -16,18 +18,19 @@ import static io.paradaux.chestshop.model.Transaction.TransactionType.BUY;
  */
 @Singleton
 @Slf4j
-class TradeSettlement {
+public class TradeSettlementImpl implements TradeSettlement {
 
     private final EconomyService economy;
     private final GoodsTransfer goodsTransfer;
 
     @Inject
-    TradeSettlement(EconomyService economy, GoodsTransfer goodsTransfer) {
+    TradeSettlementImpl(EconomyService economy, GoodsTransfer goodsTransfer) {
         this.economy = economy;
         this.goodsTransfer = goodsTransfer;
     }
 
-    void execute(Transaction event) {
+    @Override
+    public void execute(Transaction event) {
         boolean buy = event.getTransactionType() == BUY;
 
         // An unlimited admin shop has no owner container: a buy spawns the stock into the

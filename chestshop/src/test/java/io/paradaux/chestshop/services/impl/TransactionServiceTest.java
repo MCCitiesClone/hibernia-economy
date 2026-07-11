@@ -1,5 +1,7 @@
 package io.paradaux.chestshop.services.impl;
 
+import io.paradaux.chestshop.services.GoodsTransfer;
+
 import io.paradaux.chestshop.services.InventoryService;
 import io.paradaux.chestshop.model.config.ChestShopConfiguration;
 import io.paradaux.chestshop.model.Transaction;
@@ -41,7 +43,7 @@ class TransactionServiceTest {
         // away here — the transfer overloads under test are stubbed directly.
         inventoryService = mock(InventoryService.class);
         ChestShopConfiguration config = mock(ChestShopConfiguration.class);
-        service = new GoodsTransfer(inventoryService, config);
+        service = new GoodsTransferImpl(inventoryService, config);
     }
 
     @Test

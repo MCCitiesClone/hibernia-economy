@@ -74,13 +74,6 @@ public interface EconomyService {
      */
     BigDecimal getBalance(UUID account);
 
-    /**
-     * Whether {@code account} can receive {@code amount}. Treasury accounts allow
-     * overdraft, so this is always true — the old {@code CurrencyHoldEvent} path was
-     * unconditionally permissive; kept as a named check for the call sites.
-     */
-    boolean canHold(UUID account, BigDecimal amount);
-
     /** Whether {@code account} exists in the Treasury ledger (was {@code AccountCheckEvent}). */
     boolean hasAccount(UUID account);
 

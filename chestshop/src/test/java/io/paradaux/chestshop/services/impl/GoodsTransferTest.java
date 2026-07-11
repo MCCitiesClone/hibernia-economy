@@ -1,5 +1,7 @@
 package io.paradaux.chestshop.services.impl;
 
+import io.paradaux.chestshop.services.GoodsTransfer;
+
 import io.paradaux.chestshop.model.Transaction;
 import io.paradaux.chestshop.model.config.ChestShopConfiguration;
 import io.paradaux.chestshop.support.ServerTest;
@@ -31,7 +33,7 @@ class GoodsTransferTest extends ServerTest {
         config = TestConfigs.defaults();
         MaterialServiceImpl material = new MaterialServiceImpl(config);
         InventoryServiceImpl inv = new InventoryServiceImpl(config, material);
-        transfer = new GoodsTransfer(inv, config);
+        transfer = new GoodsTransferImpl(inv, config);
     }
 
     private static int count(Inventory inv, Material m) {
@@ -180,7 +182,7 @@ class GoodsTransferTest extends ServerTest {
 
     @Test
     void update_refreshesEachHolderType_andNoOpsForAPlainHolder() throws Exception {
-        java.lang.reflect.Method update = GoodsTransfer.class.getDeclaredMethod(
+        java.lang.reflect.Method update = GoodsTransferImpl.class.getDeclaredMethod(
                 "update", org.bukkit.inventory.InventoryHolder.class);
         update.setAccessible(true);
 

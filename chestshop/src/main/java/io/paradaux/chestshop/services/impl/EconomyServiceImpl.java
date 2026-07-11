@@ -182,11 +182,6 @@ public class EconomyServiceImpl implements EconomyService {
         }
     }
 
-    @Override
-    public boolean canHold(UUID account, BigDecimal amount) {
-        return true;
-    }
-
     /** Whether {@code account} exists in the Treasury ledger (was {@code AccountCheckEvent}). */
     @Override
     public boolean hasAccount(UUID account) {

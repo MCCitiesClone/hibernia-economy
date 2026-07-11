@@ -4,6 +4,7 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import io.paradaux.chestshop.model.Transaction;
 import io.paradaux.chestshop.model.config.ChestShopConfiguration;
+import io.paradaux.chestshop.services.GoodsTransfer;
 import io.paradaux.chestshop.services.InventoryService;
 import io.paradaux.chestshop.utils.InventoryUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -23,13 +24,13 @@ import static io.paradaux.chestshop.model.Transaction.TransactionType.BUY;
  */
 @Singleton
 @Slf4j
-class GoodsTransfer {
+public class GoodsTransferImpl implements GoodsTransfer {
 
     private final InventoryService inventoryService;
     private final ChestShopConfiguration config;
 
     @Inject
-    GoodsTransfer(InventoryService inventoryService, ChestShopConfiguration config) {
+    GoodsTransferImpl(InventoryService inventoryService, ChestShopConfiguration config) {
         this.inventoryService = inventoryService;
         this.config = config;
     }
@@ -38,7 +39,8 @@ class GoodsTransfer {
      * Move every stack from {@code source} to {@code target}. On any shortfall both are restored
      * and {@code false} is returned so the caller can cancel before money moves.
      */
-    boolean transfer(Inventory source, Inventory target, ItemStack[] items) {
+    @Override
+    public boolean transfer(Inventory source, Inventory target, ItemStack[] items) {
         ItemStack[] sourceSnapshot = cloneContents(source);
         ItemStack[] targetSnapshot = cloneContents(target);
 
@@ -65,7 +67,8 @@ class GoodsTransfer {
      * container), so a buy ({@code add}) spawns the stock into the client and a sell removes it.
      * Same snapshot/restore atomicity as {@link #transfer}.
      */
-    boolean moveUnlimited(Inventory client, ItemStack[] items, boolean add) {
+    @Override
+    public boolean moveUnlimited(Inventory client, ItemStack[] items, boolean add) {
         ItemStack[] snapshot = cloneContents(client);
 
         int leftOver = 0;
@@ -85,7 +88,8 @@ class GoodsTransfer {
     }
 
     /** Reverse a completed goods move after a failed money leg, keeping the trade atomic. */
-    void reverse(Transaction event) {
+    @Override
+    public void reverse(Transaction event) {
         boolean buy = event.getTransactionType() == BUY;
         boolean reversed = event.isUnlimitedOwner()
                 ? moveUnlimited(event.getClientInventory(), event.getStock(), !buy)

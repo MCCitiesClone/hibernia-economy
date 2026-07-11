@@ -1,5 +1,7 @@
 package io.paradaux.chestshop.services.impl;
 
+import io.paradaux.chestshop.services.PostTradeReactions;
+
 import io.paradaux.chestshop.model.Transaction;
 import io.paradaux.chestshop.model.config.ChestShopConfiguration;
 import io.paradaux.chestshop.services.AccountService;
@@ -46,7 +48,7 @@ class TransactionKeepChestTest extends ServerTest {
                 "removeEmptyShops", true), "removeEmptyChests", false);
         signService = mock(SignService.class);
         shopBlockService = mock(ShopBlockService.class);
-        service = new PostTradeReactions(
+        service = new PostTradeReactionsImpl(
                 mock(EconomyService.class), mock(ShopService.class), mock(AccountService.class),
                 mock(Message.class), mock(ItemService.class), config, signService, shopBlockService,
                 mock(InventoryService.class));

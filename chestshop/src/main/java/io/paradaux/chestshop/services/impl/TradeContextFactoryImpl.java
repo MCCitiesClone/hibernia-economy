@@ -12,6 +12,7 @@ import io.paradaux.chestshop.services.InventoryService;
 import io.paradaux.chestshop.services.ItemService;
 import io.paradaux.chestshop.services.ShopBlockService;
 import io.paradaux.chestshop.services.SignService;
+import io.paradaux.chestshop.services.TradeContextFactory;
 import io.paradaux.chestshop.utils.PriceUtil;
 import io.paradaux.hibernia.framework.i18n.Message;
 import org.bukkit.block.Container;
@@ -37,7 +38,7 @@ import static io.paradaux.chestshop.model.Transaction.TransactionType.SELL;
  * can't become a trade. Extracted from TransactionServiceImpl (chestshop/structure/0001).
  */
 @Singleton
-class TradeContextFactory {
+public class TradeContextFactoryImpl implements TradeContextFactory {
 
     private final EconomyService economy;
     private final AccountService accounts;
@@ -49,7 +50,7 @@ class TradeContextFactory {
     private final InventoryService inventoryService;
 
     @Inject
-    TradeContextFactory(EconomyService economy, AccountService accounts, Message message, ItemService items,
+    TradeContextFactoryImpl(EconomyService economy, AccountService accounts, Message message, ItemService items,
                         ChestShopConfiguration config, SignService signService, ShopBlockService shopBlockService,
                         InventoryService inventoryService) {
         this.economy = economy;
@@ -62,7 +63,8 @@ class TradeContextFactory {
         this.inventoryService = inventoryService;
     }
 
-    PendingTransaction prepare(Sign sign, Player player, Action action) {
+    @Override
+    public PendingTransaction prepare(Sign sign, Player player, Action action) {
         String name = SignService.getOwner(sign);
         String prices = SignService.getPrice(sign);
         String material = SignService.getItem(sign);

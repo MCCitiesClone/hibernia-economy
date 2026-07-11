@@ -1,5 +1,7 @@
 package io.paradaux.chestshop.services.impl;
 
+import io.paradaux.chestshop.services.PartialFillCalculator;
+
 import io.paradaux.chestshop.model.Account;
 import io.paradaux.chestshop.model.PendingTransaction;
 import io.paradaux.chestshop.model.PendingTransaction.TransactionOutcome;
@@ -61,7 +63,7 @@ class PartialFillCalculatorTest {
         materials = mock(MaterialService.class);
         config = mock(ChestShopConfiguration.class);
         when(config.getPricePrecision()).thenReturn(2);
-        calc = new PartialFillCalculator(economy, inventory, materials, config);
+        calc = new PartialFillCalculatorImpl(economy, inventory, materials, config);
 
         clientId = UUID.randomUUID();
         client = mock(Player.class);
@@ -162,7 +164,6 @@ class PartialFillCalculatorTest {
         economy.hasFunds = (u, a) -> true;
         when(inventory.hasItems(any(), eq(ownerInv))).thenReturn(true);
         when(inventory.fits(any(ItemStack[].class), eq(clientInv))).thenReturn(true);
-        economy.canHold = (u, a) -> true;
 
         calc.adjustBuy(ctx);
 
@@ -187,7 +188,6 @@ class PartialFillCalculatorTest {
         economy.balance = u -> new BigDecimal("45.00");
         when(inventory.hasItems(any(), eq(ownerInv))).thenReturn(true);
         when(inventory.fits(any(ItemStack[].class), eq(clientInv))).thenReturn(true);
-        economy.canHold = (u, a) -> true;
 
         calc.adjustBuy(ctx);
 
@@ -218,7 +218,6 @@ class PartialFillCalculatorTest {
         when(inventory.getAmount(any(), eq(ownerInv))).thenReturn(4);
         when(inventory.getItemStacked(any(), eq(4))).thenReturn(new ItemStack[]{item(Material.STONE, 4)});
         when(inventory.fits(any(ItemStack[].class), eq(clientInv))).thenReturn(true);
-        economy.canHold = (u, a) -> true;
 
         calc.adjustBuy(ctx);
 
@@ -263,7 +262,6 @@ class PartialFillCalculatorTest {
         PendingTransaction ctx = ctx(new ItemStack[]{item(Material.STONE, 10)}, new BigDecimal("10.00"), true, BUY);
         economy.hasFunds = (u, a) -> true;
         when(inventory.fits(any(ItemStack[].class), eq(clientInv))).thenReturn(true);
-        economy.canHold = (u, a) -> true;
         calc.adjustBuy(ctx);
         assertThat(ctx.isCancelled()).isFalse();
     }
@@ -282,7 +280,6 @@ class PartialFillCalculatorTest {
         when(clientInv.getContents()).thenReturn(new ItemStack[]{null, null});
         when(clientInv.getStorageContents()).thenReturn(new ItemStack[]{null}); // 1 empty slot → holds up to 64
         when(inventory.getItemStacked(any(), anyInt())).thenReturn(new ItemStack[]{item(Material.STONE, 10)});
-        economy.canHold = (u, a) -> true;
 
         calc.adjustBuy(ctx);
 
@@ -325,17 +322,6 @@ class PartialFillCalculatorTest {
         assertThat(ctx.getTransactionOutcome()).isEqualTo(TransactionOutcome.NOT_ENOUGH_SPACE_IN_INVENTORY);
     }
 
-    @Test
-    void adjustBuy_cancelsWhenShopCannotHoldProceeds() {
-        PendingTransaction ctx = ctx(new ItemStack[]{item(Material.STONE, 10)}, new BigDecimal("10.00"), false, BUY);
-        economy.hasFunds = (u, a) -> true;
-        when(inventory.hasItems(any(), eq(ownerInv))).thenReturn(true);
-        when(inventory.fits(any(ItemStack[].class), eq(clientInv))).thenReturn(true);
-        economy.canHold = (u, a) -> false;
-        calc.adjustBuy(ctx);
-        assertThat(ctx.getTransactionOutcome()).isEqualTo(TransactionOutcome.SHOP_DEPOSIT_FAILED);
-    }
-
     // ═══════════════════ adjustSell ═══════════════════
 
     @Test
@@ -343,7 +329,6 @@ class PartialFillCalculatorTest {
         PendingTransaction ctx = ctx(new ItemStack[]{item(Material.STONE, 10)}, new BigDecimal("10.00"), true, SELL);
         economy.ownerEconomicallyActive = false; // unlimited server-less shop
         when(inventory.hasItems(any(), eq(clientInv))).thenReturn(true);
-        economy.canHold = (u, a) -> true;
         calc.adjustSell(ctx);
         assertThat(ctx.isCancelled()).isFalse();
     }
@@ -356,7 +341,6 @@ class PartialFillCalculatorTest {
         economy.balance = u -> new BigDecimal("45.00"); // affords 4 @10/item
         when(inventory.hasItems(any(), eq(clientInv))).thenReturn(true);
         when(inventory.fits(any(ItemStack[].class), eq(ownerInv))).thenReturn(true);
-        economy.canHold = (u, a) -> true;
 
         calc.adjustSell(ctx);
 
@@ -396,7 +380,6 @@ class PartialFillCalculatorTest {
         when(inventory.getAmount(any(), eq(clientInv))).thenReturn(4);
         when(inventory.getItemStacked(any(), eq(4))).thenReturn(new ItemStack[]{item(Material.STONE, 4)});
         when(inventory.fits(any(ItemStack[].class), eq(ownerInv))).thenReturn(true);
-        economy.canHold = (u, a) -> true;
 
         calc.adjustSell(ctx);
 
@@ -452,7 +435,6 @@ class PartialFillCalculatorTest {
         when(ownerInv.getContents()).thenReturn(new ItemStack[]{null});
         when(ownerInv.getStorageContents()).thenReturn(new ItemStack[]{null});
         when(inventory.getItemStacked(any(), anyInt())).thenReturn(new ItemStack[]{item(Material.STONE, 10)});
-        economy.canHold = (u, a) -> true;
 
         calc.adjustSell(ctx);
 
@@ -511,23 +493,12 @@ class PartialFillCalculatorTest {
         economy.balance = u -> BigDecimal.valueOf(Double.MAX_VALUE); // astronomically large wallet
         when(inventory.hasItems(any(), eq(clientInv))).thenReturn(true);
         when(inventory.fits(any(ItemStack[].class), eq(ownerInv))).thenReturn(true);
-        economy.canHold = (u, a) -> true;
 
         calc.adjustSell(ctx); // must not throw
 
         // Affordable amount clamped to the 10 requested → full price honoured, not cancelled.
         assertThat(ctx.isCancelled()).isFalse();
         assertThat(ctx.getExactPrice()).isEqualByComparingTo("0.01");
-    }
-
-    @Test
-    void adjustSell_cancelsWhenClientCannotHoldProceeds() {
-        PendingTransaction ctx = ctx(new ItemStack[]{item(Material.STONE, 10)}, new BigDecimal("10.00"), true, SELL);
-        economy.ownerEconomicallyActive = false;
-        when(inventory.hasItems(any(), eq(clientInv))).thenReturn(true);
-        economy.canHold = (u, a) -> false;
-        calc.adjustSell(ctx);
-        assertThat(ctx.getTransactionOutcome()).isEqualTo(TransactionOutcome.CLIENT_DEPOSIT_FAILED);
     }
 
     // ═══════════════════ getCountedItemStack stacking maths (via adjustBuy) ═══════════════════
@@ -543,7 +514,6 @@ class PartialFillCalculatorTest {
         when(inventory.getItemsStacked(any(ItemStack.class))).thenAnswer(i -> new ItemStack[]{i.getArgument(0)});
         when(inventory.hasItems(any(), eq(ownerInv))).thenReturn(true);
         when(inventory.fits(any(ItemStack[].class), eq(clientInv))).thenReturn(true);
-        economy.canHold = (u, a) -> true;
 
         calc.adjustBuy(ctx);
 
@@ -562,7 +532,6 @@ class PartialFillCalculatorTest {
         when(inventory.getItemsStacked(any(ItemStack.class))).thenAnswer(i -> new ItemStack[]{i.getArgument(0)});
         when(inventory.hasItems(any(), eq(ownerInv))).thenReturn(true);
         when(inventory.fits(any(ItemStack[].class), eq(clientInv))).thenReturn(true);
-        economy.canHold = (u, a) -> true;
 
         calc.adjustBuy(ctx);
 
@@ -581,7 +550,6 @@ class PartialFillCalculatorTest {
         when(inventory.getItemsStacked(any(ItemStack.class))).thenAnswer(i -> new ItemStack[]{i.getArgument(0)});
         when(inventory.hasItems(any(), eq(ownerInv))).thenReturn(true);
         when(inventory.fits(any(ItemStack[].class), eq(clientInv))).thenReturn(true);
-        economy.canHold = (u, a) -> true;
 
         calc.adjustBuy(ctx);
 
@@ -605,7 +573,6 @@ class PartialFillCalculatorTest {
         when(clientInv.getStorageContents()).thenReturn(new ItemStack[]{item(Material.STONE, 40), null, null});
         // free=24 + 2 empty slots*64 → all 100 fit; return a single 100 stack.
         when(inventory.getItemStacked(any(), anyInt())).thenReturn(new ItemStack[]{item(Material.STONE, 100)});
-        economy.canHold = (u, a) -> true;
 
         calc.adjustBuy(ctx);
 
@@ -628,7 +595,6 @@ class PartialFillCalculatorTest {
         when(clientInv.getStorageContents()).thenReturn(new ItemStack[]{null});
         // free=0, 1 empty slot → capped to 64.
         when(inventory.getItemStacked(any(), anyInt())).thenReturn(new ItemStack[]{item(Material.STONE, 64)});
-        economy.canHold = (u, a) -> true;
 
         calc.adjustBuy(ctx);
 
@@ -652,7 +618,6 @@ class PartialFillCalculatorTest {
         when(clientInv.getStorageContents()).thenReturn(new ItemStack[]{item(Material.STONE, 40)}); // 0 empty
         // amount (10) <= free (24) → all 10 fit inside the partial stack.
         when(inventory.getItemStacked(any(), anyInt())).thenReturn(new ItemStack[]{item(Material.STONE, 10)});
-        economy.canHold = (u, a) -> true;
 
         calc.adjustBuy(ctx);
 
@@ -672,7 +637,6 @@ class PartialFillCalculatorTest {
         when(inventory.getItemsStacked(any(ItemStack.class))).thenAnswer(i -> new ItemStack[]{i.getArgument(0)});
         when(inventory.hasItems(any(), eq(ownerInv))).thenReturn(true);
         when(inventory.fits(any(ItemStack[].class), eq(clientInv))).thenReturn(true);
-        economy.canHold = (u, a) -> true;
 
         calc.adjustBuy(ctx);
 
@@ -691,7 +655,6 @@ class PartialFillCalculatorTest {
         when(inventory.getItemsStacked(any(ItemStack.class))).thenAnswer(i -> new ItemStack[]{i.getArgument(0)});
         when(inventory.hasItems(any(), eq(ownerInv))).thenReturn(true);
         when(inventory.fits(any(ItemStack[].class), eq(clientInv))).thenReturn(true);
-        economy.canHold = (u, a) -> true;
 
         calc.adjustBuy(ctx);
 
@@ -712,7 +675,6 @@ class PartialFillCalculatorTest {
         when(clientInv.getContents()).thenReturn(new ItemStack[]{item(Material.STONE, 40)}); // 24 free
         when(clientInv.getStorageContents()).thenReturn(new ItemStack[]{item(Material.STONE, 40)}); // 0 empty
         when(inventory.getItemStacked(any(), anyInt())).thenReturn(new ItemStack[]{item(Material.STONE, 24)});
-        economy.canHold = (u, a) -> true;
 
         calc.adjustBuy(ctx);
 
@@ -737,7 +699,6 @@ class PartialFillCalculatorTest {
         when(clientInv.getContents()).thenReturn(new ItemStack[]{item(Material.STONE, 40), null});
         when(clientInv.getStorageContents()).thenReturn(new ItemStack[]{item(Material.STONE, 40), null}); // 1 empty
         when(inventory.getItemStacked(any(), anyInt())).thenReturn(new ItemStack[]{item(Material.STONE, 10)});
-        economy.canHold = (u, a) -> true;
 
         calc.adjustBuy(ctx);
 
@@ -776,7 +737,6 @@ class PartialFillCalculatorTest {
         boolean ownerEconomicallyActive = true;
         java.util.function.BiPredicate<java.util.UUID, java.math.BigDecimal> hasFunds = (u, a) -> true;
         java.util.function.Function<java.util.UUID, java.math.BigDecimal> balance = u -> java.math.BigDecimal.ZERO;
-        java.util.function.BiPredicate<java.util.UUID, java.math.BigDecimal> canHold = (u, a) -> true;
         boolean hasAccount = true;
         boolean settleResult = true;
         int settleCalls = 0;
@@ -788,7 +748,6 @@ class PartialFillCalculatorTest {
         @Override public boolean withdraw(java.util.UUID target, java.math.BigDecimal amount, org.bukkit.World world) { return true; }
         @Override public boolean hasFunds(java.util.UUID account, java.math.BigDecimal amount) { return hasFunds.test(account, amount); }
         @Override public java.math.BigDecimal getBalance(java.util.UUID account) { return balance.apply(account); }
-        @Override public boolean canHold(java.util.UUID account, java.math.BigDecimal amount) { return canHold.test(account, amount); }
         @Override public boolean hasAccount(java.util.UUID account) { return hasAccount; }
         @Override public boolean settle(java.math.BigDecimal amount, org.bukkit.entity.Player initiator, java.util.UUID partner, io.paradaux.chestshop.model.Transaction txn) { settleCalls++; return settleResult; }
         @Override public void migrateLegacyBusinessSign(io.paradaux.chestshop.model.Transaction event) { migrateCalls++; }
