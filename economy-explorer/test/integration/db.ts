@@ -58,3 +58,7 @@ export const BEDROCK = uuid('0000000000000000000000000000BED0');
 // A government department "secretary": a read-only viewer of gov account #5
 // (City Hall) — not its owner and not a member (PAR-237).
 export const SECRETARY = uuid('00000000000000000000000000005EC0');
+// "Penny": the drift fixture (behaviour/0001). Two personal accounts (#9, #10)
+// whose balances (0.10 + 0.20) and windowed credits (0.10 + 0.20 + 0.30) sum
+// exactly in DECIMAL but NOT in a JS double — proves getPlayerTotals sums in SQL.
+export const PENNY = uuid('0000000000000000000000000000BE00');

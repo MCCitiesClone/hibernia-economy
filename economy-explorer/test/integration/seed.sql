@@ -105,3 +105,33 @@ INSERT INTO explorer_identity (keycloak_sub, player_uuid_bin, minecraft_name, li
 -- them see the department's ledger history.
 INSERT INTO account_access (account_id, subject_uuid_bin, level, added_by_uuid_bin) VALUES
   (5, UNHEX('00000000000000000000000000005EC0'), 'VIEWER', UNHEX('0000000000000000000000000000A1CE'));
+
+-- Drift fixture (behaviour/0001): "Penny", one personal account (#9) whose
+-- windowed credits are 0.10 + 0.20 + 0.30 and debits are 0.15 + 0.25 + 0.20 — each
+-- summing to an exact DECIMAL(19,2) 0.60 that does NOT round-trip through a JS
+-- double (both reduce to 0.6000000000000001). Net is 0.00 and the balance stays
+-- 0.00 (like the Bedrock fixture), so the supply / gini / distribution assertions
+-- above are untouched — but income and spend prove the KPI rollups MUST be summed
+-- in SQL and carried as exact strings. getPlayerTotals demonstrates that here.
+INSERT INTO economy_players (player_uuid_bin, current_name) VALUES
+  (UNHEX('0000000000000000000000000000BE00'), 'Penny');
+INSERT INTO accounts (account_id, account_type, owner_uuid_bin, display_name, is_archived) VALUES
+  (9, 'PERSONAL', UNHEX('0000000000000000000000000000BE00'), 'Penny Wallet', 0);
+INSERT INTO account_balances_mat (account_id, balance) VALUES (9, 0.00);
+INSERT INTO ledger_txns (txn_id, settlement_time, message, initiator_uuid_bin, plugin_system) VALUES
+  (10, NOW(), 'penny in a',  UNHEX('0000000000000000000000000000BE00'), 'treasury'),
+  (11, NOW(), 'penny in b',  UNHEX('0000000000000000000000000000BE00'), 'treasury'),
+  (12, NOW(), 'penny in c',  UNHEX('0000000000000000000000000000BE00'), 'treasury'),
+  (13, NOW(), 'penny out a', UNHEX('0000000000000000000000000000BE00'), 'treasury'),
+  (14, NOW(), 'penny out b', UNHEX('0000000000000000000000000000BE00'), 'treasury'),
+  (15, NOW(), 'penny out c', UNHEX('0000000000000000000000000000BE00'), 'treasury');
+-- Two-leg txns: Bob's personal account (#2) is the counterparty for every leg.
+-- Kept PERSONAL↔PERSONAL on purpose so getMoneyFlow (cross-type only) ignores them
+-- and the money-flow assertion above still sees exactly one edge.
+INSERT INTO ledger_postings (txn_id, account_id, amount) VALUES
+  (10, 2, -0.10), (10, 9,  0.10),
+  (11, 2, -0.20), (11, 9,  0.20),
+  (12, 2, -0.30), (12, 9,  0.30),
+  (13, 9, -0.15), (13, 2,  0.15),
+  (14, 9, -0.25), (14, 2,  0.25),
+  (15, 9, -0.20), (15, 2,  0.20);

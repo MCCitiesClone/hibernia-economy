@@ -75,6 +75,48 @@ export async function getPlayerTrajectory(accountIds: number[], days: number): P
   return r.rows;
 }
 
+/**
+ * Exact money rollups for the dashboard KPIs, summed in SQL (never folded
+ * through a JS double). `totalBalance` is the current balance across the whole
+ * account set; `income`/`spend`/`net` are the windowed credit/debit/net over the
+ * last `days`. Returned as DECIMAL strings so the viewer matches the ledger to the
+ * cent — the windowed net uses the same SUM path as its all-time siblings
+ * (getTotalSupply / getPlayerTrajectory) so the two can never disagree.
+ */
+export interface PlayerTotals {
+  totalBalance: string;
+  income: string;
+  spend: string;
+  net: string;
+}
+
+export async function getPlayerTotals(accountIds: number[], days: number): Promise<PlayerTotals> {
+  if (accountIds.length === 0) return { totalBalance: '0.00', income: '0.00', spend: '0.00', net: '0.00' };
+  const ids = sql.join(accountIds);
+  const [bal, flow] = await Promise.all([
+    sql<{ s: string | null }>`
+      SELECT COALESCE(SUM(abm.balance), 0.00) AS s
+      FROM account_balances_mat abm
+      WHERE abm.account_id IN (${ids})
+    `.execute(db),
+    sql<{ income: string | null; spend: string | null; net: string | null }>`
+      SELECT COALESCE(SUM(CASE WHEN lp.amount > 0 THEN lp.amount ELSE 0 END), 0.00) AS income,
+             COALESCE(SUM(CASE WHEN lp.amount < 0 THEN -lp.amount ELSE 0 END), 0.00) AS spend,
+             COALESCE(SUM(lp.amount), 0.00) AS net
+      FROM ledger_postings lp
+      JOIN ledger_txns lt ON lt.txn_id = lp.txn_id
+      WHERE lp.account_id IN (${ids})
+        AND lt.settlement_time >= NOW() - INTERVAL ${days} DAY
+    `.execute(db),
+  ]);
+  return {
+    totalBalance: bal.rows[0]?.s ?? '0.00',
+    income: flow.rows[0]?.income ?? '0.00',
+    spend: flow.rows[0]?.spend ?? '0.00',
+    net: flow.rows[0]?.net ?? '0.00',
+  };
+}
+
 /** Distinct txn count over the player's account set, last `days`. Mirrors countPlayerTransactions. */
 export async function countPlayerTransactions(accountIds: number[], days: number): Promise<number> {
   if (accountIds.length === 0) return 0;
