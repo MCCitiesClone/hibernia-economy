@@ -3,6 +3,7 @@ package io.paradaux.treasuryrestapi.controller;
 import io.paradaux.treasuryrestapi.dto.AdminTransferRequest;
 import io.paradaux.treasuryrestapi.dto.TransferResponse;
 import io.paradaux.treasuryrestapi.security.VerifiedToken;
+import io.paradaux.treasuryrestapi.service.IdempotencyReplay;
 import io.paradaux.treasuryrestapi.service.TransferService;
 import io.swagger.v3.oas.annotations.Hidden;
 import jakarta.validation.Valid;
@@ -41,8 +42,12 @@ public class AdminTransferController {
         log.info("POST /admin/transfers requested by keyId={} | from={} to={} amount={}",
                 verified != null ? verified.keyId() : null,
                 request.fromAccountId(), request.toAccountId(), request.amount());
-        TransferResponse response = transferService.adminTransfer(
-                verified, request.fromAccountId(), request.toAccountId(), request.amount(), request.memo(), idempotencyKey);
+        // Same check-then-insert idempotency race as the token path: adminTransfer
+        // derives the same UNIQUE client_dedup_key, so two concurrent same-key admin
+        // transfers can both pass the pre-check and the loser's insert 500s without
+        // this retry-once replay. Shared with TransferController via IdempotencyReplay.
+        TransferResponse response = IdempotencyReplay.withReplay(() -> transferService.adminTransfer(
+                verified, request.fromAccountId(), request.toAccountId(), request.amount(), request.memo(), idempotencyKey));
         return ResponseEntity.ok(response);
     }
 }

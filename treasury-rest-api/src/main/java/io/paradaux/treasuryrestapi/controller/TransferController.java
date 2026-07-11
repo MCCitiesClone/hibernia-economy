@@ -6,11 +6,11 @@ import io.paradaux.treasuryrestapi.dto.TransferRequest;
 import io.paradaux.treasuryrestapi.dto.TransferResponse;
 import io.paradaux.treasuryrestapi.ratelimit.RateLimit;
 import io.paradaux.treasuryrestapi.security.VerifiedToken;
+import io.paradaux.treasuryrestapi.service.IdempotencyReplay;
 import io.paradaux.treasuryrestapi.service.TransferService;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.dao.DuplicateKeyException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -18,8 +18,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.function.Supplier;
 
 @RestController
 @RequestMapping("/api/v1/transfers")
@@ -31,24 +29,6 @@ public class TransferController {
 
     public TransferController(TransferService transferService) {
         this.transferService = transferService;
-    }
-
-    /**
-     * Runs a transfer, replaying once if a concurrent request with the same
-     * Idempotency-Key won the race to insert the dedup row. The pre-check in
-     * {@link TransferService} is check-then-insert, so two simultaneous same-key
-     * requests can both pass the check; the loser's insert then violates the
-     * {@code client_dedup_key} UNIQUE constraint. By that point the winner has
-     * committed, so a second call (a fresh transaction via the Spring proxy)
-     * finds the row and replays its cached response instead of 500-ing.
-     */
-    private TransferResponse withIdempotencyReplay(Supplier<TransferResponse> op) {
-        try {
-            return op.get();
-        } catch (DuplicateKeyException e) {
-            log.info("Idempotency-Key insert raced a concurrent request; retrying once to replay the committed transfer");
-            return op.get();
-        }
     }
 
     /**
@@ -69,7 +49,7 @@ public class TransferController {
                 request.toAccountId(), request.amount(),
                 idempotencyKey != null ? "present" : "absent");
 
-        TransferResponse response = withIdempotencyReplay(
+        TransferResponse response = IdempotencyReplay.withReplay(
                 () -> transferService.transfer(verified, request, idempotencyKey));
 
         log.info("Transfer completed: txnId={} fromAccount={} toAccount={} amount={}",
@@ -96,7 +76,7 @@ public class TransferController {
                 request.toFirm(), request.amount(),
                 idempotencyKey != null ? "present" : "absent");
 
-        TransferResponse response = withIdempotencyReplay(
+        TransferResponse response = IdempotencyReplay.withReplay(
                 () -> transferService.transferToFirm(verified, request, idempotencyKey));
 
         log.info("Firm transfer completed: txnId={} fromAccount={} toAccount={} amount={}",
@@ -125,7 +105,7 @@ public class TransferController {
                 request.toPlayerUuid(), request.toPlayerName(), request.amount(),
                 idempotencyKey != null ? "present" : "absent");
 
-        TransferResponse response = withIdempotencyReplay(
+        TransferResponse response = IdempotencyReplay.withReplay(
                 () -> transferService.transferToPlayer(verified, request, idempotencyKey));
 
         log.info("Player transfer completed: txnId={} fromAccount={} toAccount={} amount={}",

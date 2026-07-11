@@ -250,6 +250,82 @@ public class TransferService {
                     "Source account has insufficient funds.");
         }
 
+        return postTransfer(fromAccountId, toAccountId, amount, safeMemo, initiator, dedupKey);
+    }
+
+    /**
+     * Sweeps the <em>freshly locked</em> positive balance of {@code fromAccountId}
+     * into {@code toAccountId} in a single ledger transaction. Unlike
+     * {@link #executeTransfer}, the moved amount is not a caller-supplied snapshot: it
+     * is read under the {@code SELECT ... FOR UPDATE} lock, so a concurrent credit or
+     * debit that lands between a caller's snapshot and this call cannot leave a residual
+     * behind or make the sweep overdraw (conservation stays exact). Used by the admin
+     * firm-disband sweep, which must not trust {@code account_balances_mat} snapshots.
+     *
+     * <p>Returns {@code null} when the locked balance is zero-or-negative (nothing to
+     * move) so the caller can archive the account without emitting an empty transfer.
+     *
+     * @return the transfer receipt, or {@code null} if the locked balance was not positive
+     */
+    @Transactional
+    public TransferResponse sweepAll(long fromAccountId,
+                                     long toAccountId,
+                                     String memo,
+                                     UUID initiator) {
+        String safeMemo = memo == null ? "" : memo;
+        if (fromAccountId == toAccountId) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "SELF_TRANSFER",
+                    "Source and destination accounts must be different.");
+        }
+
+        // Lock both balance rows in ascending account-id order — identical ordering to
+        // executeTransfer — so a sweep and a concurrent A→B / B→A transfer can't deadlock.
+        long firstLockId  = Math.min(fromAccountId, toAccountId);
+        long secondLockId = Math.max(fromAccountId, toAccountId);
+        AccountBalance firstLock  = accountMapper.findBalanceForUpdate(firstLockId);
+        AccountBalance secondLock = accountMapper.findBalanceForUpdate(secondLockId);
+        AccountBalance sourceBalance = (fromAccountId == firstLockId) ? firstLock : secondLock;
+
+        BigDecimal amount = sourceBalance.getBalance();
+        if (amount == null || amount.signum() <= 0) {
+            log.debug("Sweep no-op: locked balance on accountId={} is {} (nothing to move)",
+                    fromAccountId, amount);
+            return null;
+        }
+
+        log.debug("Sweeping locked balance {} from accountId={} to accountId={}",
+                amount.toPlainString(), fromAccountId, toAccountId);
+        return postTransfer(fromAccountId, toAccountId, amount, safeMemo, initiator, /* dedupKey */ null);
+    }
+
+    /**
+     * Reads an account's balance under a {@code SELECT ... FOR UPDATE} lock, held for
+     * the remainder of the caller's transaction. Used by the admin disband flow to
+     * decide — from the authoritative, concurrency-safe value rather than a stale
+     * {@code account_balances_mat} snapshot — whether an account with no sweep
+     * destination truly still holds money. Returns {@code null} if no balance row
+     * exists for the account.
+     */
+    @Transactional
+    public BigDecimal lockedBalance(long accountId) {
+        AccountBalance locked = accountMapper.findBalanceForUpdate(accountId);
+        return locked == null ? null : locked.getBalance();
+    }
+
+    /**
+     * Records the money movement once both balance rows are locked and the amount is
+     * settled: inserts the {@code ledger_txns} row and the debit/credit postings, then
+     * builds the receipt. The {@code account_balances_mat} deltas are applied by the
+     * {@code trg_postings_ai} trigger on {@code ledger_postings} — never an
+     * application-side UPDATE. Shared by {@link #executeTransfer} and {@link #sweepAll}
+     * so both write the ledger identically.
+     */
+    private TransferResponse postTransfer(long fromAccountId,
+                                          long toAccountId,
+                                          BigDecimal amount,
+                                          String safeMemo,
+                                          UUID initiator,
+                                          String dedupKey) {
         Instant now = Instant.now();
         LocalDateTime settlementTime = LocalDateTime.ofInstant(now, ZoneOffset.UTC);
 
