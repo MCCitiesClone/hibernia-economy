@@ -5,28 +5,32 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import io.paradaux.hibernia.framework.commander.spi.ParameterResolver;
 import io.paradaux.business.services.FirmSuggestionCache;
-import org.bukkit.Bukkit;
+import io.paradaux.business.services.OnlineRosterCache;
 import org.bukkit.command.CommandSender;
-import org.bukkit.entity.Player;
 
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 
 /**
  * Resolves an {@link OnlineFirmName} argument: accepts any non-blank token (existence
  * is validated downstream), and tab-completes from firms that have an employee or
  * proprietor currently online — the union of each online player's firms. PAR-13.
+ *
+ * <p>{@code suggestions()} runs on a Netty thread and reads the online roster from a
+ * service-managed, lock-free {@link OnlineRosterCache} (maintained on the main thread
+ * by {@code OnlineRosterListener}); it never touches live Bukkit state.
+ * (business/plugin-architecture/0003)
  */
 @Singleton
 public final class OnlineFirmNameResolver implements ParameterResolver<OnlineFirmName> {
 
     private final FirmSuggestionCache cache;
+    private final OnlineRosterCache roster;
 
     @Inject
-    public OnlineFirmNameResolver(FirmSuggestionCache cache) {
+    public OnlineFirmNameResolver(FirmSuggestionCache cache, OnlineRosterCache roster) {
         this.cache = cache;
+        this.roster = roster;
     }
 
     @Override
@@ -41,12 +45,8 @@ public final class OnlineFirmNameResolver implements ParameterResolver<OnlineFir
 
     @Override
     public List<String> suggestions(String prefix, CommandSender sender) {
-        Set<String> pool = new LinkedHashSet<>();
-        // Suggestions run on a Netty thread; snapshot the online players first so a
-        // concurrent join/quit can't throw a ConcurrentModificationException mid-iteration.
-        for (Player online : List.copyOf(Bukkit.getOnlinePlayers())) {
-            pool.addAll(cache.playerFirmNames(online.getUniqueId()));
-        }
-        return Suggestions.match(pool, prefix, 20);
+        // Read the online roster from the service-managed, lock-free cache — never
+        // Bukkit.getOnlinePlayers() (this runs off the main thread).
+        return Suggestions.match(roster.onlineFirmNames(cache), prefix, 20);
     }
 }

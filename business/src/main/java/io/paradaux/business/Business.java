@@ -23,6 +23,7 @@ import io.paradaux.business.guice.DatabaseModule;
 import io.paradaux.business.jobs.ExpireRequestsJob;
 import io.paradaux.business.listeners.ChestShopSaleListener;
 import io.paradaux.business.listeners.FirmBalanceTaxListener;
+import io.paradaux.business.listeners.OnlineRosterListener;
 import io.paradaux.business.model.config.DatabaseConfiguration;
 import io.paradaux.business.model.config.FirmConfiguration;
 import io.paradaux.business.services.FirmSalesNotificationService;
@@ -74,7 +75,8 @@ public class Business extends JavaPlugin {
                 )
                 .listeners(
                         FirmBalanceTaxListener.class,
-                        ChestShopSaleListener.class
+                        ChestShopSaleListener.class,
+                        OnlineRosterListener.class
                 )
                 .build();
 
@@ -139,7 +141,7 @@ public class Business extends JavaPlugin {
         getServer().getServicesManager().register(BusinessApi.class, api, this, ServicePriority.Normal);
 
         // 5) Register events via the framework ListenerManager (FirmBalanceTaxListener,
-        //    ChestShopSaleListener — declared in HiberniaModule.listeners(...) above).
+        //    ChestShopSaleListener, OnlineRosterListener — declared in HiberniaModule.listeners(...) above).
         injector.getInstance(ListenerManager.class).registerAll();
 
         // 6) Drive the firm sale-notification digest: flush buffered sales on a
