@@ -567,12 +567,15 @@
       "structure"
     ],
     "lane": "D",
-    "status": "decision-needed",
+    "status": "resolved",
     "resolution": {
       "decision": "Standardise firm addressing on int firmId \u2014 large API-breaking; approve scope or defer.",
       "branch": null,
-      "commits": [],
-      "test": null
+      "commits": [
+        "82afa12"
+      ],
+      "test": null,
+      "note": "int firmId internal standardisation; business-api untouched"
     }
   },
   {
@@ -3093,13 +3096,15 @@
       "dependencies"
     ],
     "lane": "A",
-    "status": "decision-needed",
+    "status": "resolved",
     "resolution": {
       "branch": null,
-      "commits": [],
+      "commits": [
+        "56f4e2d"
+      ],
       "test": null,
       "reject_reason": null,
-      "note": "server/bot: populate with real sources or remove the stub \u2014 is the bot a real component?"
+      "note": "Removed the untracked local stub from disk; server/ is gitignored dev scaffolding (no commit)"
     }
   },
   {
