@@ -1,84 +1,49 @@
 package io.paradaux.chestshop.listeners;
 
-import io.paradaux.chestshop.services.ShopBlockService;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import io.paradaux.chestshop.utils.BlockUtil;
-import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.model.config.ChestShopConfiguration;
-import io.paradaux.chestshop.model.DestroyedShop;
-import io.paradaux.chestshop.services.AccountService;
-import io.paradaux.chestshop.services.ShopService;
+import io.paradaux.chestshop.services.SignBreakService;
 import io.paradaux.chestshop.services.SignService;
 import io.paradaux.hibernia.framework.i18n.Message;
-import org.bukkit.Material;
 import org.bukkit.block.Block;
-import org.bukkit.block.BlockFace;
-import org.bukkit.block.Container;
 import org.bukkit.block.Sign;
-import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.*;
 import org.bukkit.event.entity.EntityChangeBlockEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
-import org.bukkit.metadata.FixedMetadataValue;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
-
-import static io.paradaux.chestshop.utils.BlockUtil.getState;
-import static io.paradaux.chestshop.utils.BlockUtil.getAttachedBlock;
 import static io.paradaux.chestshop.utils.BlockUtil.isSign;
-import static io.paradaux.chestshop.utils.Permissions.OTHER_NAME_DESTROY;
 
 /**
+ * Bukkit entrypoint for shop-sign protection and removal: it cancels disallowed breaks (players,
+ * pistons, explosions, fire, entities) and fires shop removal once a sign is genuinely broken. The
+ * protection/removal decisions live in {@link SignBreakService} (chestshop/structure/0002); this
+ * class stays a thin listener.
+ *
  * @author Acrobot
  */
 @Singleton
 public class SignBreakListener implements Listener {
-    private static final BlockFace[] SIGN_CONNECTION_FACES = {BlockFace.SOUTH, BlockFace.NORTH, BlockFace.EAST, BlockFace.WEST, BlockFace.UP};
-    public static final String METADATA_NAME = "shop_destroyer";
 
-    private final AccountService accounts;
-    private final ShopService shops;
     private final Message message;
     private final ChestShopConfiguration config;
     private final SignService signService;
-    private final ShopBlockService shopBlockService;
+    private final SignBreakService signBreak;
 
     @Inject
-    public SignBreakListener(AccountService accounts, ShopService shops, Message message,
-                     ChestShopConfiguration config, SignService signService, ShopBlockService shopBlockService) {
-        this.accounts = accounts;
-        this.shops = shops;
+    public SignBreakListener(Message message, ChestShopConfiguration config, SignService signService, SignBreakService signBreak) {
         this.message = message;
         this.config = config;
         this.signService = signService;
-        this.shopBlockService = shopBlockService;
-    }
-
-    public void handlePhysicsBreak(Block block) {
-        if (!BlockUtil.isSign(block)) {
-            return;
-        }
-
-        Sign sign = (Sign) getState(block, false);
-        Block attachedBlock = BlockUtil.getAttachedBlock(sign);
-
-        if (attachedBlock.getType() == Material.AIR && signService.isValid(sign)) {
-            sendShopDestroyed((Sign) block.getState(), block.hasMetadata(METADATA_NAME)
-                    ? (Player) block.getMetadata(METADATA_NAME).get(0).value()
-                    : null);
-        }
+        this.signBreak = signBreak;
     }
 
     @EventHandler(ignoreCancelled = true)
     public void onSignBreak(BlockBreakEvent event) {
-        if (!canBlockBeBroken(event.getBlock(), event.getPlayer())) {
+        if (!signBreak.canBlockBeBroken(event.getBlock(), event.getPlayer())) {
             event.setCancelled(true);
             message.send(event.getPlayer(), "chestshop.ACCESS_DENIED");
             if (isSign(event.getBlock())) {
@@ -90,14 +55,14 @@ public class SignBreakListener implements Listener {
     @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
     public void onBrokenSign(BlockBreakEvent event) {
         if (signService.isValid(event.getBlock())) {
-            sendShopDestroyed((Sign) event.getBlock().getState(), event.getPlayer());
+            signBreak.sendShopDestroyed((Sign) event.getBlock().getState(), event.getPlayer());
         }
     }
 
     @EventHandler(ignoreCancelled = true)
     public void onBlockPistonExtend(BlockPistonExtendEvent event) {
         for (Block block : event.getBlocks()) {
-            if (!canBlockBeBroken(block, null)) {
+            if (!signBreak.canBlockBeBroken(block, null)) {
                 event.setCancelled(true);
                 return;
             }
@@ -107,7 +72,7 @@ public class SignBreakListener implements Listener {
     @EventHandler(ignoreCancelled = true)
     public void onBlockPistonRetract(BlockPistonRetractEvent event) {
         for (Block block : event.getBlocks()) {
-            if (!canBlockBeBroken(block, null)) {
+            if (!signBreak.canBlockBeBroken(block, null)) {
                 event.setCancelled(true);
                 return;
             }
@@ -121,7 +86,7 @@ public class SignBreakListener implements Listener {
         }
 
         for (Block block : event.blockList()) {
-            if (!canBlockBeBroken(block, null)) {
+            if (!signBreak.canBlockBeBroken(block, null)) {
                 event.setCancelled(true);
                 return;
             }
@@ -130,83 +95,15 @@ public class SignBreakListener implements Listener {
 
     @EventHandler(ignoreCancelled = true)
     public void onIgnite(BlockBurnEvent event) {
-        if (!canBlockBeBroken(event.getBlock(), null)) {
+        if (!signBreak.canBlockBeBroken(event.getBlock(), null)) {
             event.setCancelled(true);
         }
     }
 
     @EventHandler(ignoreCancelled = true)
     public void onEntityChangeBlock(EntityChangeBlockEvent event) {
-        if (!canBlockBeBroken(event.getBlock(), null)) {
+        if (!signBreak.canBlockBeBroken(event.getBlock(), null)) {
             event.setCancelled(true);
-        }
-    }
-
-    public boolean canBlockBeBroken(Block block, Player breaker) {
-        List<Sign> attachedSigns = getAttachedSigns(block);
-        List<Sign> brokenBlocks = new LinkedList<Sign>();
-
-        boolean canBeBroken = true;
-
-        for (Sign sign : attachedSigns) {
-
-            if (!canBeBroken || !signService.isValid(sign)) {
-                continue;
-            }
-
-            if (config.isTurnOffSignProtection() || canDestroyShop(breaker, SignService.getOwner(sign))) {
-                brokenBlocks.add(sign);
-            } else {
-                canBeBroken = false;
-            }
-        }
-
-        if (!canBeBroken) {
-            return false;
-        }
-
-        for (Sign sign : brokenBlocks) {
-            sign.setMetadata(METADATA_NAME, new FixedMetadataValue(ChestShop.getPlugin(), breaker));
-        }
-
-        return true;
-    }
-
-    private boolean canDestroyShop(Player player, String name) {
-        return player != null && accounts.canUseName(player, OTHER_NAME_DESTROY, name);
-    }
-
-    public void sendShopDestroyed(Sign sign, Player player) {
-        Container connectedContainer = shopBlockService.findConnectedContainer(sign.getBlock());
-
-        shops.onDestroyed(new DestroyedShop(player, sign, connectedContainer));
-    }
-
-    private static List<Sign> getAttachedSigns(Block block) {
-        if (block == null) {
-            return new ArrayList<>();
-        }
-
-        if (isSign(block)) {
-            return Collections.singletonList((Sign) block.getState());
-        } else {
-            List<Sign> attachedSigns = new LinkedList<Sign>();
-
-            for (BlockFace face : SIGN_CONNECTION_FACES) {
-                Block relative = block.getRelative(face);
-
-                if (!isSign(relative)) {
-                    continue;
-                }
-
-                Sign sign = (Sign) relative.getState();
-
-                if (getAttachedBlock(sign).equals(block)) {
-                    attachedSigns.add(sign);
-                }
-            }
-
-            return attachedSigns;
         }
     }
 }

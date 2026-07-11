@@ -20,13 +20,17 @@ import io.paradaux.chestshop.services.ItemCodeService;
 import io.paradaux.chestshop.services.ItemService;
 import io.paradaux.chestshop.services.MarketResyncService;
 import io.paradaux.chestshop.services.MarketService;
+import io.paradaux.chestshop.services.MarketSyncService;
 import io.paradaux.chestshop.services.MaterialService;
 import io.paradaux.chestshop.services.MetricsService;
 import io.paradaux.chestshop.services.PreviewService;
 import io.paradaux.chestshop.services.ProtectionService;
+import io.paradaux.chestshop.services.RestrictedSignService;
 import io.paradaux.chestshop.services.ShopBlockService;
 import io.paradaux.chestshop.services.ShopFinderService;
 import io.paradaux.chestshop.services.ShopService;
+import io.paradaux.chestshop.services.SignBreakService;
+import io.paradaux.chestshop.services.StockCounterService;
 import io.paradaux.chestshop.services.TransactionService;
 import io.paradaux.chestshop.services.impl.AccountServiceImpl;
 import io.paradaux.chestshop.services.impl.AdminBypassServiceImpl;
@@ -38,12 +42,16 @@ import io.paradaux.chestshop.services.impl.InventoryServiceImpl;
 import io.paradaux.chestshop.services.impl.ItemCodeServiceImpl;
 import io.paradaux.chestshop.services.impl.ItemServiceImpl;
 import io.paradaux.chestshop.services.impl.MarketResyncServiceImpl;
+import io.paradaux.chestshop.services.impl.MarketSyncServiceImpl;
 import io.paradaux.chestshop.services.impl.MaterialServiceImpl;
 import io.paradaux.chestshop.services.impl.PreviewServiceImpl;
 import io.paradaux.chestshop.services.impl.ProtectionServiceImpl;
+import io.paradaux.chestshop.services.impl.RestrictedSignServiceImpl;
 import io.paradaux.chestshop.services.impl.ShopBlockServiceImpl;
 import io.paradaux.chestshop.services.impl.ShopFinderServiceImpl;
 import io.paradaux.chestshop.services.impl.ShopServiceImpl;
+import io.paradaux.chestshop.services.impl.SignBreakServiceImpl;
+import io.paradaux.chestshop.services.impl.StockCounterServiceImpl;
 import io.paradaux.chestshop.services.impl.TransactionServiceImpl;
 
 /**
@@ -84,7 +92,11 @@ public class ChestShopModule extends AbstractModule {
         bind(ShopService.class).to(ShopServiceImpl.class).in(Singleton.class);
         bind(TransactionService.class).to(TransactionServiceImpl.class).in(Singleton.class);
         bind(MarketService.class).to(io.paradaux.chestshop.services.impl.MarketServiceImpl.class).in(Singleton.class);
+        bind(MarketSyncService.class).to(MarketSyncServiceImpl.class).in(Singleton.class);
         bind(MetricsService.class).to(io.paradaux.chestshop.services.impl.MetricsServiceImpl.class).in(Singleton.class);
+        bind(RestrictedSignService.class).to(RestrictedSignServiceImpl.class).in(Singleton.class);
+        bind(SignBreakService.class).to(SignBreakServiceImpl.class).in(Singleton.class);
+        bind(StockCounterService.class).to(StockCounterServiceImpl.class).in(Singleton.class);
 
         // SignService is a static-heavy sign-format util with a small instance surface,
         // not an interface/impl service — bound concrete.

@@ -4,7 +4,6 @@ import org.bukkit.event.block.Action;
 import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.model.PendingTransaction;
 import io.paradaux.chestshop.model.Transaction;
-import io.paradaux.chestshop.listeners.RestrictedSignListener;
 import org.bukkit.Bukkit;
 import org.bukkit.block.Sign;
 import org.bukkit.entity.Player;
@@ -22,7 +21,7 @@ import java.util.UUID;
  * <p>The money leg settles directly through {@link ChestShop#economy()} (a single
  * buyer→seller {@code TreasuryApi} transfer); the goods are reversed if it fails, so a
  * trade is all-or-nothing. The genuine cross-cutting hooks (market-DB sync,
- * stock counter) and the cross-plugin sign listener {@code RestrictedSignListener} stay.
+ * stock counter) and the cross-plugin {@code RestrictedSignService} access gate stay.
  */
 public interface TransactionService {
 

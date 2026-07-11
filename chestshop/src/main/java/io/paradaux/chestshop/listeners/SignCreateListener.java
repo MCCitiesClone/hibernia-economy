@@ -11,6 +11,7 @@ import io.paradaux.chestshop.model.CreatedShop;
 import io.paradaux.chestshop.services.AccountService;
 import io.paradaux.chestshop.services.ItemService;
 import io.paradaux.chestshop.services.ShopService;
+import io.paradaux.chestshop.services.SignBreakService;
 import io.paradaux.chestshop.services.SignService;
 import org.bukkit.block.Block;
 import org.bukkit.block.Sign;
@@ -28,12 +29,12 @@ public class SignCreateListener implements Listener {
     private final AccountService accounts;
     private final ItemService items;
     private final ShopService shops;
-    private final SignBreakListener signBreak;
+    private final SignBreakService signBreak;
     private final SignService signService;
     private final ShopBlockService shopBlockService;
 
     @Inject
-    public SignCreateListener(AccountService accounts, ItemService items, ShopService shops, SignBreakListener signBreak,
+    public SignCreateListener(AccountService accounts, ItemService items, ShopService shops, SignBreakService signBreak,
                       SignService signService, ShopBlockService shopBlockService) {
         this.accounts = accounts;
         this.items = items;

@@ -23,8 +23,8 @@ import io.paradaux.chestshop.model.ShopCreation;
 import io.paradaux.chestshop.model.CreatedShop;
 import io.paradaux.chestshop.model.DestroyedShop;
 import io.paradaux.chestshop.model.ShopCreation.CreationOutcome;
-import io.paradaux.chestshop.listeners.StockCounterListener;
-import io.paradaux.chestshop.listeners.MarketListener;
+import io.paradaux.chestshop.services.StockCounterService;
+import io.paradaux.chestshop.services.MarketSyncService;
 import io.paradaux.chestshop.utils.LocationUtil;
 import io.paradaux.chestshop.utils.MaterialUtil;
 import io.paradaux.chestshop.utils.PriceUtil;
@@ -68,9 +68,9 @@ public class ShopServiceImpl implements ShopService {
     private final EconomyService economy;
     private final ItemService items;
     private final ProtectionService protection;
-    private final StockCounterListener stockCounter;
+    private final StockCounterService stockCounter;
     private final Message message;
-    private final MarketListener market;
+    private final MarketSyncService market;
     private final ChestShopConfiguration config;
     private final SignService signService;
     private final ShopBlockService shopBlockService;
@@ -78,7 +78,7 @@ public class ShopServiceImpl implements ShopService {
     private final AdminBypassService adminBypass;
 
     @Inject
-    public ShopServiceImpl(AccountService accounts, EconomyService economy, ItemService items, ProtectionService protection, StockCounterListener stockCounter, Message message, MarketListener market,
+    public ShopServiceImpl(AccountService accounts, EconomyService economy, ItemService items, ProtectionService protection, StockCounterService stockCounter, Message message, MarketSyncService market,
                        ChestShopConfiguration config, SignService signService, ShopBlockService shopBlockService, AdminBypassService adminBypass) {
         this.adminBypass = adminBypass;
         this.accounts = accounts;

@@ -1,6 +1,7 @@
 package io.paradaux.chestshop.listeners;
 
 import com.google.inject.Inject;
+import io.paradaux.chestshop.services.SignBreakService;
 import org.bukkit.Tag;
 import org.bukkit.block.Block;
 import org.bukkit.event.EventHandler;
@@ -10,10 +11,10 @@ import org.bukkit.event.block.BlockPhysicsEvent;
 
 public class PhysicsBreakListener implements Listener {
 
-    private final SignBreakListener signBreak;
+    private final SignBreakService signBreak;
 
     @Inject
-    public PhysicsBreakListener(SignBreakListener signBreak) {
+    public PhysicsBreakListener(SignBreakService signBreak) {
         this.signBreak = signBreak;
     }
 
@@ -21,7 +22,7 @@ public class PhysicsBreakListener implements Listener {
      * {@link BlockPhysicsEvent} is a hot event: fired for essentially every block update in a
      * loaded chunk. The guard below MUST stay O(1) and allocation-free so the overwhelming
      * majority of non-shop updates cost only an enum read + a tag {@code Set} lookup, and never
-     * reach the sign resolution in {@link SignBreakListener#handlePhysicsBreak(Block)} (which
+     * reach the sign resolution in {@link SignBreakService#handlePhysicsBreak(Block)} (which
      * materialises {@code BlockData}, reads block state and walks neighbours).
      *
      * <p>{@link Tag#SIGNS} covers both standing and wall signs — the only blocks whose physics

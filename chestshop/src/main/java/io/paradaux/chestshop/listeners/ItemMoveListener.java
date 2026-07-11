@@ -1,9 +1,9 @@
 package io.paradaux.chestshop.listeners;
 
-import io.paradaux.chestshop.utils.InventoryUtil;
 import com.google.inject.Inject;
 import io.paradaux.chestshop.model.config.ChestShopConfiguration;
 import io.paradaux.chestshop.services.ShopBlockService;
+import io.paradaux.chestshop.services.StockCounterService;
 import org.bukkit.block.BlockState;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -18,12 +18,12 @@ import static io.paradaux.chestshop.utils.InventoryUtil.getHolder;
  */
 public class ItemMoveListener implements Listener {
 
-    private final StockCounterListener stockCounter;
+    private final StockCounterService stockCounter;
     private final ChestShopConfiguration config;
     private final ShopBlockService shopBlockService;
 
     @Inject
-    public ItemMoveListener(StockCounterListener stockCounter, ChestShopConfiguration config, ShopBlockService shopBlockService) {
+    public ItemMoveListener(StockCounterService stockCounter, ChestShopConfiguration config, ShopBlockService shopBlockService) {
         this.stockCounter = stockCounter;
         this.config = config;
         this.shopBlockService = shopBlockService;

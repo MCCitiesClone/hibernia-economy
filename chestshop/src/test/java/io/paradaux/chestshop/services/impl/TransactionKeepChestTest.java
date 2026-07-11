@@ -1,17 +1,11 @@
 package io.paradaux.chestshop.services.impl;
 
-import io.paradaux.chestshop.listeners.MarketListener;
-import io.paradaux.chestshop.listeners.RestrictedSignListener;
-import io.paradaux.chestshop.listeners.SignBreakListener;
-import io.paradaux.chestshop.listeners.StockCounterListener;
 import io.paradaux.chestshop.model.Transaction;
 import io.paradaux.chestshop.model.config.ChestShopConfiguration;
 import io.paradaux.chestshop.services.AccountService;
-import io.paradaux.chestshop.services.AdminBypassService;
 import io.paradaux.chestshop.services.EconomyService;
 import io.paradaux.chestshop.services.InventoryService;
 import io.paradaux.chestshop.services.ItemService;
-import io.paradaux.chestshop.services.MetricsService;
 import io.paradaux.chestshop.services.ShopBlockService;
 import io.paradaux.chestshop.services.ShopService;
 import io.paradaux.chestshop.services.SignService;
@@ -27,9 +21,6 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import java.lang.reflect.Method;
-import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.lenient;
@@ -47,7 +38,7 @@ class TransactionKeepChestTest extends ServerTest {
     private ChestShopConfiguration config;
     private SignService signService;
     private ShopBlockService shopBlockService;
-    private TransactionServiceImpl service;
+    private PostTradeReactions service;
 
     @BeforeEach
     void wire() {
@@ -55,18 +46,14 @@ class TransactionKeepChestTest extends ServerTest {
                 "removeEmptyShops", true), "removeEmptyChests", false);
         signService = mock(SignService.class);
         shopBlockService = mock(ShopBlockService.class);
-        service = new TransactionServiceImpl(
+        service = new PostTradeReactions(
                 mock(EconomyService.class), mock(ShopService.class), mock(AccountService.class),
-                mock(SignBreakListener.class), mock(StockCounterListener.class), mock(Message.class),
-                mock(ItemService.class), mock(MarketListener.class), config, signService, shopBlockService,
-                mock(InventoryService.class), mock(AdminBypassService.class), mock(RestrictedSignListener.class),
-                mock(MetricsService.class), mock(PartialFillCalculator.class), mock(GoodsTransfer.class));
+                mock(Message.class), mock(ItemService.class), config, signService, shopBlockService,
+                mock(InventoryService.class));
     }
 
-    private void deleteEmptyShop(Transaction event) throws Exception {
-        Method m = TransactionServiceImpl.class.getDeclaredMethod("deleteEmptyShop", Transaction.class);
-        m.setAccessible(true);
-        m.invoke(service, event);
+    private void deleteEmptyShop(Transaction event) {
+        service.deleteEmptyShop(event);
     }
 
     @Test

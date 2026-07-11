@@ -2,6 +2,7 @@ package io.paradaux.chestshop.listeners;
 
 import com.destroystokyo.paper.event.block.BlockDestroyEvent;
 import com.google.inject.Inject;
+import io.paradaux.chestshop.services.SignBreakService;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -14,10 +15,10 @@ import org.bukkit.event.Listener;
  */
 public class PaperBlockDestroyListener implements Listener {
 
-    private final SignBreakListener signBreak;
+    private final SignBreakService signBreak;
 
     @Inject
-    public PaperBlockDestroyListener(SignBreakListener signBreak) {
+    public PaperBlockDestroyListener(SignBreakService signBreak) {
         this.signBreak = signBreak;
     }
 

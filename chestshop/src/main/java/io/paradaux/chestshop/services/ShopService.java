@@ -4,7 +4,6 @@ import io.paradaux.chestshop.ChestShop;
 import io.paradaux.chestshop.model.ShopCreation;
 import io.paradaux.chestshop.model.CreatedShop;
 import io.paradaux.chestshop.model.DestroyedShop;
-import io.paradaux.chestshop.listeners.MarketListener;
 import org.bukkit.Bukkit;
 import org.bukkit.block.Sign;
 import org.bukkit.entity.Player;
@@ -40,7 +39,7 @@ public interface ShopService {
      * + registration order the former {@link CreatedShop} listeners fired in
      * (replacing the Bukkit event dispatch): NORMAL {@code SignSticker} sticks the sign
      * to its chest, then MONITOR {@code MessageSender} notifies the creator,
-     * {@code ShopCreationLogger} logs it, and {@code MarketListener} upserts the shop in
+     * {@code ShopCreationLogger} logs it, and {@code MarketSyncService} upserts the shop in
      * the market registry.
      */
     void onCreated(CreatedShop event);

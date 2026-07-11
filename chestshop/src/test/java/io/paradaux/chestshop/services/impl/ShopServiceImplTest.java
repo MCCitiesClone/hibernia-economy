@@ -1,7 +1,7 @@
 package io.paradaux.chestshop.services.impl;
 
-import io.paradaux.chestshop.listeners.MarketListener;
-import io.paradaux.chestshop.listeners.StockCounterListener;
+import io.paradaux.chestshop.services.MarketSyncService;
+import io.paradaux.chestshop.services.StockCounterService;
 import io.paradaux.chestshop.model.Account;
 import io.paradaux.chestshop.model.CreatedShop;
 import io.paradaux.chestshop.model.DestroyedShop;
@@ -59,9 +59,9 @@ class ShopServiceImplTest extends ServerTest {
     private EconomyService economy;
     private ItemService items;
     private ProtectionService protection;
-    private StockCounterListener stockCounter;
+    private StockCounterService stockCounter;
     private Message message;
-    private MarketListener market;
+    private MarketSyncService market;
     private SignService signService;
     private ShopBlockService shopBlockService;
     private AdminBypassService adminBypass;
@@ -85,9 +85,9 @@ class ShopServiceImplTest extends ServerTest {
         economy = mock(EconomyService.class);
         items = mock(ItemService.class);
         protection = mock(ProtectionService.class);
-        stockCounter = mock(StockCounterListener.class);
+        stockCounter = mock(StockCounterService.class);
         message = mock(Message.class);
-        market = mock(MarketListener.class);
+        market = mock(MarketSyncService.class);
         adminBypass = mock(AdminBypassService.class);
 
         config = TestConfigs.defaults();

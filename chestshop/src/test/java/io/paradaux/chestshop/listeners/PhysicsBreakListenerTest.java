@@ -1,5 +1,6 @@
 package io.paradaux.chestshop.listeners;
 
+import io.paradaux.chestshop.services.SignBreakService;
 import io.paradaux.chestshop.support.ServerTest;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -17,18 +18,18 @@ import static org.mockito.Mockito.verify;
  * Pins the hot-path guard on {@link PhysicsBreakListener}. {@link BlockPhysicsEvent} fires for
  * essentially every block update in a loaded chunk, so the handler must short-circuit on a cheap
  * {@link org.bukkit.Tag#SIGNS} membership test before delegating to the expensive sign-resolution
- * work in {@link SignBreakListener}.
+ * work in {@link SignBreakService}.
  */
 class PhysicsBreakListenerTest extends ServerTest {
 
     private WorldMock world;
-    private SignBreakListener signBreak;
+    private SignBreakService signBreak;
     private PhysicsBreakListener listener;
 
     @BeforeEach
     void setUp() {
         world = server.addSimpleWorld("physicsworld");
-        signBreak = mock(SignBreakListener.class);
+        signBreak = mock(SignBreakService.class);
         listener = new PhysicsBreakListener(signBreak);
     }
 
