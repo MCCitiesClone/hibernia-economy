@@ -193,10 +193,8 @@ tasks.test {
 // utils). Bukkit/framework glue that can't be exercised without a live server or soft-dep
 // plugins is excluded, matching the treasury/business standard: the plugin main, command &
 // listener entrypoints, Usher dialog UI, the soft-depend integrations (WorldGuard/GriefPrevention/
-// Nexo), the Guice module, the MyBatis mappers, and the vendored Base64.
+// Nexo), the Guice module, and the MyBatis mappers.
 val jacocoExcludes = listOf(
-    "io/paradaux/chestshop/utils/encoding/Base64.class",
-    "io/paradaux/chestshop/utils/encoding/Base64\$*.class",
     "io/paradaux/chestshop/ChestShop.class",
     "io/paradaux/chestshop/ChestShop\$*.class",
     "io/paradaux/chestshop/listeners/**",

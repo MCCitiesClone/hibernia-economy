@@ -1,5 +1,4 @@
 package io.paradaux.chestshop.commands;
-import io.paradaux.chestshop.utils.Colours;
 import lombok.extern.slf4j.Slf4j;
 
 import com.google.inject.Inject;
@@ -67,7 +66,7 @@ public class ItemInfoCommand implements CommandHandler {
         try {
             message.send(sender, "chestshop.iteminfo_shopname", "prefix", "", "item", items.getSignName(item));
         } catch (IllegalArgumentException e) {
-            sender.sendMessage(Colours.RED + "Error while generating shop sign name. Please contact an admin or take a look at the console/log!");
+            message.send(sender, "chestshop.ITEM_NAME_ERROR");
             log.error("Error while generating shop sign item name", e);
             return;
         }

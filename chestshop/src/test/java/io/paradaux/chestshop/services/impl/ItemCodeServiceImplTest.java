@@ -239,9 +239,14 @@ class ItemCodeServiceImplTest extends ServerTest {
 
     @Test
     void migrateIfNeeded_runsBlobAndMetadataMigration_onFreshFolder() throws Exception {
-        // Seed a legacy row so the blob migration has something to rewrite.
+        // Seed a legacy row so the blob migration has something to rewrite: an
+        // ObjectOutputStream-serialized String in plain Base64 (the pre-PAR-290 layout).
         String yaml = "==: org.bukkit.inventory.ItemStack\nv: 1\ntype: STONE\n";
-        String legacy = io.paradaux.chestshop.utils.encoding.Base64.encodeObject(yaml);
+        java.io.ByteArrayOutputStream bos = new java.io.ByteArrayOutputStream();
+        try (java.io.ObjectOutputStream oos = new java.io.ObjectOutputStream(bos)) {
+            oos.writeObject(yaml);
+        }
+        String legacy = java.util.Base64.getEncoder().encodeToString(bos.toByteArray());
         mapper.rows.put(1, legacy);
 
         service.migrateIfNeeded();

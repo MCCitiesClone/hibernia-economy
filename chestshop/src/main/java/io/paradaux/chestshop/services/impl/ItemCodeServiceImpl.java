@@ -11,7 +11,6 @@ import io.paradaux.chestshop.mappers.ItemCodeMapper;
 import io.paradaux.chestshop.utils.MaterialUtil;
 import io.paradaux.chestshop.utils.StringUtil;
 import io.paradaux.chestshop.utils.encoding.Base62;
-import io.paradaux.chestshop.utils.encoding.Base64;
 import org.bukkit.Material;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.configuration.file.YamlConstructor;
@@ -322,9 +321,10 @@ public class ItemCodeServiceImpl implements ItemCodeService {
         try {
             raw = java.util.Base64.getDecoder().decode(blob);
         } catch (IllegalArgumentException notStandardBase64) {
-            // Line-broken legacy Base64 the strict decoder rejects: the vendored decoder
-            // handles the exact legacy byte layout, then a String-only filter guards readObject.
-            return deserializeLegacyString(Base64.decode(blob));
+            // Line-broken legacy Base64 the strict decoder rejects: the MIME decoder ignores
+            // the wrapping newlines (byte-identical to the old vendored decoder for this data),
+            // then a String-only filter guards readObject.
+            return deserializeLegacyString(java.util.Base64.getMimeDecoder().decode(blob));
         }
         if (raw.length >= 2 && (raw[0] & 0xFF) == 0xAC && (raw[1] & 0xFF) == 0xED) {
             return deserializeLegacyString(raw);

@@ -1,6 +1,5 @@
 package io.paradaux.chestshop.listeners;
 import io.paradaux.chestshop.utils.StringUtil;
-import io.paradaux.chestshop.utils.Colours;
 import io.paradaux.chestshop.utils.SignText;
 import lombok.extern.slf4j.Slf4j;
 
@@ -132,7 +131,7 @@ public class PlayerInteractListener implements Listener {
                     try {
                         itemCode = items.getSignName(item);
                     } catch (IllegalArgumentException e) {
-                        player.sendMessage(Colours.RED + "Error while generating shop sign item name. Please contact an admin or take a look at the console/log!");
+                        message.send(player, "chestshop.ITEM_NAME_ERROR");
                         log.error("Error while generating shop sign item name", e);
                         return;
                     }

@@ -1,5 +1,4 @@
 package io.paradaux.chestshop.commands;
-import io.paradaux.chestshop.utils.Colours;
 
 import io.paradaux.chestshop.services.ShopBlockService;
 import com.google.inject.Inject;
@@ -54,7 +53,7 @@ public class ShopInfoCommand implements CommandHandler {
                 }
             }
         } else {
-            sender.sendMessage(Colours.RED + "Command must be run by a player!");
+            message.send(sender, "chestshop.PLAYER_ONLY");
         }
     }
 }

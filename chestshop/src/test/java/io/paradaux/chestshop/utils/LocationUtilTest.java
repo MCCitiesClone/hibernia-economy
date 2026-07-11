@@ -37,4 +37,19 @@ class LocationUtilTest {
 
         assertThat(LocationUtil.locationToString(location)).isEqualTo("[nether] 0, 0, 0");
     }
+
+    @Test
+    void worldName_returnsWorldName_whenLoaded() {
+        lenient().when(world.getName()).thenReturn("world");
+        lenient().when(location.getWorld()).thenReturn(world);
+
+        assertThat(LocationUtil.worldName(location)).isEqualTo("world");
+    }
+
+    @Test
+    void worldName_returnsPlaceholder_whenWorldUnloaded() {
+        lenient().when(location.getWorld()).thenReturn(null); // ADT-140
+
+        assertThat(LocationUtil.worldName(location)).isEqualTo("?");
+    }
 }

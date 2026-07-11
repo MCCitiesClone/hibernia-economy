@@ -200,7 +200,7 @@ public class InfoServiceImpl implements InfoService {
             Map<String, String> replacementMap = ImmutableMap.of("item", items.getName(item));
             sender.sendMessage(message.component(messageKey, MessageUtil.values(false, replacementMap)));
         } catch (IllegalArgumentException e) {
-            sender.sendMessage(Colours.RED + "Error while generating full name. Please contact an admin or take a look at the console/log!");
+            message.send(sender, "chestshop.FULL_NAME_ERROR");
             log.error("Error while generating full item name", e);
             return false;
         }

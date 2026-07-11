@@ -67,6 +67,9 @@ class TradeValidatorTest {
     private RestrictedSignService restrictedSign;
     private PartialFillCalculator partialFill;
 
+    /** Test-driven wall clock for the notification cooldown (deterministic — no Thread.sleep). */
+    private final long[] clockNow = {1_000_000L};
+
     private TradeValidator validator;
 
     @BeforeEach
@@ -94,7 +97,7 @@ class TradeValidatorTest {
                 .thenReturn(mock(net.kyori.adventure.text.Component.class));
 
         validator = new TradeValidator(economy, accounts, signBreak, message, items, config, signService,
-                inventoryService, adminBypass, restrictedSign, partialFill);
+                inventoryService, adminBypass, restrictedSign, partialFill, () -> clockNow[0]);
     }
 
     // ── builders ──────────────────────────────────────────────────────────────
@@ -867,7 +870,7 @@ class TradeValidatorTest {
     }
 
     @Test
-    void sendError_ownerNotification_resendsAfterCooldownExpires() throws InterruptedException {
+    void sendError_ownerNotification_resendsAfterCooldownExpires() {
         try (MockedStatic<Bukkit> bk = mockStatic(Bukkit.class)) {
             World world = mock(World.class);
             when(world.getName()).thenReturn("world");
@@ -885,7 +888,7 @@ class TradeValidatorTest {
 
             validator.validate(pending(BUY, false, sign(location(world)), client, owner, mock(Inventory.class),
                     new ItemStack[]{item(Material.STONE, 1)}, new BigDecimal("5")));
-            Thread.sleep(1100); // let the cooldown window lapse
+            clockNow[0] += 1100L; // advance past the 1-second cooldown window (deterministic; no sleep)
             validator.validate(pending(BUY, false, sign(location(world)), client, owner, mock(Inventory.class),
                     new ItemStack[]{item(Material.STONE, 1)}, new BigDecimal("5")));
 

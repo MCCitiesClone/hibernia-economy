@@ -30,6 +30,7 @@ import org.bukkit.inventory.ItemStack;
 import java.math.BigDecimal;
 import java.util.Locale;
 import java.util.UUID;
+import java.util.function.LongSupplier;
 import java.util.regex.Pattern;
 
 import static io.paradaux.chestshop.model.PendingTransaction.TransactionOutcome.CLIENT_DOES_NOT_HAVE_ENOUGH_MONEY;
@@ -77,10 +78,22 @@ class TradeValidator {
     private final RestrictedSignService restrictedSign;
     private final PartialFillCalculator partialFill;
 
+    /** Wall-clock source for the notification cooldown; injectable so tests drive it deterministically. */
+    private final LongSupplier clock;
+
     @Inject
     TradeValidator(EconomyService economy, AccountService accounts, SignBreakService signBreak, Message message,
                    ItemService items, ChestShopConfiguration config, SignService signService, InventoryService inventoryService,
                    AdminBypassService adminBypass, RestrictedSignService restrictedSign, PartialFillCalculator partialFill) {
+        this(economy, accounts, signBreak, message, items, config, signService, inventoryService,
+                adminBypass, restrictedSign, partialFill, System::currentTimeMillis);
+    }
+
+    /** Test seam: same as the injected constructor but with a supplied {@code clock}. */
+    TradeValidator(EconomyService economy, AccountService accounts, SignBreakService signBreak, Message message,
+                   ItemService items, ChestShopConfiguration config, SignService signService, InventoryService inventoryService,
+                   AdminBypassService adminBypass, RestrictedSignService restrictedSign, PartialFillCalculator partialFill,
+                   LongSupplier clock) {
         this.economy = economy;
         this.accounts = accounts;
         this.signBreak = signBreak;
@@ -92,6 +105,7 @@ class TradeValidator {
         this.adminBypass = adminBypass;
         this.restrictedSign = restrictedSign;
         this.partialFill = partialFill;
+        this.clock = clock;
     }
 
     void validate(PendingTransaction ctx) {
@@ -348,7 +362,7 @@ class TradeValidator {
         sendMessageToOwner(ctx.getOwnerAccount(), key, new String[]{
                 "price", economy.format(ctx.getExactPrice()),
                 actorPlaceholder, ctx.getClient().getName(),
-                "world", loc.getWorld() != null ? loc.getWorld().getName() : "?", // ADT-140: world may be unloaded
+                "world", io.paradaux.chestshop.utils.LocationUtil.worldName(loc), // ADT-140: world may be unloaded
                 "x", String.valueOf(loc.getBlockX()),
                 "y", String.valueOf(loc.getBlockY()),
                 "z", String.valueOf(loc.getBlockZ())
@@ -364,10 +378,11 @@ class TradeValidator {
         if (config.getNotificationMessageCooldown() > 0) {
             String cacheKey = key + "|" + String.join(",", replacements) + "|" + items.getItemList(stock);
             Long last = notificationCooldowns.get(ownerAccount.getUuid(), cacheKey);
-            if (last != null && last + config.getNotificationMessageCooldown() * 1000L > System.currentTimeMillis()) {
+            long now = clock.getAsLong();
+            if (last != null && last + config.getNotificationMessageCooldown() * 1000L > now) {
                 return;
             }
-            notificationCooldowns.put(ownerAccount.getUuid(), cacheKey, System.currentTimeMillis());
+            notificationCooldowns.put(ownerAccount.getUuid(), cacheKey, now);
         }
 
         String itemList = items.getItemList(stock);
