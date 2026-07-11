@@ -5,6 +5,11 @@ import { fileURLToPath } from 'node:url';
 // Integration tests run only when RUN_INTEGRATION=1 and DB_* point at a
 // disposable MariaDB (a CI service container, or a local docker). They exercise
 // the REAL lib/sql queries against a REAL database — no query mocking.
+//
+// The schema loaded here (./schema.sql) is a DELIBERATE LIGHT stand-in, not the
+// authoritative schema (that's economy-flyway/). See the header of schema.sql for
+// the full rationale: in-repo tests stay light; the full authoritative-schema +
+// trigger harness lives outside the monorepo in ../other (economy-explorer/testing/0005).
 export const HAS_DB = process.env.RUN_INTEGRATION === '1';
 
 const file = (p: string) => fileURLToPath(new URL(p, import.meta.url));

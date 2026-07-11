@@ -18,6 +18,32 @@ import java.util.UUID;
  * <p>Covers the ledger write side ({@code accounts}, {@code account_balances_mat},
  * {@code ledger_txns}, {@code ledger_postings}) plus {@code firm}/{@code economy_players}
  * for type-aware owner/recipient resolution.
+ *
+ * <h2>Intentional design: a LIGHT stand-in, not the authoritative schema</h2>
+ *
+ * The {@link #DDL} below is a deliberately <em>light</em>, hand-maintained stand-in
+ * for fast in-repo service/query integration tests — <b>not</b> a copy of the real
+ * schema and not applied via Flyway. It creates only the subset of tables (and the
+ * two views) this module reads/writes, mirroring the column shapes from the relevant
+ * {@code economy-flyway} migrations closely enough for the mappers to bind.
+ *
+ * <p><b>The authoritative schema is {@code economy-flyway}</b> (the {@code V<n>__*.sql}
+ * migrations); it is the single source of truth. This harness does not run those
+ * migrations — it exists to keep the in-repo test loop fast and CLI-free.
+ *
+ * <p><b>The {@code trg_postings_ai} balance-maintenance trigger is intentionally
+ * omitted here.</b> In production that trigger is the sole writer of
+ * {@code account_balances_mat} (see the ledger-authoritative rules in {@code CLAUDE.md}),
+ * but plain JDBC can't run its {@code DELIMITER} block, and these tests don't need it:
+ * transfers don't read a balance back after posting, and overdraft checks read the
+ * balance that {@link EmbeddedDbIT#seedBalance} seeds directly. So balances here are
+ * <em>seeded</em>, never trigger-materialised.
+ *
+ * <p><b>Full-schema coverage lives outside this monorepo.</b> The authoritative
+ * schema + {@code trg_postings_ai} trigger + real balance-materialisation integration
+ * is exercised by a separate harness in {@code ../other}. <b>Any test that needs real,
+ * trigger-maintained balances belongs in that external harness — not here.</b> Keep
+ * this in-repo harness light: unit + light integration + regression only.
  */
 public final class EmbeddedMariaDb {
 

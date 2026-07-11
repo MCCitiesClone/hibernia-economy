@@ -1,3 +1,28 @@
+-- =============================================================================
+-- DELIBERATE LIGHT STAND-IN — NOT the authoritative schema (economy-explorer/testing/0005).
+-- =============================================================================
+-- This file is a hand-maintained, intentionally *light* subset of the economy
+-- schema, kept here so the in-repo integration tests (test/integration/sql.test.ts,
+-- run only with RUN_INTEGRATION=1) can exercise the real lib/sql queries against a
+-- real MariaDB quickly, with no Flyway/JVM bootstrap.
+--
+-- It is DELIBERATELY NOT wired to Flyway. The design decision (0005) is:
+--   * in-repo tests stay LIGHT  — unit + light integration + regression;
+--   * the FULL authoritative-schema harness (all migrations, DB triggers such as
+--     trg_postings_ai, generated columns, constraints) lives OUTSIDE the monorepo
+--     in ../other. Trigger/full-schema behaviour is covered there, not here.
+--
+-- The AUTHORITATIVE schema is economy-flyway/ (V<n>__*.sql migrations). This file
+-- only needs enough shape (tables/columns/views the queries touch) to run those
+-- queries; it does not — and is not meant to — reproduce triggers or every column.
+--
+-- DRIFT GUARD — IMPORTANT: the .github/workflows/economy-explorer-schema-drift.yml
+-- gate does NOT guard this file. That gate regenerates lib/db.generated.ts (the
+-- kysely types) from the migrated Flyway schema and fails on drift there. This
+-- snapshot is unguarded: if a migration changes a shape a query here relies on,
+-- keep this file in sync by hand (or the affected integration test will fail).
+-- =============================================================================
+
 SET FOREIGN_KEY_CHECKS=0;
 
 CREATE TABLE `accounts` (
