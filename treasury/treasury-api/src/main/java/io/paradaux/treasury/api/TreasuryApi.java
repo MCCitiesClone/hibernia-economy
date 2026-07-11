@@ -8,6 +8,7 @@ import java.math.BigDecimal;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.OptionalLong;
 import java.util.UUID;
 
 /**
@@ -161,6 +162,27 @@ public interface TreasuryApi {
 
     /** Direct account-to-account transfer. */
     long transfer(TransferRequest transferRequest);
+
+    /**
+     * Sweeps the <em>freshly locked</em> positive balance of {@code fromAccountId}
+     * into {@code toAccountId} in a single ledger transaction.
+     *
+     * <p>Unlike {@link #transfer(TransferRequest)}, the moved amount is not a
+     * caller-supplied snapshot: it is read under the same {@code SELECT ... FOR UPDATE}
+     * lock that guards the move, in the identical ascending-account-id lock order used
+     * by every transfer, so a concurrent credit or debit that lands between a caller's
+     * snapshot and this call can neither leave a residual behind nor overdraw the source
+     * (conservation stays exact). The balance delta is still applied solely by the
+     * {@code trg_postings_ai} DB trigger — never an application-side balance UPDATE.
+     *
+     * <p>Intended for firm-disband draining, which must not trust an
+     * {@code account_balances_mat} snapshot. Returns the transfer's txn id, or an empty
+     * {@link OptionalLong} when the locked balance is zero-or-negative (nothing to move),
+     * so the caller can archive the account without emitting an empty transfer.
+     *
+     * @return the txn id of the sweep, or empty if the locked balance was not positive
+     */
+    OptionalLong sweepAll(int fromAccountId, int toAccountId, String memo, UUID initiator);
 
     // ---- Balance top ----
 

@@ -35,6 +35,17 @@ public interface LedgerService {
     long transfer(TransferRequest req);
 
     /**
+     * Sweeps the freshly-locked positive balance of {@code fromAccountId} into
+     * {@code toAccountId} in one ledger transaction. The amount moved is read under the
+     * same {@code FOR UPDATE} lock (ascending account-id order, identical to
+     * {@link #transfer(TransferRequest)}) that guards the move, so a concurrent credit or
+     * debit cannot strand a residual or overdraw the source. The DB trigger remains the
+     * sole balance writer. Returns the sweep's txn id, or empty if the locked balance was
+     * not positive (nothing to move). See {@code TreasuryApi.sweepAll}.
+     */
+    java.util.OptionalLong sweepAll(int fromAccountId, int toAccountId, String memo, UUID initiator);
+
+    /**
      * Admin override transfer: identical to {@link #transfer(TransferRequest)} but
      * bypasses the {@code requires_authorization} gate on either account. Intended
      * for console / {@code treasury.admin.transfer} operators who are the authority

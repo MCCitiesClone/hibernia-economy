@@ -615,6 +615,62 @@ class LedgerServiceTransferIT extends IntegrationTestBase {
                 TreasuryConstants.TREASURY_PLUGIN_NAME, null));
     }
 
+    // ---------- sweepAll (firm-disband drain) ----------
+
+    @Test
+    void sweepAll_movesTheEntireLiveBalance_conservingValue() {
+        Account firmAcc = createPersonalAccount(0);
+        Account payout  = createPersonalAccount(0);
+        // Fund the firm account through the ledger so the balance is the real,
+        // trigger-maintained account_balances_mat value (not a hand-set row).
+        ledgerService.adminGive(firmAcc.getOwnerUuid(), new BigDecimal("737.50"), "seed", UUID.randomUUID());
+        BigDecimal before = balanceOf(firmAcc).add(balanceOf(payout));
+
+        java.util.OptionalLong txn = ledgerService.sweepAll(
+                firmAcc.getAccountId(), payout.getAccountId(), "Firm disbanded", UUID.randomUUID());
+
+        assertThat(txn).isPresent();
+        // Exact conservation: everything left the source, nothing was created or lost.
+        assertThat(balanceOf(firmAcc)).isEqualByComparingTo("0.00");
+        assertThat(balanceOf(payout)).isEqualByComparingTo("737.50");
+        assertThat(balanceOf(firmAcc).add(balanceOf(payout))).isEqualByComparingTo(before);
+    }
+
+    @Test
+    void sweepAll_zeroBalance_isNoOp() {
+        Account firmAcc = createPersonalAccount(0);
+        Account payout  = createPersonalAccount(0);
+
+        java.util.OptionalLong txn = ledgerService.sweepAll(
+                firmAcc.getAccountId(), payout.getAccountId(), "Firm disbanded", UUID.randomUUID());
+
+        assertThat(txn).isEmpty();
+        assertThat(balanceOf(payout)).isEqualByComparingTo("0.00");
+    }
+
+    @Test
+    void sweepAll_concurrentCreditLandingBeforeSweep_isNotStranded() throws Exception {
+        // Model the finding: a credit lands, THEN the disband sweep runs. Because the
+        // amount is read under the sweep's FOR UPDATE lock (not a pre-credit snapshot),
+        // the whole post-credit balance is swept and nothing is stranded.
+        Account firmAcc = createPersonalAccount(0);
+        Account payout  = createPersonalAccount(0);
+        Account funder  = createPersonalAccount(1_000);
+
+        ledgerService.transfer(new TransferRequest(
+                funder.getAccountId(), firmAcc.getAccountId(),
+                new BigDecimal("400.00"), "late credit",
+                TreasuryConstants.VIRTUAL_TREASURY_INITIATOR, null,
+                TreasuryConstants.TREASURY_PLUGIN_NAME, null));
+
+        java.util.OptionalLong txn = ledgerService.sweepAll(
+                firmAcc.getAccountId(), payout.getAccountId(), "Firm disbanded", UUID.randomUUID());
+
+        assertThat(txn).isPresent();
+        assertThat(balanceOf(firmAcc)).isEqualByComparingTo("0.00");
+        assertThat(balanceOf(payout)).isEqualByComparingTo("400.00");
+    }
+
     // ---------- helpers ----------
 
     private BigDecimal balanceOf(Account a) {

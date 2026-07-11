@@ -27,12 +27,10 @@ import io.paradaux.business.model.FirmAccount;
 import io.paradaux.treasury.api.TreasuryApi;
 import io.paradaux.treasury.model.economy.Account;
 import io.paradaux.treasury.model.economy.AccountType;
-import io.paradaux.treasury.model.economy.TransferRequest;
 import org.mybatis.guice.transactional.Transactional;
 
 import org.jetbrains.annotations.Nullable;
 
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 import java.util.logging.Level;
@@ -245,20 +243,14 @@ public class FirmServiceImpl implements FirmService {
 
         for (FirmAccount fa : firmAccountList) {
             try {
-                BigDecimal balance = treasury.getBalanceByAccountId(fa.getAccountId());
-                if (balance.compareTo(BigDecimal.ZERO) > 0) {
-                    TransferRequest req = new TransferRequest(
-                            fa.getAccountId(),
-                            personal.getAccountId(),
-                            balance,
-                            "Firm disbanded",
-                            proprietorUuid,
-                            proprietorUuid,
-                            "BusinessPlugin",
-                            null
-                    );
-                    treasury.transfer(req);
-                }
+                // Sweep the account's FRESHLY LOCKED balance rather than a
+                // read-snapshot-then-transfer: sweepAll reads the amount under the same
+                // FOR UPDATE lock that guards the move, so a credit landing after a
+                // snapshot can't leave a residual behind in the archived firm account
+                // (conservation stays exact). Mirrors the treasury-rest-api disband
+                // sweep (TransferService.sweepAll) so both engines drain identically
+                // (business/behaviour/0003).
+                treasury.sweepAll(fa.getAccountId(), personal.getAccountId(), "Firm disbanded", proprietorUuid);
                 treasury.archiveAccount(fa.getAccountId());
                 accounts.removeFirmAccount(firm.getFirmId(), fa.getAccountId());
             } catch (RuntimeException ex) {

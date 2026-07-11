@@ -29,7 +29,6 @@ import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
@@ -246,7 +245,7 @@ class FirmServiceImplTest {
     }
 
     @Test
-    void disbandFirm_archivesEachAccount_transferringPositiveBalance() {
+    void disbandFirm_sweepsEachAccountsLockedBalance_toProprietor() {
         UUID proprietor = UUID.randomUUID();
         Firm firm = new Firm();
         firm.setFirmId(1);
@@ -263,18 +262,20 @@ class FirmServiceImplTest {
         FirmAccount fa2 = new FirmAccount(1, 11, null);
         when(accounts.listAccountsByFirm(1)).thenReturn(List.of(fa1, fa2));
 
-        when(treasury.getBalanceByAccountId(10)).thenReturn(new BigDecimal("250.00"));
-        when(treasury.getBalanceByAccountId(11)).thenReturn(BigDecimal.ZERO);
         // This caller wins the atomic archive (1 row flipped), so it drains.
         when(firms.archiveFirm(1)).thenReturn(1);
 
         svc.disbandFirm("Acme", proprietor);
 
-        ArgumentCaptor<TransferRequest> req = ArgumentCaptor.forClass(TransferRequest.class);
-        verify(treasury, times(1)).transfer(req.capture());
-        assertThat(req.getValue().fromAccountId()).isEqualTo(10);
-        assertThat(req.getValue().toAccountId()).isEqualTo(99);
-        assertThat(req.getValue().amount()).isEqualByComparingTo("250.00");
+        // Each firm account is drained via the sweep-locked-balance primitive — never a
+        // read-snapshot-then-transfer — so a concurrent credit can't strand a residual
+        // in the archived firm account (business/behaviour/0003). The amount is NOT read
+        // on the business side; sweepAll reads it under the FOR UPDATE lock inside
+        // Treasury, so the business layer must never pre-read a balance to size the move.
+        verify(treasury).sweepAll(10, 99, "Firm disbanded", proprietor);
+        verify(treasury).sweepAll(11, 99, "Firm disbanded", proprietor);
+        verify(treasury, never()).getBalanceByAccountId(org.mockito.ArgumentMatchers.anyInt());
+        verify(treasury, never()).transfer(any(TransferRequest.class));
 
         verify(treasury).archiveAccount(10);
         verify(treasury).archiveAccount(11);
@@ -302,8 +303,8 @@ class FirmServiceImplTest {
 
         // First account fails mid-drain; the firm must still be archived (it is
         // archived before any money moves) and the second account still drained.
-        when(treasury.getBalanceByAccountId(10)).thenThrow(new RuntimeException("treasury down"));
-        when(treasury.getBalanceByAccountId(11)).thenReturn(BigDecimal.ZERO);
+        when(treasury.sweepAll(10, 99, "Firm disbanded", proprietor))
+                .thenThrow(new RuntimeException("treasury down"));
         when(firms.archiveFirm(1)).thenReturn(1);
 
         svc.disbandFirm("Acme", proprietor);
@@ -344,7 +345,9 @@ class FirmServiceImplTest {
 
         svc.disbandFirm("Acme", proprietor);
 
-        // No drain of any kind: no balance read, no transfer, no account teardown.
+        // No drain of any kind: no sweep, no balance read, no transfer, no account teardown.
+        verify(treasury, never()).sweepAll(org.mockito.ArgumentMatchers.anyInt(),
+                org.mockito.ArgumentMatchers.anyInt(), org.mockito.ArgumentMatchers.anyString(), any());
         verify(treasury, never()).getBalanceByAccountId(org.mockito.ArgumentMatchers.anyInt());
         verify(treasury, never()).transfer(any(TransferRequest.class));
         verify(treasury, never()).archiveAccount(org.mockito.ArgumentMatchers.anyInt());

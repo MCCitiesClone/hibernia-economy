@@ -253,17 +253,63 @@ public class LedgerServiceImpl implements LedgerService {
             throw e;
         }
 
-        // Both legs in one statement, ascending account_id so the per-row balance
-        // trigger acquires balance-row locks in a consistent global order.
-        LedgerPosting fromPosting = new LedgerPosting(null, txnId, fromId, req.amount().negate(), req.message());
-        LedgerPosting toPosting   = new LedgerPosting(null, txnId, toId,   req.amount(),          req.message());
-        ledgerMapper.insertPostings(fromId <= toId
-                ? List.of(fromPosting, toPosting)
-                : List.of(toPosting, fromPosting));
-
+        postDoubleEntry(txnId, fromId, toId, req.amount(), req.message());
         log.debug("Transfer txn={} from={} to={} amount={} plugin={}",
                 txnId, fromId, toId, req.amount(), req.pluginSystem());
         return txnId;
+    }
+
+    @Override
+    @Transactional
+    public java.util.OptionalLong sweepAll(int fromAccountId, int toAccountId, String memo, UUID initiator) {
+        Objects.requireNonNull(memo, "memo");
+        Objects.requireNonNull(initiator, "initiator");
+        if (fromAccountId == toAccountId) {
+            throw new IllegalArgumentException("Cannot sweep to the same account (id=" + fromAccountId + ")");
+        }
+
+        // Lock BOTH balance rows FOR UPDATE in ascending account_id order — identical
+        // ordering to transferInternal's lock and to the ascending posting inserts below
+        // — so a sweep and a concurrent A→B / B→A transfer can never deadlock. The source
+        // amount is read from this freshly-locked row, not a stale account_balances_mat
+        // snapshot, so a credit landing after the caller's snapshot is included and a
+        // debit can't make the sweep overdraw (conservation stays exact).
+        int firstId  = Math.min(fromAccountId, toAccountId);
+        int secondId = Math.max(fromAccountId, toAccountId);
+        AccountBalance sourceBalance = null;
+        for (AccountBalance b : accountMapper.lockBalances(List.of(firstId, secondId))) {
+            if (b.getAccountId() == fromAccountId) { sourceBalance = b; break; }
+        }
+        if (sourceBalance == null) {
+            throw new IllegalStateException("Missing balance row for source account " + fromAccountId);
+        }
+
+        BigDecimal amount = sourceBalance.getBalance();
+        if (amount == null || amount.signum() <= 0) {
+            log.debug("Sweep no-op: locked balance on account {} is {} (nothing to move)", fromAccountId, amount);
+            return java.util.OptionalLong.empty();
+        }
+
+        long txnId = insertTxn(memo, initiator, null, TreasuryConstants.TREASURY_PLUGIN_NAME, null);
+        postDoubleEntry(txnId, fromAccountId, toAccountId, amount, memo);
+        log.debug("Swept locked balance {} from account {} to {} (txn={})",
+                amount, fromAccountId, toAccountId, txnId);
+        return java.util.OptionalLong.of(txnId);
+    }
+
+    /**
+     * Emits the two balanced postings (debit source, credit destination) for a settled
+     * amount, ascending account_id so the per-row balance trigger acquires balance-row
+     * locks in a consistent global order. The {@code trg_postings_ai} trigger — never an
+     * application UPDATE — applies the {@code account_balances_mat} deltas. Shared by
+     * {@link #transferInternal} and {@link #sweepAll} so both write the ledger identically.
+     */
+    private void postDoubleEntry(long txnId, int fromId, int toId, BigDecimal amount, String message) {
+        LedgerPosting fromPosting = new LedgerPosting(null, txnId, fromId, amount.negate(), message);
+        LedgerPosting toPosting   = new LedgerPosting(null, txnId, toId,   amount,          message);
+        ledgerMapper.insertPostings(fromId <= toId
+                ? List.of(fromPosting, toPosting)
+                : List.of(toPosting, fromPosting));
     }
 
     // ---- Vault compatibility ----
