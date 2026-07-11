@@ -46,7 +46,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Slf4j
-public final class Treasury extends JavaPlugin {
+// Non-final so the startup test can load it under MockBukkit (which subclasses the
+// plugin main to intercept lifecycle) and drive the real injector (treasury/testing/0001).
+// The class is never extended in production; this only unblocks the wiring test.
+public class Treasury extends JavaPlugin {
 
     @Getter
     private Injector injector;

@@ -58,6 +58,11 @@ dependencies {
     testImplementation(libs.junit.jupiter)
     testRuntimeOnly(libs.junit.platform.launcher)
 
+    // Shared startup + message-key test-kit. Brings JUnit, Guice, the framework and
+    // MockBukkit transitively (declared `api` there) so the startup test can boot an
+    // in-memory server and drive the real injector without re-declaring them.
+    testImplementation(project(":test-support"))
+
     testImplementation(libs.assertj.core)
     testImplementation(libs.mockito.core)
     testImplementation(libs.mockito.junit.jupiter)

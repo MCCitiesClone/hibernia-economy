@@ -64,6 +64,19 @@ dependencies {
     testImplementation(libs.mockito.core)
     testImplementation(libs.mockito.junit.jupiter)
 
+    // Shared startup + message-key test-kit. Brings JUnit, Guice, the framework and
+    // MockBukkit transitively (declared `api` there) so the startup test can boot an
+    // in-memory server and drive the real injector without re-declaring them.
+    testImplementation(project(":test-support"))
+
+    // CarbonChat is a compileOnly soft-dep in production (the server provides it at
+    // runtime). The startup test builds the real injector, which constructs ChatCommands
+    // → FirmChatService (a Carbon channel), so the API must be on the test classpath too —
+    // otherwise resolving the CommandManager fails with a NoClassDefFoundError that never
+    // happens on a real server. Mirrors how chestshop puts the Treasury/Business APIs on
+    // its test classpath.
+    testImplementation("de.hexaoxi:carbonchat-api:3.0.0-beta.32")
+
     // Treasury API + Paper API are compileOnly in production; tests need them too.
     testImplementation(project(":treasury:treasury-api"))
     testImplementation(libs.paper.api)

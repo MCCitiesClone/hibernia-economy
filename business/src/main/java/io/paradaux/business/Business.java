@@ -36,7 +36,10 @@ import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.ServicePriority;
 import org.bukkit.plugin.java.JavaPlugin;
 
-public final class Business extends JavaPlugin {
+// Non-final so the startup test can load it under MockBukkit (which subclasses the
+// plugin main to intercept lifecycle) and drive the real injector (business/testing/0002).
+// The class is never extended in production; this only unblocks the wiring test.
+public class Business extends JavaPlugin {
 
     private Injector injector;
     private ExpireRequestsJob expireRequestsJob;
