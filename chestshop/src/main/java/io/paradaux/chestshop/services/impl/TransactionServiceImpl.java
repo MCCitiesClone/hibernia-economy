@@ -485,7 +485,7 @@ public class TransactionServiceImpl implements TransactionService {
             }
             case CLIENT_DEPOSIT_FAILED -> messageKey = "chestshop.CLIENT_DEPOSIT_FAILED";
             case SHOP_DEPOSIT_FAILED -> {
-                sendMessageToOwner(ctx.getOwnerAccount(), "chestshop.CLIENT_DEPOSIT_FAILED", new String[0]);
+                sendMessageToOwner(ctx.getOwnerAccount(), "chestshop.SHOP_DEPOSIT_FAILED_OWNER", new String[0]);
                 messageKey = "chestshop.SHOP_DEPOSIT_FAILED";
             }
             case SHOP_IS_RESTRICTED -> messageKey = "chestshop.ACCESS_DENIED";

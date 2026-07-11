@@ -31,7 +31,6 @@ import io.paradaux.chestshop.listeners.RestrictedSignListener;
 import org.bukkit.Bukkit;
 import org.bukkit.Server;
 import org.bukkit.event.Event;
-import org.bukkit.event.Listener;
 import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -214,12 +213,6 @@ public class ChestShop extends JavaPlugin {
         }
     }
 
-    //////////////////    REGISTER EVENTS & SCHEDULER    ///////////////////////////
-    public void registerEvent(Listener listener) {
-        getServer().getPluginManager().registerEvents(listener, this);
-    }
-
-    ///////////////////////////////////////////////////////////////////////////////
     // The static ChestShop.<service>() locator is gone (PAR-282): every class takes its
     // collaborators through constructor DI. The plugin main class keeps private references
     // only for the few services it drives itself at enable time (migration, account load).

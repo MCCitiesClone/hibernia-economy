@@ -29,7 +29,7 @@ ENV JAVA_OPTS=""
 EXPOSE 8080
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
-  CMD curl -sf http://localhost:8080/actuator/health || exit 1
+  CMD curl -sf http://127.0.0.1:${MANAGEMENT_PORT:-8081}/actuator/health || exit 1
 
 # exec so the JVM becomes PID 1 and receives SIGTERM directly — otherwise the
 # orchestrator's SIGTERM goes to sh and graceful shutdown (drain in-flight

@@ -224,6 +224,4 @@ public class FirmService {
                 a.isArchived()
         );
     }
-
-    /** Converts a blank string to null so the DB column is set to NULL rather than empty string. */
 }

@@ -51,7 +51,7 @@ public class PlayerLoginListener implements Listener {
         this.taxConfig         = taxConfig;
     }
 
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
     public void onJoin(PlayerJoinEvent event) {
         UUID playerUuid = event.getPlayer().getUniqueId();
         String name = event.getPlayer().getName();

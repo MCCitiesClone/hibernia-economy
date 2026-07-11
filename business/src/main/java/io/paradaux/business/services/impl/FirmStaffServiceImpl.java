@@ -251,7 +251,7 @@ public class FirmStaffServiceImpl implements FirmStaffService {
         String roleName = getCurrentRole(firmId, playerId);
         if (roleName == null || roleName.isBlank()) return false;
 
-        List<FirmRolePermission> perms = roles.listPermissionsByRole(firmId, Objects.requireNonNull(roleName, "roleName must not be null").trim());
+        List<FirmRolePermission> perms = roles.listPermissionsByRole(firmId, roleName.trim());
 
         for (FirmRolePermission rp : perms) {
             if (rp.getPermission() == permission) return true;
