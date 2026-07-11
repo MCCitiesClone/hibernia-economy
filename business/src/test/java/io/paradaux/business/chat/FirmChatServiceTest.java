@@ -37,7 +37,7 @@ class FirmChatServiceTest {
     @BeforeEach
     void setUp() {
         lenient().when(plugin.getLogger()).thenReturn(Logger.getLogger("test"));
-        service = new FirmChatService(firms, staff, plugin);
+        service = new FirmChatServiceImpl(firms, staff, plugin);
     }
 
     private static Firm firm(int id, String displayName) {

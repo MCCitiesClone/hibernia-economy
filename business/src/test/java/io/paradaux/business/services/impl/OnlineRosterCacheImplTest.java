@@ -1,6 +1,7 @@
-package io.paradaux.business.services;
+package io.paradaux.business.services.impl;
 
 import io.paradaux.business.model.Firm;
+import io.paradaux.business.services.FirmService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -19,7 +20,7 @@ import static org.mockito.Mockito.when;
  * (business/plugin-architecture/0003).
  */
 @ExtendWith(MockitoExtension.class)
-class OnlineRosterCacheTest {
+class OnlineRosterCacheImplTest {
 
     @Mock FirmService firms;
 
@@ -29,13 +30,13 @@ class OnlineRosterCacheTest {
         return f;
     }
 
-    private FirmSuggestionCache suggestionCache() {
-        return new FirmSuggestionCache(firms);
+    private FirmSuggestionCacheImpl suggestionCache() {
+        return new FirmSuggestionCacheImpl(firms);
     }
 
     @Test
     void snapshot_reflectsAddAndRemove() {
-        OnlineRosterCache roster = new OnlineRosterCache();
+        OnlineRosterCacheImpl roster = new OnlineRosterCacheImpl();
         UUID a = UUID.randomUUID();
         UUID b = UUID.randomUUID();
 
@@ -51,7 +52,7 @@ class OnlineRosterCacheTest {
 
     @Test
     void add_ignoresNull() {
-        OnlineRosterCache roster = new OnlineRosterCache();
+        OnlineRosterCacheImpl roster = new OnlineRosterCacheImpl();
         roster.add(null);
         roster.remove(null);
         assertThat(roster.snapshot()).isEmpty();
@@ -59,7 +60,7 @@ class OnlineRosterCacheTest {
 
     @Test
     void onlineFirmNames_unionsPerPlayerFirmsAcrossRoster() {
-        OnlineRosterCache roster = new OnlineRosterCache();
+        OnlineRosterCacheImpl roster = new OnlineRosterCacheImpl();
         UUID a = UUID.randomUUID();
         UUID b = UUID.randomUUID();
         roster.add(a);
@@ -74,7 +75,7 @@ class OnlineRosterCacheTest {
 
     @Test
     void onlineFirmNames_emptyWhenNobodyOnline() {
-        OnlineRosterCache roster = new OnlineRosterCache();
+        OnlineRosterCacheImpl roster = new OnlineRosterCacheImpl();
         lenient().when(firms.listOwnedOrMemberFirms(org.mockito.ArgumentMatchers.any()))
                 .thenReturn(List.of(firm("Unreachable")));
 

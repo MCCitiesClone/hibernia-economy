@@ -1,33 +1,32 @@
-package io.paradaux.business.services;
+package io.paradaux.business.services.impl;
 
 import io.paradaux.business.model.Firm;
+import io.paradaux.business.services.FirmService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.LongSupplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class FirmSuggestionCacheTest {
+class FirmSuggestionCacheImplTest {
 
     @Mock FirmService firms;
 
     private final AtomicLong now = new AtomicLong(0L);
     private final LongSupplier clock = now::get;
 
-    private FirmSuggestionCache cache() {
-        return new FirmSuggestionCache(firms, clock);
+    private FirmSuggestionCacheImpl cache() {
+        return new FirmSuggestionCacheImpl(firms, clock);
     }
 
     private static Firm firm(String displayName) {
@@ -59,17 +58,17 @@ class FirmSuggestionCacheTest {
                 .thenReturn(List.of(firm("Acme")))
                 .thenReturn(List.of(firm("Acme"), firm("Globex")));
 
-        FirmSuggestionCache c = cache();
+        FirmSuggestionCacheImpl c = cache();
 
         // First call populates the cache.
         assertThat(c.playerFirmNames(player)).containsExactly("Acme");
         // Within TTL → served from cache, no second DB hit.
-        now.set(FirmSuggestionCache.TTL_MS);
+        now.set(FirmSuggestionCacheImpl.TTL_MS);
         assertThat(c.playerFirmNames(player)).containsExactly("Acme");
         verify(firms, times(1)).listOwnedOrMemberFirms(player);
 
         // Past TTL → refreshed from DB.
-        now.set(FirmSuggestionCache.TTL_MS + 1);
+        now.set(FirmSuggestionCacheImpl.TTL_MS + 1);
         assertThat(c.playerFirmNames(player)).containsExactlyInAnyOrder("Acme", "Globex");
         verify(firms, times(2)).listOwnedOrMemberFirms(player);
     }
@@ -100,14 +99,14 @@ class FirmSuggestionCacheTest {
                 .thenReturn(List.of(firm("Acme")))
                 .thenReturn(List.of(firm("Acme"), firm("Initech")));
 
-        FirmSuggestionCache c = cache();
+        FirmSuggestionCacheImpl c = cache();
 
         assertThat(c.activeFirmNames()).containsExactly("Acme");
-        now.set(FirmSuggestionCache.TTL_MS);
+        now.set(FirmSuggestionCacheImpl.TTL_MS);
         assertThat(c.activeFirmNames()).containsExactly("Acme");
         verify(firms, times(1)).listAllActiveFirms();
 
-        now.set(FirmSuggestionCache.TTL_MS + 1);
+        now.set(FirmSuggestionCacheImpl.TTL_MS + 1);
         assertThat(c.activeFirmNames()).containsExactlyInAnyOrder("Acme", "Initech");
         verify(firms, times(2)).listAllActiveFirms();
     }

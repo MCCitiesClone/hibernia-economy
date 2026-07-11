@@ -1,9 +1,5 @@
 package io.paradaux.business.services;
 
-import com.google.inject.Inject;
-import com.google.inject.Singleton;
-
-import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.UUID;
 
@@ -22,40 +18,21 @@ import java.util.UUID;
  * firm-name lookup to {@link FirmSuggestionCache}. UUID-keyed throughout — no name
  * resolution off-thread. (business/plugin-architecture/0003)
  */
-@Singleton
-public class OnlineRosterCache {
-
-    private final Set<UUID> online = java.util.concurrent.ConcurrentHashMap.newKeySet();
-
-    @Inject
-    public OnlineRosterCache() {
-    }
+public interface OnlineRosterCache {
 
     /** Record a player as online. Called on join from the main thread. */
-    public void add(UUID playerId) {
-        if (playerId != null) online.add(playerId);
-    }
+    void add(UUID playerId);
 
     /** Record a player as no longer online. Called on quit from the main thread. */
-    public void remove(UUID playerId) {
-        if (playerId != null) online.remove(playerId);
-    }
+    void remove(UUID playerId);
 
     /** A lock-free snapshot of the online roster. */
-    public Set<UUID> snapshot() {
-        return Set.copyOf(online);
-    }
+    Set<UUID> snapshot();
 
     /**
      * The union of firm display names across every currently-online player, drawn
      * from {@code cache} (per-player, TTL-backed). Iterates a lock-free view of the
      * roster; a concurrent join/quit cannot break iteration.
      */
-    public Set<String> onlineFirmNames(FirmSuggestionCache cache) {
-        Set<String> pool = new LinkedHashSet<>();
-        for (UUID id : online) {
-            pool.addAll(cache.playerFirmNames(id));
-        }
-        return pool;
-    }
+    Set<String> onlineFirmNames(FirmSuggestionCache cache);
 }

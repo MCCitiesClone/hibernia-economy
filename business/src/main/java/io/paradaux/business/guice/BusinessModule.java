@@ -6,6 +6,8 @@ import io.paradaux.business.Business;
 
 import io.paradaux.business.api.BusinessApi;
 import io.paradaux.business.api.impl.BusinessApiImpl;
+import io.paradaux.business.chat.FirmChatService;
+import io.paradaux.business.chat.FirmChatServiceImpl;
 import io.paradaux.business.integration.RealtyRegionValidator;
 import io.paradaux.business.jobs.ExpireRequestsJob;
 import io.paradaux.business.model.config.BalanceTaxConfiguration;
@@ -62,6 +64,9 @@ public class BusinessModule extends AbstractModule {
         bind(FirmPlayerService.class).to(FirmPlayerServiceImpl.class).in(Singleton.class);
         bind(FirmPropertyService.class).to(FirmPropertyServiceImpl.class).in(Singleton.class);
         bind(FirmBalanceTaxService.class).to(FirmBalanceTaxServiceImpl.class).in(Singleton.class);
+        bind(FirmSuggestionCache.class).to(FirmSuggestionCacheImpl.class).in(Singleton.class);
+        bind(OnlineRosterCache.class).to(OnlineRosterCacheImpl.class).in(Singleton.class);
+        bind(FirmChatService.class).to(FirmChatServiceImpl.class).in(Singleton.class);
 
         // Configuration (reads from plugin config directly, not the framework
         // configurator — they own their own reload-safe snapshots; do NOT migrate

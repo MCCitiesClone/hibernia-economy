@@ -3,6 +3,7 @@ package io.paradaux.business.commands.resolvers;
 import io.paradaux.business.model.Firm;
 import io.paradaux.business.services.FirmService;
 import io.paradaux.business.services.FirmSuggestionCache;
+import io.paradaux.business.services.impl.FirmSuggestionCacheImpl;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -25,7 +26,7 @@ class FirmNameResolverTest {
     @Mock FirmService firms;
 
     private FirmNameResolver resolver() {
-        return new FirmNameResolver(new FirmSuggestionCache(firms));
+        return new FirmNameResolver(new FirmSuggestionCacheImpl(firms));
     }
 
     private static Firm firm(String displayName) {

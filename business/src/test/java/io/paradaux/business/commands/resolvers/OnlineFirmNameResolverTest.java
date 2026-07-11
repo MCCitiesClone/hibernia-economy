@@ -4,6 +4,8 @@ import io.paradaux.business.model.Firm;
 import io.paradaux.business.services.FirmService;
 import io.paradaux.business.services.FirmSuggestionCache;
 import io.paradaux.business.services.OnlineRosterCache;
+import io.paradaux.business.services.impl.FirmSuggestionCacheImpl;
+import io.paradaux.business.services.impl.OnlineRosterCacheImpl;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -34,20 +36,20 @@ class OnlineFirmNameResolverTest {
     }
 
     private OnlineFirmNameResolver resolver(OnlineRosterCache roster) {
-        return new OnlineFirmNameResolver(new FirmSuggestionCache(firms), roster);
+        return new OnlineFirmNameResolver(new FirmSuggestionCacheImpl(firms), roster);
     }
 
     // ---- resolve --------------------------------------------------------------
 
     @Test
     void resolve_wrapsNonBlankToken() {
-        OnlineFirmNameResolver r = resolver(new OnlineRosterCache());
+        OnlineFirmNameResolver r = resolver(new OnlineRosterCacheImpl());
         assertThat(r.resolve("  Acme  ", null)).contains(new OnlineFirmName("Acme"));
     }
 
     @Test
     void resolve_rejectsBlankAndNull() {
-        OnlineFirmNameResolver r = resolver(new OnlineRosterCache());
+        OnlineFirmNameResolver r = resolver(new OnlineRosterCacheImpl());
         assertThat(r.resolve("   ", null)).isEmpty();
         assertThat(r.resolve(null, null)).isEmpty();
     }
@@ -56,7 +58,7 @@ class OnlineFirmNameResolverTest {
 
     @Test
     void suggestions_unionOnlineFirms() {
-        OnlineRosterCache roster = new OnlineRosterCache();
+        OnlineRosterCache roster = new OnlineRosterCacheImpl();
         UUID a = UUID.randomUUID();
         UUID b = UUID.randomUUID();
         roster.add(a);
@@ -70,7 +72,7 @@ class OnlineFirmNameResolverTest {
 
     @Test
     void suggestions_prefixFilters() {
-        OnlineRosterCache roster = new OnlineRosterCache();
+        OnlineRosterCache roster = new OnlineRosterCacheImpl();
         UUID a = UUID.randomUUID();
         roster.add(a);
         when(firms.listOwnedOrMemberFirms(a)).thenReturn(List.of(firm("Acme"), firm("Globex")));
@@ -80,6 +82,6 @@ class OnlineFirmNameResolverTest {
 
     @Test
     void suggestions_emptyWhenRosterEmpty() {
-        assertThat(resolver(new OnlineRosterCache()).suggestions("", null)).isEmpty();
+        assertThat(resolver(new OnlineRosterCacheImpl()).suggestions("", null)).isEmpty();
     }
 }
