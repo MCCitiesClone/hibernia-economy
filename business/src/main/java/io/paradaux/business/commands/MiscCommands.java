@@ -7,7 +7,6 @@ import io.paradaux.hibernia.framework.commander.spi.CommandHandler;
 import io.paradaux.hibernia.framework.i18n.Message;
 import io.paradaux.business.model.Firm;
 import io.paradaux.business.model.FirmPlayer;
-import io.paradaux.business.model.RolePermission;
 import io.paradaux.business.services.*;
 import io.paradaux.business.commands.resolvers.FirmName;
 import io.paradaux.business.commands.resolvers.OnlineFirmName;
@@ -17,16 +16,12 @@ import io.paradaux.treasury.model.economy.TransactionEntry;
 import org.bukkit.entity.Player;
 
 import java.math.BigDecimal;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
 
 @Singleton
 @Command({"db", "democracybusiness", "business", "firm", "company"})
 public class MiscCommands implements CommandHandler {
 
     private static final int TX_PAGE_SIZE = 10;
-    private static final DateTimeFormatter TIME_FMT = DateTimeFormatter.ofPattern("MM/dd HH:mm")
-            .withZone(ZoneId.systemDefault());
 
     private final FirmService firms;
     private final FirmStaffService staff;
@@ -327,14 +322,8 @@ public class MiscCommands implements CommandHandler {
         message.send(sender, "business.finance.transactions.header",
                 "firm", f.getDisplayName(), "page", txPage.pageNumber(), "totalPages", txPage.totalPages());
 
-        for (TransactionEntry entry : txPage.items()) {
-            String sign = entry.getAmount().signum() >= 0 ? "+" : "";
-            String formatted = sign + treasury.formatAmount(entry.getAmount());
-            String time = TIME_FMT.format(entry.getSettlementTime());
-            String msg = entry.getMessage() != null ? entry.getMessage() : "";
-            message.send(sender, "business.finance.transactions.line",
-                    "time", time, "amount", formatted, "message", msg);
-        }
+        CommandSupport.renderTransactionLines(message, treasury, sender, txPage,
+                "business.finance.transactions.line");
 
         if (txPage.hasMore()) {
             message.send(sender, "business.finance.transactions.next-page",
@@ -343,8 +332,6 @@ public class MiscCommands implements CommandHandler {
     }
 
     private boolean canAccessFirmFinances(Firm f, Player player) {
-        return firms.isProprietor(f.getFirmId(), player.getUniqueId())
-                || staff.hasPermission(f.getFirmId(), player.getUniqueId(), RolePermission.ADMIN)
-                || staff.hasPermission(f.getFirmId(), player.getUniqueId(), RolePermission.FINANCIAL);
+        return CommandSupport.canAccessFirmFinances(firms, staff, f.getFirmId(), player.getUniqueId());
     }
 }

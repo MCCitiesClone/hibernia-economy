@@ -252,10 +252,7 @@ public class SalesCommands implements CommandHandler {
     }
 
     private boolean canViewSales(Firm firm, Player player) {
-        UUID uuid = player.getUniqueId();
-        return firms.isProprietor(firm.getFirmId(), uuid)
-                || staff.hasPermission(firm.getFirmId(), uuid, RolePermission.ADMIN)
-                || staff.hasPermission(firm.getFirmId(), uuid, RolePermission.FINANCIAL);
+        return CommandSupport.canAccessFirmFinances(firms, staff, firm.getFirmId(), player.getUniqueId());
     }
 
     /** Managing the notification toggle is an owner/admin action, not just viewing. */

@@ -7,7 +7,6 @@ import io.paradaux.hibernia.framework.commander.spi.CommandHandler;
 import io.paradaux.hibernia.framework.i18n.Message;
 import io.paradaux.business.model.Firm;
 import io.paradaux.business.model.FirmPlayer;
-import io.paradaux.business.model.RolePermission;
 import io.paradaux.business.services.FirmAccountService;
 import io.paradaux.business.services.FirmNotificationService;
 import io.paradaux.business.services.FirmService;
@@ -24,8 +23,6 @@ import io.paradaux.treasury.model.economy.TransactionEntry;
 import org.bukkit.entity.Player;
 
 import java.math.BigDecimal;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 @Singleton
@@ -33,8 +30,6 @@ import java.util.List;
 public class AccountCommands implements CommandHandler {
 
     private static final int TX_PAGE_SIZE = 10;
-    private static final DateTimeFormatter TIME_FMT = DateTimeFormatter.ofPattern("MM/dd HH:mm")
-            .withZone(ZoneId.systemDefault());
 
     private final FirmAccountService accounts;
     private final FirmService firms;
@@ -531,14 +526,8 @@ public class AccountCommands implements CommandHandler {
                 "firm", firm.getDisplayName(), "accountId", accountId,
                 "page", txPage.pageNumber(), "totalPages", txPage.totalPages());
 
-        for (TransactionEntry entry : txPage.items()) {
-            String sign = entry.getAmount().signum() >= 0 ? "+" : "";
-            String formatted = sign + treasury.formatAmount(entry.getAmount());
-            String time = TIME_FMT.format(entry.getSettlementTime());
-            String msg = entry.getMessage() != null ? entry.getMessage() : "";
-            message.send(sender, "business.account.transactions.line",
-                    "time", time, "amount", formatted, "message", msg);
-        }
+        CommandSupport.renderTransactionLines(message, treasury, sender, txPage,
+                "business.account.transactions.line");
 
         if (txPage.hasMore()) {
             message.send(sender, "business.account.transactions.next-page",
@@ -548,8 +537,6 @@ public class AccountCommands implements CommandHandler {
     }
 
     private boolean canAccessFirmFinances(Firm firm, Player player) {
-        return firms.isProprietor(firm.getFirmId(), player.getUniqueId())
-                || staff.hasPermission(firm.getFirmId(), player.getUniqueId(), RolePermission.ADMIN)
-                || staff.hasPermission(firm.getFirmId(), player.getUniqueId(), RolePermission.FINANCIAL);
+        return CommandSupport.canAccessFirmFinances(firms, staff, firm.getFirmId(), player.getUniqueId());
     }
 }

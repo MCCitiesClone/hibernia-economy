@@ -15,6 +15,7 @@ import io.paradaux.business.model.FirmBalanceEntry;
 import io.paradaux.business.model.FirmPlayer;
 import io.paradaux.treasury.model.Page;
 import io.paradaux.business.model.RolePermission;
+import io.paradaux.business.utils.NameValidator;
 import io.paradaux.business.chat.FirmChatService;
 import io.paradaux.business.services.FirmDisbandConfirmationService;
 import io.paradaux.business.services.FirmPlayerService;
@@ -284,7 +285,7 @@ public class FirmCommands implements CommandHandler {
         // Strict invite charset (ADT discord-url-minimessage-injection): the old
         // \S+ permitted '<','>','&', letting a MiniMessage payload ride in the public
         // /firm info card. Require https + the real discord.gg code charset.
-        if (!url.matches("https://discord\\.gg/[A-Za-z0-9]{2,32}")) {
+        if (!url.matches(NameValidator.DISCORD_INVITE_REGEX)) {
             message.send(sender, "business.firm.attribute.set.discord.invalid");
             return;
         }
@@ -367,7 +368,7 @@ public class FirmCommands implements CommandHandler {
         // Strict invite charset (ADT discord-url-minimessage-injection): the old
         // \S+ permitted '<','>','&', letting a MiniMessage payload ride in the public
         // /firm info card. Require https + the real discord.gg code charset.
-        if (!url.matches("https://discord\\.gg/[A-Za-z0-9]{2,32}")) {
+        if (!url.matches(NameValidator.DISCORD_INVITE_REGEX)) {
             message.send(sender, "business.firm.attribute.set.discord.invalid");
             return;
         }

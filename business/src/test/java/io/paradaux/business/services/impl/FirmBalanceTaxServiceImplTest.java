@@ -166,15 +166,20 @@ class FirmBalanceTaxServiceImplTest {
     void multipleAccounts_splitProportionally_withDriftFoldedIntoLargest() {
         when(firmService.listAllActiveFirms()).thenReturn(List.of(firm(1)));
         when(firmAccountService.listAccountIds(1)).thenReturn(List.of(10, 11, 12));
-        // Balances chosen so the proportional split leaves a rounding remainder.
+        // Balances (50/50/101, total 201) chosen so the proportional split leaves a
+        // genuine +0.01 rounding remainder that must be folded into the LARGEST-balance
+        // account. total 201 × 0.0333 = 6.6933 → 6.69 (totalTax).
+        //   proportion 50/201  = 0.2487562189 → 6.69 × … = 1.66 each (two small accounts)
+        //   proportion 101/201 = 0.5024875622 → 6.69 × … = 3.36 (the large account)
+        //   allocated = 1.66 + 1.66 + 3.36 = 6.68, so drift = +0.01.
+        // The drift must land on account 12 (balance 101), giving it 3.37.
         when(treasury.getBalancesByIds(List.of(10, 11, 12))).thenReturn(Map.of(
-                10, new BigDecimal("100.00"), 11, new BigDecimal("100.00"), 12, new BigDecimal("100.00")));
-        // total 300 * 0.01 = 3.00; per-account 1.00 each, no drift here but exercises the loop.
-        when(config.getWeeklyRate(new BigDecimal("300.00"))).thenReturn(new BigDecimal("0.01"));
+                10, new BigDecimal("50.00"), 11, new BigDecimal("50.00"), 12, new BigDecimal("101.00")));
+        when(config.getWeeklyRate(new BigDecimal("201.00"))).thenReturn(new BigDecimal("0.0333"));
         when(taxApi.collectBatch(anyList())).thenReturn(List.of(
-                new TaxResult.Collected(1L, new BigDecimal("1.00"), 500),
-                new TaxResult.Collected(2L, new BigDecimal("1.00"), 500),
-                new TaxResult.Collected(3L, new BigDecimal("1.00"), 500)));
+                new TaxResult.Collected(1L, new BigDecimal("1.66"), 500),
+                new TaxResult.Collected(2L, new BigDecimal("1.66"), 500),
+                new TaxResult.Collected(3L, new BigDecimal("3.37"), 500)));
 
         BalanceTaxCycleResult result = svc.runWeeklyCycle(event);
 
@@ -183,12 +188,26 @@ class FirmBalanceTaxServiceImplTest {
         @SuppressWarnings("unchecked")
         ArgumentCaptor<List<TaxCollection>> batch = ArgumentCaptor.forClass(List.class);
         verify(taxApi).collectBatch(batch.capture());
-        assertThat(batch.getValue()).hasSize(3);
-        // The per-account tax must sum to the firm total exactly.
-        BigDecimal sum = batch.getValue().stream()
+        List<TaxCollection> collections = batch.getValue();
+        assertThat(collections).hasSize(3);
+
+        // The per-account tax must sum to the firm total exactly (drift absorbed).
+        BigDecimal sum = collections.stream()
                 .map(TaxCollection::amount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
-        assertThat(sum).isEqualByComparingTo("3.00");
+        assertThat(sum).isEqualByComparingTo("6.69");
+
+        // The +0.01 drift must be folded into the LARGEST-balance account (id 12):
+        // its share is 3.36 + 0.01 = 3.37, while the two equal small accounts stay at 1.66.
+        BigDecimal largestAccountTax = collections.stream()
+                .filter(c -> c.sourceAccountId() == 12)
+                .map(TaxCollection::amount)
+                .findFirst().orElseThrow();
+        assertThat(largestAccountTax).isEqualByComparingTo("3.37");
+        assertThat(collections.stream()
+                .filter(c -> c.sourceAccountId() != 12)
+                .map(TaxCollection::amount))
+                .allSatisfy(a -> assertThat(a).isEqualByComparingTo("1.66"));
     }
 
     @Test
