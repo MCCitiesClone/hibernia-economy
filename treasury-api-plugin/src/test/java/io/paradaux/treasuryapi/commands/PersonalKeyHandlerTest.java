@@ -3,6 +3,7 @@ package io.paradaux.treasuryapi.commands;
 import io.paradaux.hibernia.framework.i18n.Message;
 import io.paradaux.treasury.api.TreasuryApi;
 import io.paradaux.treasuryapi.model.economy.ApiKey;
+import io.paradaux.treasuryapi.model.economy.KeyType;
 import io.paradaux.treasuryapi.services.ApiKeyService;
 import org.bukkit.entity.Player;
 import org.junit.jupiter.api.BeforeEach;
@@ -12,6 +13,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -53,7 +55,7 @@ class PersonalKeyHandlerTest {
     private ApiKey personalKey(UUID keyOwner, boolean revoked) {
         ApiKey key = new ApiKey();
         key.setKeyId(11);
-        key.setKeyType("PERSONAL");
+        key.setKeyType(KeyType.PERSONAL);
         key.setOwnerUuid(keyOwner);
         key.setRevoked(revoked);
         key.setExpiresAt(Instant.now().plus(30, ChronoUnit.DAYS));
@@ -67,7 +69,7 @@ class PersonalKeyHandlerTest {
         handler.doReissue(intruder, 11);
 
         verify(message).send(intruder, "treasuryapi.personal.reissue.no-access");
-        verify(apiKeyService, never()).reissueKey(anyInt());
+        verify(apiKeyService, never()).reissueKey(anyInt(), any());
     }
 
     @Test
@@ -75,11 +77,11 @@ class PersonalKeyHandlerTest {
         when(apiKeyService.getKey(11)).thenReturn(personalKey(ownerId, false));
         ApiKey rotated = personalKey(ownerId, false);
         rotated.setToken("new-token");
-        when(apiKeyService.reissueKey(11)).thenReturn(rotated);
+        when(apiKeyService.reissueKey(11, ownerId)).thenReturn(rotated);
 
         handler.doReissue(owner, 11);
 
-        verify(apiKeyService).reissueKey(11);
+        verify(apiKeyService).reissueKey(11, ownerId);
         verify(message).send(owner, "treasuryapi.personal.reissue.success",
                 "keyId", "11", "token", "new-token");
     }
@@ -91,7 +93,7 @@ class PersonalKeyHandlerTest {
         handler.doRevoke(intruder, 11);
 
         verify(message).send(intruder, "treasuryapi.personal.revoke.no-access");
-        verify(apiKeyService, never()).revokeKey(anyInt());
+        verify(apiKeyService, never()).revokeKey(anyInt(), any());
     }
 
     @Test
@@ -100,14 +102,14 @@ class PersonalKeyHandlerTest {
 
         handler.doRevoke(owner, 11);
 
-        verify(apiKeyService).revokeKey(11);
+        verify(apiKeyService).revokeKey(11, ownerId);
         verify(message).send(owner, "treasuryapi.personal.revoke.success", "keyId", "11");
     }
 
     @Test
     void doReissue_wrongKeyType_isNotFound_neverChecksOwnership() {
         ApiKey business = personalKey(ownerId, false);
-        business.setKeyType("BUSINESS");
+        business.setKeyType(KeyType.BUSINESS);
         when(apiKeyService.getKey(11)).thenReturn(business);
 
         // Even the owner must be bounced when the key isn't a PERSONAL key —
@@ -115,7 +117,7 @@ class PersonalKeyHandlerTest {
         handler.doReissue(owner, 11);
 
         verify(message).send(owner, "treasuryapi.personal.reissue.not-found");
-        verify(apiKeyService, never()).reissueKey(anyInt());
+        verify(apiKeyService, never()).reissueKey(anyInt(), any());
     }
 
     @Test
@@ -125,6 +127,6 @@ class PersonalKeyHandlerTest {
         handler.doReissue(owner, 11);
 
         verify(message).send(owner, "treasuryapi.personal.reissue.revoked");
-        verify(apiKeyService, never()).reissueKey(anyInt());
+        verify(apiKeyService, never()).reissueKey(anyInt(), any());
     }
 }

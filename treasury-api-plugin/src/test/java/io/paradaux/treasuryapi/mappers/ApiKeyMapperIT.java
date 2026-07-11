@@ -1,6 +1,7 @@
 package io.paradaux.treasuryapi.mappers;
 
 import io.paradaux.treasuryapi.model.economy.ApiKey;
+import io.paradaux.treasuryapi.model.economy.KeyType;
 import io.paradaux.treasuryapi.testsupport.IntegrationTestBase;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -75,7 +76,7 @@ class ApiKeyMapperIT extends IntegrationTestBase {
 
     private ApiKey personalKey(int accountId, UUID owner) {
         ApiKey k = new ApiKey();
-        k.setKeyType("PERSONAL");
+        k.setKeyType(KeyType.PERSONAL);
         k.setAccountId(accountId);
         k.setOwnerUuid(owner);
         k.setJwtId(UUID.randomUUID().toString());
@@ -94,7 +95,7 @@ class ApiKeyMapperIT extends IntegrationTestBase {
         assertThat(k.getKeyId()).isPositive();
 
         ApiKey found = mapper.findById(k.getKeyId());
-        assertThat(found.getKeyType()).isEqualTo("PERSONAL");
+        assertThat(found.getKeyType()).isEqualTo(KeyType.PERSONAL);
         assertThat(found.getAccountId()).isEqualTo(account);
         assertThat(found.getFirmId()).isNull();
         assertThat(found.getOwnerUuid()).isEqualTo(owner);
@@ -141,11 +142,11 @@ class ApiKeyMapperIT extends IntegrationTestBase {
         ApiKey k2 = personalKey(account, owner); mapper.insert(k2);
         ApiKey foreign = personalKey(account, other); mapper.insert(foreign);
 
-        List<ApiKey> mine = mapper.findByOwnerAndType(owner, "PERSONAL");
+        List<ApiKey> mine = mapper.findByOwnerAndType(owner, KeyType.PERSONAL);
         assertThat(mine).extracting(ApiKey::getKeyId)
                 .containsExactly(k1.getKeyId(), k2.getKeyId()); // ordered by key_id
-        assertThat(mapper.findByOwnerAndType(owner, "BUSINESS")).isEmpty();
-        assertThat(mapper.findByOwnerAndType(other, "PERSONAL"))
+        assertThat(mapper.findByOwnerAndType(owner, KeyType.BUSINESS)).isEmpty();
+        assertThat(mapper.findByOwnerAndType(other, KeyType.PERSONAL))
                 .extracting(ApiKey::getKeyId).containsExactly(foreign.getKeyId());
     }
 
@@ -158,7 +159,7 @@ class ApiKeyMapperIT extends IntegrationTestBase {
         employ(firmId, employee, proprietor);
 
         ApiKey bizKey = new ApiKey();
-        bizKey.setKeyType("BUSINESS");
+        bizKey.setKeyType(KeyType.BUSINESS);
         bizKey.setFirmId(firmId);
         bizKey.setOwnerUuid(proprietor);
         bizKey.setJwtId(UUID.randomUUID().toString());

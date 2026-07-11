@@ -9,8 +9,10 @@ import io.paradaux.treasuryapi.commands.BusinessKeyHandler;
 import io.paradaux.treasuryapi.commands.PersonalKeyHandler;
 import io.paradaux.treasuryapi.commands.UiAccessHandler;
 import io.paradaux.treasuryapi.services.ApiKeyService;
+import io.paradaux.treasuryapi.services.ExplorerUiService;
 import io.paradaux.treasuryapi.services.KeycloakAdminClient;
 import io.paradaux.treasuryapi.services.impl.ApiKeyServiceImpl;
+import io.paradaux.treasuryapi.services.impl.ExplorerUiServiceImpl;
 
 /**
  * Plugin-specific bindings that {@link io.paradaux.hibernia.framework.guice.HiberniaModule}
@@ -54,6 +56,7 @@ public class TreasuryAPIModule extends AbstractModule {
 
         // Services
         bind(ApiKeyService.class).to(ApiKeyServiceImpl.class).in(Singleton.class);
+        bind(ExplorerUiService.class).to(ExplorerUiServiceImpl.class).in(Singleton.class);
         bind(KeycloakAdminClient.class).in(Singleton.class);
 
         // Command handlers

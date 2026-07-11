@@ -1,6 +1,7 @@
 package io.paradaux.treasuryapi.mappers;
 
 import io.paradaux.treasuryapi.model.economy.ApiKey;
+import io.paradaux.treasuryapi.model.economy.KeyType;
 import org.apache.ibatis.annotations.*;
 
 import java.time.Instant;
@@ -71,7 +72,7 @@ public interface ApiKeyMapper {
             """)
     @ResultMap("apiKeyMap")
     List<ApiKey> findByOwnerAndType(@Param("ownerUuid") UUID ownerUuid,
-                                    @Param("keyType") String keyType);
+                                    @Param("keyType") KeyType keyType);
 
     // ---- Business access — keys for firms the player is employed at ----
 

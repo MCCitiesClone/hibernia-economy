@@ -4,6 +4,7 @@ import io.paradaux.business.api.BusinessApi;
 import io.paradaux.business.api.FirmApi;
 import io.paradaux.hibernia.framework.i18n.Message;
 import io.paradaux.treasuryapi.model.economy.ApiKey;
+import io.paradaux.treasuryapi.model.economy.KeyType;
 import io.paradaux.treasuryapi.services.ApiKeyService;
 import org.bukkit.entity.Player;
 import org.junit.jupiter.api.BeforeEach;
@@ -13,6 +14,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -58,7 +60,7 @@ class BusinessKeyHandlerTest {
     private ApiKey businessKey(Integer firmId, boolean revoked) {
         ApiKey key = new ApiKey();
         key.setKeyId(21);
-        key.setKeyType("BUSINESS");
+        key.setKeyType(KeyType.BUSINESS);
         key.setFirmId(firmId);
         key.setRevoked(revoked);
         key.setExpiresAt(Instant.now().plus(30, ChronoUnit.DAYS));
@@ -73,7 +75,7 @@ class BusinessKeyHandlerTest {
         handler.doReissue(outsider, 21);
 
         verify(message).send(outsider, "treasuryapi.business.reissue.no-access");
-        verify(apiKeyService, never()).reissueKey(anyInt());
+        verify(apiKeyService, never()).reissueKey(anyInt(), any());
     }
 
     @Test
@@ -82,11 +84,11 @@ class BusinessKeyHandlerTest {
         when(firms.isProprietor(7, proprietorId)).thenReturn(true);
         ApiKey rotated = businessKey(7, false);
         rotated.setToken("biz-token");
-        when(apiKeyService.reissueKey(21)).thenReturn(rotated);
+        when(apiKeyService.reissueKey(21, proprietorId)).thenReturn(rotated);
 
         handler.doReissue(proprietor, 21);
 
-        verify(apiKeyService).reissueKey(21);
+        verify(apiKeyService).reissueKey(21, proprietorId);
         verify(message).send(proprietor, "treasuryapi.business.reissue.success",
                 "keyId", "21", "token", "biz-token");
     }
@@ -99,7 +101,7 @@ class BusinessKeyHandlerTest {
         handler.doRevoke(outsider, 21);
 
         verify(message).send(outsider, "treasuryapi.business.revoke.no-access");
-        verify(apiKeyService, never()).revokeKey(anyInt());
+        verify(apiKeyService, never()).revokeKey(anyInt(), any());
     }
 
     @Test
@@ -109,7 +111,7 @@ class BusinessKeyHandlerTest {
 
         handler.doRevoke(proprietor, 21);
 
-        verify(apiKeyService).revokeKey(21);
+        verify(apiKeyService).revokeKey(21, proprietorId);
         verify(message).send(proprietor, "treasuryapi.business.revoke.success", "keyId", "21");
     }
 
@@ -124,7 +126,7 @@ class BusinessKeyHandlerTest {
 
         verify(message).send(proprietor, "treasuryapi.business.revoke.no-access");
         verify(firms, never()).isProprietor(anyInt(), org.mockito.ArgumentMatchers.any());
-        verify(apiKeyService, never()).revokeKey(anyInt());
+        verify(apiKeyService, never()).revokeKey(anyInt(), any());
     }
 
     @Test
@@ -135,6 +137,6 @@ class BusinessKeyHandlerTest {
         handler.doReissue(proprietor, 21);
 
         verify(message).send(proprietor, "treasuryapi.business.reissue.revoked");
-        verify(apiKeyService, never()).reissueKey(anyInt());
+        verify(apiKeyService, never()).reissueKey(anyInt(), any());
     }
 }
