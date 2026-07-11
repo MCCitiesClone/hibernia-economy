@@ -1,0 +1,35 @@
+{
+  "repo": "hibernia-economy",
+  "generated_note": "Components enumerated from settings.gradle.kts, package.json roots, economy-flyway migrations, .github/workflows, Dockerfiles. Submodules realty/ and hibernia-framework/ are EXCLUDED — they are git submodules with their own repos, explicitly excluded from the root Gradle build (settings.gradle.kts) and consumed as published io.paradaux:* artifacts. ops/gov-export and server/bot are ad-hoc dev/ops tooling, covered only by the global dependencies/infra dimensions.",
+  "components": [
+    { "id": "common", "type": "library-jar", "language": "java", "paths": ["common/src/main/**"], "test_paths": ["common/src/test/**"], "build": "gradle" },
+    { "id": "treasury", "type": "bukkit-plugin", "language": "java", "paths": ["treasury/src/main/**", "treasury/treasury-api/src/main/**"], "test_paths": ["treasury/src/test/**", "treasury/treasury-api/src/test/**"], "build": "gradle", "notes": "The ledger — system of record. Includes treasury-api library sub-project." },
+    { "id": "business", "type": "bukkit-plugin", "language": "java", "paths": ["business/src/main/**", "business/business-api/src/main/**"], "test_paths": ["business/src/test/**", "business/business-api/src/test/**"], "build": "gradle", "notes": "Firms/companies. Includes business-api library sub-project." },
+    { "id": "treasury-api-plugin", "type": "bukkit-plugin", "language": "java", "paths": ["treasury-api-plugin/src/main/**"], "test_paths": ["treasury-api-plugin/src/test/**"], "build": "gradle", "notes": "Mints JWT API keys for the REST API." },
+    { "id": "treasury-rest-api", "type": "spring-boot", "language": "java", "paths": ["treasury-rest-api/src/main/**"], "test_paths": ["treasury-rest-api/src/test/**"], "build": "gradle", "notes": "REST surface over the ledger; second transfer engine (TransferService)." },
+    { "id": "chestshop", "type": "bukkit-plugin", "language": "java", "paths": ["chestshop/src/main/**"], "test_paths": ["chestshop/src/test/**"], "build": "gradle", "notes": "Vendored ChestShop-3 fork, single module, 1.21.11 baseline." },
+    { "id": "economy-explorer", "type": "nextjs", "language": "typescript", "paths": ["economy-explorer/app/**", "economy-explorer/components/**", "economy-explorer/lib/**", "economy-explorer/middleware.ts", "economy-explorer/types/**"], "test_paths": ["economy-explorer/test/**"], "build": "npm", "notes": "Read-only web explorer + /docs. Not in the Gradle build." }
+  ],
+  "fanout_cells": {
+    "component_scoped": {
+      "common": ["structure", "behaviour", "testing"],
+      "treasury": ["structure", "plugin-architecture", "behaviour", "testing"],
+      "business": ["structure", "plugin-architecture", "behaviour", "testing"],
+      "treasury-api-plugin": ["structure", "plugin-architecture", "behaviour", "testing"],
+      "treasury-rest-api": ["structure", "behaviour", "testing"],
+      "chestshop": ["structure", "plugin-architecture", "behaviour", "testing"],
+      "economy-explorer": ["structure", "behaviour", "testing"]
+    },
+    "global": ["build", "infra", "dependencies", "database"]
+  },
+  "global_scopes": {
+    "build": ["**/*.gradle.kts", "gradle/**", "build-logic/**", "gradle.properties", "**/gradle-wrapper.properties", "settings.gradle.kts"],
+    "infra": ["**/Dockerfile*", ".github/workflows/**", "**/.dockerignore", "economy-explorer/next.config.ts"],
+    "dependencies": ["gradle/libs.versions.toml", "**/build.gradle.kts", "economy-explorer/package.json", "economy-explorer/package-lock.json", "ops/gov-export/package.json", "server/bot/package.json"],
+    "database": ["economy-flyway/src/main/resources/db/migration/**", "**/*Mapper*.java", "**/mapper/**", "economy-explorer/lib/sql/**"]
+  },
+  "excluded": {
+    "submodules": ["realty/**", "hibernia-framework/**"],
+    "build_artifacts": ["**/build/**", "**/.next/**", "**/node_modules/**", ".claude/worktrees/**"]
+  }
+}

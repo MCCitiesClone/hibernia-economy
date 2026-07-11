@@ -1,0 +1,1143 @@
+[
+  {
+    "component": "common",
+    "dimension": "structure",
+    "summary": {
+      "files_examined": 9,
+      "checks_run": [
+        "placement (business logic in wrong layer, persistence leakage, Bukkit types in domain/service)",
+        "DRY / duplication of stdlib and cross-file blocks",
+        "naming consistency / domain glossary (balance/creditLimit/allowOverdraft/weeklyRate/brackets)",
+        "Java null & type safety (Optional vs null, null contracts, raw generics, unchecked casts, @SuppressWarnings, mutable static state, final fields)",
+        "currency representation (double/float vs BigDecimal/long minor units)",
+        "OOP discipline (god classes, inheritance-vs-composition, public mutable fields, constructors doing real work, service locators)"
+      ],
+      "not_applicable": [
+        "TypeScript type-safety checks \u2014 no TS files in :common scope (Java-only library-jar)"
+      ],
+      "sampled_files": [
+        "common/src/main/java/io/paradaux/common/BalanceTaxBrackets.java",
+        "common/src/main/java/io/paradaux/common/DataSourceProvider.java",
+        "common/src/main/java/io/paradaux/common/JwtKeys.java",
+        "common/src/main/java/io/paradaux/common/OverdraftPolicy.java",
+        "common/src/main/java/io/paradaux/common/UuidBin.java",
+        "common/src/test/java/io/paradaux/common/BalanceTaxBracketsTest.java",
+        "common/src/test/java/io/paradaux/common/OverdraftPolicyTest.java",
+        "common/src/test/java/io/paradaux/common/JwtKeysTest.java",
+        "common/src/test/java/io/paradaux/common/UuidBinTest.java"
+      ]
+    },
+    "raw_count": 1,
+    "kept": 1,
+    "rejected": 0
+  },
+  {
+    "component": "common",
+    "dimension": "behaviour",
+    "summary": {
+      "files_examined": 9,
+      "checks_run": [
+        "conservation (no currency create/destroy in shared floor/tax logic)",
+        "double-spend (OverdraftPolicy locking is delegated to consumers; verified both LedgerServiceImpl and TransferService defer to isWithinFloor/isUnlimited identically)",
+        "precision (grepped whole component for double/float/Double/Float and divide/setScale/RoundingMode \u2014 none; all money is BigDecimal)",
+        "overdraft floor four-case correctness incl. null credit_limit and SYSTEM override",
+        "tax bracket parsing/validation and floorEntry rate lookup",
+        "identity: UuidBin round-trip, null-safety, and wrong-length fail-loud (ADT-147)",
+        "JwtKeys derivation determinism/base64-vs-legacy split/min-length across trust boundary",
+        "DataSourceProvider autoCommit=false invariant and statement-caching URL build",
+        "behaviour-equivalence of common logic between treasury LedgerServiceImpl.transferInternal and rest-api TransferService"
+      ],
+      "not_applicable": [
+        "idempotency/retry dedup \u2014 no scheduled payouts or txn keys live in common; dedup is enforced in the consuming engines",
+        "inventory/GUI dupe vectors \u2014 common is a framework-free library with no Bukkit inventory or click-event code",
+        "API/website consistency \u2014 common contains no display/formatting code; formatting lives in explorer/rest-api"
+      ],
+      "sampled_files": [
+        "common/src/main/java/io/paradaux/common/OverdraftPolicy.java",
+        "common/src/main/java/io/paradaux/common/BalanceTaxBrackets.java",
+        "common/src/main/java/io/paradaux/common/UuidBin.java",
+        "common/src/main/java/io/paradaux/common/JwtKeys.java",
+        "common/src/main/java/io/paradaux/common/DataSourceProvider.java",
+        "common/src/test/java/io/paradaux/common/OverdraftPolicyTest.java",
+        "common/src/test/java/io/paradaux/common/BalanceTaxBracketsTest.java",
+        "common/src/test/java/io/paradaux/common/JwtKeysTest.java"
+      ]
+    },
+    "raw_count": 1,
+    "kept": 1,
+    "rejected": 0
+  },
+  {
+    "component": "common",
+    "dimension": "testing",
+    "summary": {
+      "files_examined": 10,
+      "checks_run": [
+        "Enumerated all 5 service/utility classes in common/src/main and mapped each to a test class (BalanceTaxBrackets, JwtKeys, OverdraftPolicy, UuidBin covered; DataSourceProvider uncovered)",
+        "Mock discipline: no mocking framework used in any common test (all pure-function tests against real values) \u2014 nothing to flag",
+        "Coverage of testable surface: verified DataSourceProvider is testable in a plain unit test (HikariCP on testImplementation; HikariDataSource extends HikariConfig exposing getJdbcUrl/isAutoCommit)",
+        "Regression locks: checked each explicit historical-bug fix (UuidBin ADT-147 16-byte guard, JwtKeys legacy SHA-256 KDF, OverdraftPolicy PAR-319 SYSTEM/sentinel) for a pinning test",
+        "Test quality: assertions verified to check real values (rates, key bytes, boolean floor outcomes) not just non-null; no order-dependent tests; no Thread.sleep; OverdraftPolicy and BalanceTax are thorough parameterized boundary suites",
+        "Framework seams: all classes are static/framework-free with no Bukkit statics \u2014 instantiable in plain unit tests"
+      ],
+      "not_applicable": [
+        "ParameterResolvers / custom resolver tests \u2014 common is a pure-JVM library with no Hibernia Framework resolvers",
+        "HiberniaModule/registerAll startup test + messages.properties key cross-check \u2014 common has no Guice module, no @Command/@Route handlers, and no i18n message bundle",
+        "Mapper-vs-real-DB / H2-vs-production-dialect \u2014 common contains no MyBatis mappers; the only DB-adjacent class is DataSourceProvider (a Hikari factory, not a mapper)",
+        "treasury/rest-api transfer behaviour-equivalence \u2014 OverdraftPolicy is the shared pure rule and is well-tested here; the two engine call-sites are out of this component's scope"
+      ],
+      "sampled_files": [
+        "common/src/main/java/io/paradaux/common/BalanceTaxBrackets.java",
+        "common/src/main/java/io/paradaux/common/DataSourceProvider.java",
+        "common/src/main/java/io/paradaux/common/JwtKeys.java",
+        "common/src/main/java/io/paradaux/common/OverdraftPolicy.java",
+        "common/src/main/java/io/paradaux/common/UuidBin.java",
+        "common/src/test/java/io/paradaux/common/BalanceTaxBracketsTest.java",
+        "common/src/test/java/io/paradaux/common/JwtKeysTest.java",
+        "common/src/test/java/io/paradaux/common/OverdraftPolicyTest.java",
+        "common/src/test/java/io/paradaux/common/UuidBinTest.java",
+        "common/build.gradle.kts"
+      ]
+    },
+    "raw_count": 4,
+    "kept": 4,
+    "rejected": 0
+  },
+  {
+    "component": "treasury",
+    "dimension": "structure",
+    "summary": {
+      "files_examined": 38,
+      "checks_run": [
+        "placement: business logic in commands/controllers",
+        "placement: persistence in services / mapper injection in api-impl",
+        "placement: Bukkit types leaking into service/domain layers",
+        "utility dumping-ground scan (Utils/Helpers/Constants)",
+        "DRY: distinctive-literal grep + cross-file comparison (Idempotency, sanitize, actorOf, resolvePlayerName, Corporate-Account fallback, primitive-gov-account creation, pay orchestration, txn-entry rendering)",
+        "re-implemented stdlib/library (UuidBin alias check)",
+        "naming glossary: balance/funds/amount/account terms across modules",
+        "currency type safety: double/float grep across scope (Money BigDecimal, Vault double boundary)",
+        "null/Optional contracts on public API (TreasuryApi @Nullable convention)",
+        "raw generics / unchecked casts / @SuppressWarnings scan",
+        "mutable static state and public mutable fields scan",
+        "OOP: god-class line/dependency counts (GovCommand 998, AccountServiceImpl 465, LedgerServiceImpl 448)",
+        "OOP: constructors-doing-work, service-locator, inject-interface-vs-impl",
+        "Integer/int accountId boxing comparison audit (== vs intValue)"
+      ],
+      "not_applicable": [
+        "TypeScript type-safety checks (any/as/non-null/tsconfig) \u2014 scope is pure Java (treasury plugin + treasury-api); no TS in scope",
+        "transfer/overdraft behaviour-equivalence with treasury-rest-api TransferService \u2014 out of this cell's scope path (rest-api not in treasury/**); noted only for context"
+      ],
+      "sampled_files": [
+        "treasury/src/main/java/io/paradaux/treasury/services/cache/PluginSystemAccountCache.java",
+        "treasury/src/main/java/io/paradaux/treasury/services/impl/MembershipServiceImpl.java",
+        "treasury/src/main/java/io/paradaux/treasury/guice/TreasuryModule.java",
+        "treasury/src/main/java/io/paradaux/treasury/Treasury.java",
+        "treasury/src/main/java/io/paradaux/treasury/utils/TreasuryConstants.java",
+        "treasury/src/main/java/io/paradaux/treasury/utils/UuidBin.java",
+        "treasury/src/main/java/io/paradaux/treasury/api/impl/ShopQueryApiImpl.java",
+        "treasury/treasury-api/src/main/java/io/paradaux/treasury/model/economy/Account.java",
+        "treasury/treasury-api/src/main/java/io/paradaux/treasury/model/economy/TransferRequest.java"
+      ]
+    },
+    "raw_count": 8,
+    "kept": 8,
+    "rejected": 0
+  },
+  {
+    "component": "treasury",
+    "dimension": "plugin-architecture",
+    "summary": {
+      "files_examined": 29,
+      "checks_run": [
+        "command-handler thinness / SQL-scheduler-arithmetic in handlers",
+        "framework-bypass (manual CommandExecutor, manual sub-command routing, manual arg parsing, manual hasPermission vs @Permission)",
+        "semantic-exception error flow vs hand-formatted errors / swallowing",
+        "player-facing text via Message keys; legacy \u00a7/ChatColor; raw sendMessage/sendRichMessage",
+        "MiniMessage/Message.rich injection safety on player-influenced values",
+        "ParameterResolver suggestions/resolve off-main-thread safety and cache backing",
+        "listener DI registration via ListenerManager (no manual registerEvents)",
+        "event priority/ignoreCancelled/MONITOR-mutation guards",
+        "hot-event listeners (PlayerMove/BlockPhysics/etc.)",
+        "async: no Bukkit API from async contexts; no JDBC on main thread (sync routes touching persistence)",
+        "service interface+impl split; service-layer re-validation and authorisation; no Bukkit types in service signatures",
+        "mappers-only-in-services; HikariCP pooling config; no DriverManager/raw JDBC; try-with-resources",
+        "DI discipline: constructor injection, no field injection, no injector.getInstance in business code",
+        "currency as long/BIGINT/BigDecimal, no double/float for money"
+      ],
+      "not_applicable": [
+        "@Dialog/@Screen/@Action dialog handlers \u2014 treasury has no dialog UI (no @Screen/@Action/@Input in scope)",
+        "reload() leaving a stale pool \u2014 ConfigReloadService intentionally does not touch the DB pool (documented restart-required); pool built once at enable and closed on disable"
+      ],
+      "sampled_files": [
+        "treasury/src/main/java/io/paradaux/treasury/services/impl/AccountServiceImpl.java",
+        "treasury/src/main/java/io/paradaux/treasury/services/impl/EconomyNotifierImpl.java",
+        "treasury/src/main/java/io/paradaux/treasury/services/impl/SalaryServiceImpl.java",
+        "treasury/src/main/java/io/paradaux/treasury/services/impl/GovServiceImpl.java",
+        "treasury/src/main/java/io/paradaux/treasury/api/impl/TreasuryApiImpl.java",
+        "treasury/src/main/java/io/paradaux/treasury/tasks/SalaryTask.java",
+        "treasury/src/main/java/io/paradaux/treasury/adapters/VaultEconomyAdapter.java",
+        "treasury/src/main/java/io/paradaux/treasury/mappers/typehandlers/UuidBinaryTypeHandler.java",
+        "treasury/src/main/java/io/paradaux/treasury/guice/DatabaseModule.java",
+        "treasury/src/main/java/io/paradaux/treasury/guice/TreasuryModule.java"
+      ]
+    },
+    "raw_count": 6,
+    "kept": 6,
+    "rejected": 0
+  },
+  {
+    "component": "treasury",
+    "dimension": "behaviour",
+    "summary": {
+      "files_examined": 26,
+      "checks_run": [
+        "conservation: traced every money-moving path (transfer/vaultWithdraw/vaultDeposit/adminGive/adminTake/adminSet/adminReset, tax collectTax/applySourceIncomeTax, salary payout, fine issue/revoke, gov transfer/payout, pay/pay-account) \u2014 all route through LedgerServiceImpl.transferInternal double-entry postings; no path UPDATEs a balance (balances written solely by trg_postings_ai trigger); same-account transfer rejected",
+        "double-spend: verified source overdraft gate reads flags under LOCK IN SHARE MODE (lockAccountFlagsForShare) and limited-source balance under FOR UPDATE (lockBalances, ascending account_id) with OverdraftPolicy floor; unlimited SYSTEM/-1 sources skip the lock deliberately; adminSet read-modify-write holds FOR UPDATE across the whole txn; login clock serialised by striped monitors + FOR UPDATE",
+        "precision: confirmed all internal money is BigDecimal/DECIMAL; Money.requirePositive rejects >2-decimal amounts before any posting insert; computeTax/tax proration setScale(2, HALF_EVEN); double appears only on the Vault Economy interface boundary (required by Vault) and pagination ceil \u2014 not currency",
+        "failure atomicity: @Transactional boundaries on all service ops; Vault deposit is deliberately at-least-once and reports TRUTHFULLY (never FAILURE after commit) so retries don't double-credit; source income tax runs post-commit and cannot flip a committed deposit to FAILURE; ChestShop market recording is fail-soft analytics separate from money movement",
+        "idempotency: dedup keys via Idempotency.sha256 + uq_ledger_dedup on ledger_txns; concurrent identical-dedup insert re-resolves via findByDedupKeyLocking; starting-balance/salary/tax/fine/gov-transfer keys include distinguishing fields to avoid false-collapsing distinct transfers",
+        "identity: all account keying by UUID (BINARY(16)) not name; offline/uncached/Bedrock targets resolved via PlayerDirectory; read paths (balanceOther) use read-only lookup so phantom-UUID name lookups can't mint a faucet account; account_redirects route legacy gov 'player' UUIDs",
+        "confusing-behaviour: checked error messages, partial-apply, ambiguous player-vs-gov-name resolution (refused, not silently mis-routed), same-account guards"
+      ],
+      "not_applicable": [
+        "api-website-consistency: verifying that the Next.js explorer and treasury-rest-api display the same numbers the plugin persists requires reading economy-explorer/ and treasury-rest-api/, both outside this cell's scope (treasury/src/main, treasury/treasury-api/src/main). getEconomySummary()/getEconomyTotalsByType() intentionally mirror the explorer's total-supply scope (exclude SYSTEM + archived, include PERSONAL/BUSINESS/GOVERNMENT) per its own doc comment, but cross-JVM equivalence with TransferService and the DAL cannot be confirmed from within treasury alone.",
+        "inventory-dupe-vectors: shop-GUI / trade-menu / shift-click / drag inventory dupe vectors live in the chestshop component, not treasury; treasury only records the resulting sale (MarketApiImpl) and moves money via the audited transfer path."
+      ],
+      "sampled_files": [
+        "treasury/src/main/java/io/paradaux/treasury/services/impl/LedgerServiceImpl.java",
+        "treasury/src/main/java/io/paradaux/treasury/mappers/LedgerMapper.java",
+        "treasury/src/main/java/io/paradaux/treasury/mappers/AccountMapper.java",
+        "treasury/src/main/java/io/paradaux/treasury/utils/Money.java",
+        "common/src/main/java/io/paradaux/common/OverdraftPolicy.java",
+        "treasury/src/main/java/io/paradaux/treasury/services/impl/AccountServiceImpl.java",
+        "treasury/src/main/java/io/paradaux/treasury/services/impl/SalaryServiceImpl.java",
+        "treasury/src/main/java/io/paradaux/treasury/services/BalanceTaxService.java",
+        "treasury/src/main/java/io/paradaux/treasury/services/impl/GovServiceImpl.java",
+        "treasury/src/main/java/io/paradaux/treasury/api/impl/TaxApiImpl.java",
+        "treasury/src/main/java/io/paradaux/treasury/api/impl/TreasuryApiImpl.java",
+        "treasury/src/main/java/io/paradaux/treasury/adapters/VaultEconomyAdapter.java",
+        "treasury/src/main/java/io/paradaux/treasury/commands/PayCommand.java",
+        "treasury/src/main/java/io/paradaux/treasury/commands/EcoCommand.java",
+        "treasury/src/main/java/io/paradaux/treasury/commands/GovCommand.java",
+        "treasury/src/main/java/io/paradaux/treasury/commands/FineCommand.java",
+        "treasury/src/main/java/io/paradaux/treasury/commands/PayAccountCommand.java",
+        "treasury/src/main/java/io/paradaux/treasury/commands/TreasuryCommand.java",
+        "treasury/src/main/java/io/paradaux/treasury/commands/BalanceCommand.java",
+        "treasury/src/main/java/io/paradaux/treasury/commands/EconomyCommand.java",
+        "treasury/src/main/java/io/paradaux/treasury/commands/AccountResolver.java",
+        "treasury/src/main/java/io/paradaux/treasury/events/PlayerLoginListener.java",
+        "treasury/src/main/java/io/paradaux/treasury/services/impl/PlayerDirectoryServiceImpl.java",
+        "treasury/src/main/java/io/paradaux/treasury/services/impl/MembershipServiceImpl.java",
+        "treasury/src/main/java/io/paradaux/treasury/tasks/TaxCycleTask.java",
+        "treasury/src/main/java/io/paradaux/treasury/tasks/SalaryTask.java",
+        "treasury/src/main/java/io/paradaux/treasury/utils/GovDedupKeys.java",
+        "treasury/src/main/java/io/paradaux/treasury/utils/Idempotency.java",
+        "treasury/treasury-api/src/main/java/io/paradaux/treasury/model/economy/TransferRequest.java",
+        "treasury/src/main/java/io/paradaux/treasury/services/impl/DataExportServiceImpl.java",
+        "treasury/src/main/java/io/paradaux/treasury/api/impl/MarketApiImpl.java",
+        "treasury/src/main/java/io/paradaux/treasury/api/impl/ShopQueryApiImpl.java",
+        "treasury/src/main/java/io/paradaux/treasury/api/impl/SalesQueryApiImpl.java",
+        "treasury/src/main/java/io/paradaux/treasury/model/config/BalanceTaxConfiguration.java"
+      ]
+    },
+    "raw_count": 1,
+    "kept": 1,
+    "rejected": 0
+  },
+  {
+    "component": "treasury",
+    "dimension": "testing",
+    "summary": {
+      "files_examined": 28,
+      "checks_run": [
+        "Mock discipline: reviewed SalaryServiceImplTest, AccountServiceImplTest, PayCommandTest, BalanceTaxServiceMockedApiTest, GovServiceImplTest, TransactionsCommandTest for tautological mocks / interaction-only assertions / stubbed-subject \u2014 tests are behaviour-focused with real value assertions; would fail if business logic deleted (one minor interaction-only branch flagged)",
+        "Coverage of testable surface: enumerated all 15 service impls and 11 mappers vs tests; LedgerServiceImpl covered by LedgerServiceTransferIT+BreadthIT, DiscordWebhooks is a thin webhook helper covered via FineWebhook/TaxWebhook tests, PlayerDirectoryServiceImpl has PlayerDirectoryServiceIT; genuine gaps: PayTargetResolver, AccountRedirect chain",
+        "DB dialect: confirmed real MariaDB (MariaDB4j embedded / external CI container) with schema from authoritative economy-flyway migrations, NOT H2 \u2014 no dialect mismatch",
+        "Regression locks: MoneyTest pins HALF_EVEN rounding + boundary/scale edges; LedgerServiceTransferIT pins overdraft floor, credit-limit sentinel, dedup, deadlock ordering; PayCommandTest pins player/gov name-collision (PAR-144/145)",
+        "Test quality: no Thread.sleep (concurrency ITs use CountDownLatch/invokeAll), no order-dependent tests, no double/float currency (BigDecimal throughout), assertions on real values",
+        "Framework seams: all service impls injectable with no hidden Bukkit statics (Bukkit.* grep in services/ is empty; Server injected into SalaryServiceImpl)",
+        "ParameterResolvers: PayTargetResolver is the only custom resolver \u2014 untested (flagged)",
+        "Startup test: no HiberniaModule/registerAll() test exists (flagged)",
+        "Message key coverage: cross-checked 122 message-lookup keys in code vs 128 messages.properties keys \u2014 all referenced keys are defined; one dead key found"
+      ],
+      "not_applicable": [
+        "H2-vs-production dialect mismatch: N/A \u2014 the harness uses real MariaDB (MariaDB4j/container) migrated by Flyway, no H2 present"
+      ],
+      "sampled_files": [
+        "treasury/src/test/java/io/paradaux/treasury/services/impl/SalaryServiceImplTest.java",
+        "treasury/src/test/java/io/paradaux/treasury/services/impl/AccountServiceImplTest.java",
+        "treasury/src/test/java/io/paradaux/treasury/services/impl/GovServiceImplTest.java",
+        "treasury/src/test/java/io/paradaux/treasury/commands/PayCommandTest.java",
+        "treasury/src/test/java/io/paradaux/treasury/commands/TransactionsCommandTest.java",
+        "treasury/src/test/java/io/paradaux/treasury/services/BalanceTaxServiceMockedApiTest.java",
+        "treasury/src/test/java/io/paradaux/treasury/services/impl/LedgerServiceTransferIT.java",
+        "treasury/src/test/java/io/paradaux/treasury/testsupport/MariadbContainerExtension.java",
+        "treasury/src/test/java/io/paradaux/treasury/testsupport/IntegrationTestBase.java",
+        "treasury/src/test/java/io/paradaux/treasury/utils/MoneyTest.java"
+      ]
+    },
+    "raw_count": 5,
+    "kept": 5,
+    "rejected": 0
+  },
+  {
+    "component": "business",
+    "dimension": "structure",
+    "summary": {
+      "files_examined": 30,
+      "checks_run": [
+        "Placement: business logic in commands (checked all 11 command classes; found only thin i18n/rendering + the base36 shopId string in AccountCommands which is presentational, not a violation)",
+        "Placement: persistence in services (verified service impls call mappers via injected interfaces; no raw JDBC/SQL in service or command bodies)",
+        "Placement: Bukkit types leaking into service/domain (FirmStaffServiceImpl/FirmChatService use Bukkit.getPlayer/Player \u2014 acceptable as they are Paper-plugin services returning online Player handles; models in business-api are Bukkit-free except intentional org.bukkit.entity.Player in StaffApi which is a plugin-facing API)",
+        "Utility dumping grounds (DateUtils, NameValidator, Suggestions each single-purpose; no >3-responsibility Utils class)",
+        "DRY: finance-access predicate, transaction-render loop, Discord regex, player-name fallback resolution",
+        "Naming consistency: firm identifier type (String/int/Integer), balance vs funds glossary (money terms consistent: balance/deposit/withdraw/pay used coherently)",
+        "Null/type safety (Java): API null-returns are documented via Javadoc; Firm.proprietorUuid stored as String forcing UUID.fromString conversions (noted, DB-mapped Lombok pattern, not flagged); redundant requireNonNull found",
+        "Money type: grepped for double/float on currency \u2014 none; all monetary values BigDecimal, tax at 2dp HALF_UP",
+        "OOP discipline: god-class check (largest AccountCommands 591 lines but flat command handlers, no god state; FirmServiceImpl 492 lines cohesive; FirmChatService Object-typed fields justified for soft-dependency); constructors do no real work except config load which is documented; no public mutable fields; DI via Guice throughout, Provider used to break service cycles"
+      ],
+      "not_applicable": [
+        "TypeScript type-safety checks (any/as/non-null assertions/tsconfig) \u2014 business is a pure Java Bukkit plugin, no TS in scope",
+        "Inheritance-vs-composition \u2014 no domain inheritance hierarchies present; models are flat Lombok @Data, services are interface+single impl"
+      ],
+      "sampled_files": [
+        "business/src/main/java/io/paradaux/business/integration/RealtyRegionValidator.java",
+        "business/src/main/java/io/paradaux/business/utils/Suggestions.java",
+        "business/src/main/java/io/paradaux/business/utils/DateUtils.java",
+        "business/src/main/java/io/paradaux/business/commands/resolvers/FirmNameResolver.java",
+        "business/src/main/java/io/paradaux/business/commands/resolvers/OnlineFirmNameResolver.java",
+        "business/src/main/java/io/paradaux/business/model/config/FirmConfiguration.java",
+        "business/src/main/java/io/paradaux/business/listeners/ChestShopSaleListener.java",
+        "business/src/main/java/io/paradaux/business/services/impl/FirmSalesNotificationServiceImpl.java",
+        "business/src/main/java/io/paradaux/business/services/impl/FirmBalanceTaxServiceImpl.java",
+        "business/business-api/src/main/java/io/paradaux/business/model/Firm.java",
+        "business/business-api/src/main/java/io/paradaux/business/api/FirmApi.java",
+        "business/src/main/java/io/paradaux/business/chat/FirmChatService.java"
+      ]
+    },
+    "raw_count": 5,
+    "kept": 5,
+    "rejected": 0
+  },
+  {
+    "component": "business",
+    "dimension": "plugin-architecture",
+    "summary": {
+      "files_examined": 28,
+      "checks_run": [
+        "Command @Route handlers contain only arg-normalisation/validation/service-call/Message success (checked all 11 CommandHandler classes)",
+        "Framework-bypass: hand-rolled CommandExecutor/onCommand, manual setExecutor, manual sub-command switch/if routing, manual hasPermission where @Permission belongs, manual args[]/Integer.parseInt parsing",
+        "SQL/HikariCP/scheduler/economy-arithmetic inside command handlers",
+        "Semantic-exception propagation vs handlers catching to hand-format / returning boolean success",
+        "Player-facing text via Message keys only (grep sendMessage/ChatColor/section-sign/rich)",
+        "Message.rich wrapping player-influenced values (injection safety)",
+        "Resolvers: suggestions/resolve off-main-thread backed by caches not live Bukkit state, no blocking DB/HTTP, UUID-keyed with name fallback, ambiguous prefixes rejected",
+        "Listeners DI-managed via ListenerManager (no manual registerEvents), hot-event registration, priority/ignoreCancelled",
+        "Async: no Bukkit API from async contexts (traced @Async route bodies, resolvers, jobs, RealtyRegionValidator, FirmChatService); inverse: no JDBC on main thread",
+        "Services: interface+impl split, re-validate+authorise throwing semantic exceptions, no gratuitous Bukkit types, only-layer-calling-mappers",
+        "Mappers/pooling: DriverManager/getConnection outside mappers, HikariCP pool config sanity, credentials via @ConfigurationComponent",
+        "DI discipline: constructor injection throughout, no field injection, no injector.getInstance service-locator in business code, module binds only services/persistence",
+        "Currency stored as BigDecimal/long not double/float (grep double/float)"
+      ],
+      "not_applicable": [
+        "Dialogs (@Screen/@Action/@Input/DialogFlow): the business plugin has no dialog handlers \u2014 all UI is chat commands",
+        "Hot events (PlayerMoveEvent/BlockPhysicsEvent/etc.): the two listeners handle only Treasury's ChestShopSaleEvent and TaxCycleEvent, neither is a hot Bukkit event"
+      ],
+      "sampled_files": [
+        "business/src/main/java/io/paradaux/business/services/impl/FirmNotificationServiceImpl.java",
+        "business/src/main/java/io/paradaux/business/utils/DateUtils.java",
+        "business/src/main/java/io/paradaux/business/services/FirmSuggestionCache.java",
+        "business/src/main/java/io/paradaux/business/chat/FirmChatService.java",
+        "business/src/main/java/io/paradaux/business/guice/DatabaseModule.java",
+        "business/src/main/java/io/paradaux/business/guice/BusinessModule.java",
+        "business/src/main/java/io/paradaux/business/model/config/DatabaseConfiguration.java",
+        "business/src/main/java/io/paradaux/business/services/impl/FirmBalanceTaxServiceImpl.java"
+      ]
+    },
+    "raw_count": 7,
+    "kept": 7,
+    "rejected": 0
+  },
+  {
+    "component": "business",
+    "dimension": "behaviour",
+    "summary": {
+      "files_examined": 29,
+      "checks_run": [
+        "Conservation: traced every money entry point (deposit/withdraw/pay into|player|business/send/disband-drain/balance-tax) \u2014 all money movement goes through treasury.transfer or TaxApi.collectBatch; no application-side balance UPDATEs; no currency created/destroyed outside Treasury mint/burn.",
+        "No double-spend: transfers rely on Treasury's authoritative ledger + per-account overdraft floor; Business hasFunds() checks are advisory pre-checks only, correct pattern for a ledger-authoritative system. Member/authorizer reconciliation serialized per-firm via ReentrantLock (firmSyncLocks). Account-name creation serialized under the same lock.",
+        "Precision: grep for double/float across scope \u2014 only non-currency uses (pagination ceil, chat radius). All money is BigDecimal; tax split uses BigDecimal with HALF_UP and drift folded into largest account so per-account sum == total tax exactly.",
+        "Failure atomicity: createFirm compensates orphaned Treasury account on rollback; disbandInternal drains per-account with each account left linked on failure (idempotent re-run); completeTransferProprietorship/adminSetProprietor wrap proprietor change + account reassignment transactionally.",
+        "Dupe vectors: no inventory/GUI/click-event money handling in this component (ChestShop sale is consumed as a Treasury event, buffered in-memory for notifications only \u2014 no money moved here).",
+        "Idempotency: balance-tax uses Idempotency.sha256 dedup key per (firm,account,periodStart); ExpireRequestsJob is a plain expiry sweep. Sales-notification flush drops buffered notifications on shutdown (notifications only, not money).",
+        "Identity: all keying is UUID/BINARY(16); offline/never-joined/name-change handled \u2014 FirmPlayer lookups fall back to raw UUID, adminSetProprietor rejects never-seen targets, resolvers null-safe.",
+        "API/website consistency: BusinessApiImpl delegates balance to FirmTransactionService.getAggregateBalance (same BigDecimal path as commands); formatAmount uniformly via TreasuryApi. Explorer/REST are out of this cell's scope.",
+        "Confusing behaviour: audited command catch-blocks and message keys for misstated causes / silent failures / partial application."
+      ],
+      "not_applicable": [
+        "Inventory/GUI dupe vectors (charter item 5): business has no shop GUI, trade menu, or click-event item extraction \u2014 the only inventory-adjacent surface (ChestShop sale) is consumed as a read-only Treasury event.",
+        "Next.js viewer / REST API number consistency (charter item 8): those components are outside the business scope paths; only the in-plugin BusinessApi surface was checked."
+      ],
+      "sampled_files": [
+        "business/src/main/java/io/paradaux/business/services/impl/FirmNotificationServiceImpl.java",
+        "business/src/main/java/io/paradaux/business/mappers/FirmRoleMapper.java",
+        "business/src/main/java/io/paradaux/business/utils/NameValidator.java",
+        "business/src/main/java/io/paradaux/business/commands/resolvers/FirmNameResolver.java",
+        "business/src/main/java/io/paradaux/business/integration/RealtyRegionValidator.java",
+        "business/business-api/src/main/java/io/paradaux/business/model/FirmAccount.java",
+        "business/src/main/java/io/paradaux/business/mappers/FirmPropertyMapper.java"
+      ]
+    },
+    "raw_count": 2,
+    "kept": 2,
+    "rejected": 0
+  },
+  {
+    "component": "business",
+    "dimension": "testing",
+    "summary": {
+      "files_examined": 44,
+      "checks_run": [
+        "Enumerated all 13 service impls vs tests (all 13 have *ServiceImplTest); mapped mappers, resolvers, config, chat, jobs, listeners, integration, api-impl to their tests",
+        "Mock discipline: read FirmTransactionServiceImplTest and FirmNotificationServiceImplTest in full \u2014 verified assertions capture observable TransferRequest/recipient state and boundary cases (memo cap at 255, non-positive rejection, authorizer edges), not mock-return tautologies; verify-usage in notification tests is behaviour-appropriate",
+        "Currency-type check: grepped main for double/float \u2014 only Math.ceil pagination and a chat radius, no currency-in-double; balance tax uses BigDecimal + HALF_UP throughout",
+        "Rounding/regression-lock: traced FirmBalanceTaxServiceImpl drift-fold-into-largest branch against its test \u2014 branch uncovered (finding 3)",
+        "Mapper test infra: confirmed mapper ITs run against real MariaDB (embedded MariaDB4j / external MariaDB service container) via authoritative economy-flyway migrations \u2014 NO H2, no dialect mismatch (charter concern satisfied)",
+        "Framework seams: found Bukkit statics in FirmPlayerServiceImpl/FirmStaffServiceImpl \u2014 verified FirmPlayerServiceImplTest covers them via MockedStatic; identified FirmChatService as testable-but-untested (finding 1)",
+        "ParameterResolvers: confirmed all 3 custom resolvers untested (finding 4)",
+        "Startup test: grepped whole test tree for Guice.createInjector/registerAll/BusinessModule/HiberniaModule \u2014 none exist (finding 2)",
+        "Message keys: extracted all business.* literals from main code, cross-checked against messages.properties \u2014 no keys referenced-but-missing (the used->defined diff is empty; the defined-but-unused set is explained by keys passed as messageKey variables to notify)",
+        "Test hygiene: grepped for Thread.sleep, @Order/TestMethodOrder, @RepeatedTest, shared mutable counters \u2014 none found (no sleep-based or order-dependent tests)"
+      ],
+      "not_applicable": [
+        "H2-vs-production dialect mismatch: N/A \u2014 mapper ITs use real MariaDB (MariaDB4j/external), not H2",
+        "Order-dependent / Thread.sleep concurrency tests: N/A \u2014 none present in the suite"
+      ],
+      "sampled_files": [
+        "business/src/test/java/io/paradaux/business/services/impl/FirmTransactionServiceImplTest.java",
+        "business/src/test/java/io/paradaux/business/services/impl/FirmBalanceTaxServiceImplTest.java",
+        "business/src/test/java/io/paradaux/business/services/impl/FirmNotificationServiceImplTest.java",
+        "business/src/test/java/io/paradaux/business/services/impl/FirmRoleServiceImplTest.java",
+        "business/src/test/java/io/paradaux/business/services/impl/FirmPlayerServiceImplTest.java",
+        "business/src/test/java/io/paradaux/business/services/FirmSuggestionCacheTest.java",
+        "business/src/test/java/io/paradaux/business/testsupport/MariadbContainerExtension.java",
+        "business/src/test/java/io/paradaux/business/testsupport/IntegrationTestBase.java",
+        "business/src/test/java/io/paradaux/business/model/config/BalanceTaxConfigurationTest.java"
+      ]
+    },
+    "raw_count": 4,
+    "kept": 4,
+    "rejected": 0
+  },
+  {
+    "component": "treasury-api-plugin",
+    "dimension": "structure",
+    "summary": {
+      "files_examined": 21,
+      "checks_run": [
+        "Placement: business logic in command handlers, persistence injected into command tier, service/impl split consistency",
+        "DRY: duplicated formatter constants and list-rendering blocks across handlers, re-implemented UuidBin (confirmed thin delegating alias to :common, not a violation)",
+        "Naming consistency: domain-term glossary (keyType, apiKey, ownerUuid, firm/account) checked for divergence; keyType string-vs-enum flagged",
+        "Null/type safety (Java): Optional vs null contracts on ApiKeyService (getKey documented @return null and callers null-check \u2014 acceptable), raw generics, unchecked casts, @SuppressWarnings justification (both present with justification comments), mutable static state (none), final fields (all handler deps final)",
+        "OOP discipline: god-class check (largest is GroupReconciliationTask at 214 lines \u2014 cohesive, not a god class), service-locator via Injector (UiAccessHandler injector use is guarded/justified for optional LuckPerms binding), constructors doing work (KeycloakAdminClient builds lock stripes/HttpClient \u2014 acceptable), Bukkit types leaking into service/domain layer (KeycloakAdminClient and ApiKeyServiceImpl are Bukkit-free; models are POJOs)"
+      ],
+      "not_applicable": [
+        "TypeScript type-safety checks (any/as/non-null-assertion/tsconfig) \u2014 no TS in this component's scope",
+        "Currency double/float check \u2014 this plugin mints JWT API keys and syncs roles; it moves no money and stores no balances"
+      ],
+      "sampled_files": [
+        "treasury-api-plugin/src/main/java/io/paradaux/treasuryapi/model/config/ReconciliationConfiguration.java",
+        "treasury-api-plugin/src/main/java/io/paradaux/treasuryapi/model/SyncedGroup.java",
+        "treasury-api-plugin/src/main/java/io/paradaux/treasuryapi/mappers/ExplorerGroupMapper.java",
+        "treasury-api-plugin/src/main/java/io/paradaux/treasuryapi/guice/DatabaseModule.java",
+        "treasury-api-plugin/src/main/java/io/paradaux/treasuryapi/mappers/typehandlers/UuidBinaryTypeHandler.java",
+        "treasury-api-plugin/src/main/java/io/paradaux/treasuryapi/model/ReconciliationDiff.java"
+      ]
+    },
+    "raw_count": 4,
+    "kept": 4,
+    "rejected": 0
+  },
+  {
+    "component": "treasury-api-plugin",
+    "dimension": "plugin-architecture",
+    "summary": {
+      "files_examined": 18,
+      "checks_run": [
+        "Command handlers: light arg-normalisation + service call only; no SQL/HikariCP/scheduler/economy arithmetic in handlers",
+        "Framework bypass: hand-rolled CommandExecutor/onCommand, manual routing, manual arg parsing, manual hasPermission \u2014 none found (all via @Route/@Arg/@Permission)",
+        "Error/messaging flow: semantic exceptions vs boolean/swallow; all player-facing text via Message keys; no legacy ChatColor; Message.rich on player input",
+        "Injection safety: player values passed as plain placeholders (framework escapes) \u2014 confirmed, no Message.rich(player input)",
+        "Resolvers: none present (not applicable)",
+        "Events/listeners: none present (not applicable)",
+        "Hot events: none present (not applicable)",
+        "Dialogs/@Screen/@Action: none present (not applicable)",
+        "Async: @Async routes run handlers off-main; JDBC mapper + Keycloak HTTP + LuckPerms blocking calls all on async threads (correct); Bukkit access in async handlers is read-only (getOfflinePlayer/getPluginManager), no async Bukkit state mutation",
+        "Services: interface+impl split (ApiKeyService); service re-validation/authorisation gap noted; no Bukkit types in ApiKeyService signatures",
+        "Mappers/pooling: all persistence via @Mapper interfaces on HikariCP via shared DataSourceProvider; no DriverManager; pool config (maxPool 10, autoCommit false, hardcoded-default password guarded, env-var secret injection) sane; try-with-resources handled by MyBatis",
+        "DI discipline: constructor injection throughout; injector service-locator flagged; modules bind only services+persistence"
+      ],
+      "not_applicable": [
+        "Resolvers: no ParameterResolver classes in this component",
+        "Events: no Listener/@EventHandler classes in this component",
+        "Hot events: no listeners at all, so no PlayerMove/BlockPhysics/etc handlers",
+        "Dialogs: no @Screen/@Action/DialogFlow code in this component",
+        "Currency arithmetic / double-vs-long: this plugin mints JWT API keys and manages explorer roles \u2014 it moves no money and stores no balances"
+      ],
+      "sampled_files": [
+        "treasury-api-plugin/src/main/java/io/paradaux/treasuryapi/mappers/typehandlers/UuidBinaryTypeHandler.java",
+        "treasury-api-plugin/src/main/java/io/paradaux/treasuryapi/model/ReconciliationDiff.java",
+        "treasury-api-plugin/src/main/java/io/paradaux/treasuryapi/model/SyncedGroup.java",
+        "treasury-api-plugin/src/main/java/io/paradaux/treasuryapi/utils/UuidBin.java",
+        "treasury-api-plugin/src/main/resources/messages.properties",
+        "common/src/main/java/io/paradaux/common/DataSourceProvider.java"
+      ]
+    },
+    "raw_count": 5,
+    "kept": 5,
+    "rejected": 0
+  },
+  {
+    "component": "treasury-api-plugin",
+    "dimension": "behaviour",
+    "summary": {
+      "files_examined": 15,
+      "checks_run": [
+        "conservation (mint/burn) \u2014 traced key-issuance and role-reconciliation paths; no currency movement in component",
+        "double-spend / concurrent balance mutation \u2014 N/A, no balances mutated; reviewed AtomicBoolean tick-guard and reissue AND revoked=0 TOCTOU guard",
+        "precision (no double/float currency) \u2014 grepped and read all models; ApiKey/SyncedGroup/ReconciliationDiff hold no monetary fields",
+        "failure atomicity \u2014 reviewed doLink upsert/delete ordering and Keycloak GET-merge-PUT partial-failure path (returns link.partial, locally consistent)",
+        "dupe vectors (inventory) \u2014 N/A, no inventory/GUI interactions",
+        "idempotency of scheduled work \u2014 reviewed GroupReconciliationTask cron: INSERT IGNORE/DELETE by (group_id,uuid,source) are idempotent, empty-result guard prevents mass-revoke, overlap guard present",
+        "identity (offline/never-joined/UUID-keying) \u2014 reviewed doUserAdd hasPlayedBefore guard vs doUserRemove/doUserList resolveUuid; all keying is BINARY(16) UUID via UuidBinaryTypeHandler, not name",
+        "API/website consistency \u2014 reviewed ApiKeyMapper.rotateKey/revoke guard parity note vs treasury-rest-api; expiry display formatting is client-side only",
+        "confusing/silent-failure behaviour \u2014 reviewed reissue revoked-key pre-checks, self-sync unavailable/failed messaging, link.partial messaging, resolveUuid message mismatch"
+      ],
+      "not_applicable": [
+        "conservation/mint-burn \u2014 component mints JWT credentials, never moves currency",
+        "double-spend \u2014 no account balances are read-modify-written in this component",
+        "failure-atomicity-money-vs-goods \u2014 no purchase/sale path exists",
+        "dupe-vectors-inventory \u2014 no shop GUI / trade menu / inventory click handling",
+        "precision \u2014 no monetary values stored or computed anywhere in scope"
+      ],
+      "sampled_files": [
+        "treasury-api-plugin/src/main/java/io/paradaux/treasuryapi/guice/DatabaseModule.java",
+        "treasury-api-plugin/src/main/java/io/paradaux/treasuryapi/guice/TreasuryAPIModule.java",
+        "treasury-api-plugin/src/main/java/io/paradaux/treasuryapi/mappers/typehandlers/UuidBinaryTypeHandler.java",
+        "treasury-api-plugin/src/main/java/io/paradaux/treasuryapi/utils/UuidBin.java",
+        "treasury-api-plugin/src/main/java/io/paradaux/treasuryapi/model/config/KeycloakConfiguration.java",
+        "treasury-api-plugin/src/main/resources/config.yml",
+        "treasury-api-plugin/src/main/resources/messages.properties"
+      ]
+    },
+    "raw_count": 2,
+    "kept": 2,
+    "rejected": 0
+  },
+  {
+    "component": "treasury-api-plugin",
+    "dimension": "testing",
+    "summary": {
+      "files_examined": 18,
+      "checks_run": [
+        "Enumerated all service classes, mappers, command handlers, tasks, utils, config models and the plugin entrypoint against existing tests",
+        "Mock discipline review of ApiKeyServiceImplTest, GroupReconciliationTaskTest, ReconciliationDiffTest (checked for tautological mocks, interaction-only assertions, stubbed-out subject logic)",
+        "Verified would-fail-if-logic-deleted for the tested service paths (JWT mint, reissue revoked-guard, diff)",
+        "Message-key coverage: extracted every message.send key referenced in code and diffed against messages.properties (all referenced keys are defined; no orphans on the send path)",
+        "Framework-seam analysis: checked each handler/service for hidden Bukkit statics blocking plain unit tests (UiAccessHandler uses Bukkit statics; Personal/BusinessKeyHandler and ApiKeyServiceImpl are cleanly injectable)",
+        "Checked for custom ParameterResolvers (none in this component) and for a per-plugin registerAll/route-conflict startup test",
+        "Cross-checked Testcontainers/MariaDB integration-test norms in sibling modules (treasury, business, treasury-rest-api) vs this module's mappers",
+        "Regression-lock review for ADT-marked invariants (ADT-110 terminal revoke, ADT-111 proprietorship gating, ADT-113 lock striping, ADT-38 unknown-player/secret env)"
+      ],
+      "not_applicable": [
+        "ParameterResolvers untested \u2014 none defined in treasury-api-plugin (no ParameterResolver implementations exist in scope)",
+        "H2-vs-production dialect mismatch \u2014 no H2 usage anywhere in this module (there are simply no mapper integration tests at all; captured under finding 3)",
+        "Thread.sleep-based concurrency tests / order-dependent tests \u2014 none exist (the three test files contain no sleeps, no shared mutable state, no ordering)",
+        "Money-as-double check \u2014 this component mints JWTs and manages roles; it moves no currency and stores no monetary amounts"
+      ],
+      "sampled_files": [
+        "treasury-api-plugin/src/main/java/io/paradaux/treasuryapi/model/economy/ApiKey.java",
+        "treasury-api-plugin/src/main/java/io/paradaux/treasuryapi/model/config/ApiConfiguration.java",
+        "treasury-api-plugin/src/main/java/io/paradaux/treasuryapi/model/config/ReconciliationConfiguration.java",
+        "treasury-api-plugin/src/main/java/io/paradaux/treasuryapi/guice/TreasuryAPIModule.java",
+        "treasury-api-plugin/src/main/java/io/paradaux/treasuryapi/utils/UuidBin.java",
+        "treasury-api-plugin/src/main/java/io/paradaux/treasuryapi/TreasuryAPI.java"
+      ]
+    },
+    "raw_count": 7,
+    "kept": 7,
+    "rejected": 0
+  },
+  {
+    "component": "treasury-rest-api",
+    "dimension": "structure",
+    "summary": {
+      "files_examined": 38,
+      "checks_run": [
+        "Placement: business logic in controllers (all 5 read controllers + 6 admin controllers are thin delegators; services own logic; mappers are annotation-SQL only with no logic; no Bukkit/plugin types leak into rest-api)",
+        "DRY: grep for repeated pagination-offset overflow, totalPages Math.ceil, hex-encoding loops, toInstant conversions",
+        "Naming consistency: domain glossary \u2014 'balance' used consistently (getBalance/AccountBalance/sumFirmBalance), no funds/money interchange for the ledger value; VerifiedToken/keyType/keyId consistent across security+services",
+        "Null/type safety: Optional-vs-null on public returns, null-guards on nullable getters (created_at/joined_at guarded per ADT-119), unchecked casts, raw generics, @SuppressWarnings, mutable static state, non-thread-safe formatters",
+        "OOP discipline: god-class check (TransferService 504 lines but cohesive single-responsibility transfer engine with 3 deps; no class >10 deps), composition vs inheritance (records + Lombok @Data models, no inheritance), constructors doing work (WebhookRedisLock/LettuceBucketProvider open connections in ctor \u2014 deliberate and PreDestroy-closed), service-locator vs injection (all constructor injection)",
+        "Money type: verified all currency is BigDecimal/long \u2014 no double/float used for currency arithmetic (Math.ceil/double only on page counts, not money)",
+        "Layering: entrypoint -> service (@Transactional) -> mapper enforced; AdminScope/requireServiceKey gates in services not controllers"
+      ],
+      "not_applicable": [
+        "TypeScript type-safety checks (any / non-null assertions / as casts / tsconfig strict): component is Spring Boot Java only, no TS in scope",
+        "Bukkit types leaking into service/domain: rest-api is a standalone Spring JVM with no Paper/Bukkit dependency, so there is nothing to leak"
+      ],
+      "sampled_files": [
+        "config/CacheConfig.java",
+        "config/DataSourcePasswordGuard.java",
+        "config/SecurityConfig.java",
+        "controller/AdminTransferController.java",
+        "controller/ChestShopController.java",
+        "model/Account.java",
+        "model/LedgerPosting.java",
+        "model/WebhookSubscription.java",
+        "ratelimit/CaffeineBucketProvider.java",
+        "ratelimit/LettuceBucketProvider.java",
+        "ratelimit/RateLimitOverrideService.java",
+        "security/AdminScope.java",
+        "security/JwtAuthFilter.java",
+        "security/VerifiedToken.java",
+        "mapper/LedgerMapper.java",
+        "util/HmacSha256.java",
+        "util/SsrfValidator.java"
+      ]
+    },
+    "raw_count": 4,
+    "kept": 4,
+    "rejected": 0
+  },
+  {
+    "component": "treasury-rest-api",
+    "dimension": "behaviour",
+    "summary": {
+      "files_examined": 24,
+      "checks_run": [
+        "Conservation: traced every currency-moving path (transfer, transferToFirm, transferToPlayer, adminTransfer, disband sweep). All debit+credit as paired ledger_postings in one @Transactional; balances written only by trg_postings_ai (no app-side balance UPDATE). Confirmed no mint/burn via REST.",
+        "No double-spend: verified findBalanceForUpdate uses SELECT ... FOR UPDATE with ascending-account-id lock ordering; overdraft re-checked under lock via shared OverdraftPolicy. Concurrent same-account spends serialize on the row lock.",
+        "Precision: grepped all model/service/mapper for double/float \u2014 every currency field (balance, amount, buyPrice, sellPrice, totalVolume, creditLimit) is BigDecimal; SQL uses DECIMAL/SUM. avgUnitPrice uses BigDecimal.divide HALF_UP scale 4. No float currency anywhere.",
+        "Failure atomicity: transfer + disband run in a single DB transaction (ledger + firm tables co-located); no cross-process payment/delivery split.",
+        "Idempotency: verified client_dedup_key UNIQUE scoped per source account (sha256(fromAccountId:key)); replayIdempotent verifies stored-vs-request shape; withIdempotencyReplay handles the insert race on the token path (gap on admin path \u2014 finding #1). Webhook enqueue is INSERT IGNORE on UNIQUE(subscription_id,txn_id); delivery cursor is monotonic with settlement lag.",
+        "Identity: UUID-keyed throughout (owner_uuid_bin BINARY(16) via UuidTypeHandler); name lookups via economy_players with PAR-144 government/player ambiguity guard; null-guards on offline/never-seen players (findPlayerNameByUuid, joined_at/created_at).",
+        "API/website consistency: ChestShop aggregates all BigDecimal.toPlainString; window vs all-time stats internally consistent; no rounding divergence found within scope.",
+        "Confusing behaviour / silent failures: reviewed GlobalExceptionHandler mappings (405, type mismatch, malformed body all mapped); found DuplicateKeyException unmapped \u2192 500 on the admin-transfer race (finding #1)."
+      ],
+      "not_applicable": [
+        "Dupe vectors (inventory/shop GUI click-event cancellation, shift-click, drag): treasury-rest-api has no inventory or Bukkit event surface \u2014 ChestShop shop data is read-only aggregate here; the GUI/click dupe surface lives in the :chestshop plugin, out of this cell's scope.",
+        "OverdraftPolicy three-way floor logic: implemented in :common (io.paradaux.common.OverdraftPolicy), outside treasury-rest-api/src/main; this cell verified only that TransferService invokes it with the correct (allowOverdraft, creditLimit, isSystem) arguments."
+      ],
+      "sampled_files": [
+        "treasury-rest-api/src/main/java/io/paradaux/treasuryrestapi/service/AccountService.java",
+        "treasury-rest-api/src/main/java/io/paradaux/treasuryrestapi/service/AdminApiKeyService.java",
+        "treasury-rest-api/src/main/java/io/paradaux/treasuryrestapi/service/AuthService.java",
+        "treasury-rest-api/src/main/java/io/paradaux/treasuryrestapi/service/AdminWebhookService.java",
+        "treasury-rest-api/src/main/java/io/paradaux/treasuryrestapi/mapper/ChestShopMapper.java",
+        "treasury-rest-api/src/main/java/io/paradaux/treasuryrestapi/mapper/AccountMapper.java",
+        "treasury-rest-api/src/main/java/io/paradaux/treasuryrestapi/exception/GlobalExceptionHandler.java"
+      ]
+    },
+    "raw_count": 2,
+    "kept": 2,
+    "rejected": 0
+  },
+  {
+    "component": "treasury-rest-api",
+    "dimension": "testing",
+    "summary": {
+      "files_examined": 26,
+      "checks_run": [
+        "Mock discipline: inspected WebhookServiceTest (in-memory StubMapper, asserts observable state not interactions), RateLimitInterceptorTest (real behaviour, capturing provider), JwtTokenVerifierTest (real crypto + real tokens, stub only for DB row) \u2014 no mock-value-echo or stubbed-subject antipatterns found",
+        "Coverage of testable surface: enumerated all 14 service classes and mapped each to its tests; identified fully-untested services (AccountService, WebhookDispatcherService, AdminApiKeyService, AdminWebhookService, AdminRateLimitService) and partially-tested ones (FirmService 2/8 methods, AuthService rotation paths)",
+        "Testcontainers-vs-H2: verified DB-backed tests use MariaDB4j (real MariaDB, env-overridable to a CI MariaDB service), not H2 \u2014 no dialect mismatch; money columns confirmed DECIMAL(19,2) matching Flyway V1",
+        "Regression locks: verified amount-boundary (TransferAmountValidationIT), pagination-overflow (TransactionPaginationValidationIT), idempotency-scoping (TransferIdempotencyScopingIT), and permission-edge (MembershipAccessIT viewer/member/authorizer/revoked) pinning tests exist; found the overdraft/credit-limit floor and transfer guard branches unpinned",
+        "Test quality: assertions are on real values (BigDecimal comparisons, status/error codes, posting sums); no order-dependent tests; grep confirmed zero Thread.sleep in src/test",
+        "Framework seams: services take injected mappers/domain types and instantiate in plain unit tests (WebhookServiceTest, RateLimitInterceptorTest, JwtTokenVerifierTest do so with no Spring); no hidden Bukkit statics (this is a Spring Boot module); a startup context test exists (TreasuryRestApiApplicationTests.contextLoads + AdminFirmDocsHiddenIT)",
+        "Money-type check: confirmed no double/float used for currency in the transfer/chestshop paths (BigDecimal throughout)"
+      ],
+      "not_applicable": [
+        "HiberniaModule/registerAll startup-conflict test and ParameterResolver resolve/suggestion tests: this component is Spring Boot (Spring DI, @RestController/@Service), not a Hibernia-framework Guice plugin \u2014 it has no HiberniaModule, @Command handlers, or custom ParameterResolvers; the Spring equivalent (contextLoads) is present",
+        "messages.properties key cross-check: no Message-based i18n / messages.properties in this Spring component \u2014 errors are ApiException(code,message) literals, not framework message keys"
+      ],
+      "sampled_files": [
+        "treasury-rest-api/src/test/java/io/paradaux/treasuryrestapi/service/TransferAmountValidationIT.java",
+        "treasury-rest-api/src/test/java/io/paradaux/treasuryrestapi/service/TransferIdempotencyScopingIT.java",
+        "treasury-rest-api/src/test/java/io/paradaux/treasuryrestapi/service/TransferToPlayerIT.java",
+        "treasury-rest-api/src/test/java/io/paradaux/treasuryrestapi/service/ChestShopServiceIT.java",
+        "treasury-rest-api/src/test/java/io/paradaux/treasuryrestapi/service/MembershipAccessIT.java",
+        "treasury-rest-api/src/test/java/io/paradaux/treasuryrestapi/service/TransactionPaginationValidationIT.java",
+        "treasury-rest-api/src/test/java/io/paradaux/treasuryrestapi/service/WebhookServiceTest.java",
+        "treasury-rest-api/src/test/java/io/paradaux/treasuryrestapi/service/AdminToolsIT.java",
+        "treasury-rest-api/src/test/java/io/paradaux/treasuryrestapi/service/FirmUpdateValidationIT.java",
+        "treasury-rest-api/src/test/java/io/paradaux/treasuryrestapi/ratelimit/RateLimitInterceptorTest.java",
+        "treasury-rest-api/src/test/java/io/paradaux/treasuryrestapi/security/JwtTokenVerifierTest.java",
+        "treasury-rest-api/src/test/java/io/paradaux/treasuryrestapi/testsupport/EmbeddedMariaDb.java",
+        "treasury-rest-api/src/test/java/io/paradaux/treasuryrestapi/testsupport/EmbeddedDbIT.java"
+      ]
+    },
+    "raw_count": 9,
+    "kept": 8,
+    "rejected": 1
+  },
+  {
+    "component": "chestshop",
+    "dimension": "structure",
+    "summary": {
+      "files_examined": 34,
+      "checks_run": [
+        "Placement: business logic in commands/listeners vs services (all commands + listeners scanned for mapper/ServiceImpl injection; listeners inspected for service-invoked business methods)",
+        "Placement: persistence-in-service and Bukkit leaks into model/service layers (model layer Bukkit imports assessed \u2014 acceptable as Bukkit-domain event carriers for a Bukkit plugin)",
+        "Placement: utility dumping grounds (NumberUtil, MaterialUtil, StringUtil, PriceUtil, BusinessAccountUtil, encoding/Base64, encoding/Base62 read)",
+        "DRY: duplicated location-placeholder building; re-implemented stdlib (Base64 vs java.util.Base64); dead vendored predicates",
+        "Naming consistency: balance/funds/money glossary (grep of getBalance/hasFunds/etc \u2014 consistent: hasFunds + getBalance used uniformly)",
+        "Currency type safety: double/float for money (config tax percentages are double = rates not money; FoundShop Double getters traced to sort-comparator/display-only, BigDecimal remains source of truth)",
+        "Null/type safety: @SuppressWarnings (none found), raw generics (none), unchecked casts (none), mutable static fields (found StringUtil/Base62), no-op API method (canHold)",
+        "OOP discipline: god classes (dep + line counts verified for TransactionServiceImpl=17 deps/719 lines, ShopServiceImpl=11 deps/626 lines, EconomyServiceImpl), public mutable fields (none), service-locator/static-state (NexoIntegration static holder judged acceptable given documented class-loading-isolation for a soft dependency)"
+      ],
+      "not_applicable": [
+        "TypeScript type-safety checks (any / non-null assertions / as casts / tsconfig strict flags) \u2014 chestshop is a pure Java Bukkit plugin, no TS in scope"
+      ],
+      "sampled_files": [
+        "chestshop/src/main/java/io/paradaux/chestshop/services/impl/GoodsTransfer.java",
+        "chestshop/src/main/java/io/paradaux/chestshop/model/FoundShop.java",
+        "chestshop/src/main/java/io/paradaux/chestshop/services/impl/InventoryServiceImpl.java",
+        "chestshop/src/main/java/io/paradaux/chestshop/utils/PriceUtil.java",
+        "chestshop/src/main/java/io/paradaux/chestshop/mappers/AccountMapper.java",
+        "chestshop/src/main/java/io/paradaux/chestshop/commands/FindCommand.java",
+        "chestshop/src/main/java/io/paradaux/chestshop/services/impl/PartialFillCalculator.java",
+        "chestshop/src/main/java/io/paradaux/chestshop/utils/NumberUtil.java",
+        "chestshop/src/main/java/io/paradaux/chestshop/utils/MaterialUtil.java"
+      ]
+    },
+    "raw_count": 7,
+    "kept": 7,
+    "rejected": 0
+  },
+  {
+    "component": "chestshop",
+    "dimension": "plugin-architecture",
+    "summary": {
+      "files_examined": 42,
+      "checks_run": [
+        "Command handlers: @Route bodies limited to normalisation/validation/service-call (read all 11 command classes)",
+        "Framework-bypass: hand-rolled CommandExecutor/onCommand/setExecutor, manual sub-command routing, manual arg parsing (args[i]/Integer.parseInt), manual hasPermission where @Permission belongs",
+        "Error/messaging flow: semantic exceptions vs caught/hand-formatted errors; Message keys vs hardcoded strings/legacy \u00a7/ChatColor/raw sendMessage in handlers and services (grepped all commands/services/listeners/dialogs)",
+        "Injection safety: Message.rich(...) wrapping player-influenced input (grep: none found)",
+        "Resolvers: off-thread suffix, no live Bukkit state / blocking calls (no ParameterResolvers defined in component)",
+        "Events: DI/ListenerManager registration vs manual registerEvents; early-return guard ordering; ignoreCancelled; deliberate EventPriority; MONITOR handlers mutating state",
+        "Hot events: PlayerMoveEvent/BlockPhysicsEvent/EntityMoveEvent/ChunkLoadEvent/InventoryMoveItemEvent/VehicleMoveEvent listeners and O(1)/allocation-free guards (read PhysicsBreak, ItemMove, PaperBlockDestroy, StockCounter, Preview)",
+        "Dialogs: @Screen build-only, @Action validate+delegate, flow.await for long work, DialogFlow navigation, Message-key labels (read FindDialog)",
+        "Async: no Bukkit API from async contexts; no JDBC/HTTP/file I/O on main thread without hop (traced find()/PreviewListener/PlayerConnectListener/MarketResync async boundaries)",
+        "Services: interface+impl split; services are sole mapper callers; re-validate/authorise; domain vs Bukkit types",
+        "Mappers/pooling: persistence via mappers, pool config, try-with-resources, config-component DB settings (SQLite/MyBatis PooledDataSource -- documented per-plugin deviation from HikariCP/MariaDB)",
+        "DI discipline: constructor injection; field injection; injector.getInstance service-locator use; module bindings",
+        "Money type: BigDecimal vs double/float for currency (verified EconomyServiceImpl, TransactionServiceImpl, MarketServiceImpl all use BigDecimal / long minor units)"
+      ],
+      "not_applicable": [
+        "ParameterResolver charter checks: no ParameterResolver implementations exist in chestshop scope (CustomItemResolver is an item-code service SPI, not a framework ParameterResolver)",
+        "HikariCP pool-config specifics: this component uses per-plugin SQLite via MyBatis PooledDataSource (documented deviation), so HikariCP maximumPoolSize/maxLifetime/leakDetectionThreshold checks do not apply; pool is intentionally single-connection for SQLite single-writer",
+        "@Async route body Bukkit-call tracing: no @Async command routes present; async work is via runTaskAsynchronously/CompletableFuture which were traced instead"
+      ],
+      "sampled_files": [
+        "chestshop/src/main/java/io/paradaux/chestshop/services/impl/AccountServiceImpl.java",
+        "chestshop/src/main/java/io/paradaux/chestshop/services/impl/MarketServiceImpl.java",
+        "chestshop/src/main/java/io/paradaux/chestshop/services/impl/MarketResyncServiceImpl.java",
+        "chestshop/src/main/java/io/paradaux/chestshop/services/impl/ShopFinderServiceImpl.java",
+        "chestshop/src/main/java/io/paradaux/chestshop/integration/IntegrationRegistrar.java",
+        "chestshop/src/main/java/io/paradaux/chestshop/listeners/WorldEditShopCleanupListener.java",
+        "chestshop/src/main/java/io/paradaux/chestshop/listeners/MarketListener.java",
+        "chestshop/src/main/java/io/paradaux/chestshop/listeners/PlayerConnectListener.java",
+        "chestshop/src/main/java/io/paradaux/chestshop/mappers/AccountMapper.java",
+        "chestshop/src/main/java/io/paradaux/chestshop/guice/DatabaseModule.java"
+      ]
+    },
+    "raw_count": 9,
+    "kept": 9,
+    "rejected": 0
+  },
+  {
+    "component": "chestshop",
+    "dimension": "behaviour",
+    "summary": {
+      "files_examined": 18,
+      "checks_run": [
+        "Conservation: traced every money path (shop BUY/SELL settle, sales tax leg, admin faucet/sink routing, shop creation fee, shop removal refund, server-economy mirror legs) from listener entry through EconomyServiceImpl.settle/deposit/withdraw to TreasuryApi.transfer",
+        "Double-spend: confirmed all trade entry points (PlayerInteractListener) run on the single Bukkit main thread; funds/stock checks are advisory and the atomic guard is the Treasury transfer's DB-level floor, which also protects against cross-JVM (rest-api/business) concurrency",
+        "Precision: verified prices and settlement amounts are BigDecimal end-to-end (PriceUtil, PartialFillCalculator, Transaction, EconomyServiceImpl); config taxAmount/serverTaxAmount doubles are rate percentages (converted via BigDecimal.valueOf, /100, scale 6) not currency; FoundShop.doubleValue() is display/sort-only",
+        "Failure atomicity: verified goods leg moves first with snapshot/restore (GoodsTransfer) and money settles after, with goods reversed on settle failure (execute); found non-atomic mirror-transfer ordering in shop refund/creation-fee paths",
+        "Dupe vectors: reviewed GoodsTransfer snapshot/restore, InventoryServiceImpl transfer/add/remove, PlayerInteractListener click cancellation",
+        "Idempotency: verified settle uses deterministic per-trade dedup keys (Idempotency.sha256 on tradeId) for transfer + tax legs; deposit/withdraw use nanoTime keys but are one-shot admin ops",
+        "Identity: verified UUID-keyed accounts, business synthetic-UUID codec (BusinessAccountUtil), offline-owner null guards in messaging",
+        "API/website consistency: economy.format delegates to Treasury formatAmount; not fully cross-traced into economy-explorer (out of scope)"
+      ],
+      "not_applicable": [
+        "Scheduled payouts / vote rewards: chestshop has no scheduled or vote-reward payout code \u2014 trades are synchronous player-interaction driven",
+        "Next.js viewer / REST API divergence: those components are out of the chestshop scope path; only noted that plugin formatting routes through TreasuryApi.formatAmount"
+      ],
+      "sampled_files": [
+        "chestshop/src/main/java/io/paradaux/chestshop/services/impl/TransactionServiceImpl.java",
+        "chestshop/src/main/java/io/paradaux/chestshop/services/impl/EconomyServiceImpl.java",
+        "chestshop/src/main/java/io/paradaux/chestshop/services/impl/GoodsTransfer.java",
+        "chestshop/src/main/java/io/paradaux/chestshop/services/impl/PartialFillCalculator.java",
+        "chestshop/src/main/java/io/paradaux/chestshop/services/impl/InventoryServiceImpl.java",
+        "chestshop/src/main/java/io/paradaux/chestshop/services/impl/AccountServiceImpl.java",
+        "chestshop/src/main/java/io/paradaux/chestshop/services/impl/ShopServiceImpl.java",
+        "chestshop/src/main/java/io/paradaux/chestshop/listeners/PlayerInteractListener.java",
+        "chestshop/src/main/java/io/paradaux/chestshop/listeners/MarketListener.java",
+        "chestshop/src/main/java/io/paradaux/chestshop/model/Transaction.java",
+        "chestshop/src/main/java/io/paradaux/chestshop/model/PendingTransaction.java",
+        "chestshop/src/main/java/io/paradaux/chestshop/utils/PriceUtil.java",
+        "chestshop/src/main/java/io/paradaux/chestshop/utils/NumberUtil.java",
+        "chestshop/src/main/java/io/paradaux/chestshop/utils/BusinessAccountUtil.java",
+        "chestshop/src/main/java/io/paradaux/chestshop/commands/GiveCommand.java",
+        "chestshop/src/main/java/io/paradaux/chestshop/model/FoundShop.java",
+        "chestshop/src/main/java/io/paradaux/chestshop/model/ShopAttribute.java",
+        "chestshop/src/main/java/io/paradaux/chestshop/model/config/ChestShopConfiguration.java"
+      ]
+    },
+    "raw_count": 4,
+    "kept": 4,
+    "rejected": 0
+  },
+  {
+    "component": "chestshop",
+    "dimension": "testing",
+    "summary": {
+      "files_examined": 45,
+      "checks_run": [
+        "Mock discipline: scanned all 20 service-impl tests for interaction-only assertions, tautological mocking (mock returns exactly the asserted value), and self-stubbing spies \u2014 none found; boundary collaborators (TreasuryApi, marketApi, message, scheduler) are correctly mocked while real values (accountIds, amounts, memos, tax, upsert counts, coordinates) are asserted; EconomyServiceImplTest and MarketResyncServiceImplTest verified would fail if settle/resync logic were deleted",
+        "Coverage of testable surface: enumerated all 20 service impls (each has a test), 15 utils (each has a test), 2 mappers + 2 typehandlers (UNTESTED \u2014 finding 3), model classes (all tested)",
+        "Mapper DB testing: confirmed mappers use SQLite (users.db/items.db), not MariaDB; no Testcontainers, no H2, no in-process SQLite test \u2014 mappers exercised only via hand-written Fake mappers",
+        "Regression locks: PartialFillCalculatorTest (40 tests) covers round-to-zero, stack overflow, partial-fill boundaries; EconomyServiceImplTest covers direct/business/system settle paths and tax edges",
+        "Test quality: assertions on real values (isNotNull always followed by value asserts); no @Order/TestMethodOrder order-dependence; one Thread.sleep timing test (finding 1)",
+        "Framework seams: services use Bukkit statics resolved via MockBukkit (26 tests extend ServerTest) so all are instantiable in tests; no custom ParameterResolvers exist (NexoIntegration implements CustomItemResolver, not a hibernia ParameterResolver)",
+        "Startup wiring: confirmed NO test builds ChestShopModule/injector or calls registerAll() (finding 2)",
+        "Message-key hygiene: extracted all dotted string literals from src/main and cross-checked against messages.properties (126 keys) \u2014 no message key referenced in code is missing from properties (remaining unmatched literals are permission nodes, config paths, filenames, class names)"
+      ],
+      "not_applicable": [
+        "H2-vs-production-dialect mismatch: not applicable \u2014 chestshop persists to SQLite (local files), not the shared MariaDB, and no H2 is used in tests",
+        "double/float currency check: not applicable to testing dimension; EconomyServiceImpl uses BigDecimal (TreasuryApi contract) and PartialFillCalculator uses BigDecimal \u2014 no float currency in the tested surface"
+      ],
+      "sampled_files": [
+        "chestshop/src/test/java/io/paradaux/chestshop/services/impl/EconomyServiceImplTest.java",
+        "chestshop/src/test/java/io/paradaux/chestshop/services/impl/MarketResyncServiceImplTest.java",
+        "chestshop/src/test/java/io/paradaux/chestshop/services/impl/ItemCodeServiceImplTest.java",
+        "chestshop/src/test/java/io/paradaux/chestshop/services/impl/PartialFillCalculatorTest.java",
+        "chestshop/src/test/java/io/paradaux/chestshop/services/impl/AccountServiceTest.java",
+        "chestshop/src/test/java/io/paradaux/chestshop/services/impl/ProtectionServiceImplTest.java",
+        "chestshop/src/test/java/io/paradaux/chestshop/utils/LocationUtilTest.java",
+        "chestshop/src/test/java/io/paradaux/chestshop/utils/NumberUtilTest.java",
+        "chestshop/src/test/java/io/paradaux/chestshop/utils/PriceUtilTest.java",
+        "chestshop/src/test/java/io/paradaux/chestshop/utils/QuantityUtilTest.java",
+        "chestshop/src/test/java/io/paradaux/chestshop/support/ServerTest.java",
+        "chestshop/src/main/java/io/paradaux/chestshop/mappers/typehandlers/UuidStringTypeHandler.java"
+      ]
+    },
+    "raw_count": 3,
+    "kept": 3,
+    "rejected": 0
+  },
+  {
+    "component": "economy-explorer",
+    "dimension": "structure",
+    "summary": {
+      "files_examined": 48,
+      "checks_run": [
+        "Placement: business logic in pages/actions vs services/DAL; persistence isolated to lib/sql; access-control helpers in lib/auth",
+        "DRY: duplicated helper/validation/formatting blocks (rg for flat/flatten, SP_SCHEMA, formatters)",
+        "Naming consistency: viewer/account/balance/firm glossary; itemIcon vs ItemIcon; role terms",
+        "TypeScript type safety: explicit any (rg ': any', 'as any'), non-null assertions (rg), 'as' casts incl 'as Route'/'as never'/'as unknown', tsconfig strict flags, @ts-ignore/@ts-expect-error",
+        "OOP/structure: god files (wc -l on lib/sql, actions, pages), mutable module state (cache l1/inflight maps), public mutable fields, service-locator vs DI",
+        "SQL injection: sql.raw and sql`` interpolation review across lib/sql/*",
+        "Money-as-double: parseFloat/toFixed in lib/format.ts, lib/currency.ts, lib/derived.ts (read-only display context)"
+      ],
+      "not_applicable": [
+        "Java null/Optional contracts, raw generics, unchecked casts, mutable static \u2014 component is TypeScript/Next.js, no Java in scope",
+        "Bukkit types leaking into service/domain \u2014 no Bukkit/Paper in a Next.js read-only explorer",
+        "TreasuryApi.transfer / ledger transfer-engine equivalence \u2014 economy-explorer is strictly read-only against the economy (writes limited to explorer_* RBAC/identity/webhook tables), no money movement"
+      ],
+      "sampled_files": [
+        "lib/cache.ts",
+        "lib/auth/viewer.ts",
+        "lib/auth/requireRole.ts",
+        "lib/auth/requireAdmin.ts",
+        "lib/auth/access.ts",
+        "components/ViewerContext.tsx",
+        "lib/theme.ts",
+        "middleware.ts",
+        "lib/format.ts",
+        "lib/currency.ts",
+        "lib/derived.ts",
+        "lib/actions/admin.ts",
+        "lib/sql/identity.ts",
+        "app/accounts/[accountId]/page.tsx"
+      ]
+    },
+    "raw_count": 2,
+    "kept": 2,
+    "rejected": 0
+  },
+  {
+    "component": "economy-explorer",
+    "dimension": "behaviour",
+    "summary": {
+      "files_examined": 22,
+      "checks_run": [
+        "Conservation: traced all money-move server actions (admin-accounts transfer, admin-firms disband/rename/details, admin rate-limit/api-key, webhooks) \u2014 every one delegates to treasury-rest-api with amount as a string; no direct ledger writes, no mint/burn in the viewer",
+        "No double-spend: viewer never writes balances; all account_balances_mat reads are read-only, no read-modify-write on balances",
+        "Precision: verified lib/db.ts keeps DECIMAL/BIGINT as strings (decimalNumbers:false, bigNumberStrings:false, supportBigNumbers) and every money aggregate is SUMmed in SQL returning strings; found display-only float summation of money in KPIs (reported)",
+        "Failure atomicity: purchase/sale delivery is not implemented in the viewer (read-only market pages); group-capability replacement uses a single explorer DB transaction (lib/services/group.ts)",
+        "Dupe vectors: N/A \u2014 no inventory/GUI/click-event handling in a Next.js read-only viewer",
+        "Idempotency: link-code insert is DB-unique with bounded (5x) retry; no scheduled payouts/vote-reward code in scope; cache is cross-pod single-flight SWR over read-only aggregates",
+        "Identity: all player/firm/account lookups key on BINARY(16) UUID via uuidToBin; LEFT JOIN economy_players yields null names for never-joined/renamed players without NPE",
+        "API/website consistency: money-move amounts pass through as strings; DECIMAL SUMs are exact in SQL; display KPI rollups float-sum money (reported)"
+      ],
+      "not_applicable": [
+        "Dupe vectors (inventory/shop-GUI click paths) \u2014 the viewer has no inventory or click-event handling; ChestShop money movement lives in the chestshop plugin, out of this cell's scope",
+        "Failure atomicity between payment and goods delivery \u2014 no purchase/delivery execution path exists in the read-only viewer; the sole write actions delegate to treasury-rest-api which owns the transaction boundary"
+      ],
+      "sampled_files": [
+        "lib/cache.ts",
+        "lib/audit.ts",
+        "lib/sql/search.ts",
+        "lib/actions/search.ts",
+        "lib/actions/admin.ts",
+        "components/charts/MoneyFlowDiagram.tsx",
+        "lib/derived.ts",
+        "lib/currency.ts"
+      ]
+    },
+    "raw_count": 1,
+    "kept": 1,
+    "rejected": 0
+  },
+  {
+    "component": "economy-explorer",
+    "dimension": "testing",
+    "summary": {
+      "files_examined": 28,
+      "checks_run": [
+        "Enumerated all lib/ modules (services, sql, util, auth, actions, root) + middleware.ts and mapped each to its test presence via grep",
+        "Read every unit test (access, capabilities, floodgate, derived, format, serverIdentity, itemIcon) and the integration suite (sql.test.ts, db.ts) to assess mock discipline and assertion quality",
+        "Mock discipline: integration tests hit a REAL MariaDB with no query mocking; assertions are on real values (balances, gini, names, counts), not mock interactions \u2014 no violations found",
+        "Test quality: no Thread.sleep/setTimeout-based concurrency tests; no order-dependent tests; assertions are on concrete values not just non-null (the two not.toBeNull uses are followed by real-value assertions)",
+        "Testcontainers/H2 dialect check: integration runs against mariadb:11, not H2 \u2014 no dialect mismatch (but the DDL source is a hand-maintained snapshot, see finding 5)",
+        "Regression locks: verified pinning tests exist for the documented historical bugs (PAR-240 Floodgate, PAR-208 proprietor name, PAR-237 gov viewer, ADT-13 my-accounts, the raw-UUID posting HIGH bug)",
+        "Framework seams: verified server-only modules import cleanly under vitest via the server-only stub; identified pure untested seams (ssrf, discord, resolvePlayerUuid, requireRole, requireAdmin)",
+        "Coverage config / CI gate inspection (vitest.config.mts thresholds + economy-explorer-ci.yml + economy-explorer-schema-drift.yml)"
+      ],
+      "not_applicable": [
+        "ParameterResolvers / @Command route-conflict / HiberniaModule.registerAll startup test / messages.properties key cross-check \u2014 these are JVM-plugin (Guice/Hibernia-framework) concerns; economy-explorer is a Next.js read-only app with no such surface",
+        "Currency-as-double check for tests \u2014 money is handled as decimal strings in the DAL and formatted, not stored; no float currency in the tested surface",
+        "Two-engine transfer behaviour-equivalence \u2014 the explorer performs no transfers; it delegates to treasury-rest-api over HTTP (lib/treasury.ts), out of this dimension's testable-logic scope"
+      ],
+      "sampled_files": [
+        "lib/derived.ts",
+        "lib/auth/access.ts",
+        "lib/auth/viewer.ts",
+        "lib/format.ts",
+        "lib/currency.ts",
+        "lib/services/group.ts",
+        "lib/util/ssrf.ts",
+        "lib/util/discord.ts",
+        "lib/treasury.ts",
+        "lib/actions/webhooks.ts",
+        "middleware.ts",
+        "test/e2e/public.spec.ts",
+        "test/integration/schema.sql"
+      ]
+    },
+    "raw_count": 7,
+    "kept": 7,
+    "rejected": 0
+  },
+  {
+    "component": "global",
+    "dimension": "build",
+    "summary": {
+      "files_examined": 22,
+      "checks_run": [
+        "Shared build logic: convention plugins vs copy-pasted subprojects blocks (jvm-conventions, paper-server-conventions, publishing block)",
+        "JDK 21 everywhere via convention plugin vs inline toolchain/sourceCompatibility remnants",
+        "Single source of truth for versions: libs.versions.toml, hardcoded version strings, project version in one place",
+        "Zero-warnings reasoning from build scripts (deprecated APIs, sourceCompatibility)",
+        "Publishing: maven-publish + sources/javadoc jars + POM metadata + repo URL + env credentials + consumers resolve via repo not includeBuild",
+        "Coverage in CI: JaCoCo + JS coverage wired into workflows with report + gate",
+        "Gradle wrapper currency/consistency + wrapper-validation in CI"
+      ],
+      "not_applicable": [
+        "JS coverage-not-collected: economy-explorer-ci.yml runs `npm run coverage` (vitest --coverage) with typecheck+lint on a real MariaDB service, so the JS coverage requirement is satisfied \u2014 no finding.",
+        "Wrapper currency: gradle-wrapper.properties pins 9.6.0-all with validateDistributionUrl=true and the wrapper jar is committed and checksum-validated in several workflows; the only gradlew diff in the tree is a 100644->100755 mode change (making it executable), not a content change, so wrapper currency itself is clean.",
+        "includeBuild hacks in CI for consumers: cross-project deps are project(...) wiring in one settings.gradle.kts (not includeBuild substitution); build-logic is the only includeBuild and it only supplies convention plugins \u2014 no consumer resolves a sibling via includeBuild, so this sub-check passes.",
+        "hardcoded version strings in realty/ and hibernia-framework/ build files: excluded as submodules per scope."
+      ],
+      "sampled_files": [
+        "build.gradle.kts",
+        "settings.gradle.kts",
+        "gradle/libs.versions.toml",
+        "gradle/wrapper/gradle-wrapper.properties",
+        "build-logic/build.gradle.kts",
+        "build-logic/settings.gradle.kts",
+        "build-logic/src/main/kotlin/io.paradaux.jvm-conventions.gradle.kts",
+        "build-logic/src/main/kotlin/io.paradaux.paper-server-conventions.gradle.kts",
+        "common/build.gradle.kts",
+        "treasury/build.gradle.kts",
+        "treasury/treasury-api/build.gradle.kts",
+        "business/build.gradle.kts",
+        "business/business-api/build.gradle.kts",
+        "treasury-api-plugin/build.gradle.kts",
+        "treasury-rest-api/build.gradle.kts",
+        "chestshop/build.gradle.kts",
+        "economy-flyway/build.gradle.kts",
+        ".github/workflows/treasury-test.yml",
+        ".github/workflows/business-test.yml",
+        ".github/workflows/chestshop-test.yml",
+        ".github/workflows/treasury-rest-api-test.yml",
+        ".github/workflows/treasury-rest-api-docker.yml",
+        ".github/workflows/treasury-publish-api.yml",
+        ".github/workflows/business-publish-api.yml",
+        ".github/workflows/economy-explorer-ci.yml",
+        ".github/workflows/treasury-api-plugin-build.yml"
+      ]
+    },
+    "raw_count": 5,
+    "kept": 5,
+    "rejected": 0
+  },
+  {
+    "component": "global",
+    "dimension": "infra",
+    "summary": {
+      "files_examined": 18,
+      "checks_run": [
+        "Base image pinning (tag/digest, EOL, latest) for treasury-rest-api and economy-explorer Dockerfiles",
+        "Node LTS currency and version consistency across Dockerfile and all workflows",
+        "Multi-stage build correctness (JDK/JRE split, standalone runner), non-root user, USER directive",
+        ".dockerignore presence and effectiveness (both images)",
+        "Layer ordering (deps resolution cached before source copy) in both Dockerfiles",
+        "Secrets in layers/ARGs (checked for hardcoded creds, ARG-injected secrets) \u2014 none found; app.jar not committed",
+        "HEALTHCHECK correctness: probe tool availability and target port vs actual server/management port",
+        "Harbor build/push triggers, immutable sha + mutable semver tags, registry auth via secrets",
+        "Image vulnerability scanning presence in push workflows",
+        "Workflow permissions least-privilege and Gradle wrapper validation",
+        "Flyway deploy workflow gating (confirm inputs, environment-scoped secrets, clean disabled)",
+        "next.config.ts headers / standalone output / powered-by header"
+      ],
+      "not_applicable": [
+        "Compose/runtime resource limits: no docker-compose or k8s manifests are within this cell's scope (server/ is local-dev only, k8s overlays live outside the repo per workflow comments) \u2014 resource limits cannot be audited from files in scope",
+        "treasury-api-plugin/business/chestshop/treasury plugin Dockerfiles: none exist (shaded jars, not containerized) \u2014 no image to audit"
+      ],
+      "sampled_files": [
+        "economy-explorer/Dockerfile",
+        "treasury-rest-api/Dockerfile",
+        "economy-explorer/.dockerignore",
+        "treasury-rest-api/.dockerignore",
+        "economy-explorer/next.config.ts",
+        ".github/workflows/treasury-rest-api-docker.yml",
+        ".github/workflows/economy-explorer-ci.yml",
+        ".github/workflows/treasury-rest-api-test.yml",
+        ".github/workflows/economy-explorer-schema-drift.yml",
+        ".github/workflows/economy-flyway-migrate.yml",
+        ".github/workflows/economy-flyway-info.yml",
+        ".github/workflows/economy-flyway-staging-clean.yml",
+        ".github/workflows/treasury-build.yml",
+        ".github/workflows/business-build.yml",
+        ".github/workflows/chestshop-build.yml",
+        ".github/workflows/treasury-publish-api.yml",
+        ".github/workflows/business-publish-api.yml",
+        ".github/workflows/treasury-api-plugin-build.yml",
+        "treasury-rest-api/src/main/resources/application-prod.yaml",
+        "treasury-rest-api/src/main/resources/application-uat.yaml",
+        "treasury-rest-api/src/main/resources/application.yaml"
+      ]
+    },
+    "raw_count": 6,
+    "kept": 6,
+    "rejected": 0
+  },
+  {
+    "component": "global",
+    "dimension": "dependencies",
+    "summary": {
+      "files_examined": 18,
+      "checks_run": [
+        "Read the version catalog (gradle/libs.versions.toml) and assessed each library/plugin version for currency and known CVEs (paper, hibernia-framework, luckperms, log4j 2.26.0, guice 7.0.0, hikari 7.1.0, mariadb 3.5.9, mybatis 3.5.19, jjwt 0.13.0, lombok, slf4j, junit 6.1.0, mockito 5.23.0, mariadb4j, flyway 12.9.0)",
+        "Read every in-scope build.gradle.kts (root, treasury, business, treasury-api-plugin, chestshop, treasury-rest-api, common, economy-flyway, build-logic, treasury-api, business-api) plus both convention plugins and settings.gradle.kts",
+        "Assessed root plugin pins: com.gradleup.shadow 9.0.2, org.springframework.boot 4.1.0, io.spring.dependency-management 1.1.7, org.flywaydb.flyway 12.9.0",
+        "Inspected inline module deps: rest-api Spring Boot 4 starters, bucket4j_jdk17 8.19.0 (x4), lettuce/caffeine BOM-managed, springdoc 3.0.3, chestshop worldedit/worldguard/griefprevention/nexo/mockbukkit soft-deps and WorldEdit 7.3.9 force-pin",
+        "Extracted resolved versions from economy-explorer/package-lock.json and ops/gov-export/package-lock.json (next 15.5.18, react 19.2.6, next-auth 5.0.0-beta.31, mysql2 3.22.4/3.22.5, ioredis 5.11.1, recharts 2.15.4, vitest 2.1.9, vite 5.4.21, esbuild 0.21.5) and cross-checked against known advisories",
+        "Flagged dev-only vs production classification of esbuild via lockfile dev flags",
+        "Checked for duplicate deps serving the same purpose (JSON: single jackson via jjwt/spring; DB: single mysql2 in JS, single mariadb-java-client in JVM; rate-limit cache: caffeine single) and for unused-declared deps (reflections confirmed as a framework transitive pin via cached hibernia-framework pom, not unused)",
+        "Verified key JVM versions resolve in the local Gradle cache (jjwt 0.13.0, log4j-core 2.26.0, mariadb 3.5.9, mybatis-spring-boot-starter 4.0.1, spring-boot-starter-webmvc)"
+      ],
+      "not_applicable": [
+        "Network vulnerability scanners / npm audit / OWASP dependency-check \u2014 no network access in this environment; reasoned from resolved lockfile versions and recognised CVEs instead",
+        "server/bot dependency graph \u2014 the manifest declares zero dependencies and has no lockfile (reported as a stub nit)"
+      ],
+      "sampled_files": [
+        "gradle/libs.versions.toml",
+        "build.gradle.kts",
+        "treasury/build.gradle.kts",
+        "business/build.gradle.kts",
+        "treasury-api-plugin/build.gradle.kts",
+        "treasury-rest-api/build.gradle.kts",
+        "chestshop/build.gradle.kts",
+        "common/build.gradle.kts",
+        "economy-flyway/build.gradle.kts",
+        "build-logic/build.gradle.kts",
+        "build-logic/src/main/kotlin/io.paradaux.jvm-conventions.gradle.kts",
+        "build-logic/src/main/kotlin/io.paradaux.paper-server-conventions.gradle.kts",
+        "treasury/treasury-api/build.gradle.kts",
+        "business/business-api/build.gradle.kts",
+        "settings.gradle.kts",
+        "economy-explorer/package.json",
+        "economy-explorer/package-lock.json",
+        "ops/gov-export/package.json",
+        "ops/gov-export/package-lock.json",
+        "server/bot/package.json"
+      ]
+    },
+    "raw_count": 5,
+    "kept": 5,
+    "rejected": 0
+  },
+  {
+    "component": "global",
+    "dimension": "database",
+    "summary": {
+      "files_examined": 27,
+      "checks_run": [
+        "Replayed all 27 Flyway migrations V1..V27 in order and reconstructed the final schema",
+        "Audited each migration for destructive-without-guard / would-fail-on-nonempty-table operations (V4/V18/V19 DROPs, V8 ADD UNIQUE, V16 backfill+FK, V20 orphan-cleanup+FK, V23 token purge, V27 SYSTEM normalize)",
+        "Money-type check: grepped all in-scope mappers and the Kysely db.generated.ts for double/float on currency columns \u2014 all money is DECIMAL(19,2)/(19,4) BIGINT-adjacent or Kysely Decimal",
+        "UUID storage check: all UUID columns are BINARY(16), converted via TypeHandler (treasury/rest-api) or uuid_to_bin/bin_to_uuid SQL funcs (business)",
+        "Charset/collation: every table is utf8mb4 / utf8mb4_unicode_ci InnoDB",
+        "FK / ON DELETE discipline: verified financial tables (ledger_postings->accounts RESTRICT, government_fines RESTRICT, firm_accounts RESTRICT) survive account deletion; CASCADE only on non-financial child/access rows; chestshop analytics FKs are SET NULL by design",
+        "Transaction-history append-only: enumerated every UPDATE target across all scoped mappers \u2014 no UPDATE of ledger_postings/ledger_txns/account_balances_mat exists; balances written solely by trg_postings_ai; TransferService confirmed trigger-driven",
+        "Index coverage: extracted WHERE/JOIN/ORDER BY from ledger, account, chestshop-shop/sale, firm, membership, webhook mappers and mapped each to existing indexes",
+        "Membership ON DUPLICATE KEY UPDATE level-preservation logic checked for silent downgrade bugs (none)"
+      ],
+      "not_applicable": [
+        "realty mappers \u2014 realty is a git submodule, explicitly out of scope"
+      ],
+      "sampled_files": [
+        "treasury/src/main/java/io/paradaux/treasury/mappers/MembershipMapper.java",
+        "treasury/src/main/java/io/paradaux/treasury/mappers/EconomyPlayerMapper.java",
+        "treasury-api-plugin/src/main/java/io/paradaux/treasuryapi/mappers/ExplorerGroupMapper.java",
+        "business/src/main/java/io/paradaux/business/mappers/FirmStaffMapper.java",
+        "treasury-rest-api/src/main/java/io/paradaux/treasuryrestapi/mapper/WebhookDeliveryMapper.java",
+        "treasury/src/main/java/io/paradaux/treasury/mappers/AccountMapper.java",
+        "treasury/src/main/java/io/paradaux/treasury/mappers/ShopQueryMapper.java",
+        "treasury/src/main/java/io/paradaux/treasury/mappers/GovernmentFineMapper.java",
+        "economy-explorer/lib/sql/market.ts",
+        "economy-explorer/lib/db.generated.ts"
+      ]
+    },
+    "raw_count": 3,
+    "kept": 3,
+    "rejected": 0
+  }
+]
