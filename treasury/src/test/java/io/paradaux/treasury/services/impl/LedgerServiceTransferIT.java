@@ -621,9 +621,16 @@ class LedgerServiceTransferIT extends IntegrationTestBase {
     void sweepAll_movesTheEntireLiveBalance_conservingValue() {
         Account firmAcc = createPersonalAccount(0);
         Account payout  = createPersonalAccount(0);
-        // Fund the firm account through the ledger so the balance is the real,
-        // trigger-maintained account_balances_mat value (not a hand-set row).
-        ledgerService.adminGive(firmAcc.getOwnerUuid(), new BigDecimal("737.50"), "seed", UUID.randomUUID());
+        Account funder  = createPersonalAccount(1_000);
+        // Fund the firm account with a plain ledger transfer (NOT adminGive — adminGive
+        // resolves the owner via resolveOrCreatePersonal, which also seeds the 10_000
+        // starting balance and would mask the swept amount). This keeps the firm balance
+        // an exact, trigger-maintained 737.50.
+        ledgerService.transfer(new TransferRequest(
+                funder.getAccountId(), firmAcc.getAccountId(),
+                new BigDecimal("737.50"), "seed",
+                TreasuryConstants.VIRTUAL_TREASURY_INITIATOR, null,
+                TreasuryConstants.TREASURY_PLUGIN_NAME, null));
         BigDecimal before = balanceOf(firmAcc).add(balanceOf(payout));
 
         java.util.OptionalLong txn = ledgerService.sweepAll(

@@ -297,25 +297,9 @@ export interface FirmRolePermission {
   roleId: number;
 }
 
-export interface FirmSale {
-  buyerUuidBin: Generated<Buffer | null>;
-  firmId: number;
-  itemId: string;
-  itemName: string;
-  occurredAt: Date;
-  price: Decimal;
-  qty: number;
-  saleId: Generated<number>;
-  sourceMsgId: Generated<string | null>;
-  world: string;
-  x: number;
-  y: number;
-  z: number;
-}
-
 export interface FirmTransferRequests {
   activeOnly: Generated<number | null>;
-  actorUuidBin: Buffer | null;
+  actorUuidBin: Generated<Buffer | null>;
   createdAt: Generated<Date>;
   expiresAt: Date;
   firmId: number;
@@ -457,7 +441,6 @@ export interface DB {
   firmProperties: FirmProperties;
   firmRole: FirmRole;
   firmRolePermission: FirmRolePermission;
-  firmSale: FirmSale;
   firmTransferRequests: FirmTransferRequests;
   flywaySchemaHistory: FlywaySchemaHistory;
   governmentFines: GovernmentFines;
