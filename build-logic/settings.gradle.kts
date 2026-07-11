@@ -11,6 +11,15 @@ dependencyResolutionManagement {
         gradlePluginPortal()
         mavenCentral()
     }
+
+    // Reuse the root's version catalog inside this included build so plugin
+    // versions (e.g. shadow) are defined exactly once. An included build does
+    // not inherit the root catalog automatically, so import the same TOML file.
+    versionCatalogs {
+        create("libs") {
+            from(files("../gradle/libs.versions.toml"))
+        }
+    }
 }
 
 rootProject.name = "build-logic"

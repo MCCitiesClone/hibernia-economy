@@ -11,7 +11,10 @@
 // =============================================================================
 
 plugins {
-    id("com.gradleup.shadow") version "9.0.2" apply false
+    // Shadow version is defined once in the catalog (gradle/libs.versions.toml,
+    // [plugins].shadow) and shared with the build-logic classpath dep so the two
+    // never drift. See build-logic/build.gradle.kts.
+    alias(libs.plugins.shadow) apply false
     id("org.springframework.boot") version "4.1.0" apply false
     id("io.spring.dependency-management") version "1.1.7" apply false
     // NOTE: org.flywaydb.flyway is intentionally NOT centralized here. It must

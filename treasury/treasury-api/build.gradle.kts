@@ -1,15 +1,14 @@
 plugins {
     `java-library`
     `maven-publish`
+    id("io.paradaux.jvm-conventions") // Java 21 toolchain + UTF-8 / release=21 JavaCompile
+    id("io.paradaux.published-library-conventions") // publish target: repo.paradaux.io + REPO_USER/REPO_PASS
 }
 
 group = "io.paradaux"
 version = rootProject.version
 
 java {
-    toolchain {
-        languageVersion.set(JavaLanguageVersion.of(21))
-    }
     withSourcesJar()
     withJavadocJar() // publish a -javadoc artifact for this documented public API (ADT no-javadoc-jar-published)
 }
@@ -17,11 +16,6 @@ java {
 tasks.withType<Jar>().configureEach {
     isPreserveFileTimestamps = false
     isReproducibleFileOrder = true
-}
-
-tasks.withType<JavaCompile> {
-    options.encoding = "UTF-8"
-    options.release.set(21)
 }
 
 tasks.withType<Javadoc> {

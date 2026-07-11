@@ -18,7 +18,8 @@ repositories {
 
 dependencies {
     // Needed so the paper-server convention plugin can reference the ShadowJar
-    // task type and configure it. The version matches the one centralized in the
-    // root build's `plugins { … apply false }` block (com.gradleup.shadow 9.0.2).
-    implementation("com.gradleup.shadow:shadow-gradle-plugin:9.0.2")
+    // task type and configure it. The version comes from the shared version
+    // catalog (gradle/libs.versions.toml, shadow = "…"), the same entry the root
+    // build applies via `alias(libs.plugins.shadow)`, so the two never drift.
+    implementation(libs.shadow.lib)
 }

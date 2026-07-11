@@ -28,6 +28,10 @@ jjwt = "0.13.0"
 lombok = "1.18.46"
 slf4j = "2.0.18"
 
+# Gradle plugins (referenced from the root build via `alias(libs.plugins.*)` and,
+# for the shadow classpath dep, from build-logic — see [plugins] below).
+shadow = "9.0.2"
+
 # Test
 junit = "6.1.0"
 assertj = "3.27.7"
@@ -70,3 +74,12 @@ mockito-junit-jupiter = { module = "org.mockito:mockito-junit-jupiter", version.
 mariadb4j = { module = "ch.vorburger.mariaDB4j:mariaDB4j", version.ref = "mariadb4j" }
 flyway-core = { module = "org.flywaydb:flyway-core", version.ref = "flyway" }
 flyway-mysql = { module = "org.flywaydb:flyway-mysql", version.ref = "flyway" }
+
+# The shadow plugin coordinate, so build-logic can build the shadow plugin
+# classpath dep from the same version the root build applies (single source of
+# truth). build-logic references it as `libs.plugins.shadow.get().pluginId` +
+# `.version`; the root build as `alias(libs.plugins.shadow)`.
+shadow-lib = { module = "com.gradleup.shadow:shadow-gradle-plugin", version.ref = "shadow" }
+
+[plugins]
+shadow = { id = "com.gradleup.shadow", version.ref = "shadow" }

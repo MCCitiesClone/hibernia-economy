@@ -189,27 +189,6 @@ jacoco {
     toolVersion = libs.versions.jacoco.get()
 }
 
-subprojects {
-    plugins.withId("maven-publish") {
-        extensions.configure<PublishingExtension>("publishing") {
-            repositories {
-                maven {
-                    val isSnapshot = project.version.toString().endsWith("-SNAPSHOT")
-
-                    name = if (isSnapshot) "Snapshots" else "Releases"
-                    url = uri(
-                        if (isSnapshot)
-                            "https://repo.paradaux.io/snapshots"
-                        else
-                            "https://repo.paradaux.io/releases"
-                    )
-
-                    credentials {
-                        username = System.getenv("REPO_USER")
-                        password = System.getenv("REPO_PASS")
-                    }
-                }
-            }
-        }
-    }
-}
+// The publish repository target (snapshot/release URL + REPO_USER/REPO_PASS creds)
+// for treasury-api now lives in the io.paradaux.published-library-conventions
+// plugin, applied by treasury/treasury-api itself (global/build/0004).

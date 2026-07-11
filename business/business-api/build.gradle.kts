@@ -2,6 +2,8 @@ plugins {
     `java-library`
     `maven-publish`
     jacoco
+    id("io.paradaux.jvm-conventions") // Java 21 toolchain + UTF-8 / release=21 JavaCompile
+    id("io.paradaux.published-library-conventions") // publish target: repo.paradaux.io + REPO_USER/REPO_PASS
 }
 
 group = "io.paradaux"
@@ -9,9 +11,6 @@ version = rootProject.version
 description = "Business API"
 
 java {
-    toolchain {
-        languageVersion.set(JavaLanguageVersion.of(21))
-    }
     withSourcesJar()
     withJavadocJar() // publish a -javadoc artifact for this documented public API (ADT no-javadoc-jar-or-compat-policy)
 }
