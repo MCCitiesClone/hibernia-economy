@@ -9,6 +9,7 @@ import io.paradaux.hibernia.framework.guice.HiberniaModule;
 import io.paradaux.treasury.commands.resolvers.PayTargetResolver;
 import io.paradaux.treasury.commands.*;
 import io.paradaux.treasury.events.FirstPlayerJoinEvent;
+import io.paradaux.treasury.events.OnlinePlayerRosterListener;
 import io.paradaux.treasury.events.PlayerLoginListener;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -79,7 +80,8 @@ public class Treasury extends JavaPlugin {
                 .resolvers(PayTargetResolver.class)
                 .listeners(
                         FirstPlayerJoinEvent.class,
-                        PlayerLoginListener.class)
+                        PlayerLoginListener.class,
+                        OnlinePlayerRosterListener.class)
                 .build();
 
         // Apply the configured log level before anything else spams the console.
