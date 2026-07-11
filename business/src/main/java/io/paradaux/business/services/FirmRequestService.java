@@ -16,4 +16,16 @@ public interface FirmRequestService {
     UUID completeTransferProprietorship(String firmName, UUID newProprietorId);
     UUID rejectTransferProprietorship(String firmName, UUID newProprietorId, UUID actorId);
 
+    /**
+     * Expires stale pending transfer requests and employment invites in one pass.
+     * Owns the mapper access so the scheduled {@code ExpireRequestsJob} doesn't
+     * reach past the service layer into the mapper (plugin-architecture/0005).
+     *
+     * @return a tally of how many of each were expired
+     */
+    ExpiryResult expireStale();
+
+    /** Outcome of an {@link #expireStale()} pass. */
+    record ExpiryResult(int transfers, int invites) {}
+
 }

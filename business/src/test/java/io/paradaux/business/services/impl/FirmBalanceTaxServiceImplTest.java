@@ -5,8 +5,10 @@ import io.paradaux.business.model.Firm;
 import io.paradaux.business.model.config.BalanceTaxConfiguration;
 import io.paradaux.business.services.FirmAccountService;
 import io.paradaux.business.services.FirmBalanceTaxService.BalanceTaxCycleResult;
+import io.paradaux.business.services.FirmBalanceTaxService.WeeklyTaxEstimate;
 import io.paradaux.business.services.FirmPropertyService;
 import io.paradaux.business.services.FirmService;
+import io.paradaux.business.services.FirmTransactionService;
 import io.paradaux.treasury.api.TaxApi;
 import io.paradaux.treasury.api.TreasuryApi;
 import io.paradaux.treasury.event.TaxCycleEvent;
@@ -43,6 +45,7 @@ class FirmBalanceTaxServiceImplTest {
     @Mock FirmService firmService;
     @Mock FirmPropertyService firmPropertyService;
     @Mock FirmAccountService firmAccountService;
+    @Mock FirmTransactionService firmTransactionService;
     @Mock TreasuryApi treasury;
     @Mock Business plugin;
     @Mock TaxCycleEvent event;
@@ -54,7 +57,7 @@ class FirmBalanceTaxServiceImplTest {
     void setUp() {
         when(plugin.getLogger()).thenReturn(Logger.getLogger("test"));
         svc = new FirmBalanceTaxServiceImpl(config, firmService, firmPropertyService,
-                firmAccountService, treasury, plugin);
+                firmAccountService, firmTransactionService, treasury, plugin);
 
         // By default the configured destination account resolves and the event
         // exposes the tax API + a stable period start. Individual tests override.
@@ -241,5 +244,31 @@ class FirmBalanceTaxServiceImplTest {
         BalanceTaxCycleResult result = svc.runWeeklyCycle(event);
 
         assertThat(result).isEqualTo(new BalanceTaxCycleResult(1, 1, 1));
+    }
+
+    // ---------- estimateWeeklyTax (plugin-architecture/0006) ----------
+
+    @Test
+    void estimateWeeklyTax_returnsBalanceRateAndRoundedTax() {
+        when(firmTransactionService.getAggregateBalance(1)).thenReturn(new BigDecimal("1000.00"));
+        when(config.getWeeklyRate(new BigDecimal("1000.00"))).thenReturn(new BigDecimal("0.025"));
+
+        WeeklyTaxEstimate estimate = svc.estimateWeeklyTax(1);
+
+        assertThat(estimate.totalBalance()).isEqualByComparingTo("1000.00");
+        assertThat(estimate.rate()).isEqualByComparingTo("0.025");
+        // 1000.00 × 0.025 = 25.00, settled at 2dp like the live collection path.
+        assertThat(estimate.estimatedTax()).isEqualByComparingTo("25.00");
+    }
+
+    @Test
+    void estimateWeeklyTax_roundsHalfUpToCurrencyPrecision() {
+        when(firmTransactionService.getAggregateBalance(1)).thenReturn(new BigDecimal("333.33"));
+        when(config.getWeeklyRate(new BigDecimal("333.33"))).thenReturn(new BigDecimal("0.015"));
+
+        WeeklyTaxEstimate estimate = svc.estimateWeeklyTax(1);
+
+        // 333.33 × 0.015 = 4.99995 → 5.00 at HALF_UP 2dp.
+        assertThat(estimate.estimatedTax()).isEqualByComparingTo("5.00");
     }
 }

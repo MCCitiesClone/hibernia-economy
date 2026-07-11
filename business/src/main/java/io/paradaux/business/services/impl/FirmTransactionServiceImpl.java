@@ -2,7 +2,11 @@ package io.paradaux.business.services.impl;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import io.paradaux.business.exceptions.NoFirmAccountException;
+import io.paradaux.hibernia.framework.exceptions.BadCommandException;
+import io.paradaux.hibernia.framework.exceptions.ConflictException;
+import io.paradaux.hibernia.framework.exceptions.ExceedsLimitException;
+import io.paradaux.hibernia.framework.exceptions.NoPermissionException;
+import io.paradaux.hibernia.framework.exceptions.NotFoundException;
 import io.paradaux.business.model.Firm;
 import io.paradaux.business.model.FirmPlayer;
 import io.paradaux.business.services.FirmPlayerService;
@@ -27,6 +31,20 @@ import java.util.UUID;
 
 @Singleton
 public class FirmTransactionServiceImpl implements FirmTransactionService {
+
+    // User-facing failures are signalled with the framework's semantic exceptions
+    // (plugin-architecture/0001); each carries a messages.properties key so the
+    // framework's ErrorRenderer resolves the player text in the sender's locale.
+    // Handlers no longer catch-and-hand-format (plugin-architecture/0002).
+    private static final String KEY_INVALID_AMOUNT = "business.finance.invalid-amount";
+    private static final String KEY_INSUFFICIENT_PERSONAL = "business.finance.insufficient-personal";
+    private static final String KEY_INSUFFICIENT_BUSINESS = "business.finance.insufficient-business";
+    private static final String KEY_NO_PERMISSION = "business.general.no-permission";
+    private static final String KEY_NOT_AUTHORIZER = "business.finance.not-authorizer";
+    private static final String KEY_NO_ACCOUNT = "business.finance.no-account";
+    private static final String KEY_FOREIGN_ACCOUNT = "business.finance.foreign-account";
+    private static final String KEY_ARCHIVED = "business.finance.archived";
+    private static final String KEY_SAME_FIRM = "business.finance.pay.same-firm";
 
     private final FirmService firms;
     private final TreasuryApi treasury;
@@ -72,18 +90,18 @@ public class FirmTransactionServiceImpl implements FirmTransactionService {
     @Override
     public long deposit(Integer firmId, UUID playerUuid, BigDecimal amount, String memo) {
         if (amount.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new IllegalArgumentException("Amount must be positive.");
+            throw new BadCommandException(KEY_INVALID_AMOUNT);
         }
 
         int businessAccountId = resolveAccountId(firmId);
         Account personal = treasury.resolveOrCreatePersonal(playerUuid);
 
         if (!treasury.hasFunds(personal.getAccountId(), amount)) {
-            throw new IllegalStateException("Insufficient personal funds.");
+            throw new ExceedsLimitException(KEY_INSUFFICIENT_PERSONAL);
         }
 
         if (!treasury.canAccessAccount(playerUuid, businessAccountId)) {
-            throw new SecurityException("You don't have access to this business account.");
+            throw new NoPermissionException(KEY_NO_PERMISSION);
         }
 
         TransferRequest req = new TransferRequest(
@@ -134,7 +152,7 @@ public class FirmTransactionServiceImpl implements FirmTransactionService {
     @Override
     public long withdraw(Integer firmId, UUID playerUuid, BigDecimal amount) {
         if (amount.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new IllegalArgumentException("Amount must be positive.");
+            throw new BadCommandException(KEY_INVALID_AMOUNT);
         }
 
         int businessAccountId = resolveAccountId(firmId);
@@ -142,11 +160,11 @@ public class FirmTransactionServiceImpl implements FirmTransactionService {
         Account personal = treasury.resolveOrCreatePersonal(playerUuid);
 
         if (!treasury.canAccessAccount(playerUuid, businessAccountId)) {
-            throw new SecurityException("You don't have access to this business account.");
+            throw new NoPermissionException(KEY_NO_PERMISSION);
         }
 
         if (!treasury.hasFunds(businessAccountId, amount)) {
-            throw new IllegalStateException("Insufficient business funds.");
+            throw new ExceedsLimitException(KEY_INSUFFICIENT_BUSINESS);
         }
 
         // If the business account requires authorization, verify the player is an authorizer
@@ -156,7 +174,7 @@ public class FirmTransactionServiceImpl implements FirmTransactionService {
             boolean isAuth = authorizers.stream()
                     .anyMatch(a -> a.getMemberUuid().equals(playerUuid));
             if (!isAuth) {
-                throw new SecurityException("You are not an authorizer for this business account.");
+                throw new NoPermissionException(KEY_NOT_AUTHORIZER);
             }
             authorizer = playerUuid;
         }
@@ -184,7 +202,7 @@ public class FirmTransactionServiceImpl implements FirmTransactionService {
         // total balance of zero. Returning zero rather than throwing keeps read paths
         // (/firm info on a defunct firm, the disband prompt, the public BusinessApi) from
         // crashing; deposit/withdraw still surface the no-account condition via
-        // resolveAccountId's NoFirmAccountException.
+        // resolveAccountId's no-account NotFoundException.
         // One batch balance read instead of one getBalanceByAccountId per account (ADT-36).
         BigDecimal total = BigDecimal.ZERO;
         for (BigDecimal balance : treasury.getBalancesByIds(accountIds).values()) {
@@ -263,7 +281,7 @@ public class FirmTransactionServiceImpl implements FirmTransactionService {
     private int resolveAccountId(Integer firmId) {
         Firm firm = firms.getFirmById(firmId); // ADT-99: direct by-id, no String round-trip
         if (firm == null) {
-            throw new IllegalArgumentException("Firm not found: " + firmId);
+            throw new NotFoundException("business.firm.not-found", "firm", firmId);
         }
 
         // A default is only usable if the firm still owns that account. Archiving an
@@ -280,7 +298,10 @@ public class FirmTransactionServiceImpl implements FirmTransactionService {
         // returned by getAnyAccountId is a live (non-removed) firm account.
         Integer survivor = firmAccounts.getAnyAccountId(firmId);
         if (survivor == null) {
-            throw new NoFirmAccountException("Firm has no treasury account.");
+            // Distinct semantic exception with its own key so deposit/pay-in report the
+            // real cause ("no usable account") instead of misreporting insufficient
+            // personal funds (behaviour/0001).
+            throw new NotFoundException(KEY_NO_ACCOUNT);
         }
 
         firms.updateDefaultAccount(firmId, survivor);
@@ -289,7 +310,7 @@ public class FirmTransactionServiceImpl implements FirmTransactionService {
 
     private void validateAccountBelongsToFirm(Integer firmId, Integer accountId) {
         if (!firmAccounts.isFirmAccount(firmId, accountId)) {
-            throw new IllegalArgumentException("Account " + accountId + " does not belong to firm " + firmId);
+            throw new BadCommandException(KEY_FOREIGN_ACCOUNT);
         }
     }
 
@@ -319,22 +340,22 @@ public class FirmTransactionServiceImpl implements FirmTransactionService {
         validateAccountBelongsToFirm(firmId, accountId);
 
         if (amount.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new IllegalArgumentException("Amount must be positive.");
+            throw new BadCommandException(KEY_INVALID_AMOUNT);
         }
 
         Account businessAccount = treasury.getAccountById(accountId);
         if (businessAccount != null && businessAccount.isArchived()) {
-            throw new IllegalStateException("Cannot deposit into an archived account.");
+            throw new ConflictException(KEY_ARCHIVED);
         }
 
         Account personal = treasury.resolveOrCreatePersonal(playerUuid);
 
         if (!treasury.hasFunds(personal.getAccountId(), amount)) {
-            throw new IllegalStateException("Insufficient personal funds.");
+            throw new ExceedsLimitException(KEY_INSUFFICIENT_PERSONAL);
         }
 
         if (!treasury.canAccessAccount(playerUuid, accountId)) {
-            throw new SecurityException("You don't have access to this business account.");
+            throw new NoPermissionException(KEY_NO_PERMISSION);
         }
 
         TransferRequest req = new TransferRequest(
@@ -356,18 +377,18 @@ public class FirmTransactionServiceImpl implements FirmTransactionService {
         validateAccountBelongsToFirm(firmId, accountId);
 
         if (amount.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new IllegalArgumentException("Amount must be positive.");
+            throw new BadCommandException(KEY_INVALID_AMOUNT);
         }
 
         Account businessAccount = treasury.getAccountById(accountId);
         Account personal = treasury.resolveOrCreatePersonal(playerUuid);
 
         if (!treasury.canAccessAccount(playerUuid, accountId)) {
-            throw new SecurityException("You don't have access to this business account.");
+            throw new NoPermissionException(KEY_NO_PERMISSION);
         }
 
         if (!treasury.hasFunds(accountId, amount)) {
-            throw new IllegalStateException("Insufficient business funds.");
+            throw new ExceedsLimitException(KEY_INSUFFICIENT_BUSINESS);
         }
 
         UUID authorizer = null;
@@ -376,7 +397,7 @@ public class FirmTransactionServiceImpl implements FirmTransactionService {
             boolean isAuth = authorizers.stream()
                     .anyMatch(a -> a.getMemberUuid().equals(playerUuid));
             if (!isAuth) {
-                throw new SecurityException("You are not an authorizer for this business account.");
+                throw new NoPermissionException(KEY_NOT_AUTHORIZER);
             }
             authorizer = playerUuid;
         }
@@ -437,7 +458,7 @@ public class FirmTransactionServiceImpl implements FirmTransactionService {
         int sourceAccountId = resolveAccountId(sourceFirmId);
         int destAccountId = resolveAccountId(targetFirmId);
         if (sourceAccountId == destAccountId) {
-            throw new IllegalArgumentException("Source and destination accounts are the same.");
+            throw new BadCommandException(KEY_SAME_FIRM);
         }
         String base = "Business payment: " + firmName(sourceFirmId) + " -> " + firmName(targetFirmId);
         return payOut(sourceAccountId, destAccountId, actorUuid, amount, reasonWithMemo(base, memo));
@@ -448,7 +469,7 @@ public class FirmTransactionServiceImpl implements FirmTransactionService {
         validateAccountBelongsToFirm(sourceFirmId, sourceAccountId);
         int destAccountId = resolveAccountId(targetFirmId);
         if (sourceAccountId == destAccountId) {
-            throw new IllegalArgumentException("Source and destination accounts are the same.");
+            throw new BadCommandException(KEY_SAME_FIRM);
         }
         return payOut(sourceAccountId, destAccountId, actorUuid, amount,
                 "Business payment: " + firmName(sourceFirmId) + " #" + sourceAccountId + " -> " + firmName(targetFirmId));
@@ -461,17 +482,17 @@ public class FirmTransactionServiceImpl implements FirmTransactionService {
      */
     private long payIn(int destAccountId, UUID payerUuid, BigDecimal amount, String description) {
         if (amount.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new IllegalArgumentException("Amount must be positive.");
+            throw new BadCommandException(KEY_INVALID_AMOUNT);
         }
 
         Account dest = treasury.getAccountById(destAccountId);
         if (dest != null && dest.isArchived()) {
-            throw new IllegalStateException("Cannot pay into an archived account.");
+            throw new ConflictException(KEY_ARCHIVED);
         }
 
         Account personal = treasury.resolveOrCreatePersonal(payerUuid);
         if (!treasury.hasFunds(personal.getAccountId(), amount)) {
-            throw new IllegalStateException("Insufficient personal funds.");
+            throw new ExceedsLimitException(KEY_INSUFFICIENT_PERSONAL);
         }
 
         TransferRequest req = new TransferRequest(
@@ -497,17 +518,17 @@ public class FirmTransactionServiceImpl implements FirmTransactionService {
      */
     private long payOut(int sourceAccountId, int destAccountId, UUID actorUuid, BigDecimal amount, String description) {
         if (amount.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new IllegalArgumentException("Amount must be positive.");
+            throw new BadCommandException(KEY_INVALID_AMOUNT);
         }
 
         Account source = treasury.getAccountById(sourceAccountId);
 
         if (!treasury.canAccessAccount(actorUuid, sourceAccountId)) {
-            throw new SecurityException("You don't have access to this business account.");
+            throw new NoPermissionException(KEY_NO_PERMISSION);
         }
 
         if (!treasury.hasFunds(sourceAccountId, amount)) {
-            throw new IllegalStateException("Insufficient business funds.");
+            throw new ExceedsLimitException(KEY_INSUFFICIENT_BUSINESS);
         }
 
         UUID authorizer = null;
@@ -516,7 +537,7 @@ public class FirmTransactionServiceImpl implements FirmTransactionService {
             boolean isAuth = authorizers.stream()
                     .anyMatch(a -> a.getMemberUuid().equals(actorUuid));
             if (!isAuth) {
-                throw new SecurityException("You are not an authorizer for this business account.");
+                throw new NoPermissionException(KEY_NOT_AUTHORIZER);
             }
             authorizer = actorUuid;
         }

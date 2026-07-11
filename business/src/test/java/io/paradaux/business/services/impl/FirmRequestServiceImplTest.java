@@ -8,6 +8,7 @@ import io.paradaux.business.mappers.FirmRequestMapper;
 import io.paradaux.business.model.Firm;
 import io.paradaux.business.model.RolePermission;
 import io.paradaux.business.services.FirmAccountService;
+import io.paradaux.business.services.FirmRequestService;
 import io.paradaux.business.services.FirmService;
 import io.paradaux.business.services.FirmStaffService;
 import org.apache.ibatis.exceptions.PersistenceException;
@@ -60,6 +61,21 @@ class FirmRequestServiceImplTest {
         Firm f = firm();
         f.setProprietorUuid(owner.toString());
         return f;
+    }
+
+    // ---------- expireStale (plugin-architecture/0005) ----------
+
+    @Test
+    void expireStale_delegatesToMapperAndTallies() {
+        when(requests.expireStaleTransfers()).thenReturn(3);
+        when(requests.expireStaleInvites()).thenReturn(2);
+
+        FirmRequestService.ExpiryResult result = svc.expireStale();
+
+        assertThat(result.transfers()).isEqualTo(3);
+        assertThat(result.invites()).isEqualTo(2);
+        verify(requests).expireStaleTransfers();
+        verify(requests).expireStaleInvites();
     }
 
     // ---------- offerEmployment ----------

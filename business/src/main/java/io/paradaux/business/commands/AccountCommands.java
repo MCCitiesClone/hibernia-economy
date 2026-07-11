@@ -365,18 +365,12 @@ public class AccountCommands implements CommandHandler {
             return;
         }
 
-        try {
-            audit.depositToAccount(firm.getFirmId(), accountId, sender.getUniqueId(), amount);
-            String formatted = treasury.formatAmount(amount);
-            message.send(sender, "business.account.deposit.success",
-                    "firm", firm.getDisplayName(), "accountId", accountId, "amount", formatted);
-        } catch (IllegalArgumentException e) {
-            message.send(sender, "business.finance.invalid-amount");
-        } catch (IllegalStateException e) {
-            message.send(sender, "business.finance.insufficient-personal");
-        } catch (SecurityException e) {
-            message.send(sender, "business.general.no-permission");
-        }
+        // The service throws framework semantic exceptions that the ErrorRenderer maps
+        // to the player's locale via each exception's key (plugin-architecture/0002).
+        audit.depositToAccount(firm.getFirmId(), accountId, sender.getUniqueId(), amount);
+        String formatted = treasury.formatAmount(amount);
+        message.send(sender, "business.account.deposit.success",
+                "firm", firm.getDisplayName(), "accountId", accountId, "amount", formatted);
     }
 
     // ---- ACCOUNT WITHDRAW -------------------------------------------------------
@@ -399,18 +393,10 @@ public class AccountCommands implements CommandHandler {
             return;
         }
 
-        try {
-            audit.withdrawFromAccount(firm.getFirmId(), accountId, sender.getUniqueId(), amount);
-            String formatted = treasury.formatAmount(amount);
-            message.send(sender, "business.account.withdraw.success",
-                    "firm", firm.getDisplayName(), "accountId", accountId, "amount", formatted);
-        } catch (IllegalArgumentException e) {
-            message.send(sender, "business.finance.invalid-amount");
-        } catch (IllegalStateException e) {
-            message.send(sender, "business.finance.insufficient-business");
-        } catch (SecurityException e) {
-            message.send(sender, "business.finance.not-authorizer");
-        }
+        audit.withdrawFromAccount(firm.getFirmId(), accountId, sender.getUniqueId(), amount);
+        String formatted = treasury.formatAmount(amount);
+        message.send(sender, "business.account.withdraw.success",
+                "firm", firm.getDisplayName(), "accountId", accountId, "amount", formatted);
     }
 
     // ---- ACCOUNT PAY: PLAYER -> BUSINESS ----------------------------------------
@@ -428,16 +414,10 @@ public class AccountCommands implements CommandHandler {
             return;
         }
 
-        try {
-            audit.payIntoAccount(firm.getFirmId(), accountId, sender.getUniqueId(), amount);
-            String formatted = treasury.formatAmount(amount);
-            message.send(sender, "business.account.pay.into.success",
-                    "firm", firm.getDisplayName(), "accountId", accountId, "amount", formatted);
-        } catch (IllegalArgumentException e) {
-            message.send(sender, "business.finance.invalid-amount");
-        } catch (IllegalStateException e) {
-            message.send(sender, "business.finance.insufficient-personal");
-        }
+        audit.payIntoAccount(firm.getFirmId(), accountId, sender.getUniqueId(), amount);
+        String formatted = treasury.formatAmount(amount);
+        message.send(sender, "business.account.pay.into.success",
+                "firm", firm.getDisplayName(), "accountId", accountId, "amount", formatted);
     }
 
     // ---- ACCOUNT PAY: BUSINESS -> PLAYER ----------------------------------------
@@ -461,19 +441,11 @@ public class AccountCommands implements CommandHandler {
             return;
         }
 
-        try {
-            audit.payPlayerFromAccount(firm.getFirmId(), accountId, target.getUniqueId(), sender.getUniqueId(), amount);
-            String formatted = treasury.formatAmount(amount);
-            message.send(sender, "business.account.pay.player.success",
-                    "firm", firm.getDisplayName(), "accountId", accountId,
-                    "player", target.getCurrentName(), "amount", formatted);
-        } catch (IllegalArgumentException e) {
-            message.send(sender, "business.finance.invalid-amount");
-        } catch (IllegalStateException e) {
-            message.send(sender, "business.finance.insufficient-business");
-        } catch (SecurityException e) {
-            message.send(sender, "business.finance.not-authorizer");
-        }
+        audit.payPlayerFromAccount(firm.getFirmId(), accountId, target.getUniqueId(), sender.getUniqueId(), amount);
+        String formatted = treasury.formatAmount(amount);
+        message.send(sender, "business.account.pay.player.success",
+                "firm", firm.getDisplayName(), "accountId", accountId,
+                "player", target.getCurrentName(), "amount", formatted);
     }
 
     // ---- ACCOUNT PAY: BUSINESS -> BUSINESS --------------------------------------
@@ -509,21 +481,13 @@ public class AccountCommands implements CommandHandler {
             return;
         }
 
-        try {
-            audit.payFirmFromAccount(firm.getFirmId(), accountId, targetF.getFirmId(), sender.getUniqueId(), amount);
-            String formatted = treasury.formatAmount(amount);
-            message.send(sender, "business.account.pay.business.success",
-                    "firm", firm.getDisplayName(), "accountId", accountId,
-                    "target", targetF.getDisplayName(), "amount", formatted);
-            notifications.notifyFirmExcept(targetF.getFirmId(), sender.getUniqueId(), "business.notify.transfer.incoming",
-                    "firm", targetF.getDisplayName(), "amount", formatted, "sender", firm.getDisplayName());
-        } catch (IllegalArgumentException e) {
-            message.send(sender, "business.finance.invalid-amount");
-        } catch (IllegalStateException e) {
-            message.send(sender, "business.finance.insufficient-business");
-        } catch (SecurityException e) {
-            message.send(sender, "business.finance.not-authorizer");
-        }
+        audit.payFirmFromAccount(firm.getFirmId(), accountId, targetF.getFirmId(), sender.getUniqueId(), amount);
+        String formatted = treasury.formatAmount(amount);
+        message.send(sender, "business.account.pay.business.success",
+                "firm", firm.getDisplayName(), "accountId", accountId,
+                "target", targetF.getDisplayName(), "amount", formatted);
+        notifications.notifyFirmExcept(targetF.getFirmId(), sender.getUniqueId(), "business.notify.transfer.incoming",
+                "firm", targetF.getDisplayName(), "amount", formatted, "sender", firm.getDisplayName());
     }
 
     // ---- ACCOUNT TRANSACTIONS ---------------------------------------------------

@@ -42,6 +42,13 @@ public class FirmRequestServiceImpl implements FirmRequestService {
     }
 
     @Override
+    public ExpiryResult expireStale() {
+        int transfers = requests.expireStaleTransfers();
+        int invites = requests.expireStaleInvites();
+        return new ExpiryResult(transfers, invites);
+    }
+
+    @Override
     public void offerEmployment(String firmName, UUID targetId, UUID actorId) {
         LocalDateTime expiresAt = LocalDateTime.now().plusMinutes(OFFER_EXPIRATION_MINUTES);
         Firm firm = firms.getFirmByNameOrId(firmName);
