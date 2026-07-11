@@ -4,6 +4,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.sun.net.httpserver.HttpServer;
 import io.paradaux.treasuryapi.model.config.KeycloakConfiguration;
+import io.paradaux.treasuryapi.services.impl.KeycloakAdminClientImpl;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -24,7 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Coverage for {@link KeycloakAdminClient} that does NOT need a live Keycloak:
+ * Coverage for {@link KeycloakAdminClientImpl} that does NOT need a live Keycloak:
  *
  * <ul>
  *   <li>the ADT-113 per-subject lock striping (same sub → same lock; a bounded,
@@ -56,13 +57,13 @@ class KeycloakAdminClientTest {
 
     @Test
     void isEnabled_reflectsConfig() {
-        assertTrue(new KeycloakAdminClient(config("http://x", true)).isEnabled());
-        assertFalse(new KeycloakAdminClient(config("http://x", false)).isEnabled());
+        assertTrue(new KeycloakAdminClientImpl(config("http://x", true)).isEnabled());
+        assertFalse(new KeycloakAdminClientImpl(config("http://x", false)).isEnabled());
     }
 
     @Test
     void lockFor_sameSubject_returnsSameLock_andStripesAreBounded() throws Exception {
-        KeycloakAdminClient client = new KeycloakAdminClient(config("http://x", true));
+        KeycloakAdminClientImpl client = new KeycloakAdminClientImpl(config("http://x", true));
 
         ReentrantLock l1 = lockFor(client, "sub-abc");
         ReentrantLock l2 = lockFor(client, "sub-abc");
@@ -70,14 +71,14 @@ class KeycloakAdminClientTest {
 
         // The stripe array is the bounded fixed pool (LOCK_STRIPES = 64): distinct
         // subjects draw from it, so memory can't grow with subject count.
-        Field f = KeycloakAdminClient.class.getDeclaredField("subjectLocks");
+        Field f = KeycloakAdminClientImpl.class.getDeclaredField("subjectLocks");
         f.setAccessible(true);
         ReentrantLock[] stripes = (ReentrantLock[]) f.get(client);
         assertEquals(64, stripes.length);
     }
 
-    private static ReentrantLock lockFor(KeycloakAdminClient client, String sub) throws Exception {
-        var m = KeycloakAdminClient.class.getDeclaredMethod("lockFor", String.class);
+    private static ReentrantLock lockFor(KeycloakAdminClientImpl client, String sub) throws Exception {
+        var m = KeycloakAdminClientImpl.class.getDeclaredMethod("lockFor", String.class);
         m.setAccessible(true);
         return (ReentrantLock) m.invoke(client, sub);
     }
@@ -112,7 +113,7 @@ class KeycloakAdminClientTest {
         server.start();
 
         String baseUrl = "http://127.0.0.1:" + server.getAddress().getPort();
-        KeycloakAdminClient client = new KeycloakAdminClient(config(baseUrl, true));
+        KeycloakAdminClientImpl client = new KeycloakAdminClientImpl(config(baseUrl, true));
 
         UUID uuid = UUID.randomUUID();
         client.setMinecraftAttributes("the-sub", uuid, "Alice");
@@ -146,7 +147,7 @@ class KeycloakAdminClientTest {
         server.start();
 
         String baseUrl = "http://127.0.0.1:" + server.getAddress().getPort();
-        KeycloakAdminClient client = new KeycloakAdminClient(config(baseUrl, true));
+        KeycloakAdminClientImpl client = new KeycloakAdminClientImpl(config(baseUrl, true));
 
         // A failed GET must surface as an exception (the caller then reports a partial
         // link), not silently proceed to a PUT that would 404 too.
