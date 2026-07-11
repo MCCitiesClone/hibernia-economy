@@ -95,32 +95,6 @@ class MembershipServiceImplTest {
         assertThat(svc.canSpend(1, u)).isFalse();
     }
 
-    @Test
-    void assertCanSpend_throwsNoPermission_whenNeitherMemberNorAuthorizer() {
-        UUID u = UUID.randomUUID();
-        when(membershipMapper.isMember(1, u)).thenReturn(0);
-        when(membershipMapper.isAuthorizer(1, u)).thenReturn(0);
-        assertThatThrownBy(() -> svc.assertCanSpend(1, u))
-                .isInstanceOf(io.paradaux.hibernia.framework.exceptions.NoPermissionException.class);
-    }
-
-    @Test
-    void assertCanSpend_passesForMember() {
-        UUID u = UUID.randomUUID();
-        when(membershipMapper.isMember(1, u)).thenReturn(1);
-        // Does not throw.
-        svc.assertCanSpend(1, u);
-    }
-
-    @Test
-    void assertCanSpend_passesForAuthorizer() {
-        UUID u = UUID.randomUUID();
-        when(membershipMapper.isMember(1, u)).thenReturn(0);
-        when(membershipMapper.isAuthorizer(1, u)).thenReturn(1);
-        // Does not throw.
-        svc.assertCanSpend(1, u);
-    }
-
     // ---- UUID CRUD ----
 
     @Test

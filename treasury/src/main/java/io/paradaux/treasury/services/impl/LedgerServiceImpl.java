@@ -261,7 +261,7 @@ public class LedgerServiceImpl implements LedgerService {
 
     @Override
     @Transactional
-    public java.util.OptionalLong sweepAll(int fromAccountId, int toAccountId, String memo, UUID initiator) {
+    public java.util.OptionalLong sweepAll(int fromAccountId, int toAccountId, String memo, UUID initiator, String sourcePlugin) {
         Objects.requireNonNull(memo, "memo");
         Objects.requireNonNull(initiator, "initiator");
         if (fromAccountId == toAccountId) {
@@ -290,7 +290,7 @@ public class LedgerServiceImpl implements LedgerService {
             return java.util.OptionalLong.empty();
         }
 
-        long txnId = insertTxn(memo, initiator, null, TreasuryConstants.TREASURY_PLUGIN_NAME, null);
+        long txnId = insertTxn(memo, initiator, null, sourcePlugin, null);
         postDoubleEntry(txnId, fromAccountId, toAccountId, amount, memo);
         log.debug("Swept locked balance {} from account {} to {} (txn={})",
                 amount, fromAccountId, toAccountId, txnId);

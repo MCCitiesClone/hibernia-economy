@@ -231,8 +231,8 @@ public class TreasuryApiImpl implements TreasuryApi {
     }
 
     @Override
-    public java.util.OptionalLong sweepAll(int fromAccountId, int toAccountId, String memo, UUID initiator) {
-        return ledgerService.sweepAll(fromAccountId, toAccountId, memo, initiator);
+    public java.util.OptionalLong sweepAll(int fromAccountId, int toAccountId, String memo, UUID initiator, String sourcePlugin) {
+        return ledgerService.sweepAll(fromAccountId, toAccountId, memo, initiator, sourcePlugin);
     }
 
     // ---- Balance top ----

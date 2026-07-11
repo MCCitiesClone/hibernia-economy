@@ -250,7 +250,8 @@ public class FirmServiceImpl implements FirmService {
                 // (conservation stays exact). Mirrors the treasury-rest-api disband
                 // sweep (TransferService.sweepAll) so both engines drain identically
                 // (business/behaviour/0003).
-                treasury.sweepAll(fa.getAccountId(), personal.getAccountId(), "Firm disbanded", proprietorUuid);
+                treasury.sweepAll(fa.getAccountId(), personal.getAccountId(), "Firm disbanded", proprietorUuid,
+                        "BusinessPlugin");
                 treasury.archiveAccount(fa.getAccountId());
                 accounts.removeFirmAccount(firm.getFirmId(), fa.getAccountId());
             } catch (RuntimeException ex) {

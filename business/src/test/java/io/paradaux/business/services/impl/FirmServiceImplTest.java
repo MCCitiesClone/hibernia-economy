@@ -272,8 +272,8 @@ class FirmServiceImplTest {
         // in the archived firm account (business/behaviour/0003). The amount is NOT read
         // on the business side; sweepAll reads it under the FOR UPDATE lock inside
         // Treasury, so the business layer must never pre-read a balance to size the move.
-        verify(treasury).sweepAll(10, 99, "Firm disbanded", proprietor);
-        verify(treasury).sweepAll(11, 99, "Firm disbanded", proprietor);
+        verify(treasury).sweepAll(10, 99, "Firm disbanded", proprietor, "BusinessPlugin");
+        verify(treasury).sweepAll(11, 99, "Firm disbanded", proprietor, "BusinessPlugin");
         verify(treasury, never()).getBalanceByAccountId(org.mockito.ArgumentMatchers.anyInt());
         verify(treasury, never()).transfer(any(TransferRequest.class));
 
@@ -303,7 +303,7 @@ class FirmServiceImplTest {
 
         // First account fails mid-drain; the firm must still be archived (it is
         // archived before any money moves) and the second account still drained.
-        when(treasury.sweepAll(10, 99, "Firm disbanded", proprietor))
+        when(treasury.sweepAll(10, 99, "Firm disbanded", proprietor, "BusinessPlugin"))
                 .thenThrow(new RuntimeException("treasury down"));
         when(firms.archiveFirm(1)).thenReturn(1);
 
@@ -347,7 +347,8 @@ class FirmServiceImplTest {
 
         // No drain of any kind: no sweep, no balance read, no transfer, no account teardown.
         verify(treasury, never()).sweepAll(org.mockito.ArgumentMatchers.anyInt(),
-                org.mockito.ArgumentMatchers.anyInt(), org.mockito.ArgumentMatchers.anyString(), any());
+                org.mockito.ArgumentMatchers.anyInt(), org.mockito.ArgumentMatchers.anyString(), any(),
+                org.mockito.ArgumentMatchers.anyString());
         verify(treasury, never()).getBalanceByAccountId(org.mockito.ArgumentMatchers.anyInt());
         verify(treasury, never()).transfer(any(TransferRequest.class));
         verify(treasury, never()).archiveAccount(org.mockito.ArgumentMatchers.anyInt());

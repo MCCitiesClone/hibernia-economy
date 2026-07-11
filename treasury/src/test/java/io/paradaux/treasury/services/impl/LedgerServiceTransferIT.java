@@ -627,7 +627,7 @@ class LedgerServiceTransferIT extends IntegrationTestBase {
         BigDecimal before = balanceOf(firmAcc).add(balanceOf(payout));
 
         java.util.OptionalLong txn = ledgerService.sweepAll(
-                firmAcc.getAccountId(), payout.getAccountId(), "Firm disbanded", UUID.randomUUID());
+                firmAcc.getAccountId(), payout.getAccountId(), "Firm disbanded", UUID.randomUUID(), "BusinessPlugin");
 
         assertThat(txn).isPresent();
         // Exact conservation: everything left the source, nothing was created or lost.
@@ -642,7 +642,7 @@ class LedgerServiceTransferIT extends IntegrationTestBase {
         Account payout  = createPersonalAccount(0);
 
         java.util.OptionalLong txn = ledgerService.sweepAll(
-                firmAcc.getAccountId(), payout.getAccountId(), "Firm disbanded", UUID.randomUUID());
+                firmAcc.getAccountId(), payout.getAccountId(), "Firm disbanded", UUID.randomUUID(), "BusinessPlugin");
 
         assertThat(txn).isEmpty();
         assertThat(balanceOf(payout)).isEqualByComparingTo("0.00");
@@ -664,7 +664,7 @@ class LedgerServiceTransferIT extends IntegrationTestBase {
                 TreasuryConstants.TREASURY_PLUGIN_NAME, null));
 
         java.util.OptionalLong txn = ledgerService.sweepAll(
-                firmAcc.getAccountId(), payout.getAccountId(), "Firm disbanded", UUID.randomUUID());
+                firmAcc.getAccountId(), payout.getAccountId(), "Firm disbanded", UUID.randomUUID(), "BusinessPlugin");
 
         assertThat(txn).isPresent();
         assertThat(balanceOf(firmAcc)).isEqualByComparingTo("0.00");

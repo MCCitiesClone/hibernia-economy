@@ -76,9 +76,15 @@ class LedgerServiceSweepAllTest {
         stubTxnInsert(4242L);
 
         UUID initiator = UUID.randomUUID();
-        OptionalLong txn = newService().sweepAll(10, 99, "Firm disbanded", initiator);
+        OptionalLong txn = newService().sweepAll(10, 99, "Firm disbanded", initiator, "BusinessPlugin");
 
         assertThat(txn).hasValue(4242L);
+
+        // Ledger provenance is the caller-supplied source plugin, not Treasury-Core, so a
+        // disband drain keeps the same plugin_system its ordinary transfers carry.
+        ArgumentCaptor<LedgerTxn> txnCaptor = ArgumentCaptor.forClass(LedgerTxn.class);
+        verify(ledgerMapper).insertTxnEntity(txnCaptor.capture());
+        assertThat(txnCaptor.getValue().getPluginSystem()).isEqualTo("BusinessPlugin");
 
         @SuppressWarnings("unchecked")
         ArgumentCaptor<List<LedgerPosting>> captor = ArgumentCaptor.forClass(List.class);
@@ -108,7 +114,7 @@ class LedgerServiceSweepAllTest {
 
         // Sweep from the HIGHER id (99) to the LOWER id (10): lock order must still be
         // the ascending [10, 99], not from-then-to.
-        newService().sweepAll(99, 10, "Firm disbanded", UUID.randomUUID());
+        newService().sweepAll(99, 10, "Firm disbanded", UUID.randomUUID(), "BusinessPlugin");
 
         verify(accountMapper).lockBalances(List.of(10, 99));
     }
@@ -119,7 +125,7 @@ class LedgerServiceSweepAllTest {
                 .thenReturn(List.of(new AccountBalance(10, BigDecimal.ZERO, 1L),
                                     new AccountBalance(99, BigDecimal.ZERO, 1L)));
 
-        OptionalLong txn = newService().sweepAll(10, 99, "Firm disbanded", UUID.randomUUID());
+        OptionalLong txn = newService().sweepAll(10, 99, "Firm disbanded", UUID.randomUUID(), "BusinessPlugin");
 
         assertThat(txn).isEmpty();
         verify(ledgerMapper, never()).insertTxnEntity(any());
@@ -132,14 +138,14 @@ class LedgerServiceSweepAllTest {
                 .thenReturn(List.of(new AccountBalance(10, new BigDecimal("-5.00"), 1L),
                                     new AccountBalance(99, BigDecimal.ZERO, 1L)));
 
-        assertThat(newService().sweepAll(10, 99, "memo", UUID.randomUUID())).isEmpty();
+        assertThat(newService().sweepAll(10, 99, "memo", UUID.randomUUID(), "BusinessPlugin")).isEmpty();
         verify(ledgerMapper, never()).insertPostings(any());
     }
 
     @Test
     void sweepAll_sameAccount_throwsWithoutTouchingTheLedger() {
         org.assertj.core.api.Assertions.assertThatThrownBy(
-                        () -> newService().sweepAll(10, 10, "memo", UUID.randomUUID()))
+                        () -> newService().sweepAll(10, 10, "memo", UUID.randomUUID(), "BusinessPlugin"))
                 .isInstanceOf(IllegalArgumentException.class);
         verify(accountMapper, never()).lockBalances(any());
         verify(ledgerMapper, never()).insertPostings(any());
@@ -153,7 +159,7 @@ class LedgerServiceSweepAllTest {
                 .thenReturn(List.of(new AccountBalance(99, BigDecimal.ZERO, 1L)));
 
         org.assertj.core.api.Assertions.assertThatThrownBy(
-                        () -> newService().sweepAll(10, 99, "memo", UUID.randomUUID()))
+                        () -> newService().sweepAll(10, 99, "memo", UUID.randomUUID(), "BusinessPlugin"))
                 .isInstanceOf(IllegalStateException.class);
         verify(ledgerMapper, never()).insertPostings(any());
     }

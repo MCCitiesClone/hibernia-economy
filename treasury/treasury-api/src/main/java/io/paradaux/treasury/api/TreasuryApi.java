@@ -180,9 +180,12 @@ public interface TreasuryApi {
      * {@link OptionalLong} when the locked balance is zero-or-negative (nothing to move),
      * so the caller can archive the account without emitting an empty transfer.
      *
+     * @param sourcePlugin ledger provenance ({@code plugin_system}) recorded on the sweep
+     *                     txn — the calling plugin's identifier, so disband-drain rows keep
+     *                     the same attribution the caller's ordinary transfers carry
      * @return the txn id of the sweep, or empty if the locked balance was not positive
      */
-    OptionalLong sweepAll(int fromAccountId, int toAccountId, String memo, UUID initiator);
+    OptionalLong sweepAll(int fromAccountId, int toAccountId, String memo, UUID initiator, String sourcePlugin);
 
     // ---- Balance top ----
 

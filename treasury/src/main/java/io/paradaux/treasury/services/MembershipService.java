@@ -31,16 +31,6 @@ public interface MembershipService {
      */
     boolean canSpend(int accountId, UUID uuid);
 
-    /**
-     * Asserts that {@code uuid} may spend from the account (see {@link #canSpend}); throws
-     * {@link io.paradaux.hibernia.framework.exceptions.NoPermissionException} otherwise so the
-     * per-account authorization holds in the service regardless of the caller.
-     *
-     * @throws io.paradaux.hibernia.framework.exceptions.NoPermissionException
-     *         if {@code uuid} is neither a member nor an authorizer of the account
-     */
-    void assertCanSpend(int accountId, UUID uuid);
-
     // ── Individual UUID CRUD ──
 
     void addMember(int accountId, UUID memberUuid, UUID addedByUuid);

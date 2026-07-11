@@ -285,6 +285,12 @@ public class TransferService {
         AccountBalance firstLock  = accountMapper.findBalanceForUpdate(firstLockId);
         AccountBalance secondLock = accountMapper.findBalanceForUpdate(secondLockId);
         AccountBalance sourceBalance = (fromAccountId == firstLockId) ? firstLock : secondLock;
+        if (sourceBalance == null) {
+            // Two-engine parity with LedgerServiceImpl.sweepAll: a missing source balance
+            // row is a state error, not a silent no-op. Not live-reachable today (disband
+            // callers only sweep accounts that exist), but keep the engines equivalent.
+            throw new IllegalStateException("Missing balance row for source account " + fromAccountId);
+        }
 
         BigDecimal amount = sourceBalance.getBalance();
         if (amount == null || amount.signum() <= 0) {

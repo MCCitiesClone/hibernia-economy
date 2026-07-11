@@ -43,7 +43,7 @@ public interface LedgerService {
      * sole balance writer. Returns the sweep's txn id, or empty if the locked balance was
      * not positive (nothing to move). See {@code TreasuryApi.sweepAll}.
      */
-    java.util.OptionalLong sweepAll(int fromAccountId, int toAccountId, String memo, UUID initiator);
+    java.util.OptionalLong sweepAll(int fromAccountId, int toAccountId, String memo, UUID initiator, String sourcePlugin);
 
     /**
      * Admin override transfer: identical to {@link #transfer(TransferRequest)} but
