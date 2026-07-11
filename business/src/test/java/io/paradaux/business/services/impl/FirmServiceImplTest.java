@@ -265,6 +265,8 @@ class FirmServiceImplTest {
 
         when(treasury.getBalanceByAccountId(10)).thenReturn(new BigDecimal("250.00"));
         when(treasury.getBalanceByAccountId(11)).thenReturn(BigDecimal.ZERO);
+        // This caller wins the atomic archive (1 row flipped), so it drains.
+        when(firms.archiveFirm(1)).thenReturn(1);
 
         svc.disbandFirm("Acme", proprietor);
 
@@ -302,6 +304,7 @@ class FirmServiceImplTest {
         // archived before any money moves) and the second account still drained.
         when(treasury.getBalanceByAccountId(10)).thenThrow(new RuntimeException("treasury down"));
         when(treasury.getBalanceByAccountId(11)).thenReturn(BigDecimal.ZERO);
+        when(firms.archiveFirm(1)).thenReturn(1);
 
         svc.disbandFirm("Acme", proprietor);
 
@@ -311,6 +314,41 @@ class FirmServiceImplTest {
         // The failed account is left linked for a later reconciliation.
         verify(treasury, never()).archiveAccount(10);
         verify(accounts, never()).removeFirmAccount(1, 10);
+    }
+
+    @Test
+    void disbandFirm_lostArchiveRace_doesNotDrain() {
+        // Two concurrent disbands both pass the stale in-memory archived check and
+        // both snapshot the same positive balances. The atomic conditional archive
+        // (WHERE is_archived = 0) lets exactly one win: the loser sees 0 rows
+        // affected and must short-circuit WITHOUT moving any money, rather than
+        // relying on Treasury's overdraft floor to swallow a second drain.
+        UUID proprietor = UUID.randomUUID();
+        Firm firm = new Firm();
+        firm.setFirmId(1);
+        firm.setDisplayName("Acme");
+        firm.setProprietorUuid(proprietor.toString());
+        when(firms.getFirmByName("Acme")).thenReturn(firm);
+        when(firms.isProprietorByFirmId(1, proprietor.toString())).thenReturn(true);
+
+        Account personal = new Account();
+        personal.setAccountId(99);
+        when(treasury.resolveOrCreatePersonal(proprietor)).thenReturn(personal);
+
+        FirmAccount fa1 = new FirmAccount(1, 10, null);
+        when(accounts.listAccountsByFirm(1)).thenReturn(List.of(fa1));
+
+        // This caller lost the race: the firm was already flipped to archived by
+        // the winner, so the conditional UPDATE touches 0 rows.
+        when(firms.archiveFirm(1)).thenReturn(0);
+
+        svc.disbandFirm("Acme", proprietor);
+
+        // No drain of any kind: no balance read, no transfer, no account teardown.
+        verify(treasury, never()).getBalanceByAccountId(org.mockito.ArgumentMatchers.anyInt());
+        verify(treasury, never()).transfer(any(TransferRequest.class));
+        verify(treasury, never()).archiveAccount(org.mockito.ArgumentMatchers.anyInt());
+        verify(accounts, never()).removeFirmAccount(org.mockito.ArgumentMatchers.anyInt(), org.mockito.ArgumentMatchers.anyInt());
     }
 
     @Test

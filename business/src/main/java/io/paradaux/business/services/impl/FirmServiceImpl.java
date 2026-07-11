@@ -231,8 +231,17 @@ public class FirmServiceImpl implements FirmService {
         Account personal = treasury.resolveOrCreatePersonal(proprietorUuid);
 
         // Mark disbanded first (auto-commits — this method isn't @Transactional)
-        // so money only ever moves once the firm is durably archived.
-        firms.archiveFirm(firm.getFirmId());
+        // so money only ever moves once the firm is durably archived. The archive
+        // is a conditional UPDATE (WHERE is_archived = 0), so this is also the
+        // atomic gate that serialises concurrent disbands: whoever flips the flag
+        // (1 row affected) owns the drain; a loser that sees 0 rows short-circuits
+        // here, before touching any balance, rather than leaning on Treasury's
+        // overdraft floor to no-op a second drain (business/behaviour/0002).
+        if (firms.archiveFirm(firm.getFirmId()) == 0) {
+            LOG.log(Level.FINE, "Firm {0} was already archived by a concurrent disband; skipping drain.",
+                    firm.getFirmId());
+            return;
+        }
 
         for (FirmAccount fa : firmAccountList) {
             try {

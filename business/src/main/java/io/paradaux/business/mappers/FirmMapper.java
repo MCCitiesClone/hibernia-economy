@@ -38,6 +38,12 @@ public interface FirmMapper {
      * {@code disbandFirm}, where the firm's accounts have just been archived
      * in Treasury and removed from {@code firm_accounts}; leaving the
      * default_account_id set would point at an archived account.
+     *
+     * <p>The {@code AND is_archived = 0} guard makes the transition atomic:
+     * only the first caller to flip the flag sees a non-zero affected-row count,
+     * so two concurrent disbands cannot both proceed to drain the same accounts.
+     * Returns the number of rows updated (1 for the winner, 0 for a loser or an
+     * already-archived firm).
      */
     @Update("""
             UPDATE firm
@@ -45,8 +51,9 @@ public interface FirmMapper {
                 default_account_id = NULL,
                 updated_at = CURRENT_TIMESTAMP
             WHERE firm_id = #{firmId}
+              AND is_archived = 0
             """)
-    void archiveFirm(@Param("firmId") int firmId);
+    int archiveFirm(@Param("firmId") int firmId);
 
     @Select("""
             SELECT f.firm_id                     AS firmId,
