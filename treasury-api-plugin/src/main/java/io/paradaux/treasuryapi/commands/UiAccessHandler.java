@@ -110,14 +110,26 @@ public class UiAccessHandler {
 
     public void doLink(Player sender, String code) {
         String normalized = code.trim().toUpperCase(Locale.ROOT);
+        // Read the sub first so it's available for upsertIdentity, but the read is
+        // NOT the single-use guard — the conditional DELETE below is. Both /link
+        // routes are @Async, so two concurrent redemptions can both pass this
+        // SELECT; the authoritative claim is claimLinkCode's affected-row count.
         String sub = mapper.findValidLinkSub(normalized);
         if (sub == null) {
             message.send(sender, "treasuryapi.ui.link.invalid");
             return;
         }
 
+        // Atomically claim the code (delete-if-unexpired). Exactly one concurrent
+        // caller gets count 1 and wins; every other caller gets 0 (already redeemed
+        // or expired between the SELECT and here) and is cleanly rejected, so a
+        // single-use code can never redeem twice or clobber the winner's identity.
+        if (mapper.claimLinkCode(normalized) != 1) {
+            message.send(sender, "treasuryapi.ui.link.invalid");
+            return;
+        }
+
         mapper.upsertIdentity(sub, sender.getUniqueId(), sender.getName(), "in-game:" + sender.getName());
-        mapper.deleteLinkCode(normalized);
 
         if (keycloak.isEnabled()) {
             try {
