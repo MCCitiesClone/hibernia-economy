@@ -96,16 +96,18 @@ jobs:
           username: ${{ secrets.HARBOR_USERNAME }}
           password: ${{ secrets.HARBOR_PASSWORD }}
 
-      - name: Build Docker image
-        run: |
-          IMAGE=${{ secrets.HARBOR_REGISTRY }}/paradaux-public/treasury-rest-api
-          docker build \
-            -t "${IMAGE}:${{ steps.tags.outputs.SHA_TAG }}" \
-            -t "${IMAGE}:${{ steps.tags.outputs.MUTABLE_TAG }}" \
-            treasury-rest-api
-
-      - name: Push Docker image
-        run: |
-          IMAGE=${{ secrets.HARBOR_REGISTRY }}/paradaux-public/treasury-rest-api
-          docker push "${IMAGE}:${{ steps.tags.outputs.SHA_TAG }}"
-          docker push "${IMAGE}:${{ steps.tags.outputs.MUTABLE_TAG }}"
+      # Build + push via docker/build-push-action so images carry provenance
+      # attestations and an SBOM (global/infra/0004). Pinned to the current major
+      # tag: an exact SHA pin isn't knowable offline — resolve to a commit SHA when
+      # network access is available. Immutable env-sha tag + mutable tag and the
+      # Harbor registry auth (docker/login-action above) are unchanged.
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: treasury-rest-api
+          push: true
+          provenance: true
+          sbom: true
+          tags: |
+            ${{ secrets.HARBOR_REGISTRY }}/paradaux-public/treasury-rest-api:${{ steps.tags.outputs.SHA_TAG }}
+            ${{ secrets.HARBOR_REGISTRY }}/paradaux-public/treasury-rest-api:${{ steps.tags.outputs.MUTABLE_TAG }}

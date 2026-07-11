@@ -65,8 +65,11 @@ public class UiAccessHandler {
     public void doUserList(CommandSender sender, String playerName) {
         UUID target = requireSeenPlayer(playerName);
         List<String> roles = service.listRoles(target);
-        String display = roles.isEmpty() ? "player (no elevated roles)" : String.join(", ", roles);
-        message.send(sender, "treasuryapi.ui.user.list", "player", playerName, "roles", display);
+        if (roles.isEmpty()) {
+            message.send(sender, "treasuryapi.ui.user.no-roles", "player", playerName);
+        } else {
+            message.send(sender, "treasuryapi.ui.user.list", "player", playerName, "roles", String.join(", ", roles));
+        }
     }
 
     public void doLink(Player sender, String code) {

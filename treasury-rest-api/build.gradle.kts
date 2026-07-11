@@ -32,6 +32,9 @@ dependencies {
     // Caching for the public ChestShop market endpoints (Caffeine, in-process).
     // Collapses identical heavy-aggregate reads to one query per short TTL.
     implementation("org.springframework.boot:spring-boot-starter-cache")
+    // Pinned MyBatis starter 4.0.1: verified compile+test-green against this module's
+    // Spring Boot 4.1.0 GA target (global/dependencies/0003). A Spring-Boot-4-aligned
+    // MyBatis starter bump should be evaluated when network/catalog access is available.
     implementation("org.mybatis.spring.boot:mybatis-spring-boot-starter:4.0.1")
 
     // Swagger / OpenAPI

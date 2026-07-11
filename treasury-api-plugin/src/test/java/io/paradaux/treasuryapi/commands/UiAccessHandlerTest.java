@@ -227,8 +227,7 @@ class UiAccessHandlerTest {
             handler.doUserList(sender, "Bob");
         }
 
-        verify(message).send(sender, "treasuryapi.ui.user.list",
-                "player", "Bob", "roles", "player (no elevated roles)");
+        verify(message).send(sender, "treasuryapi.ui.user.no-roles", "player", "Bob");
     }
 
     @Test
