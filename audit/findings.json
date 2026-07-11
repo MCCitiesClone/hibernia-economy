@@ -184,12 +184,14 @@
       "plugin-architecture"
     ],
     "lane": "B",
-    "status": "pending",
+    "status": "resolved",
     "resolution": {
       "branch": null,
-      "commits": [],
+      "commits": [
+        "cd0bb81"
+      ],
       "test": null,
-      "reject_reason": null
+      "note": "Reconciled: code committed Wave 2; ledger close missed due to empty shell var"
     }
   },
   {
@@ -444,12 +446,15 @@
       "structure"
     ],
     "lane": "A",
-    "status": "pending",
+    "status": "resolved",
     "resolution": {
       "branch": null,
-      "commits": [],
+      "commits": [
+        "fe1932f"
+      ],
       "test": null,
-      "reject_reason": null
+      "reject_reason": null,
+      "note": "business DRY+tests"
     }
   },
   {
@@ -500,12 +505,15 @@
       "structure"
     ],
     "lane": "A",
-    "status": "pending",
+    "status": "resolved",
     "resolution": {
       "branch": null,
-      "commits": [],
+      "commits": [
+        "fe1932f"
+      ],
       "test": null,
-      "reject_reason": null
+      "reject_reason": null,
+      "note": "business DRY+tests"
     }
   },
   {
@@ -612,12 +620,15 @@
       "structure"
     ],
     "lane": "A",
-    "status": "pending",
+    "status": "resolved",
     "resolution": {
       "branch": null,
-      "commits": [],
+      "commits": [
+        "fe1932f"
+      ],
       "test": null,
-      "reject_reason": null
+      "reject_reason": null,
+      "note": "business DRY+tests"
     }
   },
   {
@@ -722,12 +733,15 @@
       "testing"
     ],
     "lane": "B",
-    "status": "pending",
+    "status": "resolved",
     "resolution": {
       "branch": null,
-      "commits": [],
+      "commits": [
+        "fe1932f"
+      ],
       "test": null,
-      "reject_reason": null
+      "reject_reason": null,
+      "note": "business DRY+tests"
     }
   },
   {
@@ -770,12 +784,15 @@
       "testing"
     ],
     "lane": "B",
-    "status": "pending",
+    "status": "resolved",
     "resolution": {
       "branch": null,
-      "commits": [],
+      "commits": [
+        "fe1932f"
+      ],
       "test": null,
-      "reject_reason": null
+      "reject_reason": null,
+      "note": "business DRY+tests"
     }
   },
   {
@@ -801,12 +818,15 @@
       "testing"
     ],
     "lane": "B",
-    "status": "pending",
+    "status": "resolved",
     "resolution": {
       "branch": null,
-      "commits": [],
+      "commits": [
+        "fe1932f"
+      ],
       "test": null,
-      "reject_reason": null
+      "reject_reason": null,
+      "note": "business DRY+tests"
     }
   },
   {
@@ -986,12 +1006,14 @@
       "plugin-architecture"
     ],
     "lane": "B",
-    "status": "pending",
+    "status": "resolved",
     "resolution": {
       "branch": null,
-      "commits": [],
+      "commits": [
+        "950bb5e"
+      ],
       "test": null,
-      "reject_reason": null
+      "note": "Reconciled: code committed Wave 2; ledger close missed due to empty shell var"
     }
   },
   {
@@ -1053,12 +1075,15 @@
       "plugin-architecture"
     ],
     "lane": "A",
-    "status": "pending",
+    "status": "resolved",
     "resolution": {
       "branch": null,
-      "commits": [],
+      "commits": [
+        "def2edd"
+      ],
       "test": null,
-      "reject_reason": null
+      "reject_reason": null,
+      "note": "chestshop i18n+deadcode+DRY+testquality"
     }
   },
   {
@@ -1084,12 +1109,15 @@
       "plugin-architecture"
     ],
     "lane": "A",
-    "status": "pending",
+    "status": "resolved",
     "resolution": {
       "branch": null,
-      "commits": [],
+      "commits": [
+        "def2edd"
+      ],
       "test": null,
-      "reject_reason": null
+      "reject_reason": null,
+      "note": "chestshop i18n+deadcode+DRY+testquality"
     }
   },
   {
@@ -1133,12 +1161,15 @@
       "plugin-architecture"
     ],
     "lane": "B",
-    "status": "pending",
+    "status": "resolved",
     "resolution": {
       "branch": null,
-      "commits": [],
+      "commits": [
+        "def2edd"
+      ],
       "test": null,
-      "reject_reason": null
+      "reject_reason": null,
+      "note": "chestshop i18n+deadcode+DRY+testquality"
     }
   },
   {
@@ -1164,12 +1195,15 @@
       "plugin-architecture"
     ],
     "lane": "A",
-    "status": "pending",
+    "status": "resolved",
     "resolution": {
       "branch": null,
-      "commits": [],
+      "commits": [
+        "def2edd"
+      ],
       "test": null,
-      "reject_reason": null
+      "reject_reason": null,
+      "note": "chestshop i18n+deadcode+DRY+testquality"
     }
   },
   {
@@ -1243,12 +1277,15 @@
       "plugin-architecture"
     ],
     "lane": "B",
-    "status": "pending",
+    "status": "resolved",
     "resolution": {
       "branch": null,
-      "commits": [],
+      "commits": [
+        "def2edd"
+      ],
       "test": null,
-      "reject_reason": null
+      "reject_reason": null,
+      "note": "chestshop i18n+deadcode+DRY+testquality"
     }
   },
   {
@@ -1341,12 +1378,15 @@
       "structure"
     ],
     "lane": "C",
-    "status": "pending",
+    "status": "resolved",
     "resolution": {
       "branch": null,
-      "commits": [],
+      "commits": [
+        "4209973"
+      ],
       "test": null,
-      "reject_reason": null
+      "reject_reason": null,
+      "note": "God-class split + listener->service inversion; behaviour-preserving, 0.99 coverage held"
     }
   },
   {
@@ -1373,12 +1413,15 @@
       "structure"
     ],
     "lane": "C",
-    "status": "pending",
+    "status": "resolved",
     "resolution": {
       "branch": null,
-      "commits": [],
+      "commits": [
+        "4209973"
+      ],
       "test": null,
-      "reject_reason": null
+      "reject_reason": null,
+      "note": "God-class split + listener->service inversion; behaviour-preserving, 0.99 coverage held"
     }
   },
   {
@@ -1452,12 +1495,15 @@
       "structure"
     ],
     "lane": "A",
-    "status": "pending",
+    "status": "resolved",
     "resolution": {
       "branch": null,
-      "commits": [],
+      "commits": [
+        "def2edd"
+      ],
       "test": null,
-      "reject_reason": null
+      "reject_reason": null,
+      "note": "chestshop i18n+deadcode+DRY+testquality"
     }
   },
   {
@@ -1526,12 +1572,15 @@
       "structure"
     ],
     "lane": "A",
-    "status": "pending",
+    "status": "resolved",
     "resolution": {
       "branch": null,
-      "commits": [],
+      "commits": [
+        "def2edd"
+      ],
       "test": null,
-      "reject_reason": null
+      "reject_reason": null,
+      "note": "chestshop i18n+deadcode+DRY+testquality"
     }
   },
   {
@@ -1567,12 +1616,15 @@
       "structure"
     ],
     "lane": "A",
-    "status": "pending",
+    "status": "resolved",
     "resolution": {
       "branch": null,
-      "commits": [],
+      "commits": [
+        "def2edd"
+      ],
       "test": null,
-      "reject_reason": null
+      "reject_reason": null,
+      "note": "chestshop i18n+deadcode+DRY+testquality"
     }
   },
   {
@@ -1657,12 +1709,15 @@
       "testing"
     ],
     "lane": "B",
-    "status": "pending",
+    "status": "resolved",
     "resolution": {
       "branch": null,
-      "commits": [],
+      "commits": [
+        "def2edd"
+      ],
       "test": null,
-      "reject_reason": null
+      "reject_reason": null,
+      "note": "chestshop i18n+deadcode+DRY+testquality"
     }
   },
   {
@@ -1690,12 +1745,15 @@
       "testing"
     ],
     "lane": "B",
-    "status": "pending",
+    "status": "resolved",
     "resolution": {
       "branch": null,
-      "commits": [],
+      "commits": [
+        "def2edd"
+      ],
       "test": null,
-      "reject_reason": null
+      "reject_reason": null,
+      "note": "chestshop i18n+deadcode+DRY+testquality"
     }
   },
   {
@@ -1722,12 +1780,15 @@
       "behaviour"
     ],
     "lane": "B",
-    "status": "pending",
+    "status": "resolved",
     "resolution": {
       "branch": null,
-      "commits": [],
+      "commits": [
+        "1674c97"
+      ],
       "test": null,
-      "reject_reason": null
+      "reject_reason": null,
+      "note": "common correctness+tests"
     }
   },
   {
@@ -1754,12 +1815,15 @@
       "structure"
     ],
     "lane": "A",
-    "status": "pending",
+    "status": "resolved",
     "resolution": {
       "branch": null,
-      "commits": [],
+      "commits": [
+        "1674c97"
+      ],
       "test": null,
-      "reject_reason": null
+      "reject_reason": null,
+      "note": "common correctness+tests"
     }
   },
   {
@@ -1787,12 +1851,15 @@
       "testing"
     ],
     "lane": "B",
-    "status": "pending",
+    "status": "resolved",
     "resolution": {
       "branch": null,
-      "commits": [],
+      "commits": [
+        "1674c97"
+      ],
       "test": null,
-      "reject_reason": null
+      "reject_reason": null,
+      "note": "common correctness+tests"
     }
   },
   {
@@ -1818,12 +1885,15 @@
       "testing"
     ],
     "lane": "A",
-    "status": "pending",
+    "status": "resolved",
     "resolution": {
       "branch": null,
-      "commits": [],
+      "commits": [
+        "1674c97"
+      ],
       "test": null,
-      "reject_reason": null
+      "reject_reason": null,
+      "note": "common correctness+tests"
     }
   },
   {
@@ -1849,12 +1919,15 @@
       "testing"
     ],
     "lane": "A",
-    "status": "pending",
+    "status": "resolved",
     "resolution": {
       "branch": null,
-      "commits": [],
+      "commits": [
+        "1674c97"
+      ],
       "test": null,
-      "reject_reason": null
+      "reject_reason": null,
+      "note": "common correctness+tests"
     }
   },
   {
@@ -1880,12 +1953,15 @@
       "testing"
     ],
     "lane": "B",
-    "status": "pending",
+    "status": "resolved",
     "resolution": {
       "branch": null,
-      "commits": [],
+      "commits": [
+        "1674c97"
+      ],
       "test": null,
-      "reject_reason": null
+      "reject_reason": null,
+      "note": "common correctness+tests"
     }
   },
   {
@@ -2173,12 +2249,15 @@
       "structure"
     ],
     "lane": "A",
-    "status": "pending",
+    "status": "resolved",
     "resolution": {
       "branch": null,
-      "commits": [],
+      "commits": [
+        "d78641a"
+      ],
       "test": null,
-      "reject_reason": null
+      "reject_reason": null,
+      "note": "explorer DRY+typesafety+deadcode"
     }
   },
   {
@@ -2204,12 +2283,15 @@
       "structure"
     ],
     "lane": "B",
-    "status": "pending",
+    "status": "resolved",
     "resolution": {
       "branch": null,
-      "commits": [],
+      "commits": [
+        "d78641a"
+      ],
       "test": null,
-      "reject_reason": null
+      "reject_reason": null,
+      "note": "explorer DRY+typesafety+deadcode"
     }
   },
   {
@@ -2430,12 +2512,15 @@
       "testing"
     ],
     "lane": "A",
-    "status": "pending",
+    "status": "resolved",
     "resolution": {
       "branch": null,
-      "commits": [],
+      "commits": [
+        "2641729"
+      ],
       "test": null,
-      "reject_reason": null
+      "reject_reason": null,
+      "note": "coverage ratchet to measured baseline"
     }
   },
   {
@@ -2784,12 +2869,15 @@
       "database"
     ],
     "lane": "A",
-    "status": "pending",
+    "status": "resolved",
     "resolution": {
       "branch": null,
-      "commits": [],
+      "commits": [
+        "3c29e07"
+      ],
       "test": null,
-      "reject_reason": null
+      "reject_reason": null,
+      "note": "rest-api DRY+index alignment"
     }
   },
   {
@@ -2815,12 +2903,15 @@
       "database"
     ],
     "lane": "A",
-    "status": "pending",
+    "status": "resolved",
     "resolution": {
       "branch": null,
-      "commits": [],
+      "commits": [
+        "3c29e07"
+      ],
       "test": null,
-      "reject_reason": null
+      "reject_reason": null,
+      "note": "rest-api DRY+index alignment"
     }
   },
   {
@@ -2847,12 +2938,15 @@
       "dependencies"
     ],
     "lane": "B",
-    "status": "pending",
+    "status": "resolved",
     "resolution": {
       "branch": null,
-      "commits": [],
+      "commits": [
+        "42b4429"
+      ],
       "test": null,
-      "reject_reason": null
+      "reject_reason": null,
+      "note": "deps/infra/i18n tail"
     }
   },
   {
@@ -2949,12 +3043,15 @@
       "dependencies"
     ],
     "lane": "B",
-    "status": "pending",
+    "status": "resolved",
     "resolution": {
       "branch": null,
-      "commits": [],
+      "commits": [
+        "42b4429"
+      ],
       "test": null,
-      "reject_reason": null
+      "reject_reason": null,
+      "note": "deps/infra/i18n tail"
     }
   },
   {
@@ -2980,12 +3077,13 @@
       "dependencies"
     ],
     "lane": "A",
-    "status": "pending",
+    "status": "decision-needed",
     "resolution": {
       "branch": null,
       "commits": [],
       "test": null,
-      "reject_reason": null
+      "reject_reason": null,
+      "note": "server/bot: populate with real sources or remove the stub \u2014 is the bot a real component?"
     }
   },
   {
@@ -3090,12 +3188,15 @@
       "infra"
     ],
     "lane": "B",
-    "status": "pending",
+    "status": "resolved",
     "resolution": {
       "branch": null,
-      "commits": [],
+      "commits": [
+        "42b4429"
+      ],
       "test": null,
-      "reject_reason": null
+      "reject_reason": null,
+      "note": "deps/infra/i18n tail"
     }
   },
   {
@@ -3214,12 +3315,15 @@
       "plugin-architecture"
     ],
     "lane": "B",
-    "status": "pending",
+    "status": "resolved",
     "resolution": {
       "branch": null,
-      "commits": [],
+      "commits": [
+        "bd22f5e"
+      ],
       "test": null,
-      "reject_reason": null
+      "reject_reason": null,
+      "note": "treasury DRY+i18n sweep"
     }
   },
   {
@@ -3287,12 +3391,15 @@
       "plugin-architecture"
     ],
     "lane": "B",
-    "status": "pending",
+    "status": "resolved",
     "resolution": {
       "branch": null,
-      "commits": [],
+      "commits": [
+        "bd22f5e"
+      ],
       "test": null,
-      "reject_reason": null
+      "reject_reason": null,
+      "note": "treasury DRY+i18n sweep"
     }
   },
   {
@@ -3322,11 +3429,11 @@
     "resolution": {
       "branch": null,
       "commits": [
-        "Idempotency dedup + resolver cache + tests"
+        "4f92225"
       ],
       "test": null,
       "reject_reason": null,
-      "note": "treasury/structure/0001"
+      "note": "Wave 2 (commit reconciled)"
     }
   },
   {
@@ -3369,12 +3476,13 @@
       "plugin-architecture"
     ],
     "lane": "B",
-    "status": "pending",
+    "status": "decision-needed",
     "resolution": {
       "branch": null,
       "commits": [],
       "test": null,
-      "reject_reason": null
+      "reject_reason": null,
+      "note": "Blocked by the interface+impl-for-all-services convention decision (Lane D)"
     }
   },
   {
@@ -3445,12 +3553,14 @@
       "structure"
     ],
     "lane": "A",
-    "status": "pending",
+    "status": "resolved",
     "resolution": {
       "branch": null,
-      "commits": [],
+      "commits": [
+        "4f92225"
+      ],
       "test": null,
-      "reject_reason": null
+      "note": "Reconciled: code committed Wave 2; ledger close missed due to empty shell var"
     }
   },
   {
@@ -3486,12 +3596,15 @@
       "structure"
     ],
     "lane": "A",
-    "status": "pending",
+    "status": "resolved",
     "resolution": {
       "branch": null,
-      "commits": [],
+      "commits": [
+        "bd22f5e"
+      ],
       "test": null,
-      "reject_reason": null
+      "reject_reason": null,
+      "note": "treasury DRY+i18n sweep"
     }
   },
   {
@@ -3526,12 +3639,15 @@
       "structure"
     ],
     "lane": "A",
-    "status": "pending",
+    "status": "resolved",
     "resolution": {
       "branch": null,
-      "commits": [],
+      "commits": [
+        "bd22f5e"
+      ],
       "test": null,
-      "reject_reason": null
+      "reject_reason": null,
+      "note": "treasury DRY+i18n sweep"
     }
   },
   {
@@ -3574,12 +3690,15 @@
       "structure"
     ],
     "lane": "A",
-    "status": "pending",
+    "status": "resolved",
     "resolution": {
       "branch": null,
-      "commits": [],
+      "commits": [
+        "bd22f5e"
+      ],
       "test": null,
-      "reject_reason": null
+      "reject_reason": null,
+      "note": "treasury DRY+i18n sweep"
     }
   },
   {
@@ -3614,12 +3733,15 @@
       "structure"
     ],
     "lane": "A",
-    "status": "pending",
+    "status": "resolved",
     "resolution": {
       "branch": null,
-      "commits": [],
+      "commits": [
+        "bd22f5e"
+      ],
       "test": null,
-      "reject_reason": null
+      "reject_reason": null,
+      "note": "treasury DRY+i18n sweep"
     }
   },
   {
@@ -3670,12 +3792,15 @@
       "structure"
     ],
     "lane": "A",
-    "status": "pending",
+    "status": "resolved",
     "resolution": {
       "branch": null,
-      "commits": [],
+      "commits": [
+        "bd22f5e"
+      ],
       "test": null,
-      "reject_reason": null
+      "reject_reason": null,
+      "note": "treasury DRY+i18n sweep"
     }
   },
   {
@@ -3718,12 +3843,15 @@
       "structure"
     ],
     "lane": "A",
-    "status": "pending",
+    "status": "resolved",
     "resolution": {
       "branch": null,
-      "commits": [],
+      "commits": [
+        "bd22f5e"
+      ],
       "test": null,
-      "reject_reason": null
+      "reject_reason": null,
+      "note": "treasury DRY+i18n sweep"
     }
   },
   {
@@ -3749,12 +3877,15 @@
       "structure"
     ],
     "lane": "A",
-    "status": "pending",
+    "status": "resolved",
     "resolution": {
       "branch": null,
-      "commits": [],
+      "commits": [
+        "bd22f5e"
+      ],
       "test": null,
-      "reject_reason": null
+      "reject_reason": null,
+      "note": "treasury DRY+i18n sweep"
     }
   },
   {
@@ -3784,11 +3915,11 @@
     "resolution": {
       "branch": null,
       "commits": [
-        "Idempotency dedup + resolver cache + tests"
+        "4f92225"
       ],
       "test": null,
       "reject_reason": null,
-      "note": "treasury/structure/0001"
+      "note": "Wave 2 (commit reconciled)"
     }
   },
   {
@@ -3835,11 +3966,11 @@
     "resolution": {
       "branch": null,
       "commits": [
-        "Idempotency dedup + resolver cache + tests"
+        "4f92225"
       ],
       "test": null,
       "reject_reason": null,
-      "note": "treasury/structure/0001"
+      "note": "Wave 2 (commit reconciled)"
     }
   },
   {
@@ -3914,11 +4045,11 @@
     "resolution": {
       "branch": null,
       "commits": [
-        "Idempotency dedup + resolver cache + tests"
+        "4f92225"
       ],
       "test": null,
       "reject_reason": null,
-      "note": "treasury/structure/0001"
+      "note": "Wave 2 (commit reconciled)"
     }
   },
   {
@@ -4259,12 +4390,15 @@
       "plugin-architecture"
     ],
     "lane": "A",
-    "status": "pending",
+    "status": "resolved",
     "resolution": {
       "branch": null,
-      "commits": [],
+      "commits": [
+        "42b4429"
+      ],
       "test": null,
-      "reject_reason": null
+      "reject_reason": null,
+      "note": "deps/infra/i18n tail"
     }
   },
   {
@@ -4867,12 +5001,15 @@
       "structure"
     ],
     "lane": "A",
-    "status": "pending",
+    "status": "resolved",
     "resolution": {
       "branch": null,
-      "commits": [],
+      "commits": [
+        "3c29e07"
+      ],
       "test": null,
-      "reject_reason": null
+      "reject_reason": null,
+      "note": "rest-api DRY+index alignment"
     }
   },
   {
@@ -4915,12 +5052,15 @@
       "structure"
     ],
     "lane": "A",
-    "status": "pending",
+    "status": "resolved",
     "resolution": {
       "branch": null,
-      "commits": [],
+      "commits": [
+        "3c29e07"
+      ],
       "test": null,
-      "reject_reason": null
+      "reject_reason": null,
+      "note": "rest-api DRY+index alignment"
     }
   },
   {
@@ -5305,7 +5445,7 @@
     "severity": "minor",
     "confidence": "high",
     "source": "remediation",
-    "status": "pending",
+    "status": "resolved",
     "file": "business/src/main/java/io/paradaux/business/services/impl/FirmServiceImpl.java",
     "lines": [
       248,
@@ -5321,9 +5461,12 @@
     ],
     "resolution": {
       "branch": null,
-      "commits": [],
+      "commits": [
+        "989050c"
+      ],
       "test": null,
-      "reject_reason": null
+      "reject_reason": null,
+      "note": "cross-engine locked-balance sweep; test-first"
     },
     "lane": "B"
   },
@@ -5335,7 +5478,7 @@
     "severity": "nit",
     "confidence": "high",
     "source": "remediation",
-    "status": "pending",
+    "status": "resolved",
     "file": "economy-explorer/lib/sql/me.ts",
     "lines": [
       1,
@@ -5351,9 +5494,12 @@
     ],
     "resolution": {
       "branch": null,
-      "commits": [],
+      "commits": [
+        "d78641a"
+      ],
       "test": null,
-      "reject_reason": null
+      "reject_reason": null,
+      "note": "explorer DRY+typesafety+deadcode"
     },
     "lane": "A"
   },
@@ -5382,11 +5528,110 @@
     "resolution": {
       "branch": null,
       "commits": [
-        "Idempotency dedup + resolver cache + tests"
+        "4f92225"
       ],
       "test": null,
       "reject_reason": null,
-      "note": "treasury/structure/0001"
+      "note": "Wave 2 (commit reconciled)"
+    },
+    "lane": "B"
+  },
+  {
+    "id": "treasury/plugin-architecture/0007",
+    "component": "treasury",
+    "dimension": "plugin-architecture",
+    "category": "reaudit-followup",
+    "severity": "nit",
+    "confidence": "high",
+    "source": "reaudit",
+    "status": "resolved",
+    "file": "treasury/src/main/java/io/paradaux/treasury/services/impl/MembershipServiceImpl.java",
+    "lines": [
+      90,
+      94
+    ],
+    "snippet": "",
+    "description": "assertCanSpend(int,UUID) has no callers; GovCommand/FineCommand delegate to the boolean canSpend and the command still enforces. The GovCommand comment overstates that enforcement moved to the service.",
+    "recommendation": "Either wire assertCanSpend as the genuine service-side enforcement (throwing NoPermissionException) if user-facing denial stays equivalent, or remove the dead method and correct the comment to state enforcement is command-driven over the service predicate.",
+    "effort": "trivial",
+    "occurrences": [],
+    "related_dimensions": [
+      "plugin-architecture"
+    ],
+    "resolution": {
+      "branch": null,
+      "commits": [
+        "8b81eed"
+      ],
+      "test": null,
+      "reject_reason": null,
+      "note": "re-audit follow-up refinements; green-gated"
+    },
+    "lane": "B"
+  },
+  {
+    "id": "treasury/behaviour/0003",
+    "component": "treasury",
+    "dimension": "behaviour",
+    "category": "reaudit-followup",
+    "severity": "nit",
+    "confidence": "high",
+    "source": "reaudit",
+    "status": "resolved",
+    "file": "treasury/src/main/java/io/paradaux/treasury/services/impl/LedgerServiceImpl.java",
+    "lines": [
+      293,
+      293
+    ],
+    "snippet": "",
+    "description": "sweepAll stamps plugin_system=Treasury-Core; the disband transfer it replaced passed BusinessPlugin, so firm-disband drain provenance shifted.",
+    "recommendation": "Let sweepAll carry the caller's source-plugin attribution (add a param) and have business disbandInternal pass its BusinessPlugin identifier, preserving ledger provenance.",
+    "effort": "trivial",
+    "occurrences": [],
+    "related_dimensions": [
+      "behaviour"
+    ],
+    "resolution": {
+      "branch": null,
+      "commits": [
+        "8b81eed"
+      ],
+      "test": null,
+      "reject_reason": null,
+      "note": "re-audit follow-up refinements; green-gated"
+    },
+    "lane": "B"
+  },
+  {
+    "id": "treasury-rest-api/behaviour/0003",
+    "component": "treasury-rest-api",
+    "dimension": "behaviour",
+    "category": "reaudit-followup",
+    "severity": "minor",
+    "confidence": "high",
+    "source": "reaudit",
+    "status": "resolved",
+    "file": "treasury-rest-api/src/main/java/io/paradaux/treasuryrestapi/service/TransferService.java",
+    "lines": [
+      285,
+      289
+    ],
+    "snippet": "",
+    "description": "rest-api sweepAll dereferences the locked source balance without the null guard its plugin twin (LedgerServiceImpl.sweepAll) has. Not live-reachable (every account seeds a balance row) but a two-engine parity gap.",
+    "recommendation": "Add the same `if (sourceBalance == null) throw ...` guard as the plugin engine for behaviour-equivalence.",
+    "effort": "trivial",
+    "occurrences": [],
+    "related_dimensions": [
+      "behaviour"
+    ],
+    "resolution": {
+      "branch": null,
+      "commits": [
+        "8b81eed"
+      ],
+      "test": null,
+      "reject_reason": null,
+      "note": "re-audit follow-up refinements; green-gated"
     },
     "lane": "B"
   }
