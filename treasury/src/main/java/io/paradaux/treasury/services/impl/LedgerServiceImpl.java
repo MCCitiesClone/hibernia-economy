@@ -452,6 +452,16 @@ public class LedgerServiceImpl implements LedgerService {
         return ledgerMapper.findPostingsByTxnId(txnId);
     }
 
+    @Override
+    @Transactional
+    public java.util.OptionalLong findTxnIdByDedupKey(byte[] dedupKey) {
+        if (dedupKey == null) {
+            return java.util.OptionalLong.empty();
+        }
+        LedgerTxn existing = ledgerMapper.findByDedupKey(dedupKey);
+        return existing == null ? java.util.OptionalLong.empty() : java.util.OptionalLong.of(existing.getTxnId());
+    }
+
     // ---- Private helpers ----
 
     private long insertTxn(String message, UUID initiator, @Nullable UUID authorizer,

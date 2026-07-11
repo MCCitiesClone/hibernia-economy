@@ -91,6 +91,14 @@ public interface LedgerService {
     /** Single transaction lookup by ID. */
     LedgerTxn getTransaction(long txnId);
 
+    /**
+     * The txn id already recorded for a client dedup key, if any. Lets an idempotent
+     * caller (e.g. salaries) tell whether a subsequent {@link #transfer(TransferRequest)}
+     * with the same key will create a fresh posting or collapse onto this pre-existing
+     * txn via {@code uq_ledger_dedup}. Returns empty if no txn carries that key.
+     */
+    java.util.OptionalLong findTxnIdByDedupKey(byte[] dedupKey);
+
     /** All postings belonging to a transaction. */
     List<LedgerPosting> getPostingsForTransaction(long txnId);
 }

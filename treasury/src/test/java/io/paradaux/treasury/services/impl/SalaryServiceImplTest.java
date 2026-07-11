@@ -223,6 +223,30 @@ class SalaryServiceImplTest {
     }
 
     @Test
+    void payout_stillNotifiesAndCountsWhenTransferCollapsesOntoExistingDedupKey() {
+        // ADT-8 semantics: a payment whose dedup key already exists collapses onto the
+        // prior txn (no new posting). Behaviour is preserved — the player is still
+        // notified and counted — the only added effect is a diagnostic WARN log, which
+        // this test asserts we consulted the ledger to detect.
+        UUID alice = UUID.randomUUID();
+        Account gov = new Account();
+        gov.setAccountId(7);
+        when(accountService.getGovernmentAccountByName("DCGovernment")).thenReturn(gov);
+        when(accountService.getOrCreatePersonalAccountId(alice)).thenReturn(42);
+        // A txn already carries this period's dedup key → the transfer will collapse.
+        when(ledgerService.findTxnIdByDedupKey(any())).thenReturn(java.util.OptionalLong.of(123L));
+
+        int paid = service(cfg(true, AMOUNTS), true)
+                .payout(List.of(new SalaryPayment(alice, "senator", new BigDecimal("65.0"))));
+
+        // Unchanged behaviour: transfer still attempted, player still notified & counted.
+        assertThat(paid).isEqualTo(1);
+        verify(ledgerService).findTxnIdByDedupKey(any());
+        verify(ledgerService).transfer(any());
+        verify(notifier).notifySalaryPaid(org.mockito.ArgumentMatchers.eq(alice), any());
+    }
+
+    @Test
     void payout_continuesWhenOneTransferFails() {
         UUID a = UUID.randomUUID();
         UUID b = UUID.randomUUID();

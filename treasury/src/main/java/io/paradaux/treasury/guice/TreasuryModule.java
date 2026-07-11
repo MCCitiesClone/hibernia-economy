@@ -59,6 +59,7 @@ public class TreasuryModule extends AbstractModule {
         bind(FineWebhookService.class).to(FineWebhookServiceImpl.class).in(Singleton.class);
         bind(PlayerDirectoryService.class).to(PlayerDirectoryServiceImpl.class).in(Singleton.class);
         bind(AuditService.class).to(AuditServiceImpl.class).in(Singleton.class);
+        bind(ConfigReloadService.class).to(ConfigReloadServiceImpl.class).in(Singleton.class);
 
         // Player-facing notifications for automated money movement (tax, salaries).
         bind(EconomyNotifier.class).to(EconomyNotifierImpl.class).in(Singleton.class);
@@ -66,8 +67,8 @@ public class TreasuryModule extends AbstractModule {
         // Tax API
         bind(SourceIncomeTaxConfiguration.class).in(Singleton.class);
         bind(BalanceTaxConfiguration.class).in(Singleton.class);
-        bind(BalanceTaxService.class).in(Singleton.class);
-        bind(TaxCycleRegistry.class).in(Singleton.class);
+        bind(BalanceTaxService.class).to(BalanceTaxServiceImpl.class).in(Singleton.class);
+        bind(TaxCycleRegistry.class).to(TaxCycleRegistryImpl.class).in(Singleton.class);
         bind(TaxApiImpl.class).in(Singleton.class);
         bind(TaxApi.class).to(TaxApiImpl.class).in(Singleton.class);
         bind(TaxWebhookService.class).to(TaxWebhookServiceImpl.class).in(Singleton.class);

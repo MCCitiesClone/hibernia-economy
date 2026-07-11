@@ -49,7 +49,7 @@ class BalanceTaxServiceMockedApiTest {
 
     @BeforeEach
     void setUp() {
-        svc = new BalanceTaxService(enabledConfig(), taxApi, accountMapper);
+        svc = new io.paradaux.treasury.services.impl.BalanceTaxServiceImpl(enabledConfig(), taxApi, accountMapper);
     }
 
     @Test
