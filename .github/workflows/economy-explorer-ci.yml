@@ -17,11 +17,12 @@ on:
   # commit and the path-filtered push event doesn't fire.
   workflow_dispatch:
 
-# Least privilege (CodeQL actions/missing-workflow-permissions): both jobs only
-# check out the repo; the Harbor push authenticates with registry secrets, not
-# the GITHUB_TOKEN.
+# Least privilege (CodeQL actions/missing-workflow-permissions): the test job
+# only checks out the repo; the build-and-push job also needs packages: write to
+# push the image to GHCR, authenticated with the GITHUB_TOKEN.
 permissions:
   contents: read
+  packages: write   # push images to GitHub Container Registry
 
 defaults:
   run:
@@ -100,16 +101,21 @@ jobs:
           echo "SHA_TAG=${ENV_NAME}-sha-${SHORT_SHA}" >> "$GITHUB_OUTPUT"
           echo "MUTABLE_TAG=${MUTABLE}" >> "$GITHUB_OUTPUT"
 
-      - name: Log in to Harbor registry
+          # GHCR requires the image path to be lowercase; the owner slug can
+          # contain uppercase (e.g. ParadauxIO), so normalise it here.
+          IMAGE=$(echo "ghcr.io/${{ github.repository_owner }}/economy-explorer" | tr '[:upper:]' '[:lower:]')
+          echo "IMAGE=${IMAGE}" >> "$GITHUB_OUTPUT"
+
+      - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
         with:
-          registry: ${{ secrets.HARBOR_REGISTRY }}
-          username: ${{ secrets.HARBOR_USERNAME }}
-          password: ${{ secrets.HARBOR_PASSWORD }}
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build Docker image
         run: |
-          IMAGE=${{ secrets.HARBOR_REGISTRY }}/paradaux-public/economy-explorer
+          IMAGE=${{ steps.tags.outputs.IMAGE }}
           docker build \
             -t "${IMAGE}:${{ steps.tags.outputs.SHA_TAG }}" \
             -t "${IMAGE}:${{ steps.tags.outputs.MUTABLE_TAG }}" \
@@ -117,6 +123,6 @@ jobs:
 
       - name: Push Docker image
         run: |
-          IMAGE=${{ secrets.HARBOR_REGISTRY }}/paradaux-public/economy-explorer
+          IMAGE=${{ steps.tags.outputs.IMAGE }}
           docker push "${IMAGE}:${{ steps.tags.outputs.SHA_TAG }}"
           docker push "${IMAGE}:${{ steps.tags.outputs.MUTABLE_TAG }}"

@@ -135,7 +135,7 @@ There are two audiences, two doc sets:
 ### Clone and build
 
 ```bash
-git clone <this-repo> hibernia-economy
+git clone git@github.com:MCCitiesClone/hibernia-economy.git hibernia-economy
 cd hibernia-economy
 
 # Build and test everything (one wrapper, one build graph):
