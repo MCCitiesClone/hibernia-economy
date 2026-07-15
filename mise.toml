@@ -2,4 +2,4 @@
 # This project's Gradle build requires a Java 21 toolchain.
 # The parent ~/projects/city-plugins/mise.toml pins java = "latest" (26),
 # so pin 21 here so Gradle launches under (and discovers) JDK 21.
-java = "temurin-21"
+java = "21"
