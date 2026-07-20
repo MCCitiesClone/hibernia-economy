@@ -106,6 +106,14 @@ public class EconomyServiceImpl implements EconomyService {
         return !unlimitedOwner || accounts.getServerEconomyAccount() != null;
     }
 
+    // deposit/withdraw are intentionally NON-idempotent: the dedup key folds in
+    // System.nanoTime() so each call is a distinct movement that never collapses onto a
+    // previous one. That is correct for their only callers — one-shot shop-creation fees
+    // and shop-removal refunds (ShopServiceImpl), where a second legitimate shop create is
+    // a genuinely separate charge that must NOT dedup onto the first. Do NOT make these
+    // keys deterministic, and do NOT reuse deposit/withdraw from a retryable path without a
+    // caller-supplied dedup key — the idempotent trade settlement path uses the private
+    // transfer() helper with a deterministic chestshop:settle:<tradeId> key instead.
     @Override
     public boolean deposit(UUID target, BigDecimal amount, World world) {
         UUID resolved = normaliseAdminTarget(target);

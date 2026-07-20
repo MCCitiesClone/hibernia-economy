@@ -191,7 +191,16 @@ public class TransferService {
             log.debug("Idempotency key provided but no prior transaction found; proceeding with new transfer");
         }
 
-        // Step 6: source account must exist and not be archived
+        // Step 6: source account must exist and not be archived.
+        // Note on parity with the in-process plugin engine (LedgerServiceImpl): the plugin
+        // re-reads the source's overdraft flags (allow_overdraft/credit_limit) under a
+        // shared row lock (ADT-10) to exclude a concurrent flag flip mid-transfer. This
+        // engine deliberately reads them from this unlocked findById instead — and that is
+        // safe here, NOT an oversight: treasury-rest-api has no code path that writes those
+        // flags at all (only the plugin's admin tooling flips them), and no normal user can
+        // trigger a flip. If parity were ever needed, the correct change is a shared-lock
+        // read of the accounts row BEFORE the balance FOR UPDATE locks below (accounts-then-
+        // balances, matching the plugin's order) — do not "fix" it as a deadlock issue.
         Account source = accountMapper.findById(fromAccountId);
         if (source == null || source.isArchived()) {
             log.warn("Transfer rejected: source accountId={} not found or archived", fromAccountId);

@@ -131,16 +131,13 @@ public class SalaryServiceImpl implements SalaryService {
                 int toAccountId = accountService.getOrCreatePersonalAccountId(payment.player());
                 byte[] dedupKey = Idempotency.sha256("salary:" + runId + ":" + payment.player());
 
-                // Observability for the ADT-8 never-double-pay dedup: if a txn already
-                // carries this period's key, the transfer below will collapse onto it
-                // rather than create a fresh posting — i.e. this player is NOT being paid
-                // for this period. That's intended for retries/overlapping manual runs,
-                // but if the *scheduled* SalaryTask keeps colliding (two fires bucketed
-                // into one period under tick lag) a whole payout period is silently
-                // skipped. Surface it so a persistently-dropped period is diagnosable.
-                boolean preExisting = ledgerService.findTxnIdByDedupKey(dedupKey).isPresent();
-
-                ledgerService.transfer(new TransferRequest(
+                // transferChecked reports whether it actually moved money. It returns
+                // created=false when this period's dedup key already had a txn — the
+                // ADT-8 never-double-pay guard collapsing a retry or a manual run that
+                // overlaps the scheduled SalaryTask. Detection is inside the insert, so
+                // it is race-safe even when two runs both pass a pre-check (the losing
+                // run collapses on uq_ledger_dedup and still reports created=false).
+                LedgerService.TransferResult result = ledgerService.transferChecked(new TransferRequest(
                         fromAccountId,
                         toAccountId,
                         payment.amount(),
@@ -150,14 +147,22 @@ public class SalaryServiceImpl implements SalaryService {
                         "treasury-salary",
                         dedupKey));
 
-                if (preExisting) {
+                if (result.created()) {
+                    // A real payout happened — notify and count it.
+                    notifier.notifySalaryPaid(payment.player(), payment.amount());
+                    paid++;
+                } else {
+                    // Collapsed onto an existing payout for this period: no new money
+                    // moved, so don't re-notify the player or inflate the paid count.
+                    // Expected for retries/overlapping manual runs; but if the *scheduled*
+                    // SalaryTask keeps colliding (two fires bucketed into one period under
+                    // tick lag) a whole payout period is silently skipped — surface it so
+                    // that is diagnosable.
                     log.warn("Salary for {} (group {}, period start {}) collapsed onto an existing "
                                     + "dedup key — no new payout for this period. Expected for a retry/overlapping "
                                     + "run; if it recurs on the scheduled timer, a payout period is being skipped.",
                             payment.player(), payment.group(), runId);
                 }
-                notifier.notifySalaryPaid(payment.player(), payment.amount());
-                paid++;
             } catch (Exception e) {
                 log.warn("Salary payment to {} failed: {}", payment.player(), e.getMessage());
             }

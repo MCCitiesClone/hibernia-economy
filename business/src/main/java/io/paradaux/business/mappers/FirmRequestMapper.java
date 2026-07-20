@@ -158,6 +158,21 @@ public interface FirmRequestMapper {
                             @Param("token") String token);
 
     /**
+     * Cancel any in-flight (PENDING or CONFIRMED) proprietorship transfer for a firm.
+     * Used by the admin proprietor override so a transfer the previous proprietor had
+     * in flight can't later be completed and re-hand the firm to a third party. At
+     * most one transfer is active per firm (the {@code uq_one_active_transfer}
+     * constraint), so this touches at most one row. Returns the number cancelled.
+     */
+    @Update("""
+            UPDATE firm_transfer_requests
+               SET status = 'CANCELLED'
+             WHERE firm_id = #{firmId}
+               AND status IN ('PENDING', 'CONFIRMED')
+            """)
+    int cancelActiveTransfers(@Param("firmId") int firmId);
+
+    /**
      * Confirm a transfer iff token matches, it is PENDING, and not expired.
      * Returns 1 if flipped to CONFIRMED, 0 otherwise.
      */

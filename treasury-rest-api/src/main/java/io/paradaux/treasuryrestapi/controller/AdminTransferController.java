@@ -20,6 +20,13 @@ import org.springframework.web.bind.annotation.RestController;
 /**
  * SERVICE-scoped admin transfer between arbitrary accounts (PAR-217). Hidden from
  * the OpenAPI doc; gated to SERVICE keys in {@link TransferService#adminTransfer}.
+ *
+ * <p>Deliberately carries no {@code @RateLimit}. A meaningful ceiling on a money path
+ * would need {@code failClosed=true}, which would lock admins out during a Redis outage —
+ * exactly when manual intervention is most needed. The threat it would address (a leaked
+ * SERVICE key) is better mitigated by key rotation/scoping than by throttling, which only
+ * slows a valid-credential attacker while risking that lockout and throttling legitimate
+ * bulk admin payouts. Accepted risk for this single-server, solo-operated economy.
  */
 @Hidden
 @RestController

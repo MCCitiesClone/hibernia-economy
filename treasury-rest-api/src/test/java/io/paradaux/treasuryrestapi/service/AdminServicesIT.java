@@ -77,6 +77,18 @@ class AdminServicesIT extends EmbeddedDbIT {
     }
 
     @Test
+    void createWebhook_rejectsKeyTypeOutsideEnum() {
+        // key_type is ENUM('PERSONAL','BUSINESS','GOVERNMENT'); anything else (here SYSTEM)
+        // must be a clean 400, not a driver data-truncation 500. No row persisted.
+        WebhookCreateRequest bad = new WebhookCreateRequest(OWNER, "SYSTEM", 42, null, PUBLIC_URL, "s");
+        ApiException ex = catchThrowableOfType(ApiException.class,
+                () -> adminWebhook.create(service(), bad));
+        assertThat(ex.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(ex.getErrorCode()).isEqualTo("INVALID_BODY");
+        assertThat(rowCount("webhook_subscription")).isZero();
+    }
+
+    @Test
     void setUrl_ownerScoped_onlyAffectsOwnedRow() {
         long id = adminWebhook.create(service(), req(PUBLIC_URL, "s"));
         // Wrong owner → 0 rows affected (self-service scope not matched).

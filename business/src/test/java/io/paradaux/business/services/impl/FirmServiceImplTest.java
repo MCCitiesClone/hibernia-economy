@@ -32,11 +32,15 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.List;
 import java.util.UUID;
 
+import org.mockito.InOrder;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -535,6 +539,35 @@ class FirmServiceImplTest {
         // The forced handover must be audited (from old, to new, by the admin) — PAR-315.
         verify(requests).recordAdminOverride(eq(1), eq(oldOwner.toString()),
                 eq(newOwner.toString()), eq(admin.toString()), any());
+        // Any in-flight player transfer is cancelled so it can't later re-hand the firm.
+        verify(requests).cancelActiveTransfers(1);
+        // Ordering matters: every DB write (cancel, audit) must precede the cross-plugin
+        // reassignment IPC, which cannot roll back with the JDBC transaction (ADT-11).
+        InOrder order = inOrder(requests, firmAccountService);
+        order.verify(requests).cancelActiveTransfers(1);
+        order.verify(requests).recordAdminOverride(eq(1), any(), any(), any(), any());
+        order.verify(firmAccountService).reassignAccountsToNewProprietor(1, newOwner);
+    }
+
+    @Test
+    void adminSetProprietor_whenAuditInsertFails_doesNotReassignAccounts() {
+        // ADT-11-class regression guard: the audit-row DB insert is ordered BEFORE the
+        // un-rollback-able Treasury account reassignment. If recordAdminOverride throws,
+        // the reassignment IPC must never have run — otherwise a rolled-back JDBC txn
+        // would leave Treasury account ownership diverged from the firm row.
+        UUID oldOwner = UUID.randomUUID();
+        UUID newOwner = UUID.randomUUID();
+        Firm firm = new Firm();
+        firm.setFirmId(1);
+        firm.setProprietorUuid(oldOwner.toString());
+        when(firms.getFirmByName("Acme")).thenReturn(firm);
+        when(requests.recordAdminOverride(anyInt(), any(), any(), any(), any()))
+                .thenThrow(new RuntimeException("audit insert failed"));
+
+        assertThatThrownBy(() -> svc.adminSetProprietor("Acme", newOwner, UUID.randomUUID()))
+                .isInstanceOf(RuntimeException.class);
+
+        verify(firmAccountService, never()).reassignAccountsToNewProprietor(anyInt(), any());
     }
 
     @Test

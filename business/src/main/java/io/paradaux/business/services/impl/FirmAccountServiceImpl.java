@@ -72,7 +72,9 @@ public class FirmAccountServiceImpl implements FirmAccountService {
         }
 
         Firm firm = firms.getFirmById(firmId);
-        if (firm == null) {
+        // getFirmById is archived-inclusive; reject archived firms so a createAccount
+        // racing a disband can't mint an orphan account against an archived firm.
+        if (firm == null || Boolean.TRUE.equals(firm.getArchived())) {
             throw new BadCommandException("Firm not found");
         }
 

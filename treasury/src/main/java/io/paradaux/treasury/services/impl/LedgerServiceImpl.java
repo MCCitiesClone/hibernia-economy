@@ -139,16 +139,22 @@ public class LedgerServiceImpl implements LedgerService {
     @Override
     @Transactional
     public long transfer(TransferRequest req) {
-        return transferInternal(req, false);
+        return transferInternal(req, false).txnId();
     }
 
     @Override
     @Transactional
     public long adminTransfer(TransferRequest req) {
-        return transferInternal(req, true);
+        return transferInternal(req, true).txnId();
     }
 
-    private long transferInternal(TransferRequest req, boolean bypassAuthorization) {
+    @Override
+    @Transactional
+    public TransferResult transferChecked(TransferRequest req) {
+        return transferInternal(req, false);
+    }
+
+    private TransferResult transferInternal(TransferRequest req, boolean bypassAuthorization) {
         Objects.requireNonNull(req, "transfer request");
         Money.requirePositive(req.amount(), "amount > 0");
 
@@ -161,7 +167,7 @@ public class LedgerServiceImpl implements LedgerService {
 
         if (req.dedupKey() != null) {
             LedgerTxn existing = ledgerMapper.findByDedupKey(req.dedupKey());
-            if (existing != null) return existing.getTxnId();
+            if (existing != null) return new TransferResult(existing.getTxnId(), false);
         }
 
         // Load both account rows in a single round-trip.
@@ -208,6 +214,9 @@ public class LedgerServiceImpl implements LedgerService {
         // be missed, and a now-limited account would be treated as unlimited and
         // overdraw (ADT-10). The shared lock excludes only the (rare) exclusive flag
         // flip, so concurrent transfers from a shared faucet still run in parallel.
+        // (The treasury-rest-api engine deliberately does NOT take this lock — it has no
+        // path that writes these flags, so the race can't arise there. Keep the two in
+        // sync only if that ever changes; see TransferService's parity note.)
         Account lockedFrom = accountMapper.lockAccountFlagsForShare(fromId);
         if (lockedFrom == null) {
             throw new IllegalArgumentException("Account not found (from=" + fromId + ")");
@@ -247,7 +256,7 @@ public class LedgerServiceImpl implements LedgerService {
                 LedgerTxn raced = ledgerMapper.findByDedupKeyLocking(req.dedupKey());
                 if (raced != null) {
                     log.debug("Transfer deduplicated on concurrent insert: returning existing txn={}", raced.getTxnId());
-                    return raced.getTxnId();
+                    return new TransferResult(raced.getTxnId(), false);
                 }
             }
             throw e;
@@ -256,7 +265,7 @@ public class LedgerServiceImpl implements LedgerService {
         postDoubleEntry(txnId, fromId, toId, req.amount(), req.message());
         log.debug("Transfer txn={} from={} to={} amount={} plugin={}",
                 txnId, fromId, toId, req.amount(), req.pluginSystem());
-        return txnId;
+        return new TransferResult(txnId, true);
     }
 
     @Override
@@ -450,16 +459,6 @@ public class LedgerServiceImpl implements LedgerService {
     @Transactional
     public List<LedgerPosting> getPostingsForTransaction(long txnId) {
         return ledgerMapper.findPostingsByTxnId(txnId);
-    }
-
-    @Override
-    @Transactional
-    public java.util.OptionalLong findTxnIdByDedupKey(byte[] dedupKey) {
-        if (dedupKey == null) {
-            return java.util.OptionalLong.empty();
-        }
-        LedgerTxn existing = ledgerMapper.findByDedupKey(dedupKey);
-        return existing == null ? java.util.OptionalLong.empty() : java.util.OptionalLong.of(existing.getTxnId());
     }
 
     // ---- Private helpers ----

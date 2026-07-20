@@ -166,7 +166,7 @@ class SalaryServiceImplTest {
         int paid = service(cfg(true, AMOUNTS), true)
                 .payout(List.of(new SalaryPayment(UUID.randomUUID(), "senator", new BigDecimal("65.0"))));
         assertThat(paid).isZero();
-        verify(ledgerService, never()).transfer(any());
+        verify(ledgerService, never()).transferChecked(any());
         verifyNoInteractions(notifier);
     }
 
@@ -177,13 +177,14 @@ class SalaryServiceImplTest {
         gov.setAccountId(7);
         when(accountService.getGovernmentAccountByName("DCGovernment")).thenReturn(gov);
         when(accountService.getOrCreatePersonalAccountId(alice)).thenReturn(42);
+        when(ledgerService.transferChecked(any())).thenReturn(new LedgerService.TransferResult(1L, true));
 
         int paid = service(cfg(true, AMOUNTS), true)
                 .payout(List.of(new SalaryPayment(alice, "senator", new BigDecimal("65.0"))));
 
         assertThat(paid).isEqualTo(1);
         ArgumentCaptor<TransferRequest> cap = ArgumentCaptor.forClass(TransferRequest.class);
-        verify(ledgerService).transfer(cap.capture());
+        verify(ledgerService).transferChecked(cap.capture());
         TransferRequest req = cap.getValue();
         assertThat(req.fromAccountId()).isEqualTo(7);
         assertThat(req.toAccountId()).isEqualTo(42);
@@ -209,6 +210,8 @@ class SalaryServiceImplTest {
         when(accountService.getGovernmentAccountByName("DCGovernment")).thenReturn(gov);
         when(accountService.getOrCreatePersonalAccountId(alice)).thenReturn(42);
 
+        when(ledgerService.transferChecked(any())).thenReturn(new LedgerService.TransferResult(1L, true));
+
         Clock clock = Clock.fixed(Instant.ofEpochSecond(1_000_000L), ZoneOffset.UTC);
         SalaryServiceImpl svc = new SalaryServiceImpl(
                 cfg(true, AMOUNTS), accountService, ledgerService, server, notifier, clock);
@@ -216,34 +219,36 @@ class SalaryServiceImplTest {
         svc.payout(List.of(new SalaryPayment(alice, "senator", new BigDecimal("65.0"))));
 
         ArgumentCaptor<TransferRequest> cap = ArgumentCaptor.forClass(TransferRequest.class);
-        verify(ledgerService).transfer(cap.capture());
+        verify(ledgerService).transferChecked(cap.capture());
         // 1_000_000 mod 900 == 100 → period start 999_900.
         byte[] expected = Idempotency.sha256("salary:999900:" + alice);
         assertThat(cap.getValue().dedupKey()).isEqualTo(expected);
     }
 
     @Test
-    void payout_stillNotifiesAndCountsWhenTransferCollapsesOntoExistingDedupKey() {
+    void payout_doesNotNotifyOrCountWhenTransferCollapsesOntoExistingDedupKey() {
         // ADT-8 semantics: a payment whose dedup key already exists collapses onto the
-        // prior txn (no new posting). Behaviour is preserved — the player is still
-        // notified and counted — the only added effect is a diagnostic WARN log, which
-        // this test asserts we consulted the ledger to detect.
+        // prior txn (no new money moved). transferChecked reports created=false, so the
+        // player must NOT be re-notified and the payout must NOT be counted — otherwise a
+        // retry or a manual run overlapping the scheduled task double-notifies. This is
+        // race-safe: the engine reports created=false whether the collapse is detected by
+        // the pre-insert check or by a concurrent-insert race, so it can't be defeated by
+        // two runs both passing an earlier pre-check.
         UUID alice = UUID.randomUUID();
         Account gov = new Account();
         gov.setAccountId(7);
         when(accountService.getGovernmentAccountByName("DCGovernment")).thenReturn(gov);
         when(accountService.getOrCreatePersonalAccountId(alice)).thenReturn(42);
-        // A txn already carries this period's dedup key → the transfer will collapse.
-        when(ledgerService.findTxnIdByDedupKey(any())).thenReturn(java.util.OptionalLong.of(123L));
+        // The transfer collapses onto an existing period txn → created=false.
+        when(ledgerService.transferChecked(any())).thenReturn(new LedgerService.TransferResult(123L, false));
 
         int paid = service(cfg(true, AMOUNTS), true)
                 .payout(List.of(new SalaryPayment(alice, "senator", new BigDecimal("65.0"))));
 
-        // Unchanged behaviour: transfer still attempted, player still notified & counted.
-        assertThat(paid).isEqualTo(1);
-        verify(ledgerService).findTxnIdByDedupKey(any());
-        verify(ledgerService).transfer(any());
-        verify(notifier).notifySalaryPaid(org.mockito.ArgumentMatchers.eq(alice), any());
+        // Corrected behaviour: transfer attempted, but no notify and not counted.
+        assertThat(paid).isZero();
+        verify(ledgerService).transferChecked(any());
+        verify(notifier, never()).notifySalaryPaid(org.mockito.ArgumentMatchers.eq(alice), any());
     }
 
     @Test
@@ -255,7 +260,9 @@ class SalaryServiceImplTest {
         when(accountService.getGovernmentAccountByName("DCGovernment")).thenReturn(gov);
         when(accountService.getOrCreatePersonalAccountId(a)).thenReturn(1);
         when(accountService.getOrCreatePersonalAccountId(b)).thenReturn(2);
-        doThrow(new RuntimeException("boom")).doReturn(99L).when(ledgerService).transfer(any());
+        doThrow(new RuntimeException("boom"))
+                .doReturn(new LedgerService.TransferResult(99L, true))
+                .when(ledgerService).transferChecked(any());
 
         List<SalaryPayment> plan = new ArrayList<>();
         plan.add(new SalaryPayment(a, "senator", new BigDecimal("65.0")));
@@ -263,7 +270,7 @@ class SalaryServiceImplTest {
 
         int paid = service(cfg(true, AMOUNTS), true).payout(plan);
         assertThat(paid).isEqualTo(1); // first threw, second succeeded
-        verify(ledgerService, org.mockito.Mockito.times(2)).transfer(any());
+        verify(ledgerService, org.mockito.Mockito.times(2)).transferChecked(any());
         // Only the player whose transfer succeeded is notified.
         verify(notifier, never()).notifySalaryPaid(org.mockito.ArgumentMatchers.eq(a), any());
         verify(notifier).notifySalaryPaid(org.mockito.ArgumentMatchers.eq(b), any());

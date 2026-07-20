@@ -35,6 +35,24 @@ public interface LedgerService {
     long transfer(TransferRequest req);
 
     /**
+     * Outcome of a transfer that also reports whether it moved money. {@code created}
+     * is {@code true} only when a fresh ledger txn was written; it is {@code false}
+     * when the client dedup key collapsed the call onto an existing txn — via the
+     * pre-insert check <em>or</em> a concurrent-insert race on {@code uq_ledger_dedup} —
+     * i.e. no new money moved.
+     */
+    record TransferResult(long txnId, boolean created) {}
+
+    /**
+     * Like {@link #transfer(TransferRequest)} but reports whether it actually created a
+     * new txn or deduplicated onto an existing one. Use when the caller must act only on
+     * a real money movement (notifications, counters); it is race-safe where a pre-check
+     * via a separate read is not, because the collapse is detected inside the same
+     * transactional insert (e.g. salary payouts).
+     */
+    TransferResult transferChecked(TransferRequest req);
+
+    /**
      * Sweeps the freshly-locked positive balance of {@code fromAccountId} into
      * {@code toAccountId} in one ledger transaction. The amount moved is read under the
      * same {@code FOR UPDATE} lock (ascending account-id order, identical to
@@ -91,13 +109,6 @@ public interface LedgerService {
     /** Single transaction lookup by ID. */
     LedgerTxn getTransaction(long txnId);
 
-    /**
-     * The txn id already recorded for a client dedup key, if any. Lets an idempotent
-     * caller (e.g. salaries) tell whether a subsequent {@link #transfer(TransferRequest)}
-     * with the same key will create a fresh posting or collapse onto this pre-existing
-     * txn via {@code uq_ledger_dedup}. Returns empty if no txn carries that key.
-     */
-    java.util.OptionalLong findTxnIdByDedupKey(byte[] dedupKey);
 
     /** All postings belonging to a transaction. */
     List<LedgerPosting> getPostingsForTransaction(long txnId);

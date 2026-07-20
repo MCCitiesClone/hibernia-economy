@@ -415,9 +415,18 @@ public class FirmServiceImpl implements FirmService {
      * proprietor and re-sync access. Without the reassignment the account
      * owner/authorizers stay on the previous proprietor and the new one is locked
      * out of the firm's money — the exact stranding the transfer flow prevents at
-     * FirmRequestServiceImpl#completeTransferProprietorship (PAR-141). Wrapped in
-     * a transaction so the proprietor update, account reassignment, and audit row
-     * commit or roll back together.
+     * FirmRequestServiceImpl#completeTransferProprietorship (PAR-141).
+     *
+     * <p>The Treasury account reassignment is cross-plugin IPC and cannot enrol in
+     * this JDBC {@code @Transactional}, so every DB write must happen <em>before</em>
+     * it — otherwise a DB write that throws after the IPC would roll the firm row
+     * back while the account owner change stays committed in Treasury, diverging
+     * ownership from money (the ADT-11 class). So the order is: DB proprietor update,
+     * cancel any in-flight transfer, record the audit row, and only then the IPC —
+     * mirroring the transfer-accept flow, which is deliberately ordered IPC-last for
+     * the same reason. (This closes the DB-write-after-IPC window; it does not close
+     * the pre-existing multi-account partial-IPC window inside the reassignment loop,
+     * which is shared with the consent-transfer path.)
      */
     @Transactional
     @Override
@@ -432,13 +441,22 @@ public class FirmServiceImpl implements FirmService {
         }
 
         updateProprietor(firm.getFirmId(), newProprietor);
-        firmAccountServiceProvider.get().reassignAccountsToNewProprietor(firm.getFirmId(), newProprietor);
+
+        // Cancel any in-flight (PENDING/CONFIRMED) player transfer for this firm, so a
+        // transfer the previous proprietor had started can't later be completed and
+        // re-hand the firm to a third party after this override (PAR-315).
+        requests.cancelActiveTransfers(firm.getFirmId());
 
         // Audit the forced handover in the same log as consent transfers, so a
         // staff/DOC override is traceable (who did it, from whom, to whom) instead
-        // of an invisible proprietor change (PAR-315).
+        // of an invisible proprietor change (PAR-315). Recorded before the IPC so no
+        // DB write follows the un-rollback-able Treasury reassignment below.
         requests.recordAdminOverride(firm.getFirmId(), previousProprietor.toString(),
                 newProprietor.toString(), actorId.toString(), StringUtils.random32());
+
+        // Hand the firm's Treasury accounts to the new proprietor and re-sync access.
+        // Cross-plugin IPC — kept last so nothing that can throw follows it.
+        firmAccountServiceProvider.get().reassignAccountsToNewProprietor(firm.getFirmId(), newProprietor);
     }
 
     private Firm requireFirm(String firmName) {

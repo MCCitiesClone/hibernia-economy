@@ -224,7 +224,12 @@ public class RateLimitInterceptor implements HandlerInterceptor {
      * bucket per request.
      *
      * <p>Falls back to {@code getRemoteAddr()} when the header is absent (local/dev, or
-     * in-cluster traffic that didn't traverse the gateway).
+     * in-cluster traffic that didn't traverse the gateway). This fallback is safe because
+     * {@code clientIp} keys only the <em>anonymous</em> rate-limit buckets on the public
+     * ChestShop read endpoints — no money path and no authenticated request keys on it
+     * (those use the issuer key derived from the JWT). The worst case of a forged/absent
+     * header is coarser throttling of public reads. It relies on the network policy that
+     * the pod is not externally reachable off the Envoy gateway; keep that invariant.
      */
     private static String clientIp(HttpServletRequest request) {
         String envoyClient = request.getHeader("X-Envoy-External-Address");

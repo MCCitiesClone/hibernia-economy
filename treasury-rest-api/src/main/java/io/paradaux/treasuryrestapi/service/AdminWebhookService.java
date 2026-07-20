@@ -13,6 +13,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -36,6 +37,14 @@ public class AdminWebhookService {
     // data-truncation error surfaced as a 500 (ADT-118).
     private static final int MAX_SECRET_LENGTH = 64;
 
+    // webhook_subscription.key_type is ENUM('PERSONAL','BUSINESS','GOVERNMENT') NOT NULL.
+    // The DTO carries it as a free @NotBlank String, so validate against the enum values
+    // up front: anything else (e.g. 'SYSTEM', 'SERVICE', typos) would otherwise truncate
+    // to '' or error at the driver, surfacing as a 500 instead of a clean 400. key_type is
+    // delivery metadata only (the dispatcher matches on account_id/firm_id), so this is
+    // purely input hygiene, not a routing decision (ADT-118).
+    private static final Set<String> VALID_KEY_TYPES = Set.of("PERSONAL", "BUSINESS", "GOVERNMENT");
+
     private final WebhookSubscriptionMapper mapper;
 
     public AdminWebhookService(WebhookSubscriptionMapper mapper) {
@@ -47,6 +56,7 @@ public class AdminWebhookService {
         AdminScope.require(verified);
         SsrfValidator.validate(req.targetUrl()); // https, public address, standard port
         validateSecret(req.secret());
+        validateKeyType(req.keyType());
         WebhookSubscription sub = new WebhookSubscription();
         sub.setApiKeyId(null); // owner-scoped (explorer-managed), not key-scoped
         sub.setOwnerUuid(req.ownerUuid());
@@ -82,6 +92,13 @@ public class AdminWebhookService {
         if (secret != null && secret.length() > MAX_SECRET_LENGTH) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "INVALID_BODY",
                     "Field 'secret' must be at most " + MAX_SECRET_LENGTH + " characters.");
+        }
+    }
+
+    private static void validateKeyType(String keyType) {
+        if (keyType == null || !VALID_KEY_TYPES.contains(keyType)) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "INVALID_BODY",
+                    "Field 'keyType' must be one of PERSONAL, BUSINESS, GOVERNMENT.");
         }
     }
 
