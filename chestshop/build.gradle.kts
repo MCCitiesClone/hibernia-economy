@@ -61,13 +61,18 @@ val pluginVersion = project.version.toString()
 // server API alone is added to the test runtime below.
 configurations.testCompileOnly.get().extendsFrom(configurations.compileOnly.get())
 
-// WorldGuard 7.1.0-SNAPSHOT transitively drags WorldEdit 8.0.0-SNAPSHOT (compiled
-// for Java 25). Pin the whole WorldEdit line to the last Java-21-compatible 7.x.
+// EngineHub moved its toolchain to Java 25, so anything they publish from now on
+// is unusable on our Java 21 toolchain. Pin both lines to the last Java-21
+// artifacts and never track a moving snapshot: WorldEdit at 7.3.9 (the 8.0.0
+// -SNAPSHOT WorldGuard drags in is Java 25), WorldGuard at 7.0.17 (7.0.18 and the
+// 7.1.0-SNAPSHOT it used to resolve are both Java 25). (PAR-330)
 configurations.configureEach {
     resolutionStrategy {
         force(
             "com.sk89q.worldedit:worldedit-core:7.3.9",
             "com.sk89q.worldedit:worldedit-bukkit:7.3.9",
+            "com.sk89q.worldguard:worldguard-core:7.0.17",
+            "com.sk89q.worldguard:worldguard-bukkit:7.0.17",
         )
     }
 }
@@ -99,11 +104,12 @@ dependencies {
     compileOnly("com.sk89q.worldedit:worldedit-bukkit:7.3.9") { isTransitive = false }
     // WorldGuard soft-depend: pull only its own API jars, non-transitively, so
     // none of its server-provided transitives (bukkit/gson/fastutil/guava) fight
-    // paper-api. These coordinates are what worldguard-legacy:7.0.0-SNAPSHOT
-    // resolved to; they carry the classes we touch (WorldGuard, StateFlag, Flags,
-    // RegionPermissionModel, WorldGuardPlugin).
-    compileOnly("com.sk89q.worldguard:worldguard-core:7.1.0-SNAPSHOT") { isTransitive = false }
-    compileOnly("com.sk89q.worldguard:worldguard-bukkit:7.1.0-SNAPSHOT") { isTransitive = false }
+    // paper-api. They carry the classes we touch (WorldGuard, StateFlag, Flags,
+    // RegionPermissionModel, WorldGuardPlugin). Pinned to a release, not
+    // 7.1.0-SNAPSHOT — that snapshot moved to Java 25 on 2026-08-01 and broke the
+    // build with no commit of ours involved. (PAR-330)
+    compileOnly("com.sk89q.worldguard:worldguard-core:7.0.17") { isTransitive = false }
+    compileOnly("com.sk89q.worldguard:worldguard-bukkit:7.0.17") { isTransitive = false }
     compileOnly("com.github.TechFortress:GriefPrevention:16.12.0") { isTransitive = false }
     compileOnly("com.nexomc:nexo:1.15.0") { isTransitive = false }
     // Direct project dependencies on the in-repo API modules (ADT stale-chestshop-substitution-comment):
