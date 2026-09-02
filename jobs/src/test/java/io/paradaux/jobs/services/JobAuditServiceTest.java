@@ -30,7 +30,7 @@ class JobAuditServiceTest {
 
     private static final JobDefinition ELECTRICIAN = new JobDefinition(
             JobId.of("trades", "electrician"), "Electrician", "trade-electrician",
-            "Wires things.", Set.of());
+            "Wires things.", "<yellow>", Set.of());
 
     @Mock private JobEventMapper events;
     @Mock private JobMembershipMapper memberships;

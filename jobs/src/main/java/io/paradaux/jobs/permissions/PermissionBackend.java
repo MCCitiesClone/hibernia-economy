@@ -59,8 +59,12 @@ public interface PermissionBackend {
      *
      * <p>Only keys the configuration actually declares are written; anything
      * undeclared is left exactly as LuckPerms has it, so hand-tuned values survive.</p>
+     *
+     * @param color the job's resolved colour as a MiniMessage tag, written as group
+     *              meta under {@value io.paradaux.jobs.permissions.LuckPermsBackend#COLOR_META_KEY}
+     *              so other plugins and chat formats can read it. Blank writes nothing.
      */
-    CompletableFuture<Void> applyMetadata(String group, ProvisionSettings provision);
+    CompletableFuture<Void> applyMetadata(String group, ProvisionSettings provision, String color);
 
     /** Give the player the group. Works whether or not they are online. */
     CompletableFuture<MutationOutcome> addGroup(UUID subject, String group);

@@ -16,6 +16,12 @@ import java.util.LinkedHashSet;
  * type inherits. A licence is mechanically identical to a trade; only presentation
  * differs.</p>
  *
+ * @param color             MiniMessage colour for this type's section header in
+ *                          {@code /jobs} and in its own listing command. Accepts
+ *                          {@code aqua}, {@code <aqua>}, {@code #f0b040} or
+ *                          {@code <#f0b040>}. Also the default colour for every job
+ *                          in the type. Distinct from {@code provision.prefix-color},
+ *                          which colours the LuckPerms chat prefix.
  * @param managedExternally when true, player-run hire and fire are refused for this
  *                          type. The JobsApi, the console and {@code jobs.admin} are
  *                          unaffected — this is for types another plugin owns, such
@@ -23,6 +29,7 @@ import java.util.LinkedHashSet;
  */
 public record JobTypeSettings(
         String displayName,
+        String color,
         int order,
         boolean managedExternally,
         Set<String> canManage,
