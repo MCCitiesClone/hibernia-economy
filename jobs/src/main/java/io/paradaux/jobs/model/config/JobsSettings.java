@@ -30,7 +30,7 @@ public record JobsSettings(
         String adminPermission,
         boolean provisionGroups,
         boolean showEmptyTypes,
-        Map<String, String> listingCommands,
+        Map<String, ListingCommandSettings> listingCommands,
         ReconciliationSettings reconciliation,
         Map<String, JobTypeSettings> types
 ) {

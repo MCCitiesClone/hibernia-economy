@@ -13,6 +13,10 @@ softdepend: [ LuckPerms ]
 # The framework registers routes through Paper's Brigadier COMMANDS lifecycle, so
 # this block is metadata/help only — the same as Treasury and Business.
 #
+# The listing roots (/licenses, /qual, ...) are deliberately absent: jobs.yml
+# declares which exist and ListingCommandRegistrar creates them at runtime, so
+# listing them statically here would go stale the moment an operator edits it.
+#
 # /jobs hire|fire|quit are the CANONICAL forms and always work. The bare /hire,
 # /fire and /quit roots are conveniences: they are generic names another plugin may
 # already own, and whichever plugin registers first wins. Jobs logs a warning at
@@ -22,14 +26,6 @@ commands:
         description: View and administer jobs, licences and qualifications
         usage: /jobs [player]
         aliases: [ job ]
-    licenses:
-        description: View a player's licences
-        usage: /licenses [player]
-        aliases: [ license, licences, licence ]
-    qualifications:
-        description: View a player's qualifications
-        usage: /qualifications [player]
-        aliases: [ qualification, quals ]
     hire:
         description: Hire a player into a job (convenience for /jobs hire)
         usage: /hire <player> <job> [reason]

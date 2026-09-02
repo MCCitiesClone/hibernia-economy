@@ -62,21 +62,6 @@ public final class JobActions {
         renderer.render(sender, target.getUniqueId(), nameOf(target), filter);
     }
 
-    /** {@code /jobs licenses} and friends, resolving the type key from configuration. */
-    public void listByCommand(CommandSender sender, OfflinePlayer target, String listingCommand) {
-        Optional<String> typeKey = renderer.listingType(listingCommand);
-        if (typeKey.isEmpty()) {
-            message.send(sender, "jobs.list.type-unconfigured");
-            return;
-        }
-        JobListRenderer.Filter filter = JobListRenderer.Filter.only(typeKey.get());
-        if (target == null) {
-            listSelf(sender, filter);
-        } else {
-            listOther(sender, target, filter);
-        }
-    }
-
     /** {@code /jobs type <type> [player]}. */
     public void listByType(CommandSender sender, String typeToken, OfflinePlayer target) {
         JobSnapshot snapshot = registry.snapshot();

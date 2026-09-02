@@ -41,7 +41,7 @@ public final class JobsYaml {
                 root.getString("admin-permission", "jobs.admin"),
                 root.getBoolean("provision-groups", true),
                 root.getBoolean("show-empty-types", false),
-                stringMap(root.getConfigurationSection("listing-commands")),
+                listingCommands(root.getConfigurationSection("listing-commands")),
                 reconciliation(root.getConfigurationSection("reconciliation")),
                 types(root.getConfigurationSection("types")));
     }
@@ -116,17 +116,33 @@ public final class JobsYaml {
         return raw.isEmpty() ? Set.of() : new LinkedHashSet<>(raw);
     }
 
-    private static Map<String, String> stringMap(ConfigurationSection section) {
+    /**
+     * Parse {@code listing-commands:}, where the key is the command name.
+     *
+     * <p>Accepts a bare string value ({@code licenses: licenses}) as shorthand for a
+     * command with no aliases, so an existing file keeps working, as well as the full
+     * block form with {@code type:} and {@code aliases:}.</p>
+     */
+    private static Map<String, ListingCommandSettings> listingCommands(ConfigurationSection section) {
         if (section == null) {
             return Map.of();
         }
-        Map<String, String> values = new LinkedHashMap<>();
-        for (String key : section.getKeys(false)) {
-            String value = section.getString(key);
-            if (value != null && !value.isBlank()) {
-                values.put(key, value);
+        Map<String, ListingCommandSettings> commands = new LinkedHashMap<>();
+        for (String name : section.getKeys(false)) {
+            ConfigurationSection block = section.getConfigurationSection(name);
+            if (block != null) {
+                String type = block.getString("type");
+                if (type != null && !type.isBlank()) {
+                    commands.put(name, new ListingCommandSettings(
+                            type, List.copyOf(block.getStringList("aliases"))));
+                }
+                continue;
+            }
+            String type = section.getString(name);
+            if (type != null && !type.isBlank()) {
+                commands.put(name, new ListingCommandSettings(type, List.of()));
             }
         }
-        return values;
+        return commands;
     }
 }

@@ -29,13 +29,25 @@ provision-groups: true
 # Show a type's section in /jobs even when the player holds none of its jobs.
 show-empty-types: false
 
-# Which configured type key each dedicated listing command displays. The command
-# names themselves are fixed in code; this mapping is what lets you rename or
-# re-point a type without breaking /licenses or /qualifications. A value naming a
-# type that does not exist disables that command with a clear message.
+# Top-level listing commands. THIS FILE decides which exist — the key is the
+# command name, so `qual:` below creates /qual. Add an entry to create a command,
+# rename the key to rename it, delete it to remove it; /jobs reload applies all
+# three without a restart. An entry naming a type that is not configured is
+# skipped with a warning rather than registered.
+#
+# Every configured type is always reachable as /jobs type <type>, so an entry here
+# is only needed for types that deserve their own short root.
+#
+#   <command-name>:
+#     type:     the type key whose jobs it lists
+#     aliases:  other names the command answers to
 listing-commands:
-  licenses: licenses
-  qualifications: qualifications
+  licenses:
+    type: licenses
+    aliases: [ license, licences, licence ]
+  qual:
+    type: qualifications
+    aliases: [ quals, qualification, qualifications ]
 
 # Periodic drift repair. Compares LuckPerms' real membership against this plugin's
 # mirror and records the difference in the audit log. It NEVER writes to LuckPerms:

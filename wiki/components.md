@@ -73,10 +73,18 @@ and keeps a record of what happened.
   `net.luckperms.*` confined to `permissions/LuckPermsBackend`. LuckPerms is a
   *soft* dependency: without it the plugin still enables and refuses job changes
   with a clear message (`UnavailablePermissionBackend`), never a class-load error.
-- **Configuration:** `jobs.yml` declares types and the jobs within them. It is
-  parsed by `model/config/JobsYaml` rather than the framework's declarative binder,
-  which supports only flat scalars in `config.yml` — the same reason Treasury's
-  salary config and Business's firm config own their loaders.
+- **Configuration:** `jobs.yml` declares types, the jobs within them, and which
+  top-level listing commands exist (`/licenses`, `/qual`, …). It is parsed by
+  `model/config/JobsYaml` rather than the framework's declarative binder, which
+  supports only flat scalars in `config.yml` — the same reason Treasury's salary
+  config and Business's firm config own their loaders.
+- **Listing commands are config-driven.** `@Command` values are compile-time
+  literals and the framework reads routes from `getDeclaredMethods()`, so
+  `ListingCommandRegistrar` registers those roots straight into Bukkit's command map
+  at enable and again on `/jobs reload`. Adding, renaming or removing a
+  `listing-commands:` entry is therefore a configuration edit, not a code change.
+  Only the roots bypass the framework; the bodies delegate to the same `JobActions`
+  the `/jobs` subcommands use.
 - **Authority:** explicit `can-manage` selectors (`<type>/<job>`, `*` allowed either
   side), non-transitive, plus a blanket `jobs.admin` bypass. There is no rank
   arithmetic; who can fire whom is answerable by reading the config.

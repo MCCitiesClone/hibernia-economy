@@ -11,8 +11,6 @@ import io.paradaux.jobs.api.JobsApi;
 import io.paradaux.jobs.commands.FireCommand;
 import io.paradaux.jobs.commands.HireCommand;
 import io.paradaux.jobs.commands.JobsCommands;
-import io.paradaux.jobs.commands.LicenseListCommands;
-import io.paradaux.jobs.commands.QualificationListCommands;
 import io.paradaux.jobs.commands.QuitCommand;
 import io.paradaux.jobs.commands.resolvers.JobArgResolver;
 import io.paradaux.jobs.commands.resolvers.JobTypeArgResolver;
@@ -70,8 +68,7 @@ class JobsStartupTest {
         HiberniaModule hibernia = HiberniaModule.forPlugin(plugin)
                 .scanConfiguration("io.paradaux.jobs.model.config")
                 .handlers(JobsCommands.class, HireCommand.class, FireCommand.class,
-                        QuitCommand.class, LicenseListCommands.class,
-                        QualificationListCommands.class)
+                        QuitCommand.class)
                 .resolvers(JobArgResolver.class, JobTypeArgResolver.class)
                 .build();
 
@@ -93,6 +90,15 @@ class JobsStartupTest {
     @Test
     void realInjectorRegistersEveryCommandAndResolver() {
         HiberniaStartupAssertion.assertRegisters(realInjector());
+    }
+
+    @Test
+    void theConfigDrivenListingRootsAreConstructible() {
+        // The roots themselves are registered against a live server at enable, which
+        // MockBukkit's command map does not model; what this checks is that the
+        // registrar resolves from the real graph so enable cannot fail on a binding.
+        assertThat(realInjector().getInstance(
+                io.paradaux.jobs.commands.ListingCommandRegistrar.class)).isNotNull();
     }
 
     @Test
@@ -119,7 +125,14 @@ class JobsStartupTest {
 
         assertThat(registry.snapshot().types()).extracting(t -> t.key())
                 .contains("government", "trades", "licenses", "qualifications");
+        // jobs.yml is the source of truth for which listing roots exist, including
+        // their aliases — /qual and /quals both reach the qualifications type.
+        assertThat(registry.snapshot().listingCommands())
+                .extracting(io.paradaux.jobs.model.ListingCommand::name)
+                .containsExactlyInAnyOrder("licenses", "qual");
         assertThat(registry.snapshot().listingType("licenses")).contains("licenses");
-        assertThat(registry.snapshot().listingType("qualifications")).contains("qualifications");
+        assertThat(registry.snapshot().listingType("licence")).contains("licenses");
+        assertThat(registry.snapshot().listingType("qual")).contains("qualifications");
+        assertThat(registry.snapshot().listingType("quals")).contains("qualifications");
     }
 }
