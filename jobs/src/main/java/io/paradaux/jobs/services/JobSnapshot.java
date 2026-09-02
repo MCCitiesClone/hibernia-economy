@@ -7,6 +7,7 @@ import io.paradaux.jobs.api.model.JobType;
 import io.paradaux.jobs.model.config.JobSettings;
 import io.paradaux.jobs.model.config.JobTypeSettings;
 import io.paradaux.jobs.model.ListingCommand;
+import io.paradaux.jobs.utils.JobColors;
 import io.paradaux.jobs.model.config.JobsSettings;
 import io.paradaux.jobs.model.config.ProvisionSettings;
 import io.paradaux.jobs.model.config.ReconciliationSettings;
@@ -109,6 +110,7 @@ public final class JobSnapshot implements JobCatalog {
             ProvisionSettings typeProvision = typeSettings.provision() == null
                     ? ProvisionSettings.empty() : typeSettings.provision();
             warnOnMalformedWeight(typeProvision, "type " + typeKey, log);
+            String typeColor = colorOf(typeSettings.color(), "type " + typeKey, log).orElse("");
 
             List<JobId> jobIds = new ArrayList<>();
             for (Map.Entry<String, JobSettings> entry : typeSettings.jobs().entrySet()) {
@@ -145,8 +147,14 @@ public final class JobSnapshot implements JobCatalog {
                         ? ProvisionSettings.empty() : job.provision();
                 warnOnMalformedWeight(jobProvision, "job " + id.qualified(), log);
 
+                // A job's colour defaults to its type's; an explicit one on the job
+                // overrides it. That keeps the common case (a whole type shares a
+                // colour) to a single line of configuration.
+                String jobColor = colorOf(job.color(), "job " + id.qualified(), log)
+                        .orElse(typeColor);
+
                 definitions.put(id, new JobDefinition(id, displayName, group, description,
-                        Set.copyOf(selectors)));
+                        jobColor, Set.copyOf(selectors)));
                 provisioning.put(id, typeProvision.mergedWith(jobProvision));
                 byGroup.put(groupLower, id);
                 groups.add(group);
@@ -156,7 +164,7 @@ public final class JobSnapshot implements JobCatalog {
 
             String typeDisplay = JobSettings.isUnset(typeSettings.displayName())
                     ? titleCase(typeKey) : typeSettings.displayName();
-            JobType type = new JobType(typeKey, typeDisplay, typeSettings.order(),
+            JobType type = new JobType(typeKey, typeDisplay, typeColor, typeSettings.order(),
                     typeSettings.managedExternally(), jobIds);
             typesByKey.put(typeKey, type);
             ordered.add(type);
@@ -366,6 +374,23 @@ public final class JobSnapshot implements JobCatalog {
             }
         }
         return valid;
+    }
+
+    /**
+     * Normalise a configured colour, reporting a value that is not a colour at all.
+     * A typo must not leak into a section header as raw text.
+     */
+    private static Optional<String> colorOf(String raw, String owner, Logger log) {
+        if (JobSettings.isUnset(raw)) {
+            return Optional.empty();
+        }
+        Optional<String> normalised = JobColors.normalise(raw);
+        if (normalised.isEmpty()) {
+            log.warning("jobs.yml: " + owner + " has colour '" + raw
+                    + "', which is neither a named MiniMessage colour nor a #rrggbb hex."
+                    + " Ignoring it.");
+        }
+        return normalised;
     }
 
     private static void warnOnMalformedWeight(ProvisionSettings provision, String owner, Logger log) {

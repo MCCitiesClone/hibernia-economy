@@ -15,6 +15,8 @@ import java.util.List;
  *
  * @param key               the configuration key, lower-cased
  * @param displayName       section header shown by {@code /jobs}
+ * @param color             MiniMessage colour tag the section header is drawn in,
+ *                          e.g. {@code <aqua>}; empty for the default palette
  * @param order             ascending sort position among sections; ties break on key
  * @param managedExternally when true, player-run hire and fire are refused for this
  *                          type. The API, the console and {@code jobs.admin} are
@@ -23,11 +25,18 @@ import java.util.List;
  */
 public record JobType(@NotNull String key,
                       @NotNull String displayName,
+                      @NotNull String color,
                       int order,
                       boolean managedExternally,
                       @NotNull List<JobId> jobs) {
 
     public JobType {
+        color = color == null ? "" : color;
         jobs = jobs == null ? List.of() : List.copyOf(jobs);
+    }
+
+    /** Whether a colour was configured for this type. */
+    public boolean hasColor() {
+        return !color.isEmpty();
     }
 }

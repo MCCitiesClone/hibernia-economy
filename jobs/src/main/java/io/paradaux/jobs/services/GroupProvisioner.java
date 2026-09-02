@@ -89,7 +89,8 @@ public final class GroupProvisioner {
             considered++;
             try {
                 await(backend.ensureGroup(definition.group()));
-                await(backend.applyMetadata(definition.group(), snapshot.provisioning(id)));
+                await(backend.applyMetadata(definition.group(), snapshot.provisioning(id),
+                        definition.color()));
                 succeeded++;
             } catch (RuntimeException e) {
                 failed++;

@@ -44,7 +44,8 @@ public final class UnavailablePermissionBackend implements PermissionBackend {
     }
 
     @Override
-    public CompletableFuture<Void> applyMetadata(String group, ProvisionSettings provision) {
+    public CompletableFuture<Void> applyMetadata(String group, ProvisionSettings provision,
+                                                 String color) {
         return CompletableFuture.completedFuture(null);
     }
 

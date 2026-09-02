@@ -61,6 +61,12 @@ reconciliation:
 # types:
 #   <type-key>:
 #     display-name        section header shown by /jobs
+#     color               colour of this type's section header, in /jobs and in its
+#                         own listing command. Accepts aqua, <aqua>, #f0b040 or
+#                         <#f0b040>. Also the DEFAULT colour for every job in the
+#                         type. Omit to use the message bundle's palette.
+#                         NOTE: not the same as provision.prefix-color, which
+#                         colours the LuckPerms chat prefix.
 #     order               ascending sort position of the section; ties break on key
 #     managed-externally  true -> player-run /hire and /fire are refused for this
 #                         type. The JobsApi, the console and jobs.admin still work.
@@ -73,6 +79,11 @@ reconciliation:
 #         display-name    shown in /jobs; rename freely, history is keyed on the key
 #         group           LuckPerms group name; defaults to the job key
 #         description      one-line blurb shown by /jobs info
+#         color           OPTIONAL, only for a job that deviates from its type's
+#                         colour; otherwise it inherits it. Nothing renders this
+#                         today — it is written to LuckPerms as the group meta key
+#                         `jobs-color`, so chat formats and other plugins can colour
+#                         a job without parsing this file.
 #         can-manage      selectors, UNIONed with the type's list
 #         provision       overrides the type's block KEY BY KEY (permissions union)
 #
@@ -93,21 +104,25 @@ types:
 
   government:
     display-name: "Government"
+    color: gold
     order: 10
     jobs: {}
 
   legal:
     display-name: "Legal"
+    color: dark_purple
     order: 20
     jobs: {}
 
   professions:
     display-name: "Professions"
+    color: aqua
     order: 30
     jobs: {}
 
   trades:
     display-name: "Trades"
+    color: yellow
     order: 40
     # Trades are awarded by the skills plugin through the JobsApi, not by hand.
     managed-externally: true
@@ -115,11 +130,13 @@ types:
 
   licenses:
     display-name: "Licences"
+    color: green
     order: 50
     jobs: {}
 
   qualifications:
     display-name: "Qualifications"
+    color: "#7f9fff"
     order: 60
     jobs: {}
 
@@ -129,6 +146,7 @@ types:
 # types:
 #   government:
 #     display-name: "Government"
+#     color: gold              # section header colour + default for its jobs
 #     order: 10
 #     # Every government office may issue and revoke any licence.
 #     can-manage: [ "licenses/*" ]
@@ -139,6 +157,7 @@ types:
 #         display-name: "President"
 #         group: "president"
 #         description: "Head of the executive."
+#         color: "#ffd700"     # deviates from the type's gold; stored as group meta
 #         # May hire and fire every government office and every legal post.
 #         can-manage: [ "government/*", "legal/*" ]
 #         provision:

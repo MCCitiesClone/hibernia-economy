@@ -5,6 +5,8 @@ import com.google.inject.Singleton;
 import io.paradaux.common.messaging.TagAwareMessage;
 import io.paradaux.hibernia.framework.i18n.Message;
 import io.paradaux.jobs.api.model.HeldJob;
+import io.paradaux.jobs.api.model.JobType;
+import io.paradaux.jobs.utils.JobColors;
 import org.bukkit.command.CommandSender;
 
 import java.util.LinkedHashMap;
@@ -97,15 +99,32 @@ public final class JobListRenderer {
                 if (!snapshot.showEmptyTypes()) {
                     continue;
                 }
-                message.send(to, "jobs.list.section", "type", type.displayName());
+                sendSectionHeader(to, type);
                 message.send(to, "jobs.list.section-empty");
                 continue;
             }
-            message.send(to, "jobs.list.section", "type", type.displayName());
+            sendSectionHeader(to, type);
             for (HeldJob job : inType) {
                 renderEntry(to, job);
             }
         }
+    }
+
+    /**
+     * Emit a section header in the type's configured colour.
+     *
+     * <p>The colour is passed as {@link Message#rich} because it is a MiniMessage tag
+     * from operator-authored configuration, not player input — an inert placeholder
+     * would print the tag rather than apply it. An unconfigured type falls back to
+     * the message bundle's own palette, so the header is never left uncoloured.</p>
+     */
+    private void sendSectionHeader(CommandSender to, JobType type) {
+        String open = type.hasColor() ? type.color() : "{secbegin}";
+        String close = type.hasColor() ? JobColors.closing(type.color()) : "{secend}";
+        message.send(to, "jobs.list.section",
+                "type", type.displayName(),
+                "color", Message.rich(open),
+                "colorend", Message.rich(close));
     }
 
     private void renderEntry(CommandSender to, HeldJob job) {

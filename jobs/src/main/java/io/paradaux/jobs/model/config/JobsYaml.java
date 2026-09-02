@@ -67,6 +67,7 @@ public final class JobsYaml {
             }
             types.put(key, new JobTypeSettings(
                     type.getString("display-name", JobSettings.UNSET),
+                    type.getString("color", JobSettings.UNSET),
                     type.getInt("order", 1000),
                     type.getBoolean("managed-externally", false),
                     stringSet(type, "can-manage"),
@@ -90,6 +91,7 @@ public final class JobsYaml {
                     job.getString("display-name", JobSettings.UNSET),
                     job.getString("group", JobSettings.UNSET),
                     job.getString("description", JobSettings.UNSET),
+                    job.getString("color", JobSettings.UNSET),
                     stringSet(job, "can-manage"),
                     provision(job.getConfigurationSection("provision"))));
         }

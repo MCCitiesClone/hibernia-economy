@@ -108,10 +108,22 @@ class LuckPermsBackendTest {
     void applyMetadataTouchesNothingWhenNothingIsDeclared() {
         // The core promise of the provisioning model: undeclared metadata is left
         // exactly as LuckPerms has it, so hand-tuned values survive a reload.
-        backend.applyMetadata("electrician", ProvisionSettings.empty()).join();
-        backend.applyMetadata("electrician", null).join();
+        backend.applyMetadata("electrician", ProvisionSettings.empty(), "").join();
+        backend.applyMetadata("electrician", null, "").join();
 
         verify(groupManager, never()).modifyGroup(anyString(), any());
+    }
+
+    @Test
+    void aColourAloneIsEnoughToWarrantAGroupWrite() {
+        // The colour is written as group meta even when no provision block exists,
+        // since a job may declare only a colour.
+        when(groupManager.modifyGroup(eq("electrician"), any()))
+                .thenReturn(CompletableFuture.completedFuture(null));
+
+        backend.applyMetadata("electrician", ProvisionSettings.empty(), "<aqua>").join();
+
+        verify(groupManager).modifyGroup(eq("electrician"), any());
     }
 
     @Test
@@ -120,7 +132,8 @@ class LuckPermsBackendTest {
                 .thenReturn(CompletableFuture.completedFuture(null));
 
         backend.applyMetadata("electrician",
-                new ProvisionSettings("10", "[Sparky] ", "<yellow>", List.of("jobs.wire"))).join();
+                new ProvisionSettings("10", "[Sparky] ", "<yellow>", List.of("jobs.wire")),
+                "<aqua>").join();
 
         verify(groupManager).modifyGroup(eq("electrician"), any());
     }

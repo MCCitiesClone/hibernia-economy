@@ -65,7 +65,8 @@ class GroupProvisionerTest {
     void setUp() {
         when(backend.available()).thenReturn(true);
         when(backend.ensureGroup(anyString())).thenReturn(CompletableFuture.completedFuture(null));
-        when(backend.applyMetadata(anyString(), any())).thenReturn(CompletableFuture.completedFuture(null));
+        when(backend.applyMetadata(anyString(), any(), anyString()))
+                .thenReturn(CompletableFuture.completedFuture(null));
     }
 
     @Test
@@ -88,13 +89,13 @@ class GroupProvisionerTest {
         provisioner.provisionAll();
 
         ArgumentCaptor<ProvisionSettings> applied = ArgumentCaptor.forClass(ProvisionSettings.class);
-        verify(backend).applyMetadata(eq("lawyer"), applied.capture());
+        verify(backend).applyMetadata(eq("lawyer"), applied.capture(), anyString());
         ProvisionSettings lawyer = applied.getValue();
         assertThat(lawyer.weightValue()).contains(20);                    // from the type
         assertThat(lawyer.resolvedPrefix()).contains("<aqua>[Lawyer] ");  // colour + job's text
 
         ArgumentCaptor<ProvisionSettings> doctorApplied = ArgumentCaptor.forClass(ProvisionSettings.class);
-        verify(backend).applyMetadata(eq("doctor"), doctorApplied.capture());
+        verify(backend).applyMetadata(eq("doctor"), doctorApplied.capture(), anyString());
         // The doctor declares no prefix text, so a colour alone resolves to nothing.
         assertThat(doctorApplied.getValue().resolvedPrefix()).isEmpty();
         assertThat(doctorApplied.getValue().weightValue()).contains(20);

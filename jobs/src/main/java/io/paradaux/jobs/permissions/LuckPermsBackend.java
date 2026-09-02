@@ -10,6 +10,7 @@ import net.luckperms.api.model.user.User;
 import net.luckperms.api.node.NodeType;
 import net.luckperms.api.node.matcher.NodeMatcher;
 import net.luckperms.api.node.types.InheritanceNode;
+import net.luckperms.api.node.types.MetaNode;
 import net.luckperms.api.node.types.PermissionNode;
 import net.luckperms.api.node.types.PrefixNode;
 import net.luckperms.api.node.types.WeightNode;
@@ -43,6 +44,15 @@ public final class LuckPermsBackend implements PermissionBackend {
 
     /** Priority for the provisioned prefix node. Low, so hand-set prefixes can outrank it. */
     private static final int PREFIX_PRIORITY = 10;
+
+    /**
+     * Group meta key carrying a job's colour.
+     *
+     * <p>Nothing in this plugin renders it yet; it exists so chat formats and other
+     * plugins can colour a job consistently by reading it straight off the LuckPerms
+     * group, rather than each having to parse jobs.yml.</p>
+     */
+    public static final String COLOR_META_KEY = "jobs-color";
 
     private final LuckPerms luckPerms;
 
@@ -126,26 +136,37 @@ public final class LuckPermsBackend implements PermissionBackend {
     }
 
     @Override
-    public CompletableFuture<Void> applyMetadata(String group, ProvisionSettings provision) {
-        if (provision == null || provision.isEmpty()) {
+    public CompletableFuture<Void> applyMetadata(String group, ProvisionSettings provision,
+                                                 String color) {
+        ProvisionSettings settings = provision == null ? ProvisionSettings.empty() : provision;
+        boolean hasColor = color != null && !color.isBlank();
+        if (settings.isEmpty() && !hasColor) {
             return CompletableFuture.completedFuture(null);
         }
         return luckPerms.getGroupManager().modifyGroup(group, target -> {
             // Only declared keys are written. Undeclared metadata is left untouched,
             // so a weight or prefix set by hand in LuckPerms survives a reload.
-            provision.weightValue().ifPresent(weight -> {
+            settings.weightValue().ifPresent(weight -> {
                 target.data().clear(NodeType.WEIGHT::matches);
                 target.data().add(WeightNode.builder(weight).build());
             });
-            provision.resolvedPrefix().ifPresent(prefix -> {
+            settings.resolvedPrefix().ifPresent(prefix -> {
                 target.data().clear(node -> node instanceof PrefixNode prefixNode
                         && prefixNode.getPriority() == PREFIX_PRIORITY);
                 target.data().add(PrefixNode.builder(prefix, PREFIX_PRIORITY).build());
             });
             // Permissions are additive: the config declares what the group must have,
             // never what it must not, so an operator's extra grants are safe.
-            provision.permissions().forEach(permission ->
+            settings.permissions().forEach(permission ->
                     target.data().add(PermissionNode.builder(permission).build()));
+
+            if (hasColor) {
+                // Replace rather than accumulate: a group must not end up with two
+                // conflicting colours after the config is edited.
+                target.data().clear(node -> node instanceof MetaNode meta
+                        && COLOR_META_KEY.equals(meta.getMetaKey()));
+                target.data().add(MetaNode.builder(COLOR_META_KEY, color).build());
+            }
         });
     }
 
