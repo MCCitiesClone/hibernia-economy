@@ -8,8 +8,7 @@ import io.paradaux.jobs.api.JobsApi;
 import io.paradaux.jobs.commands.FireCommand;
 import io.paradaux.jobs.commands.HireCommand;
 import io.paradaux.jobs.commands.JobsCommands;
-import io.paradaux.jobs.commands.LicenseListCommands;
-import io.paradaux.jobs.commands.QualificationListCommands;
+import io.paradaux.jobs.commands.ListingCommandRegistrar;
 import io.paradaux.jobs.commands.QuitCommand;
 import io.paradaux.jobs.commands.resolvers.JobArgResolver;
 import io.paradaux.jobs.commands.resolvers.JobTypeArgResolver;
@@ -53,9 +52,11 @@ public class Jobs extends JavaPlugin {
     public void onEnable() {
         HiberniaModule hiberniaModule = HiberniaModule.forPlugin(this)
                 .scanConfiguration("io.paradaux.jobs.model.config")
+                // The listing roots (/licenses, /qual, ...) are NOT here: jobs.yml
+                // decides which exist, so ListingCommandRegistrar creates them at
+                // runtime. @Command values are compile-time literals and cannot.
                 .handlers(JobsCommands.class, HireCommand.class, FireCommand.class,
-                        QuitCommand.class, LicenseListCommands.class,
-                        QualificationListCommands.class)
+                        QuitCommand.class)
                 .resolvers(JobArgResolver.class, JobTypeArgResolver.class)
                 .build();
 
@@ -77,6 +78,7 @@ public class Jobs extends JavaPlugin {
         }
 
         injector.getInstance(CommandManager.class).registerAll();
+        injector.getInstance(ListingCommandRegistrar.class).registerAll();
         warnOnCommandNameConflicts();
         registerApi();
         startBackgroundWork();
@@ -89,6 +91,11 @@ public class Jobs extends JavaPlugin {
         // Unregister first so nothing reaches a half-torn-down plugin, then stop
         // tasks before anything they use goes away.
         getServer().getServicesManager().unregisterAll(this);
+        if (injector != null) {
+            // Take the config-driven roots back out, so a reload of the plugin does
+            // not leave dead commands pointing at a torn-down injector.
+            injector.getInstance(ListingCommandRegistrar.class).unregisterAll();
+        }
         getServer().getScheduler().cancelTasks(this);
         injector = null;
         getLogger().info("Jobs disabled.");

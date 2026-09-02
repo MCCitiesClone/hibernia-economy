@@ -54,15 +54,18 @@ public final class JobsCommands implements CommandHandler {
     private final JobRegistry registry;
     private final JobAuditService audit;
     private final GroupProvisioner provisioner;
+    private final ListingCommandRegistrar listingCommands;
 
     @Inject
     public JobsCommands(Message message, JobActions actions, JobRegistry registry,
-                        JobAuditService audit, GroupProvisioner provisioner) {
+                        JobAuditService audit, GroupProvisioner provisioner,
+                        ListingCommandRegistrar listingCommands) {
         this.message = message;
         this.actions = actions;
         this.registry = registry;
         this.audit = audit;
         this.provisioner = provisioner;
+        this.listingCommands = listingCommands;
     }
 
     // ---- listing ----
@@ -105,38 +108,9 @@ public final class JobsCommands implements CommandHandler {
         actions.listByType(sender, type.value(), target);
     }
 
-    @Route("licenses")
-    @Permission("jobs.licenses")
-    @Async
-    @Description("List the licences you hold")
-    public void licenses(@Sender CommandSender sender) {
-        actions.listByCommand(sender, null, LicenseListCommands.LISTING);
-    }
-
-    @Route("licenses <player>")
-    @Permission("jobs.list.other")
-    @Async
-    @Description("List the licences another player holds")
-    public void licensesOther(@Sender CommandSender sender, @Arg("player") OfflinePlayer target) {
-        actions.listByCommand(sender, target, LicenseListCommands.LISTING);
-    }
-
-    @Route("qualifications")
-    @Permission("jobs.qualifications")
-    @Async
-    @Description("List the qualifications you hold")
-    public void qualifications(@Sender CommandSender sender) {
-        actions.listByCommand(sender, null, QualificationListCommands.LISTING);
-    }
-
-    @Route("qualifications <player>")
-    @Permission("jobs.list.other")
-    @Async
-    @Description("List the qualifications another player holds")
-    public void qualificationsOther(@Sender CommandSender sender,
-                                    @Arg("player") OfflinePlayer target) {
-        actions.listByCommand(sender, target, QualificationListCommands.LISTING);
-    }
+    // No hardcoded `licenses` / `qualifications` subcommands: jobs.yml decides which
+    // listing commands exist, ListingCommandRegistrar creates them as top-level roots,
+    // and `/jobs type <type>` already reaches every configured type generically.
 
     // ---- canonical mutations ----
 
@@ -281,7 +255,9 @@ public final class JobsCommands implements CommandHandler {
         try {
             message.reload();
             registry.rebuild();
-            // A job added to jobs.yml should work immediately, without a restart.
+            // A job added to jobs.yml should work immediately, without a restart —
+            // and so should a listing command added, renamed or removed there.
+            listingCommands.registerAll();
             provisioner.provisionAll();
             message.send(sender, "jobs.admin.reload.success");
         } catch (RuntimeException e) {

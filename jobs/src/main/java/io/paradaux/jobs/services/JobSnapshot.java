@@ -6,6 +6,7 @@ import io.paradaux.jobs.api.model.JobId;
 import io.paradaux.jobs.api.model.JobType;
 import io.paradaux.jobs.model.config.JobSettings;
 import io.paradaux.jobs.model.config.JobTypeSettings;
+import io.paradaux.jobs.model.ListingCommand;
 import io.paradaux.jobs.model.config.JobsSettings;
 import io.paradaux.jobs.model.config.ProvisionSettings;
 import io.paradaux.jobs.model.config.ReconciliationSettings;
@@ -54,7 +55,7 @@ public final class JobSnapshot implements JobCatalog {
     private final Map<JobId, ProvisionSettings> provisioning;
     private final Set<String> allGroups;
     private final List<String> suggestions;
-    private final Map<String, String> listingTypes;
+    private final List<ListingCommand> listingCommands;
 
     private JobSnapshot(String adminPermission, ReconciliationSettings reconciliation,
                         boolean provisionGroups, boolean showEmptyTypes,
@@ -62,7 +63,7 @@ public final class JobSnapshot implements JobCatalog {
                         Map<JobId, JobDefinition> definitions, Map<String, JobId> byGroupLower,
                         Map<String, JobId> unambiguousBareKeys,
                         Map<JobId, ProvisionSettings> provisioning, Set<String> allGroups,
-                        List<String> suggestions, Map<String, String> listingTypes) {
+                        List<String> suggestions, List<ListingCommand> listingCommands) {
         this.adminPermission = adminPermission;
         this.reconciliation = reconciliation;
         this.provisionGroups = provisionGroups;
@@ -75,14 +76,14 @@ public final class JobSnapshot implements JobCatalog {
         this.provisioning = provisioning;
         this.allGroups = allGroups;
         this.suggestions = suggestions;
-        this.listingTypes = listingTypes;
+        this.listingCommands = listingCommands;
     }
 
     /** An empty snapshot, used when configuration is missing or failed to load. */
     public static JobSnapshot empty() {
         return new JobSnapshot("jobs.admin", ReconciliationSettings.defaults(), false, false,
                 List.of(), Map.of(), Map.of(),
-                Map.of(), Map.of(), Map.of(), Set.of(), List.of(), Map.of());
+                Map.of(), Map.of(), Map.of(), Set.of(), List.of(), List.of());
     }
 
     public static JobSnapshot build(JobsSettings settings, Logger log) {
@@ -170,25 +171,48 @@ public final class JobSnapshot implements JobCatalog {
             }
         });
 
-        // Every qualified name, plus the bare keys that resolve unambiguously.
+        // Suggest the bare job key wherever it is unambiguous, and fall back to the
+        // qualified type/job form only for the keys that genuinely need it. Showing
+        // "president" rather than "govjobs/president" is what a player types and
+        // reads; the type is an organisational detail of jobs.yml, not part of the
+        // job's name. Both forms still RESOLVE — this only changes what is offered.
         Set<String> suggestionSet = new TreeSet<>();
-        definitions.keySet().forEach(id -> suggestionSet.add(id.qualified()));
-        suggestionSet.addAll(unambiguous.keySet());
+        for (JobId id : definitions.keySet()) {
+            suggestionSet.add(unambiguous.containsKey(id.job()) ? id.job() : id.qualified());
+        }
 
-        Map<String, String> listing = new LinkedHashMap<>();
-        settings.listingCommands().forEach((command, typeKey) -> {
-            if (command == null || typeKey == null) {
+        // jobs.yml decides which top-level listing commands exist. A command naming a
+        // type that is not configured is dropped with a warning rather than
+        // registered as a root that could only ever answer "not configured".
+        List<ListingCommand> listing = new ArrayList<>();
+        Set<String> claimedNames = new HashSet<>();
+        settings.listingCommands().forEach((command, config) -> {
+            if (command == null || command.isBlank() || config == null) {
                 return;
             }
-            String normalisedCommand = command.trim().toLowerCase(Locale.ROOT);
-            String normalisedType = typeKey.trim().toLowerCase(Locale.ROOT);
-            if (!typesByKey.containsKey(normalisedType)) {
-                log.warning("jobs.yml: listing-commands." + normalisedCommand + " names type '"
-                        + normalisedType + "', which is not configured; /" + normalisedCommand
-                        + " will report that it is unconfigured.");
+            String name = command.trim().toLowerCase(Locale.ROOT);
+            String type = config.type() == null ? "" : config.type().trim().toLowerCase(Locale.ROOT);
+            if (!typesByKey.containsKey(type)) {
+                log.warning("jobs.yml: listing-commands." + name + " names type '" + type
+                        + "', which is not configured; /" + name + " will not be registered.");
                 return;
             }
-            listing.put(normalisedCommand, normalisedType);
+            List<String> aliases = new ArrayList<>();
+            for (String alias : config.aliases()) {
+                if (alias == null || alias.isBlank()) {
+                    continue;
+                }
+                String normalised = alias.trim().toLowerCase(Locale.ROOT);
+                if (!normalised.equals(name) && claimedNames.add(normalised)) {
+                    aliases.add(normalised);
+                }
+            }
+            if (!claimedNames.add(name)) {
+                log.warning("jobs.yml: listing command '" + name
+                        + "' is declared more than once; keeping the first.");
+                return;
+            }
+            listing.add(new ListingCommand(name, aliases, type));
         });
 
         // Concrete selectors naming a job that does not exist are almost always a typo.
@@ -208,7 +232,7 @@ public final class JobSnapshot implements JobCatalog {
                 Collections.unmodifiableMap(definitions), Collections.unmodifiableMap(byGroup),
                 Collections.unmodifiableMap(unambiguous), Collections.unmodifiableMap(provisioning),
                 Collections.unmodifiableSet(groups), List.copyOf(suggestionSet),
-                Collections.unmodifiableMap(listing));
+                List.copyOf(listing));
     }
 
     // ---- JobCatalog ----
@@ -306,10 +330,26 @@ public final class JobSnapshot implements JobCatalog {
         return suggestions;
     }
 
-    /** The type key a dedicated listing command (e.g. {@code licenses}) displays. */
+    /**
+     * The top-level listing commands {@code jobs.yml} declares.
+     *
+     * <p>These are registered at runtime rather than annotated, so adding
+     * {@code /qual} or repointing {@code /licenses} is a configuration edit.</p>
+     */
+    public List<ListingCommand> listingCommands() {
+        return listingCommands;
+    }
+
+    /** The type key a listing command displays, by any of its names. */
     public Optional<String> listingType(String command) {
-        return command == null ? Optional.empty()
-                : Optional.ofNullable(listingTypes.get(command.trim().toLowerCase(Locale.ROOT)));
+        if (command == null) {
+            return Optional.empty();
+        }
+        String needle = command.trim().toLowerCase(Locale.ROOT);
+        return listingCommands.stream()
+                .filter(entry -> entry.allNames().contains(needle))
+                .map(ListingCommand::typeKey)
+                .findFirst();
     }
 
     private static Set<String> validSelectors(Set<String> raw, String owner, Logger log) {

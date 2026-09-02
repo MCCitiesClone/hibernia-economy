@@ -36,9 +36,15 @@ class JobsYamlTest {
             // Trades arrive from the skills plugin, so hand-hiring is off by default.
             assertThat(settings.types().get("trades").managedExternally()).isTrue();
             assertThat(settings.types().get("government").managedExternally()).isFalse();
-            // Every listing command must name a type that exists.
-            settings.listingCommands().forEach((command, type) ->
-                    assertThat(settings.types()).as("listing-commands." + command).containsKey(type));
+            // Every listing command must name a type that exists, or it would be
+            // silently dropped at registration.
+            settings.listingCommands().forEach((command, listing) ->
+                    assertThat(settings.types()).as("listing-commands." + command)
+                            .containsKey(listing.type()));
+            // The shipped file gives qualifications the short /qual root.
+            assertThat(settings.listingCommands()).containsKey("qual");
+            assertThat(settings.listingCommands().get("qual").type()).isEqualTo("qualifications");
+            assertThat(settings.listingCommands().get("qual").aliases()).contains("quals");
         }
     }
 
@@ -66,6 +72,25 @@ class JobsYamlTest {
                 .reconciliation().intervalSeconds()).isEqualTo(1800L);
         assertThat(parse("reconciliation:\n  interval-seconds: -5\n")
                 .reconciliation().intervalSeconds()).isEqualTo(1800L);
+    }
+
+    @Test
+    void aListingCommandAcceptsBothTheBlockAndShorthandForms() {
+        JobsSettings settings = parse("""
+                listing-commands:
+                  qual:
+                    type: qualifications
+                    aliases: [ quals ]
+                  licenses: licenses
+                types:
+                  qualifications: { jobs: {} }
+                  licenses: { jobs: {} }
+                """);
+        assertThat(settings.listingCommands().get("qual").type()).isEqualTo("qualifications");
+        assertThat(settings.listingCommands().get("qual").aliases()).containsExactly("quals");
+        // The bare-string shorthand keeps an older file working.
+        assertThat(settings.listingCommands().get("licenses").type()).isEqualTo("licenses");
+        assertThat(settings.listingCommands().get("licenses").aliases()).isEmpty();
     }
 
     @Test

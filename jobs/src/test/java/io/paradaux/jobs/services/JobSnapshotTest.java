@@ -220,11 +220,41 @@ class JobSnapshotTest {
     }
 
     @Test
-    void suggestionsCoverQualifiedNamesAndUnambiguousBareKeys() {
+    void suggestionsOfferTheBareJobKeyNotTheQualifiedForm() {
         JobSnapshot snapshot = snapshotOf(TYPICAL);
+        // What a player types and reads is "president", not "government/president".
+        // The type is an organisational detail of jobs.yml, not part of the name.
         assertThat(snapshot.suggestions())
-                .contains("government/president", "president", "licenses/firearms", "firearms")
+                .contains("president", "firearms", "commerce-clerk")
+                .doesNotContain("government/president", "licenses/firearms")
                 .isSorted();
+    }
+
+    @Test
+    void onlyAnAmbiguousKeyFallsBackToTheQualifiedForm() {
+        JobSnapshot snapshot = snapshotOf("""
+                types:
+                  trades:
+                    jobs:
+                      inspector: { group: trade-inspector }
+                      electrician: { group: trade-electrician }
+                  government:
+                    jobs:
+                      inspector: { group: gov-inspector }
+                """);
+        // 'inspector' alone could mean either, so it must be qualified to be usable;
+        // 'electrician' is unique and stays bare.
+        assertThat(snapshot.suggestions())
+                .containsExactly("electrician", "government/inspector", "trades/inspector");
+    }
+
+    @Test
+    void bothFormsStillResolveEvenThoughOnlyOneIsSuggested() {
+        JobSnapshot snapshot = snapshotOf(TYPICAL);
+        // Narrowing the suggestions must not narrow what a player may type.
+        assertThat(snapshot.parse("president")).contains(JobId.of("government", "president"));
+        assertThat(snapshot.parse("government/president"))
+                .contains(JobId.of("government", "president"));
     }
 
     @Test
