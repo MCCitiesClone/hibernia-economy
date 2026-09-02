@@ -99,11 +99,17 @@ dependencies {
     compileOnly("com.sk89q.worldedit:worldedit-bukkit:7.3.9") { isTransitive = false }
     // WorldGuard soft-depend: pull only its own API jars, non-transitively, so
     // none of its server-provided transitives (bukkit/gson/fastutil/guava) fight
-    // paper-api. These coordinates are what worldguard-legacy:7.0.0-SNAPSHOT
-    // resolved to; they carry the classes we touch (WorldGuard, StateFlag, Flags,
-    // RegionPermissionModel, WorldGuardPlugin).
-    compileOnly("com.sk89q.worldguard:worldguard-core:7.1.0-SNAPSHOT") { isTransitive = false }
-    compileOnly("com.sk89q.worldguard:worldguard-bukkit:7.1.0-SNAPSHOT") { isTransitive = false }
+    // paper-api. They carry the classes we touch (WorldGuard, StateFlag, Flags,
+    // RegionPermissionModel, WorldGuardPlugin, BukkitWorldConfiguration).
+    //
+    // Pinned to the 7.0.x release line rather than 7.1.0-SNAPSHOT: from the
+    // 2026-08-01 snapshot onward WorldGuard is published targeting JVM 25, so on
+    // this project's Java 21 toolchain resolution fails outright with "only
+    // compatible with JVM runtime version 25 or newer" — and because it is a
+    // moving snapshot it broke a release build with no change on our side. Same
+    // reasoning, and same fix, as the WorldEdit 7.3.9 pin above.
+    compileOnly("com.sk89q.worldguard:worldguard-core:7.0.15") { isTransitive = false }
+    compileOnly("com.sk89q.worldguard:worldguard-bukkit:7.0.15") { isTransitive = false }
     compileOnly("com.github.TechFortress:GriefPrevention:16.12.0") { isTransitive = false }
     compileOnly("com.nexomc:nexo:1.15.0") { isTransitive = false }
     // Direct project dependencies on the in-repo API modules (ADT stale-chestshop-substitution-comment):
