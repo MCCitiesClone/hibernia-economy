@@ -12,6 +12,7 @@ on:
     paths:
       - 'treasury/**'
       - 'business/**'
+      - 'jobs/**'
       - 'treasury-api-plugin/**'
       - 'chestshop/**'
       - '*.gradle.kts'
@@ -104,6 +105,9 @@ jobs:
           - name: chestshop
             project: ':chestshop'
             libs: chestshop/build/libs
+          - name: jobs
+            project: ':jobs'
+            libs: jobs/build/libs
     steps:
       - name: Checkout
         uses: actions/checkout@v4

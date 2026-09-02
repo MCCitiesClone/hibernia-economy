@@ -50,6 +50,7 @@ val pluginProjectPaths = listOf(
     ":business",
     ":treasury-api-plugin",
     ":chestshop",
+    ":jobs",
 )
 
 tasks.register<Sync>("release") {

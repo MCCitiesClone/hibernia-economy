@@ -1,0 +1,80 @@
+name: Jobs
+version: '${version}'
+main: io.paradaux.jobs.Jobs
+api-version: '1.21'
+description: Job, licence and qualification management backed by LuckPerms groups.
+authors: [ Paradaux ]
+
+# LuckPerms is the source of truth for job membership, but it is a SOFT dependency:
+# the plugin boots without it, refuses every write with a clear message, and never
+# links a net.luckperms.* class (see the Class.forName guard in JobsModule).
+softdepend: [ LuckPerms ]
+
+# The framework registers routes through Paper's Brigadier COMMANDS lifecycle, so
+# this block is metadata/help only — the same as Treasury and Business.
+#
+# /jobs hire|fire|quit are the CANONICAL forms and always work. The bare /hire,
+# /fire and /quit roots are conveniences: they are generic names another plugin may
+# already own, and whichever plugin registers first wins. Jobs logs a warning at
+# startup naming the winner if a bare root resolved elsewhere.
+commands:
+    jobs:
+        description: View and administer jobs, licences and qualifications
+        usage: /jobs [player]
+        aliases: [ job ]
+    licenses:
+        description: View a player's licences
+        usage: /licenses [player]
+        aliases: [ license, licences, licence ]
+    qualifications:
+        description: View a player's qualifications
+        usage: /qualifications [player]
+        aliases: [ qualification, quals ]
+    hire:
+        description: Hire a player into a job (convenience for /jobs hire)
+        usage: /hire <player> <job> [reason]
+    fire:
+        description: Remove a player from a job (convenience for /jobs fire)
+        usage: /fire <player> <job> [reason]
+    quit:
+        description: Leave a job you hold (convenience for /jobs quit)
+        usage: /quit <job>
+        aliases: [ resign ]
+
+# Bukkit nodes are a coarse "may attempt this command" gate. The real authority —
+# the can-manage hierarchy — is enforced at the service layer, so the player-facing
+# nodes default to true.
+permissions:
+    # ---- Administrative -----------------------------------------------------
+    jobs.admin:
+        description: Blanket override — hire and fire any job, ignoring the can-manage hierarchy.
+        default: op
+    jobs.admin.reload:
+        description: Reload jobs.yml and messages.properties.
+        default: op
+    jobs.admin.audit:
+        description: View the job audit log and externally-sourced memberships.
+        default: op
+
+    # ---- Player-facing (authority enforced at the service layer) ------------
+    jobs.use:
+        description: View your own jobs, licences and qualifications.
+        default: true
+    jobs.list.other:
+        description: View another player's jobs.
+        default: true
+    jobs.licenses:
+        description: Use /licenses.
+        default: true
+    jobs.qualifications:
+        description: Use /qualifications.
+        default: true
+    jobs.hire:
+        description: Attempt to hire (the can-manage hierarchy still applies).
+        default: true
+    jobs.fire:
+        description: Attempt to fire (the can-manage hierarchy still applies).
+        default: true
+    jobs.quit:
+        description: Leave a job you hold.
+        default: true

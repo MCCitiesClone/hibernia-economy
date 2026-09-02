@@ -60,6 +60,40 @@ route money to a firm or check a staff permission).
 
 ---
 
+## `jobs/` — jobs, licences and qualifications (Paper plugin)
+
+What a player *is*: their trade, profession, government office, licences and
+qualifications. **LuckPerms groups are the source of truth for membership** — this
+plugin declares which groups are job groups, who may hire into and fire from them,
+and keeps a record of what happened.
+
+- **Stack:** same shape as Treasury/Business (Paper · Guice · MyBatis · HikariCP ·
+  `hibernia-framework`). Libs relocated under `io.paradaux.jobs.libs.*`.
+- **Layering:** `commands/` → `services/`(+`impl/`) → `mappers/`, with all
+  `net.luckperms.*` confined to `permissions/LuckPermsBackend`. LuckPerms is a
+  *soft* dependency: without it the plugin still enables and refuses job changes
+  with a clear message (`UnavailablePermissionBackend`), never a class-load error.
+- **Configuration:** `jobs.yml` declares types and the jobs within them. It is
+  parsed by `model/config/JobsYaml` rather than the framework's declarative binder,
+  which supports only flat scalars in `config.yml` — the same reason Treasury's
+  salary config and Business's firm config own their loaders.
+- **Authority:** explicit `can-manage` selectors (`<type>/<job>`, `*` allowed either
+  side), non-transitive, plus a blanket `jobs.admin` bypass. There is no rank
+  arithmetic; who can fire whom is answerable by reading the config.
+- **Console and other plugins are first-class.** Every mutating command takes a
+  `CommandSender`, and `JobsApi` is the primary path for job types another plugin
+  owns — trades are expected to arrive that way.
+
+### `jobs/jobs-api/` — public Jobs API (library jar)
+
+`JobsApi`, `JobCatalog`, `JobId`/`JobDefinition`/`HeldJob`, `JobActor`, and the
+`PlayerHired`/`PlayerFired`/`PlayerQuitJob` events. Published as
+`io.paradaux:jobs-api`. Membership reads and writes return `CompletableFuture`
+because LuckPerms' only offline-safe write primitive is async; the catalogue is a
+synchronous snapshot read.
+
+---
+
 ## `treasury-api-plugin/` — API-key issuer (Paper plugin)
 
 Issues and manages the **JWT API keys** that authenticate callers of the REST API.
