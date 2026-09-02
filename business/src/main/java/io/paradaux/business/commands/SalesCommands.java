@@ -3,6 +3,7 @@ package io.paradaux.business.commands;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 
+import io.paradaux.common.messaging.TagAwareMessage;
 import io.paradaux.hibernia.framework.commander.annotations.*;
 import io.paradaux.hibernia.framework.commander.spi.CommandHandler;
 import io.paradaux.hibernia.framework.i18n.Message;
@@ -125,7 +126,7 @@ public class SalesCommands implements CommandHandler {
         // canSeeFinancials gate handles auth there, so no token/CSV to mint here.
         String base = config.getSalesExplorerUrl().replaceAll("/+$", "");
         String url = base + "/chestshop/firms/" + firm.getFirmId() + "?days=" + days;
-        message.send(sender, "business.sales.export.link",
+        TagAwareMessage.send(message, sender, "business.sales.export.link",
                 "firm", firm.getDisplayName(), "days", days, "url", url);
     }
 
@@ -191,7 +192,7 @@ public class SalesCommands implements CommandHandler {
         }
 
         if (offset + rows.size() < total) {
-            message.send(sender, "business.sales.next-page",
+            TagAwareMessage.send(message, sender, "business.sales.next-page",
                     "firm", firm.getDisplayName(), "nextPage", page + 1);
         }
     }

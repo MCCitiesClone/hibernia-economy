@@ -20,6 +20,10 @@ dependencies {
     // into the shadow JAR (ADT-22, ADT-186).
     implementation(project(":common"))
 
+    // Paper-facing shared utilities: TagAwareMessage, which resolves
+    // {placeholder}s inside MiniMessage tag arguments (clickable commands/links).
+    implementation(project(":common-paper"))
+
     // Paper API (provided by server)
     compileOnly(libs.paper.api)
 

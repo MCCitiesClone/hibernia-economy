@@ -15,7 +15,6 @@ import io.paradaux.treasury.services.FineWebhookService;
 import io.paradaux.treasury.services.GovService;
 import io.paradaux.treasury.services.MembershipService;
 import io.paradaux.treasury.services.PlayerDirectoryService;
-import io.paradaux.treasury.utils.MiniMessageText;
 import io.paradaux.treasury.utils.Money;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
@@ -285,7 +284,7 @@ public class FineCommand implements CommandHandler {
                 "player", playerName,
                 "amount", formattedAmount);
         message.send(sender, "treasury.fine.info.detail",
-                "reason", MiniMessageText.sanitize(fine.getReason()),
+                "reason", fine.getReason(),
                 "issuer", issuerName,
                 "date", issuedDate);
 
@@ -337,9 +336,9 @@ public class FineCommand implements CommandHandler {
             message.send(sender, "treasury.fine.list.entry",
                     "id", String.valueOf(fine.getFineId()),
                     "amount", formattedAmount,
-                    "reason", MiniMessageText.sanitize(fine.getReason()),
+                    "reason", fine.getReason(),
                     "date", date,
-                    "revoked_tag", revokedTag);
+                    "revoked_tag", Message.rich(revokedTag));
         }
     }
 

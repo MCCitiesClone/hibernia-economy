@@ -14,6 +14,10 @@ description = "TreasuryAPI"
 dependencies {
     implementation(project(":common"))
 
+    // Paper-facing shared utilities: TagAwareMessage, which resolves
+    // {placeholder}s inside MiniMessage tag arguments (clickable commands/links).
+    implementation(project(":common-paper"))
+
     // Paper API (provided by server)
     compileOnly(libs.paper.api)
 
@@ -54,6 +58,7 @@ dependencies {
     testImplementation(platform(libs.junit.bom))
     testImplementation(libs.junit.jupiter)
     testRuntimeOnly(libs.junit.platform.launcher)
+    testImplementation(project(":test-support"))
     testImplementation(libs.mockito.core)
     testImplementation(libs.mockito.junit.jupiter)
     // GroupReconciliationTask extends BukkitRunnable and references the LuckPerms

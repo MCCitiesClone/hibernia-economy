@@ -2,6 +2,7 @@ package io.paradaux.treasuryapi.commands;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
+import io.paradaux.common.messaging.TagAwareMessage;
 import io.paradaux.hibernia.framework.i18n.Message;
 import io.paradaux.business.api.BusinessApi;
 import io.paradaux.business.model.Firm;
@@ -41,7 +42,7 @@ public class BusinessKeyHandler {
         }
 
         ApiKey key = apiKeyService.issueBusinessKey(firm.getFirmId(), sender.getUniqueId());
-        message.send(sender, "treasuryapi.business.issue.success",
+        TagAwareMessage.send(message, sender, "treasuryapi.business.issue.success",
                 "keyId", String.valueOf(key.getKeyId()),
                 "firmId", String.valueOf(key.getFirmId()),
                 "firmName", firm.getDisplayName(),
@@ -102,7 +103,7 @@ public class BusinessKeyHandler {
         // The service re-checks proprietorship as the authoritative boundary
         // (pa/0005); these handler branches are the fast path for a clear message.
         ApiKey updated = apiKeyService.reissueKey(keyId, sender.getUniqueId());
-        message.send(sender, "treasuryapi.business.reissue.success",
+        TagAwareMessage.send(message, sender, "treasuryapi.business.reissue.success",
                 "keyId", String.valueOf(updated.getKeyId()),
                 "token", updated.getToken());
     }

@@ -3,6 +3,7 @@ package io.paradaux.business.commands;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 
+import io.paradaux.common.messaging.TagAwareMessage;
 import io.paradaux.hibernia.framework.commander.annotations.*;
 import io.paradaux.hibernia.framework.commander.spi.CommandHandler;
 import io.paradaux.hibernia.framework.exceptions.InternalException;
@@ -24,6 +25,8 @@ import io.paradaux.business.services.FirmStaffService;
 import io.paradaux.business.services.FirmTransactionService;
 import io.paradaux.business.commands.resolvers.FirmName;
 import io.paradaux.business.commands.resolvers.OnlineFirmName;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 
@@ -94,7 +97,7 @@ public class FirmCommands implements CommandHandler {
         // pending confirmation once the prompt has been built.
         String balance = transactions.getFormattedAggregateBalance(f.getFirmId());
         disbandConfirmations.request(sender.getUniqueId(), f.getFirmId());
-        message.send(sender, "business.firm.disband.confirm-prompt",
+        TagAwareMessage.send(message, sender, "business.firm.disband.confirm-prompt",
                 "firm", f.getDisplayName(), "balance", balance);
     }
 
@@ -208,14 +211,14 @@ public class FirmCommands implements CommandHandler {
 
         for (int i = 0; i < result.items().size(); i++) {
             FirmBalanceEntry entry = result.items().get(i);
-            message.send(sender, "business.firm.baltop.entry",
+            TagAwareMessage.send(message, sender, "business.firm.baltop.entry",
                     "rank", result.offset() + i + 1,
                     "firm", entry.displayName(),
                     "balance", transactions.formatAmount(entry.balance()));
         }
 
         if (result.hasMore()) {
-            message.send(sender, "business.firm.baltop.footer", "next", page + 1);
+            TagAwareMessage.send(message, sender, "business.firm.baltop.footer", "next", page + 1);
         }
     }
 
@@ -243,7 +246,7 @@ public class FirmCommands implements CommandHandler {
         String hq = f.getHqRegion() == null ? "N/A" : f.getHqRegion();
         String discord = f.getDiscordUrl() == null ? "N/A" : f.getDiscordUrl();
         String status = f.getArchived() ? "(Defunct)" : "";
-        message.send(sender, "business.firm.info", "firm", f.getDisplayName(), "status", status, "owner", proprietorName, "balance", balanceFmt, "hq", hq, "discord", discord);
+        TagAwareMessage.send(message, sender, "business.firm.info", "firm", f.getDisplayName(), "status", status, "owner", proprietorName, "balance", balanceFmt, "hq", hq, "discord", discord);
     }
 
     @Route("attribute set hq <firm> <plot>")
@@ -291,7 +294,7 @@ public class FirmCommands implements CommandHandler {
         }
 
         firms.updateFirmDiscord(firm, url, sender.getUniqueId());
-        message.send(sender, "business.firm.attribute.set.discord.success", "firm", firm, "discord", url);
+        TagAwareMessage.send(message, sender, "business.firm.attribute.set.discord.success", "firm", firm, "discord", url);
 
     }
 
@@ -373,7 +376,7 @@ public class FirmCommands implements CommandHandler {
             return;
         }
         firms.adminSetDiscord(firm, url);
-        message.send(sender, "business.firm.attribute.set.discord.success", "firm", f.getDisplayName(), "discord", url);
+        TagAwareMessage.send(message, sender, "business.firm.attribute.set.discord.success", "firm", f.getDisplayName(), "discord", url);
     }
 
     @Route("admin set proprietor <firm> <player>")
@@ -433,8 +436,15 @@ public class FirmCommands implements CommandHandler {
     private void sendFirms(@Sender Player sender, List<Firm> list) {
         for (int i = 0; i < list.size(); i++) {
             Firm f = list.get(i);
-            String name = f.getArchived() ? "<strikethrough>" + f.getDisplayName() + "</strikethrough>" : f.getDisplayName();
-            String status = f.getArchived() ? "<red>Defunct</red>" : f.getFirmId().toString();
+            // Styling goes through Component/Message.rich rather than raw markup in a
+            // placeholder value: Message inserts plain Strings inert, so the tags would
+            // render literally. The name carries player-supplied text, so it is a styled
+            // Component (never parsed); the status is a fixed tag or a numeric id.
+            Component name = f.getArchived()
+                    ? Component.text(f.getDisplayName()).decorate(TextDecoration.STRIKETHROUGH)
+                    : Component.text(f.getDisplayName());
+            Object status = f.getArchived()
+                    ? Message.rich("<red>Defunct</red>") : f.getFirmId().toString();
             // economy_players is populated on join (by Treasury) — proprietors who haven't
             // logged in to the new server (e.g. legacy firms imported via
             // TreasuryIngest) have no row yet. Fall back to the raw UUID rather
@@ -442,7 +452,7 @@ public class FirmCommands implements CommandHandler {
             String owner = players.findByUuid(f.getProprietorUuid())
                     .map(FirmPlayer::getCurrentName)
                     .orElse(f.getProprietorUuid());
-            message.send(sender, "business.firm.list.line", "ordinal", i + 1, "firm", name, "owner", owner, "status", status);
+            TagAwareMessage.send(message, sender, "business.firm.list.line", "ordinal", i + 1, "firm", name, "owner", owner, "status", status);
         }
     }
 }
