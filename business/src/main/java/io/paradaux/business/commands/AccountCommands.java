@@ -2,6 +2,7 @@ package io.paradaux.business.commands;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
+import io.paradaux.common.messaging.TagAwareMessage;
 import io.paradaux.hibernia.framework.commander.annotations.*;
 import io.paradaux.hibernia.framework.commander.spi.CommandHandler;
 import io.paradaux.hibernia.framework.i18n.Message;
@@ -530,7 +531,7 @@ public class AccountCommands implements CommandHandler {
                 "business.account.transactions.line");
 
         if (txPage.hasMore()) {
-            message.send(sender, "business.account.transactions.next-page",
+            TagAwareMessage.send(message, sender, "business.account.transactions.next-page",
                     "firm", firm.getDisplayName(), "accountId", accountId,
                     "nextPage", txPage.pageNumber() + 1);
         }

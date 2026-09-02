@@ -1,6 +1,7 @@
 package io.paradaux.treasury.commands;
 
 import com.google.inject.Inject;
+import io.paradaux.common.messaging.TagAwareMessage;
 import io.paradaux.hibernia.framework.commander.annotations.*;
 import io.paradaux.hibernia.framework.commander.spi.CommandHandler;
 import io.paradaux.hibernia.framework.i18n.Message;
@@ -105,7 +106,7 @@ public class TransactionsCommand implements CommandHandler {
     public void exportTransactions(@Sender Player sender) {
         int accountId = accountService.getOrCreatePersonalAccountId(sender.getUniqueId());
         String url = dataExportService.exportTransactionsFor(accountId);
-        message.send(sender, "treasury.transactions.export.success", "url", url);
+        TagAwareMessage.send(message, sender, "treasury.transactions.export.success", "url", url);
     }
 
     @Route("export <accountId>")
@@ -123,7 +124,7 @@ public class TransactionsCommand implements CommandHandler {
             return;
         }
         String url = dataExportService.exportTransactionsFor(accountId);
-        message.send(sender, "treasury.transactions.export.success", "url", url);
+        TagAwareMessage.send(message, sender, "treasury.transactions.export.success", "url", url);
     }
 
     /** Hard cap so a malicious /transactions <huge> can't push MariaDB into a giant OFFSET scan. */

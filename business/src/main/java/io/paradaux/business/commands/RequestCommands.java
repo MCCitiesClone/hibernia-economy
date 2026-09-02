@@ -2,6 +2,7 @@ package io.paradaux.business.commands;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
+import io.paradaux.common.messaging.TagAwareMessage;
 import io.paradaux.hibernia.framework.commander.annotations.*;
 import io.paradaux.hibernia.framework.commander.spi.CommandHandler;
 import io.paradaux.hibernia.framework.exceptions.InternalException;
@@ -48,7 +49,7 @@ public class RequestCommands implements CommandHandler {
         message.send(sender, "business.staff.offer.sender", "target", displayName(target), "firm", firm);
 
         if (target.isOnline() && target.getPlayer() != null) {
-            message.send(target.getPlayer(), "business.staff.offer.target", "firm", firm, "sender", sender.getName());
+            TagAwareMessage.send(message, target.getPlayer(), "business.staff.offer.target", "firm", firm, "sender", sender.getName());
         }
 
         message.send(staff.getOnlineEmployees(firm), "business.staff.other.staff-broadcast", "target", displayName(target), "sender", sender.getName(), "firm", firm);
@@ -115,7 +116,7 @@ public class RequestCommands implements CommandHandler {
     public void beginTransfer(@Sender Player sender, @Arg("firm") FirmName firmRef, @Arg("user") OfflinePlayer target) {
         String firm = firmRef.value();
         String code = requests.beginTransferProprietorship(firm, target.getUniqueId(), sender.getUniqueId());
-        message.send(sender, "business.firm.transfer.begin", "firm", firm, "target", displayName(target), "code", code);
+        TagAwareMessage.send(message, sender, "business.firm.transfer.begin", "firm", firm, "target", displayName(target), "code", code);
     }
 
     @Route("transfer confirm <firm> <user> <code>")
@@ -128,7 +129,7 @@ public class RequestCommands implements CommandHandler {
             message.send(sender, "business.firm.transfer.confirmed", "target", displayName(target));
 
             if (target.isOnline() && target.getPlayer() != null) {
-                message.send(target.getPlayer(), "business.firm.transfer.offer", "firm", firm, "sender", sender.getName(), "target", displayName(target));
+                TagAwareMessage.send(message, target.getPlayer(), "business.firm.transfer.offer", "firm", firm, "sender", sender.getName(), "target", displayName(target));
                 message.send(staff.getOnlineEmployees(firm), "business.firm.transfer.confirmed.staff-broadcast", "sender", sender.getName(), "firm", firm, "target", displayName(target));
             }
         } else {

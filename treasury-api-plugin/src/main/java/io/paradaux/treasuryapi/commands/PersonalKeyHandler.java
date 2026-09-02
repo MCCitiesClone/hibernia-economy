@@ -2,6 +2,7 @@ package io.paradaux.treasuryapi.commands;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
+import io.paradaux.common.messaging.TagAwareMessage;
 import io.paradaux.hibernia.framework.i18n.Message;
 import io.paradaux.treasury.api.TreasuryApi;
 import io.paradaux.treasury.model.economy.Account;
@@ -31,7 +32,7 @@ public class PersonalKeyHandler {
     public void doIssue(Player sender) {
         Account personal = treasuryApi.resolveOrCreatePersonal(sender.getUniqueId());
         ApiKey key = apiKeyService.issuePersonalKey(personal.getAccountId(), sender.getUniqueId());
-        message.send(sender, "treasuryapi.personal.issue.success",
+        TagAwareMessage.send(message, sender, "treasuryapi.personal.issue.success",
                 "keyId", String.valueOf(key.getKeyId()),
                 "accountId", String.valueOf(key.getAccountId()),
                 "token", key.getToken());
@@ -74,7 +75,7 @@ public class PersonalKeyHandler {
         // The service re-checks ownership as the authoritative boundary (pa/0005);
         // these handler branches are the fast path for a clear, key-specific message.
         ApiKey updated = apiKeyService.reissueKey(keyId, sender.getUniqueId());
-        message.send(sender, "treasuryapi.personal.reissue.success",
+        TagAwareMessage.send(message, sender, "treasuryapi.personal.reissue.success",
                 "keyId", String.valueOf(updated.getKeyId()),
                 "token", updated.getToken());
     }

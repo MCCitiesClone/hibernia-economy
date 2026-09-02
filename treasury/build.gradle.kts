@@ -33,6 +33,10 @@ dependencies {
     implementation(project(":treasury:treasury-api"))
     implementation(project(":common"))
 
+    // Paper-facing shared utilities: TagAwareMessage, which resolves
+    // {placeholder}s inside MiniMessage tag arguments (clickable commands/links).
+    implementation(project(":common-paper"))
+
     // Hibernia Framework
     implementation(libs.hibernia.framework)
 

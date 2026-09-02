@@ -88,7 +88,7 @@ public class TaxCommands implements CommandHandler {
 
         message.send(sender, "business.tax.info",
             "firm", f.getDisplayName(),
-            "exempt", exemptStatus,
+            "exempt", Message.rich(exemptStatus),
             "balance", balanceFmt,
             "rate", ratePct,
             "estimatedTax", taxFmt);

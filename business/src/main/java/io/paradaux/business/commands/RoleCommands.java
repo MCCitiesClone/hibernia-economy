@@ -2,6 +2,7 @@ package io.paradaux.business.commands;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
+import io.paradaux.common.messaging.TagAwareMessage;
 import io.paradaux.hibernia.framework.commander.annotations.*;
 import io.paradaux.hibernia.framework.commander.spi.CommandHandler;
 import io.paradaux.hibernia.framework.exceptions.InternalException;
@@ -93,7 +94,7 @@ public class RoleCommands implements CommandHandler {
         message.send(sender, "business.staff.role.list.header", "firm", firm);
 
         for (FirmRole role : firmRoles) {
-            message.send(sender, "business.staff.role.list.line", "firm", firm, "role", role.getRoleName(), "ordinal", role.getRoleRankOrder());
+            TagAwareMessage.send(message, sender, "business.staff.role.list.line", "firm", firm, "role", role.getRoleName(), "ordinal", role.getRoleRankOrder());
         }
     }
 

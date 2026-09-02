@@ -23,6 +23,9 @@ rootProject.name = "hibernia-economy"
 
 include(":common")
 
+// Paper/framework-facing shared utilities (:common stays framework-free).
+include(":common-paper")
+
 // Shared test-kit: startup + message-key assertions consumed by the Paper plugins
 // as testImplementation(project(":test-support")). Not shaded, never a runtime dep.
 include(":test-support")
