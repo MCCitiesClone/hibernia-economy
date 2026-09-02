@@ -36,6 +36,13 @@ include(":treasury:treasury-api")
 include(":business")
 include(":business:business-api")
 
+// Job / licence / qualification management. LuckPerms groups are the source of
+// truth for membership; the DB holds an audit log plus a mirror the reconciler
+// repairs. jobs-api is consumed by other plugins (the trades plugin hires
+// through it) the same way business/treasury expose theirs.
+include(":jobs")
+include(":jobs:jobs-api")
+
 include(":treasury-api-plugin")
 include(":treasury-rest-api")
 include(":economy-flyway")

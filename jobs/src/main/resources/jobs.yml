@@ -1,0 +1,154 @@
+# =============================================================================
+# Jobs, licences and qualifications.
+#
+# LuckPerms groups are the SOURCE OF TRUTH for who holds what. This file only
+# declares which groups are job groups, how they are presented, and who may hire
+# into and fire from them. A declared group that does not exist in LuckPerms is
+# created on startup and after /jobs reload.
+#
+# The types below ship with no jobs on purpose. On a version upgrade the framework
+# merges any keys missing from your file back in from the jar defaults; if example
+# jobs shipped here, ones you had deliberately deleted would silently reappear. Add
+# your own jobs under each type — see the fully worked example at the bottom.
+#
+# Removing a job from this file does NOT delete its LuckPerms group or revoke it
+# from anyone. That is deliberate: destroying permissions as a side effect of a
+# config edit would be a bad property. Its mirror rows are simply no longer
+# reconciled, and `/jobs audit external` will surface them.
+# =============================================================================
+
+# Permission node that bypasses the can-manage hierarchy entirely. Point this at an
+# existing staff node if you already have one (you must then declare that node
+# yourself; only the default below is registered by the plugin).
+admin-permission: "jobs.admin"
+
+# Create any declared LuckPerms group that does not already exist, at startup and
+# after every /jobs reload. Turn off if group creation is managed elsewhere.
+provision-groups: true
+
+# Show a type's section in /jobs even when the player holds none of its jobs.
+show-empty-types: false
+
+# Which configured type key each dedicated listing command displays. The command
+# names themselves are fixed in code; this mapping is what lets you rename or
+# re-point a type without breaking /licenses or /qualifications. A value naming a
+# type that does not exist disables that command with a clear message.
+listing-commands:
+  licenses: licenses
+  qualifications: qualifications
+
+# Periodic drift repair. Compares LuckPerms' real membership against this plugin's
+# mirror and records the difference in the audit log. It NEVER writes to LuckPerms:
+# groups granted by another plugin or by hand are recorded as 'external', not
+# stripped, so two plugins can never end up write-fighting over a group.
+reconciliation:
+  enabled: true
+  interval-seconds: 1800
+
+# -----------------------------------------------------------------------------
+# types:
+#   <type-key>:
+#     display-name        section header shown by /jobs
+#     order               ascending sort position of the section; ties break on key
+#     managed-externally  true -> player-run /hire and /fire are refused for this
+#                         type. The JobsApi, the console and jobs.admin still work.
+#                         Use for types another plugin owns, e.g. trades awarded by
+#                         a skills plugin.
+#     can-manage          selectors inherited by every job in this type
+#     provision           LuckPerms metadata inherited by every job in this type
+#     jobs:
+#       <job-key>:
+#         display-name    shown in /jobs; rename freely, history is keyed on the key
+#         group           LuckPerms group name; defaults to the job key
+#         description      one-line blurb shown by /jobs info
+#         can-manage      selectors, UNIONed with the type's list
+#         provision       overrides the type's block KEY BY KEY (permissions union)
+#
+# Selector grammar: "<type>/<job>", with "*" allowed on either side.
+#   government/president   exactly that job
+#   licenses/*             every job of type "licenses"
+#   */firearms             that job key in any type
+#   */*  (or just "*")     everything
+# Matching is case-insensitive and NON-TRANSITIVE: holding a job that can manage a
+# manager does not give you the manager's own authority.
+#
+# provision applies ONLY the keys you declare, on create and on every reload.
+# Anything you do not declare here is never touched, so a weight you set by hand in
+# LuckPerms survives. The converse also holds: a key you DO declare is reasserted on
+# reload, so hand-edits to it will be overwritten.
+# -----------------------------------------------------------------------------
+types:
+
+  government:
+    display-name: "Government"
+    order: 10
+    jobs: {}
+
+  legal:
+    display-name: "Legal"
+    order: 20
+    jobs: {}
+
+  professions:
+    display-name: "Professions"
+    order: 30
+    jobs: {}
+
+  trades:
+    display-name: "Trades"
+    order: 40
+    # Trades are awarded by the skills plugin through the JobsApi, not by hand.
+    managed-externally: true
+    jobs: {}
+
+  licenses:
+    display-name: "Licences"
+    order: 50
+    jobs: {}
+
+  qualifications:
+    display-name: "Qualifications"
+    order: 60
+    jobs: {}
+
+# -----------------------------------------------------------------------------
+# Worked example — copy the parts you need into the types above.
+#
+# types:
+#   government:
+#     display-name: "Government"
+#     order: 10
+#     # Every government office may issue and revoke any licence.
+#     can-manage: [ "licenses/*" ]
+#     provision:
+#       prefix-color: "<gold>"
+#     jobs:
+#       president:
+#         display-name: "President"
+#         group: "president"
+#         description: "Head of the executive."
+#         # May hire and fire every government office and every legal post.
+#         can-manage: [ "government/*", "legal/*" ]
+#         provision:
+#           weight: 100
+#           prefix: "[President] "
+#           permissions:
+#             - "essentials.fly"
+#       commerce-clerk:
+#         display-name: "Commerce Clerk"
+#         group: "commerce-clerk"
+#         description: "Departmental staff."
+#         provision:
+#           weight: 20
+#           prefix: "[Clerk] "        # inherits prefix-color <gold> from the type
+#
+#   trades:
+#     display-name: "Trades"
+#     order: 40
+#     managed-externally: true
+#     jobs:
+#       electrician:
+#         display-name: "Electrician"
+#         group: "trade-electrician"
+#         description: "Certified to wire redstone installations."
+# -----------------------------------------------------------------------------

@@ -89,6 +89,37 @@ the rule in `V<n>`, not in a mapper or a Kysely query — cross-side conformance
 tests guard it (`MembershipAccessIT`, `MembershipServiceIT`, the explorer
 integration suite).
 
+## Job membership — LuckPerms is the source of truth
+
+The `:jobs` plugin is the one part of the economy schema where **the database is not
+authoritative**. Who holds a job, licence or qualification is decided entirely by
+LuckPerms group membership; the two job tables are a record of it, not the thing
+itself.
+
+| Table | What it is |
+|---|---|
+| `job_event` | Append-only audit log of every membership *transition*. A no-op (hiring someone who already holds the job) writes nothing, so an owning plugin's periodic re-sync produces no noise. |
+| `job_membership` | A mirror of LuckPerms, rebuilt by `JobReconciliationTask`. Read it for rosters and reporting; **never** read it as proof that someone holds a job. |
+
+Two consequences worth knowing before touching either table:
+
+- **Actors are not always players.** Trades are granted by another plugin through
+  `JobsApi`, the console can hire anyone, and the reconciler records drift it merely
+  observed. Actor identity is therefore an `actor_type` plus an *optional*
+  uuid/name, enforced by the `ck_job_event_actor` check constraint. There is
+  deliberately no FK to `economy_players`: the reconciler legitimately sees UUIDs
+  that have never logged in, and a FK would make those events unloggable.
+- **`source = 'external'` is not an error.** It marks membership found in LuckPerms
+  that this plugin did not grant — another plugin, or a hand-run
+  `lp user … parent add`. Those are recorded and **never stripped**: "correcting"
+  them would put two plugins in a write-fight over the same group. `/jobs audit
+  external` lists them, and each one is a candidate for moving its owner onto
+  `JobsApi`.
+
+Writes go **LuckPerms first, database second**. A database failure after a
+successful group change leaves a *gap* in the log, which the reconciler fills; the
+reverse order would leave a *lie* in it.
+
 ## Rollback
 
 There is no automated rollback. The canonical recovery path is **restore from the

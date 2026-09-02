@@ -339,6 +339,32 @@ export interface GovernmentFines {
   txnId: number;
 }
 
+export interface JobEvent {
+  action: "DETECTED_ADD" | "DETECTED_REMOVE" | "FIRE" | "HIRE" | "QUIT";
+  actorName: Generated<string | null>;
+  actorType: "CONSOLE" | "PLAYER" | "PLUGIN" | "SYSTEM";
+  actorUuidBin: Generated<Buffer | null>;
+  createdAt: Generated<Date>;
+  eventId: Generated<number>;
+  groupName: string;
+  jobKey: string;
+  reason: Generated<string | null>;
+  source: "API" | "COMMAND" | "RECONCILER";
+  subjectUuidBin: Buffer;
+  typeKey: string;
+  viaAdmin: Generated<number>;
+}
+
+export interface JobMembership {
+  grantedAt: Generated<Date>;
+  groupName: string;
+  jobKey: string;
+  lastVerifiedAt: Generated<Date>;
+  source: Generated<"external" | "jobs">;
+  subjectUuidBin: Buffer;
+  typeKey: string;
+}
+
 export interface LedgerPostings {
   accountId: number;
   amount: Decimal;
@@ -444,6 +470,8 @@ export interface DB {
   firmTransferRequests: FirmTransferRequests;
   flywaySchemaHistory: FlywaySchemaHistory;
   governmentFines: GovernmentFines;
+  jobEvent: JobEvent;
+  jobMembership: JobMembership;
   ledgerPostings: LedgerPostings;
   ledgerTxns: LedgerTxns;
   webhookCursor: WebhookCursor;

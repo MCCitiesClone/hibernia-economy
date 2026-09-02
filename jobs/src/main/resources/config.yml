@@ -1,0 +1,13 @@
+# =============================================================================
+# Jobs — plugin configuration.
+#
+# Job types and the jobs within them live in jobs.yml, not here.
+# =============================================================================
+
+database:
+  host: localhost
+  port: 3306
+  database: treasury
+  username: treasury
+  # Placeholder; the plugin refuses to boot until this is changed from CHANGE_ME.
+  password: CHANGE_ME
